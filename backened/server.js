@@ -13,7 +13,7 @@ import { aj } from './lib/arcjet.js'; // Import Arcjet middleware
 dotenv.config();// Load environment variables from .env file
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Default to port 3000 if not specified in .env 
+const PORT = process.env.PORT || 5000; // Default to port 3000 if not specified in .env 
 
 
 // Middleware setup
@@ -62,31 +62,37 @@ app.use(async (req, res, next) => {
   }
 });
 
+
+app.get('/', (req, res) => {
+  res.send('Server is running!');
+});
+
+// Product routes
 app.use('/api/products', productRoutes);
 
-
+// Database initialization
 async function initDB() {
-  try{
-  await sql`
-    CREATE TABLE IF NOT EXISTS products (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      image_url VARCHAR(255) NOT NULL,
-      price DECIMAL(10, 2) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`
-    ;
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        image_url VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
     console.log('Database initialized successfully');
-  }catch (error) {
+  } catch (error) {
     console.error('Error initializing the database:', error);
   }
 }
 
+// Start server
 initDB().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT,'0.0.0.0', () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);
-  process.exit(1); // Exit the process if database initialization fails
+  process.exit(1);
 });
