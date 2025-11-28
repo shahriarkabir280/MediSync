@@ -1,5 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { analyticsApi, doctorApi } from "../../lib/api";
+
 const AnalyticsTab = () => {
+    const [appointmentAnalytics, setAppointmentAnalytics] = useState(null);
+    const [patientAnalytics, setPatientAnalytics] = useState(null);
+    const [revenueAnalytics, setRevenueAnalytics] = useState(null);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    // TODO: Get this from auth context
+    const doctorId = 1;
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, []);
+
+    const fetchAnalytics = async () => {
+        try {
+            setLoading(true);
+            const [appointmentData, patientData, revenueData, statsData] = await Promise.all([
+                analyticsApi.getAppointmentAnalytics(doctorId),
+                analyticsApi.getPatientAnalytics(doctorId),
+                analyticsApi.getRevenueAnalytics(doctorId),
+                doctorApi.getStats(doctorId)
+            ]);
+            
+            setAppointmentAnalytics(appointmentData.data);
+            setPatientAnalytics(patientData.data);
+            setRevenueAnalytics(revenueData.data);
+            setStats(statsData.data);
+            setError(null);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching analytics:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Loading analytics...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <p className="text-red-600 mb-2">Error loading analytics</p>
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                    <button 
+                        onClick={fetchAnalytics}
+                        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
      <div className="space-y-6">
             <div>
@@ -12,90 +76,154 @@ const AnalyticsTab = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-card border border-border rounded-lg p-4">
                   <h4 className="font-medium text-muted-foreground mb-2">Total Patients</h4>
-                  <p className="text-2xl font-bold">1,247</p>
-                  <p className="text-sm text-green-600">+12% from last month</p>
+                  <p className="text-2xl font-bold">{patientAnalytics?.totalPatients || 0}</p>
+                  <p className="text-sm text-green-600">
+                    +{patientAnalytics?.newPatientsThisMonth || 0} this month
+                  </p>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-4">
                   <h4 className="font-medium text-muted-foreground mb-2">Appointments</h4>
-                  <p className="text-2xl font-bold">187</p>
-                  <p className="text-sm text-blue-600">+8% from last month</p>
+                  <p className="text-2xl font-bold">{stats?.monthAppointments || 0}</p>
+                  <p className="text-sm text-blue-600">This month</p>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-4">
                   <h4 className="font-medium text-muted-foreground mb-2">Revenue</h4>
-                  <p className="text-2xl font-bold">$24,650</p>
-                  <p className="text-sm text-purple-600">+15% from last month</p>
+                  <p className="text-2xl font-bold">
+                    ${revenueAnalytics?.revenueThisMonth?.toFixed(2) || '0.00'}
+                  </p>
+                  <p className="text-sm text-purple-600">This month</p>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-4">
-                  <h4 className="font-medium text-muted-foreground mb-2">Satisfaction</h4>
-                  <p className="text-2xl font-bold">4.8/5</p>
-                  <p className="text-sm text-yellow-600">+0.2 from last month</p>
+                  <h4 className="font-medium text-muted-foreground mb-2">Pending</h4>
+                  <p className="text-2xl font-bold">{stats?.pendingAppointments || 0}</p>
+                  <p className="text-sm text-yellow-600">Pending appointments</p>
                 </div>
               </div>
 
-              {/* Charts */}
+              {/* Appointment Statistics */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">Patient Growth</h3>
-                  <div className="h-64 flex items-center justify-center text-muted-foreground">
-                    [Chart Placeholder - Patient Growth Over Time]
+                  <h3 className="text-lg font-semibold mb-4">Appointments by Status</h3>
+                  <div className="space-y-3">
+                    {appointmentAnalytics?.appointmentsByStatus?.length > 0 ? (
+                      appointmentAnalytics.appointmentsByStatus.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="capitalize">{item.status}</span>
+                          <span className="font-semibold">{item.count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">No data available</p>
+                    )}
                   </div>
                 </div>
+                
                 <div className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">Appointment Types</h3>
-                  <div className="h-64 flex items-center justify-center text-muted-foreground">
-                    [Chart Placeholder - Appointment Distribution]
+                  <h3 className="text-lg font-semibold mb-4">Appointments by Type</h3>
+                  <div className="space-y-3">
+                    {appointmentAnalytics?.appointmentsByType?.length > 0 ? (
+                      appointmentAnalytics.appointmentsByType.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="capitalize">{item.appointment_type}</span>
+                          <span className="font-semibold">{item.count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">No data available</p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Popular Services */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Most Popular Services</h3>
-                <div className="space-y-3">
-                  {[
-                    { service: 'General Consultation', count: 145, percentage: 78 },
-                    { service: 'Follow-up Visits', count: 89, percentage: 48 },
-                    { service: 'Health Check-ups', count: 67, percentage: 36 },
-                    { service: 'Vaccination', count: 34, percentage: 18 },
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium">{item.service}</p>
-                          <span className="text-sm text-muted-foreground">{item.count} visits</span>
+              {/* Patient Demographics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Patients by Age Group</h3>
+                  <div className="space-y-3">
+                    {patientAnalytics?.patientsByAgeGroup?.length > 0 ? (
+                      patientAnalytics.patientsByAgeGroup.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span>{item.age_group}</span>
+                          <span className="font-semibold">{item.count}</span>
                         </div>
-                        <div className="w-full bg-secondary rounded-full h-2">
-                          <div className="bg-primary h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">No data available</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Patients by Gender</h3>
+                  <div className="space-y-3">
+                    {patientAnalytics?.patientsByGender?.length > 0 ? (
+                      patientAnalytics.patientsByGender.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="capitalize">{item.gender}</span>
+                          <span className="font-semibold">{item.count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4">No data available</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue Summary */}
+              {revenueAnalytics && (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Revenue Summary</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-600">
+                        ${revenueAnalytics.totalRevenue?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-sm text-green-700">Total Revenue</p>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-600">
+                        ${revenueAnalytics.revenueThisMonth?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-sm text-blue-700">This Month</p>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <p className="text-2xl font-bold text-purple-600">
+                        ${revenueAnalytics.pendingPayments?.total?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-sm text-purple-700">
+                        Pending ({revenueAnalytics.pendingPayments?.count || 0})
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Peak Hours */}
+              {appointmentAnalytics?.peakHours?.length > 0 && (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Peak Appointment Hours</h3>
+                  <div className="space-y-3">
+                    {appointmentAnalytics.peakHours.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span>{item.hour}:00</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-32 bg-secondary rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full" 
+                              style={{ width: `${(item.count / appointmentAnalytics.peakHours[0].count) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-semibold w-12 text-right">{item.count}</span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Performance Summary */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Monthly Performance Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">96%</p>
-                    <p className="text-sm text-green-700">On-time Appointments</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">4.2 min</p>
-                    <p className="text-sm text-blue-700">Avg Wait Time</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <p className="text-2xl font-bold text-purple-600">23 min</p>
-                    <p className="text-sm text-purple-700">Avg Consultation</p>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-
     );
-
 };
 
 export default AnalyticsTab;

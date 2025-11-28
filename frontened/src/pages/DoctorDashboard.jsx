@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BookOpen, Settings, User, Bell, Shield, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical} from 'lucide-react';
+import { BookOpen, Settings, User, Bell, Shield, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 
 // Import tab components
 import BlogsTab from '../pages/DoctorDashboardTabs/BlogsTab';
@@ -23,6 +23,7 @@ import AnalyticsTab from './DoctorDashboardTabs/AnalyticsTab';
 
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const tabs = [
     
@@ -91,12 +92,22 @@ const DoctorDashboard = () => {
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar - Tabs */}
-      <div className="w-64 bg-card border-r border-border flex flex-col">
-        <div className="p-6 border-b border-border">
-          <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
+      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out`}>
+        <div className={`${isCollapsed ? 'p-2' : 'p-6'} border-b border-border flex items-center justify-between`}>
+          {!isCollapsed && (
+            <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors ${
+              isCollapsed ? 'w-full justify-center' : ''
+            }`}
+          >
+            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
         </div>
         
-        <nav className="flex-1 p-4">
+        <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
           <ul className="space-y-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -104,14 +115,17 @@ const DoctorDashboard = () => {
                 <li key={tab.id}>
                   <button
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-center ${
+                      isCollapsed ? 'justify-center p-3' : 'space-x-3 px-3 py-2'
+                    } rounded-lg text-left transition-colors ${
                       activeTab === tab.id
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     }`}
+                    title={isCollapsed ? tab.label : undefined}
                   >
                     <Icon size={20} />
-                    <span className="font-medium">{tab.label}</span>
+                    {!isCollapsed && <span className="font-medium">{tab.label}</span>}
                   </button>
                 </li>
               );
