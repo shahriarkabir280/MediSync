@@ -1,8 +1,196 @@
-import {useState} from "react";
-import { User, FlaskConical } from "lucide-react";
+import {useState, useEffect} from "react";
+import { User, FlaskConical, Plus, Upload, Search, Filter, Eye, Calendar, Clock, AlertTriangle } from "lucide-react";
 
 const LabratoryTab = () => {
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [patients, setPatients] = useState([]);
+    const [patientSearchTerm, setPatientSearchTerm] = useState('');
+    const [labStats, setLabStats] = useState({
+        today: { total_today: 0, pending_today: 0, processing_today: 0, completed_today: 0 },
+        urgent: { urgent_count: 0 },
+        unreviewed: { unreviewed_count: 0 }
+    });
+    const [recentOrders, setRecentOrders] = useState([]);
+    const [labCategories, setLabCategories] = useState([]);
+    const [labTests, setLabTests] = useState([]);
+    const [filteredOrders, setFilteredOrders] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('all');
+    const [showSearchModal, setShowSearchModal] = useState(false);
+
+    // Fetch lab statistics on component mount
+    useEffect(() => {
+        fetchLabStats();
+        fetchRecentOrders();
+        fetchLabCategories();
+        fetchPatients();
+    }, []);
+
+    const fetchLabStats = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('/api/lab/stats');
+            const result = await response.json();
+            if (result.success) {
+                setLabStats(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching lab stats:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchRecentOrders = async () => {
+        try {
+            const response = await fetch('/api/lab/recent?limit=10');
+            const result = await response.json();
+            if (result.success) {
+                setRecentOrders(result.data);
+                setFilteredOrders(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching recent orders:', error);
+        }
+    };
+
+    const fetchLabCategories = async () => {
+        try {
+            const response = await fetch('/api/lab/categories');
+            const result = await response.json();
+            if (result.success) {
+                setLabCategories(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching lab categories:', error);
+        }
+    };
+
+    const fetchPatients = async (searchTerm = '') => {
+        try {
+            const url = searchTerm ? 
+                `/api/lab/patients?search=${encodeURIComponent(searchTerm)}&limit=10` : 
+                '/api/lab/patients?limit=10';
+            const response = await fetch(url);
+            const result = await response.json();
+            if (result.success) {
+                setPatients(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching patients:', error);
+        }
+    };
+
+    const handleNewTestOrder = () => {
+        setShowNewOrderModal(true);
+    };
+
+    const handleBulkActions = () => {
+        alert('Bulk actions functionality - to be implemented');
+    };
+
+    const handleSearch = async (term) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
+            const result = await response.json();
+            if (result.success) {
+                setFilteredOrders(result.data);
+            }
+        } catch (error) {
+            console.error('Error searching orders:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleQuickFilter = async (filterType) => {
+        try {
+            setLoading(true);
+            setActiveFilter(filterType);
+            let endpoint = '/api/lab/filter?';
+            
+            switch(filterType) {
+                case 'urgent':
+                    endpoint += 'filter_type=urgent';
+                    break;
+                case 'pending':
+                    endpoint += 'filter_type=pending';
+                    break;
+                case 'completed':
+                    endpoint += 'filter_type=completed';
+                    break;
+                case 'today':
+                    endpoint += 'filter_type=today';
+                    break;
+                default:
+                    // For 'all', just fetch recent orders
+                    const response = await fetch('/api/lab/recent?limit=20');
+                    const result = await response.json();
+                    if (result.success) {
+                        setFilteredOrders(result.data);
+                    }
+                    return;
+            }
+
+            const response = await fetch(endpoint);
+            const result = await response.json();
+            if (result.success) {
+                setFilteredOrders(result.data);
+            }
+        } catch (error) {
+            console.error('Error filtering orders:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewReport = async (orderId) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/lab/report/${orderId}`);
+            const result = await response.json();
+            if (result.success) {
+                setSelectedReport(result.data);
+                setShowReportModal(true);
+            }
+        } catch (error) {
+            console.error('Error fetching report:', error);
+            alert('Error fetching report');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getPriorityColor = (priority) => {
+        switch(priority) {
+            case 'urgent': return 'text-red-600 bg-red-50';
+            case 'high': return 'text-orange-600 bg-orange-50';
+            case 'normal': return 'text-blue-600 bg-blue-50';
+            default: return 'text-gray-600 bg-gray-50';
+        }
+    };
+
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'pending': return 'text-yellow-600 bg-yellow-50';
+            case 'in_progress': return 'text-blue-600 bg-blue-50';
+            case 'completed': return 'text-green-600 bg-green-50';
+            case 'urgent': return 'text-red-600 bg-red-50';
+            default: return 'text-gray-600 bg-gray-50';
+        }
+    };
+
+    // Initialize filters on component mount
+    useEffect(() => {
+        if (recentOrders.length > 0 && filteredOrders.length === 0) {
+            setFilteredOrders(recentOrders);
+        }
+    }, [recentOrders]);
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -11,11 +199,19 @@ const LabratoryTab = () => {
                 <p className="text-muted-foreground">Comprehensive patient lab reports, prescriptions, and clinical decision support.</p>
               </div>
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                  New Test Order
+                <button 
+                  onClick={handleNewTestOrder}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Test Order</span>
                 </button>
-                <button className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors">
-                  Bulk Actions
+                <button 
+                  onClick={handleBulkActions}
+                  className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors flex items-center space-x-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Bulk Actions</span>
                 </button>
               </div>
             </div>
@@ -27,11 +223,11 @@ const LabratoryTab = () => {
                   <h4 className="font-medium text-muted-foreground">Today's Reports</h4>
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 </div>
-                <p className="text-2xl font-bold mb-1">24</p>
+                <p className="text-2xl font-bold mb-1">{loading ? '...' : labStats.today?.total_today || 0}</p>
                 <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-red-600">8 Pending</span>
-                  <span className="text-yellow-600">6 Processing</span>
-                  <span className="text-green-600">10 Done</span>
+                  <span className="text-red-600">{labStats.today?.pending_today || 0} Pending</span>
+                  <span className="text-yellow-600">{labStats.today?.processing_today || 0} Processing</span>
+                  <span className="text-green-600">{labStats.today?.completed_today || 0} Done</span>
                 </div>
               </div>
               
@@ -40,7 +236,7 @@ const LabratoryTab = () => {
                   <h4 className="font-medium text-muted-foreground">Urgent Reports</h4>
                   <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 </div>
-                <p className="text-2xl font-bold mb-1 text-red-600">5</p>
+                <p className="text-2xl font-bold mb-1 text-red-600">{loading ? '...' : labStats.urgent?.urgent_count || 0}</p>
                 <p className="text-sm text-muted-foreground">Require immediate attention</p>
               </div>
 
@@ -49,7 +245,7 @@ const LabratoryTab = () => {
                   <h4 className="font-medium text-muted-foreground">Unreviewed</h4>
                   <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
                 </div>
-                <p className="text-2xl font-bold mb-1 text-orange-600">12</p>
+                <p className="text-2xl font-bold mb-1 text-orange-600">{loading ? '...' : labStats.unreviewed?.unreviewed_count || 0}</p>
                 <p className="text-sm text-muted-foreground">Awaiting doctor review</p>
               </div>
 
@@ -63,24 +259,153 @@ const LabratoryTab = () => {
               </div>
             </div>
 
-            {/* Quick Filters */}
-            <div className="bg-card border border-border rounded-lg p-4">
+            {/* Search and Filter Section */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="relative flex-1 lg:w-80">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search orders, patients, order numbers..."
+                      className="w-full pl-10 pr-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchTerm)}
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSearch(searchTerm)}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center space-x-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowSearchModal(true)}
+                  className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors flex items-center space-x-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Advanced Search</span>
+                </button>
+              </div>
+
+              {/* Quick Filters */}
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground">Quick Filters:</span>
                 {[
-                  { label: 'Urgent', count: 5, color: 'bg-red-100 text-red-800 border-red-200' },
-                  { label: 'Processing', count: 12, color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-                  { label: 'Unreviewed', count: 8, color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                  { label: 'Done Today', count: 15, color: 'bg-green-100 text-green-800 border-green-200' },
-                  { label: 'Critical Values', count: 3, color: 'bg-purple-100 text-purple-800 border-purple-200' }
+                  { key: 'all', label: 'All Orders', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+                  { key: 'urgent', label: `Urgent (${labStats.urgent?.urgent_count || 0})`, color: 'bg-red-100 text-red-800 border-red-200' },
+                  { key: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                  { key: 'today', label: 'Today', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+                  { key: 'completed', label: 'Completed', color: 'bg-green-100 text-green-800 border-green-200' }
                 ].map((filter) => (
                   <button
-                    key={filter.label}
-                    className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors hover:opacity-80 ${filter.color}`}
+                    key={filter.key}
+                    onClick={() => handleQuickFilter(filter.key)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all hover:shadow-sm ${
+                      activeFilter === filter.key ? filter.color + ' ring-2 ring-offset-1 ring-primary' : filter.color
+                    }`}
                   >
-                    {filter.label} ({filter.count})
+                    {filter.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Lab Orders Table */}
+            <div className="bg-card border border-border rounded-lg">
+              <div className="p-4 border-b border-border">
+                <h3 className="text-lg font-semibold">
+                  Lab Orders {activeFilter !== 'all' && `(${activeFilter})`}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {loading ? 'Loading...' : `${filteredOrders.length} orders found${filteredOrders.length > 5 ? ' - scroll to see more' : ''}`}
+                </p>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto scrollbar-thin border-t border-border">
+                <table className="w-full">
+                  <thead className="bg-muted/50 sticky top-0 z-10">
+                    <tr>
+                      <th className="text-left p-4 font-medium">Order #</th>
+                      <th className="text-left p-4 font-medium">Patient</th>
+                      <th className="text-left p-4 font-medium">Priority</th>
+                      <th className="text-left p-4 font-medium">Status</th>
+                      <th className="text-left p-4 font-medium">Tests</th>
+                      <th className="text-left p-4 font-medium">Date</th>
+                      <th className="text-left p-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="text-center p-8">
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            <span>Loading orders...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center p-8 text-muted-foreground">
+                          No lab orders found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((order) => (
+                        <tr key={order.id} className="border-b border-border hover:bg-muted/20">
+                          <td className="p-4">
+                            <div className="font-medium">{order.order_number}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-32">{order.clinical_notes}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-medium">{order.patient_first_name} {order.patient_last_name}</div>
+                            <div className="text-xs text-muted-foreground">{order.patient_unique_id}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(order.priority)}`}>
+                              {order.priority}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                              {order.status.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="p-4">{order.test_count} tests</td>
+                          <td className="p-4">
+                            <div className="text-sm">{new Date(order.order_date).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(order.order_date).toLocaleTimeString()}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleViewReport(order.id)}
+                                className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                title="View Report"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => alert(`Edit order ${order.order_number} - to be implemented`)}
+                                className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                                title="Edit Order"
+                              >
+                                <Clock className="w-4 h-4" />
+                              </button>
+                              {order.priority === 'urgent' && (
+                                <AlertTriangle className="w-4 h-4 text-red-500" title="Urgent" />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -93,64 +418,32 @@ const LabratoryTab = () => {
                     type="text" 
                     placeholder="Search by patient name, ID, or phone..."
                     className="w-full p-3 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={patientSearchTerm}
+                    onChange={(e) => {
+                      setPatientSearchTerm(e.target.value);
+                      fetchPatients(e.target.value);
+                    }}
                   />
                 </div>
                 <div>
-                  <select className="w-full p-3 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option>All Departments</option>
-                    <option>Cardiology</option>
-                    <option>Endocrinology</option>
-                    <option>General Medicine</option>
-                    <option>Nephrology</option>
-                    <option>Hematology</option>
-                  </select>
+                  <span className="block text-sm text-muted-foreground mb-2">Found: {patients.length} patients</span>
+                  <div className="text-xs text-muted-foreground">Search by name, ID, or phone number</div>
                 </div>
                 <div>
-                  <select className="w-full p-3 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option>All Statuses</option>
-                    <option>Urgent</option>
-                    <option>Processing</option>
-                    <option>Unreviewed</option>
-                    <option>Done</option>
-                  </select>
+                  {/* Empty for layout */}
                 </div>
               </div>
               
-              {/* Priority Patients */}
-              <div className="mt-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm text-muted-foreground">PRIORITY PATIENTS</h4>
-                  <span className="text-xs text-red-600 font-medium">5 patients need immediate attention</span>
+              {/* Patient List */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm text-muted-foreground">AVAILABLE PATIENTS</h4>
+                  <span className="text-xs text-blue-600 font-medium">
+                    {patients.length} patients found{patients.length > 3 ? ' - scroll to see more' : ''}
+                  </span>
                 </div>
-                {[
-                  { 
-                    id: 'P001', 
-                    name: 'Alice Wilson', 
-                    age: 34, 
-                    lastVisit: '2024-12-10', 
-                    urgentReports: 2, 
-                    status: 'Critical',
-                    statusColor: 'bg-red-100 text-red-800 border-red-300'
-                  },
-                  { 
-                    id: 'P002', 
-                    name: 'Bob Chen', 
-                    age: 45, 
-                    lastVisit: '2024-12-09', 
-                    urgentReports: 0, 
-                    status: 'Processing',
-                    statusColor: 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                  },
-                  { 
-                    id: 'P003', 
-                    name: 'Carol Davis', 
-                    age: 28, 
-                    lastVisit: '2024-12-08', 
-                    urgentReports: 1, 
-                    status: 'Unreviewed',
-                    statusColor: 'bg-orange-100 text-orange-800 border-orange-300'
-                  },
-                ].map((patient) => (
+                <div className="max-h-80 overflow-y-auto space-y-3 pr-2 scrollbar-thin border border-border rounded-lg p-3 bg-card/50">
+                {patients.map((patient) => (
                   <div 
                     key={patient.id} 
                     className={`flex items-center justify-between p-4 border border-border rounded-lg cursor-pointer transition-all hover:shadow-md ${
@@ -164,30 +457,27 @@ const LabratoryTab = () => {
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <p className="font-semibold">{patient.name}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full border font-medium ${patient.statusColor}`}>
-                            {patient.status}
+                          <p className="font-semibold">{patient.first_name} {patient.last_name}</p>
+                          <span className="text-xs px-2 py-1 rounded-full border font-medium bg-blue-100 text-blue-800 border-blue-300">
+                            Available
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">ID: {patient.id} • Age: {patient.age} • Last Visit: {patient.lastVisit}</p>
+                        <p className="text-sm text-muted-foreground">ID: {patient.unique_id} • {patient.gender} • {patient.phone || 'No phone'}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      {patient.urgentReports > 0 && (
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs font-medium text-red-600">
-                            {patient.urgentReports} Urgent
-                          </span>
-                        </div>
-                      )}
                       <button className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                        View Reports
+                        Select Patient
                       </button>
                     </div>
                   </div>
                 ))}
-              </div>
+                {patients.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No patients found. Try a different search term.</p>
+                  </div>
+                )}
+                </div>
             </div>
 
             {selectedPatient && (
@@ -478,90 +768,6 @@ const LabratoryTab = () => {
                         </div>
                       ))}
                     </div>
-
-                    {/* Report History */}
-                    <div className="mt-8 space-y-4">
-                      <h4 className="text-lg font-semibold">Report History</h4>
-                      <div className="space-y-2">
-                        {[
-                          { date: '2024-11-15', test: 'HbA1c Test', result: '6.5%', status: 'Reviewed' },
-                          { date: '2024-10-20', test: 'Lipid Profile', result: 'Normal', status: 'Reviewed' },
-                          { date: '2024-09-25', test: 'Blood Sugar', result: '160 mg/dL', status: 'Reviewed' },
-                          { date: '2024-08-30', test: 'Complete Blood Count', result: 'Normal', status: 'Reviewed' },
-                        ].map((historyItem, index) => (
-                          <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
-                            <div className="flex items-center space-x-4">
-                              <span className="text-sm text-muted-foreground w-20">{historyItem.date}</span>
-                              <span className="font-medium">{historyItem.test}</span>
-                              <span className="text-sm">{historyItem.result}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                {historyItem.status}
-                              </span>
-                              <button className="text-sm text-primary hover:underline">View</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Prescription Writing */}
-                    <div className="mt-8 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-semibold">Current Prescriptions</h4>
-                        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                          Write New Prescription
-                        </button>
-                      </div>
-                      
-                      <div className="grid gap-4">
-                        {[
-                          {
-                            medication: 'Metformin',
-                            dosage: '500mg twice daily',
-                            prescribed: '2024-11-15',
-                            duration: '3 months',
-                            remaining: '45 days'
-                          },
-                          {
-                            medication: 'Atorvastatin',
-                            dosage: '20mg once daily',
-                            prescribed: '2024-10-20',
-                            duration: '6 months',
-                            remaining: '75 days'
-                          }
-                        ].map((prescription, index) => (
-                          <div key={index} className="border border-border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-lg">{prescription.medication}</h5>
-                              <div className="flex space-x-2">
-                                <button className="px-3 py-1 text-sm border border-border rounded hover:bg-accent">
-                                  Modify
-                                </button>
-                                <button className="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200">
-                                  Discontinue
-                                </button>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
-                              <div>
-                                <span className="font-medium">Dosage:</span> {prescription.dosage}
-                              </div>
-                              <div>
-                                <span className="font-medium">Prescribed:</span> {prescription.prescribed}
-                              </div>
-                              <div>
-                                <span className="font-medium">Duration:</span> {prescription.duration}
-                              </div>
-                              <div>
-                                <span className="font-medium">Remaining:</span> {prescription.remaining}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </>
@@ -573,16 +779,256 @@ const LabratoryTab = () => {
                 <h3 className="text-xl font-medium text-muted-foreground mb-3">Select a Patient to Begin</h3>
                 <p className="text-muted-foreground mb-4">Choose a patient from the priority list above to view their comprehensive lab reports, prescriptions, and clinical data.</p>
                 <div className="flex justify-center space-x-3">
-                  <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                    Search All Patients
+                  <button 
+                    onClick={() => alert('Search patients functionality - to be implemented')}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center space-x-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search All Patients</span>
                   </button>
-                  <button className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors">
-                    Recent Reports
+                  <button 
+                    onClick={fetchRecentOrders}
+                    className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors flex items-center space-x-2"
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Recent Reports</span>
                   </button>
                 </div>
               </div>
             )}
+
+            {/* Simple New Test Order Modal */}
+            {showNewOrderModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-96 max-w-md">
+                  <h3 className="text-lg font-semibold mb-4">New Test Order</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Patient ID</label>
+                      <input 
+                        type="text" 
+                        placeholder="Enter patient ID"
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Clinical Notes</label>
+                      <textarea 
+                        placeholder="Enter clinical notes"
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Priority</label>
+                      <select className="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mt-6">
+                    <button 
+                      onClick={() => {
+                        alert('Order creation functionality - to be implemented');
+                        setShowNewOrderModal(false);
+                      }}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                      Create Order
+                    </button>
+                    <button 
+                      onClick={() => setShowNewOrderModal(false)}
+                      className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Lab Report Viewing Modal */}
+            {showReportModal && selectedReport && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-semibold">Lab Report - {selectedReport.order.order_number}</h3>
+                    <button 
+                      onClick={() => setShowReportModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2">Patient Information</h4>
+                      <p><strong>Name:</strong> {selectedReport.order.patient_first_name} {selectedReport.order.patient_last_name}</p>
+                      <p><strong>Patient ID:</strong> {selectedReport.order.patient_unique_id}</p>
+                      <p><strong>Gender:</strong> {selectedReport.order.patient_gender}</p>
+                      <p><strong>DOB:</strong> {selectedReport.order.patient_dob ? new Date(selectedReport.order.patient_dob).toLocaleDateString() : 'N/A'}</p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold mb-2">Order Information</h4>
+                      <p><strong>Order Date:</strong> {new Date(selectedReport.order.order_date).toLocaleDateString()}</p>
+                      <p><strong>Priority:</strong> <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(selectedReport.order.priority)}`}>{selectedReport.order.priority}</span></p>
+                      <p><strong>Status:</strong> <span className={`px-2 py-1 rounded text-xs ${getStatusColor(selectedReport.order.status)}`}>{selectedReport.order.status}</span></p>
+                      <p><strong>Doctor:</strong> Dr. {selectedReport.order.doctor_first_name} {selectedReport.order.doctor_last_name}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-semibold mb-3">Clinical Notes</h4>
+                    <p className="bg-gray-50 p-3 rounded">{selectedReport.order.clinical_notes || 'No clinical notes provided'}</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-semibold mb-3">Test Results</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border border-gray-200 rounded-lg">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left p-3 border-b">Test Name</th>
+                            <th className="text-left p-3 border-b">Category</th>
+                            <th className="text-left p-3 border-b">Result</th>
+                            <th className="text-left p-3 border-b">Status</th>
+                            <th className="text-left p-3 border-b">Sample Type</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedReport.items.map((item, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="p-3">{item.test_name}</td>
+                              <td className="p-3">{item.category_name}</td>
+                              <td className="p-3">
+                                {item.result_text || item.result_value || 'Pending'}
+                                {item.abnormal_flag && <span className="ml-2 text-red-600 text-xs">[ABNORMAL]</span>}
+                                {item.critical_flag && <span className="ml-2 text-red-800 text-xs font-bold">[CRITICAL]</span>}
+                              </td>
+                              <td className="p-3">
+                                <span className={`px-2 py-1 rounded text-xs ${item.result_status === 'normal' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                  {item.result_status || 'Pending'}
+                                </span>
+                              </td>
+                              <td className="p-3">{item.sample_type}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <button 
+                      onClick={() => alert('Print functionality - to be implemented')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Print Report
+                    </button>
+                    <button 
+                      onClick={() => alert('Download PDF functionality - to be implemented')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Download PDF
+                    </button>
+                    <button 
+                      onClick={() => setShowReportModal(false)}
+                      className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Advanced Search Modal */}
+            {showSearchModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+                  <h3 className="text-lg font-semibold mb-4">Advanced Search</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Patient Name</label>
+                      <input 
+                        type="text" 
+                        placeholder="Enter patient name"
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Order Number</label>
+                      <input 
+                        type="text" 
+                        placeholder="Enter order number"
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select className="w-full p-2 border border-gray-300 rounded-md">
+                          <option value="">All Statuses</option>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Priority</label>
+                        <select className="w-full p-2 border border-gray-300 rounded-md">
+                          <option value="">All Priorities</option>
+                          <option value="normal">Normal</option>
+                          <option value="high">High</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date From</label>
+                        <input 
+                          type="date" 
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date To</label>
+                        <input 
+                          type="date" 
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 mt-6">
+                    <button 
+                      onClick={() => {
+                        alert('Advanced search functionality - to be implemented');
+                        setShowSearchModal(false);
+                      }}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                      Search
+                    </button>
+                    <button 
+                      onClick={() => setShowSearchModal(false)}
+                      className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
     );
 };
+
 export default LabratoryTab;

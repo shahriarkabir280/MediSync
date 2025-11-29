@@ -12,6 +12,7 @@ import patientRoutes from './routes/patientRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
+import labRoutes from './routes/labRoutes.js';
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
 
@@ -89,6 +90,9 @@ app.use('/api/billing', billingRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
+
+// Laboratory routes
+app.use('/api/lab', labRoutes);
 
 // Database initialization
 async function initDB() {
