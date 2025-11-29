@@ -4,6 +4,7 @@ import {
   getPatientById,
   createPatient,
   updatePatient,
+  deletePatient,
   getPatientMedicalHistory,
   addMedicalRecord
 } from '../controllers/patientController.js';
@@ -15,6 +16,7 @@ router.get('/doctor/:doctorId', getPatients);
 router.get('/:patientId', getPatientById);
 router.post('/', createPatient);
 router.put('/:patientId', updatePatient);
+router.delete('/:patientId', deletePatient);
 
 // Medical records routes
 router.get('/:patientId/medical-history', getPatientMedicalHistory);

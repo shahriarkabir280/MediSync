@@ -244,3 +244,33 @@ export const getAppointmentById = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch appointment' });
   }
 };
+
+// Get appointments by patient
+export const getAppointmentsByPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const appointments = await sql`
+      SELECT 
+        a.id,
+        a.appointment_date,
+        a.appointment_time,
+        a.status,
+        a.appointment_type,
+        a.notes,
+        a.created_at,
+        d.first_name as doctor_first_name,
+        d.last_name as doctor_last_name,
+        d.unique_id as doctor_unique_id
+      FROM appointments a
+      JOIN doctors d ON a.doctor_id = d.id
+      WHERE a.patient_id = ${patientId}
+      ORDER BY a.appointment_date DESC, a.appointment_time DESC
+    `;
+
+    res.json({ success: true, data: appointments });
+  } catch (error) {
+    console.error('Error fetching patient appointments:', error);
+    res.status(500).json({ error: 'Failed to fetch patient appointments' });
+  }
+};

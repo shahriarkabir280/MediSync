@@ -285,6 +285,35 @@ export const getPatientMedicalHistory = async (req, res) => {
   }
 };
 
+// Delete patient
+export const deletePatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Check if patient exists
+    const patient = await sql`
+      SELECT id FROM patients WHERE id = ${patientId}
+    `;
+
+    if (patient.length === 0) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    // Delete patient (CASCADE will handle related records)
+    await sql`
+      DELETE FROM patients WHERE id = ${patientId}
+    `;
+
+    res.json({
+      success: true,
+      message: 'Patient deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting patient:', error);
+    res.status(500).json({ error: 'Failed to delete patient' });
+  }
+};
+
 // Add medical record for patient
 export const addMedicalRecord = async (req, res) => {
   try {

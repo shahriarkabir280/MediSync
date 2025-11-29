@@ -11,6 +11,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
+import fileRoutes from './routes/fileRoutes.js';
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
 
@@ -25,6 +26,9 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 //apply arcjet rate limiting to all routes - DISABLED FOR DEVELOPMENT
 /*
@@ -82,6 +86,9 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/billing', billingRoutes);
+
+// File upload routes
+app.use('/api', fileRoutes);
 
 // Database initialization
 async function initDB() {
@@ -169,10 +176,15 @@ async function initDB() {
         id SERIAL PRIMARY KEY,
         patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
         doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        diagnosis TEXT NOT NULL,
+        diagnosis TEXT,
         prescription TEXT,
         notes TEXT,
         lab_results TEXT,
+        file_name VARCHAR(255),
+        file_path VARCHAR(500),
+        file_type VARCHAR(50),
+        file_size INTEGER,
+        original_name VARCHAR(255),
         record_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -67,6 +67,11 @@ export const appointmentApi = {
     return handleResponse(response);
   },
   
+  getByPatient: async (patientId) => {
+    const response = await fetch(`${API_BASE_URL}/appointments/patient/${patientId}`);
+    return handleResponse(response);
+  },
+  
   create: async (doctorId, appointmentData) => {
     const response = await fetch(`${API_BASE_URL}/appointments/doctor/${doctorId}`, {
       method: 'POST',
@@ -121,6 +126,13 @@ export const patientApi = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patientData),
+    });
+    return handleResponse(response);
+  },
+  
+  delete: async (patientId) => {
+    const response = await fetch(`${API_BASE_URL}/patients/${patientId}`, {
+      method: 'DELETE',
     });
     return handleResponse(response);
   },
