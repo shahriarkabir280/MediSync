@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { analyticsApi, doctorApi } from "../../lib/api";
+import { useDoctor } from "../../hooks/useDoctor";
 
 const AnalyticsTab = () => {
+    const { doctorId } = useDoctor();
     const [appointmentAnalytics, setAppointmentAnalytics] = useState(null);
     const [patientAnalytics, setPatientAnalytics] = useState(null);
     const [revenueAnalytics, setRevenueAnalytics] = useState(null);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    // TODO: Get this from auth context
-    const doctorId = 1;
 
     useEffect(() => {
-        fetchAnalytics();
-    }, []);
+        if (doctorId) {
+            fetchAnalytics();
+        }
+    }, [doctorId]);
 
     const fetchAnalytics = async () => {
+        if (!doctorId) return;
         try {
             setLoading(true);
             const [appointmentData, patientData, revenueData, statsData] = await Promise.all([

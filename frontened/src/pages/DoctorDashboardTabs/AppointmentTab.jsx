@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { appointmentApi, doctorApi, patientApi } from "../../lib/api";
+import { useDoctor } from "../../hooks/useDoctor";
 
 const AppointmentTab = () => {
+    const { doctorId } = useDoctor();
     const [appointments, setAppointments] = useState([]);
     const [allAppointments, setAllAppointments] = useState([]);
     const [patients, setPatients] = useState([]);
@@ -32,8 +34,8 @@ const AppointmentTab = () => {
         notes: ''
     });
     
-    // TODO: Get this from auth context
-    const doctorId = 1;
+    // Doctor ID from authentication context
+    // Now using authenticated doctor ID instead of hardcoded value
 
     // Memoized filtered and sorted appointments to prevent unnecessary re-renders
     const filteredAppointments = useMemo(() => {
@@ -278,9 +280,11 @@ const AppointmentTab = () => {
     }, [settings]);
 
     useEffect(() => {
-        fetchData();
-        fetchPatients();
-    }, [fetchData, fetchPatients]);
+        if (doctorId) {
+            fetchData();
+            fetchPatients();
+        }
+    }, [fetchData, fetchPatients, doctorId]);
 
     const formatTime = (timeString) => {
         if (!timeString) return '';

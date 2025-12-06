@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Settings, User, Bell, Shield, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 
 // Import tab components
@@ -24,6 +25,13 @@ import AnalyticsTab from './DoctorDashboardTabs/AnalyticsTab';
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      await logout();
+    }
+  };
 
   const tabs = [
     
@@ -108,7 +116,7 @@ const DoctorDashboard = () => {
         </div>
         
         <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -116,7 +124,7 @@ const DoctorDashboard = () => {
                   <button
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center ${
-                      isCollapsed ? 'justify-center p-3' : 'space-x-3 px-3 py-2'
+                      isCollapsed ? 'justify-center p-2' : 'space-x-3 px-3 py-1.5'
                     } rounded-lg text-left transition-colors ${
                       activeTab === tab.id
                         ? 'bg-primary text-primary-foreground'
@@ -136,6 +144,54 @@ const DoctorDashboard = () => {
 
       {/* Right Content Area */}
       <div className="flex-1 overflow-auto">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Welcome, Dr. {user?.name || 'Doctor'}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {user?.specialization || 'Medical Professional'} • {user?.email}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              {/* Debug: Log user data */}
+              {console.log('DoctorDashboard user data:', user)}
+              
+              <div className="relative">
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt="Profile"
+                    className="h-10 w-10 rounded-full object-cover"
+                    onError={(e) => {
+                      console.error('Profile image failed to load:', user.profileImage);
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                {/* Fallback avatar */}
+                <div 
+                  className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium"
+                  style={{ display: user?.profileImage ? 'none' : 'flex' }}
+                >
+                  {user?.name?.charAt(0) || 'D'}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <div className="p-8">
           {renderContent()}
         </div>

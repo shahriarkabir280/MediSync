@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { billingApi } from "../../lib/api";
+import { useDoctor } from "../../hooks/useDoctor";
 
 const BillingTab = () => {
+    const { doctorId } = useDoctor();
     const [billingRecords, setBillingRecords] = useState([]);
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all');
-    
-    // TODO: Get this from auth context
-    const doctorId = 1;
 
     useEffect(() => {
-        fetchBillingData();
-    }, [filter]);
+        if (doctorId) {
+            fetchBillingData();
+        }
+    }, [filter, doctorId]);
 
     const fetchBillingData = async () => {
+        if (!doctorId) return;
         try {
             setLoading(true);
             const params = filter !== 'all' ? { status: filter } : {};

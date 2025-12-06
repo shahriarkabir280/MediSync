@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { User } from "lucide-react";
 import { doctorApi } from "../../lib/api";
+import { useDoctor } from "../../hooks/useDoctor";
+import { getImageUrl } from "../../config/api";
 
 const ProfileTab = () => {
+    const { doctorId } = useDoctor();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
-    
-    // TODO: Get this from auth context
-    const doctorId = 1;
 
     useEffect(() => {
-        fetchProfile();
-    }, []);
+        if (doctorId) {
+            fetchProfile();
+        }
+    }, [doctorId]);
 
     const fetchProfile = async () => {
+        if (!doctorId) return;
         try {
             setLoading(true);
             const data = await doctorApi.getProfile(doctorId);
@@ -89,10 +92,20 @@ const ProfileTab = () => {
               <div className="flex items-center space-x-4 mb-6">
                 <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
                   {profile?.profile_image_url ? (
-                    <img src={profile.profile_image_url} alt="Profile" className="w-20 h-20 rounded-full" />
-                  ) : (
-                    <User className="w-10 h-10 text-primary-foreground" />
-                  )}
+                    <img 
+                      src={getImageUrl(profile.profile_image_url)} 
+                      alt="Profile" 
+                      className="w-20 h-20 rounded-full object-cover"
+                      onError={(e) => {
+                        console.error('ProfileTab: Image failed to load:', profile.profile_image_url);
+                        e.target.style.display = 'none';
+                        e.target.parentElement.querySelector('.fallback-icon').style.display = 'block';
+                      }}
+                    />
+                  ) : null}
+                  <User 
+                    className={`w-10 h-10 text-primary-foreground fallback-icon ${profile?.profile_image_url ? 'hidden' : 'block'}`} 
+                  />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">

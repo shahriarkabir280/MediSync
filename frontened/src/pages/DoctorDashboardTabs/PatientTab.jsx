@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { patientApi, appointmentApi } from "../../lib/api";
+import { useDoctor } from "../../hooks/useDoctor";
 import { User, Phone, Mail, Calendar, Heart, AlertCircle, Plus, Edit2, Edit, Eye, X, Save, FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle } from "lucide-react";
 
 const PatientTab = () => {
+    const { doctorId } = useDoctor();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -56,25 +58,12 @@ const PatientTab = () => {
         allergies: ''
     });
     
-    // TODO: Get this from auth context
-    const doctorId = 1;
-
-    // Memoized filtered patients
-    const filteredPatients = useMemo(() => {
-        if (!searchTerm) return patients;
-        return patients.filter(patient => 
-            `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (patient.unique_id && patient.unique_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (patient.phone && patient.phone.includes(searchTerm))
-        );
-    }, [patients, searchTerm]);
-
     useEffect(() => {
         fetchPatients();
-    }, []);
+    }, [doctorId]);
 
     const fetchPatients = useCallback(async () => {
+        if (!doctorId) return;
         try {
             setLoading(true);
             const data = await patientApi.getAll(doctorId);
@@ -87,6 +76,17 @@ const PatientTab = () => {
             setLoading(false);
         }
     }, [doctorId]);
+
+    // Memoized filtered patients
+    const filteredPatients = useMemo(() => {
+        if (!searchTerm) return patients;
+        return patients.filter(patient => 
+            `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (patient.unique_id && patient.unique_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (patient.phone && patient.phone.includes(searchTerm))
+        );
+    }, [patients, searchTerm]);
 
     const resetPatientForm = useCallback(() => {
         setPatientForm({
@@ -139,7 +139,7 @@ const PatientTab = () => {
             formData.append('fileName', file.name);
 
             // Upload file (you'll need to implement this API endpoint)
-            const response = await fetch(`http://localhost:5000/api/patients/${selectedPatient.id}/files`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/patients/${selectedPatient.id}/files`, {
                 method: 'POST',
                 body: formData,
             });
@@ -1125,7 +1125,7 @@ const PatientTab = () => {
                                                                         </span>
                                                                         {record.file_path && (
                                                                             <button
-                                                                                onClick={() => window.open(`http://localhost:5000/api/files/${record.file_name}`, '_blank')}
+                                                                                onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
                                                                                 className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 transition-colors"
                                                                                 title="View File"
                                                                             >
@@ -1270,7 +1270,7 @@ const PatientTab = () => {
                                                                             </span>
                                                                             {record.file_path && (
                                                                                 <button
-                                                                                    onClick={() => window.open(`http://localhost:5000/api/files/${record.file_name}`, '_blank')}
+                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
                                                                                     className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 transition-colors"
                                                                                     title="View Prescription PDF"
                                                                                 >
