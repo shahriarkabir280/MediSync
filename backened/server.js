@@ -4,6 +4,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { sql } from './config/db.js'; // Import the database connection
 import productRoutes from './routes/productRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
@@ -13,18 +16,46 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
 import labRoutes from './routes/labRoutes.js';
+import websiteRoutes from './routes/websiteRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import { initWebsiteTables } from './sampleData/websiteTables.js';
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
 
 dotenv.config();// Load environment variables from .env file
 
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 5000; // Default to port 3000 if not specified in .env 
+const PORT = process.env.PORT || 3000; // Default to port 3000 if not specified in .env 
 
 
 // Middleware setup
-app.use(express.json());
-app.use(cors());
+app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve uploaded files statically with absolute path
+const uploadsPath = path.join(__dirname, '../uploads');
+console.log('📁 Serving uploads from:', uploadsPath);
+console.log('📁 Uploads directory exists:', fs.existsSync(uploadsPath));
+app.use('/uploads', express.static(uploadsPath));
+
+// Configure CORS to allow frontend requests
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174', 
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(helmet());
 app.use(morgan('dev'));
 
@@ -94,6 +125,14 @@ app.use('/api', fileRoutes);
 // Laboratory routes
 app.use('/api/lab', labRoutes);
 
+// Website/Profile routes
+console.log('Loading website routes...');
+console.log('websiteRoutes:', typeof websiteRoutes);
+app.use('/api/website', websiteRoutes);
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
+
 // Database initialization
 async function initDB() {
   try {
@@ -114,6 +153,7 @@ async function initDB() {
         first_name VARCHAR(100) NOT NULL,
         last_name VARCHAR(100) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255),
         phone VARCHAR(20),
         specialization VARCHAR(100),
         license_number VARCHAR(50),
@@ -217,6 +257,10 @@ async function initDB() {
     await sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`;
+
+    // Initialize website-related tables
+    console.log('Initializing website tables...');
+    await initWebsiteTables();
 
     console.log('Database initialized successfully');
   } catch (error) {
