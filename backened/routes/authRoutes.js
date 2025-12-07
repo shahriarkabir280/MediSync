@@ -171,4 +171,161 @@ router.post('/logout', (req, res) => {
   });
 });
 
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.doctorId = decoded.doctorId;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+};
+
+// Change password endpoint
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const doctorId = req.doctorId;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    // Get current doctor data
+    const doctors = await sql`
+      SELECT password_hash FROM doctors WHERE id = ${doctorId}
+    `;
+
+    if (doctors.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+
+    const doctor = doctors[0];
+    
+    // Verify current password
+    let isValidPassword = false;
+    if (doctor.password_hash) {
+      isValidPassword = await bcrypt.compare(currentPassword, doctor.password_hash);
+    } else {
+      // Demo: Allow 'password123' for current password if no hash exists
+      isValidPassword = currentPassword === 'password123';
+    }
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    await sql`
+      UPDATE doctors 
+      SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${doctorId}
+    `;
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Enable 2FA endpoint
+router.post('/enable-2fa', authenticateToken, async (req, res) => {
+  try {
+    const doctorId = req.doctorId;
+
+    // Generate backup codes
+    const backupCodes = [];
+    for (let i = 0; i < 10; i++) {
+      backupCodes.push(Math.random().toString(36).substring(2, 8).toUpperCase());
+    }
+
+    // Update doctor settings to enable 2FA
+    await sql`
+      UPDATE doctors 
+      SET 
+        two_factor_enabled = true,
+        backup_codes = ${JSON.stringify(backupCodes)},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${doctorId}
+    `;
+
+    res.json({
+      success: true,
+      message: '2FA enabled successfully',
+      backupCodes
+    });
+
+  } catch (error) {
+    console.error('Enable 2FA error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Disable 2FA endpoint
+router.delete('/disable-2fa', authenticateToken, async (req, res) => {
+  try {
+    const doctorId = req.doctorId;
+
+    // Update doctor settings to disable 2FA
+    await sql`
+      UPDATE doctors 
+      SET 
+        two_factor_enabled = false,
+        backup_codes = null,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${doctorId}
+    `;
+
+    res.json({
+      success: true,
+      message: '2FA disabled successfully'
+    });
+
+  } catch (error) {
+    console.error('Disable 2FA error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 export default router;

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Settings, User, Bell, Shield, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 
 // Import tab components
 import BlogsTab from '../pages/DoctorDashboardTabs/BlogsTab';
@@ -15,7 +15,6 @@ import Chattab from './DoctorDashboardTabs/ChatTab';
 import EmailTab from './DoctorDashboardTabs/EmailTab';
 import CalendarTab from './DoctorDashboardTabs/CalendarTab';
 import NotificationTab from './DoctorDashboardTabs/NotificationTab';
-import SecurityTab from './DoctorDashboardTabs/SecurityTab';
 import BillingTab from './DoctorDashboardTabs/BillingTab';
 import HelpTab from './DoctorDashboardTabs/HelpTab';
 import LogoutTab from './DoctorDashboardTabs/LogoutTab';
@@ -48,7 +47,6 @@ const DoctorDashboard = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'website', label: 'Edit Public Website', icon: Globe },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'security', label: 'Security', icon: Shield },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
     { id: 'logout', label: 'Logout', icon: LogOut },
   ];
@@ -79,9 +77,7 @@ const DoctorDashboard = () => {
       case 'analytics':
         return <AnalyticsTab/>;
       case 'notifications':
-        return <NotificationTab/>;
-      case 'security':
-        return <SecurityTab/>;     
+        return <NotificationTab/>;   
       case 'billing':
         return <BillingTab/>;    
       case 'help':

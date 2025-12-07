@@ -29,7 +29,10 @@ export const API_URLS = {
     LOGIN: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/login'),
     REGISTER: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/register'),
     VERIFY: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/verify'),
-    LOGOUT: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/logout')
+    LOGOUT: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/logout'),
+    CHANGE_PASSWORD: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/change-password'),
+    ENABLE_2FA: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/enable-2fa'),
+    DISABLE_2FA: buildApiUrl(API_CONFIG.ENDPOINTS.AUTH, '/disable-2fa')
   },
   WEBSITE: {
     PROFILE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/profile/${doctorId}`),
@@ -89,13 +92,20 @@ export const API_URLS = {
   DOCTORS: {
     PROFILE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}`),
     SETTINGS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/settings`),
-    STATS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/stats`)
+    STATS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/stats`),
+    DELETE_ACCOUNT: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/delete-account')
   },
   PATIENTS: {
     BY_DOCTOR: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.PATIENTS, `/doctor/${doctorId}`)
   },
   APPOINTMENTS: {
     BY_DOCTOR: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.APPOINTMENTS, `/doctor/${doctorId}`)
+  },
+  BILLING: {
+    SETTINGS: buildApiUrl('/api/billing', '/settings'),
+    PAYMENT_METHODS: buildApiUrl('/api/billing', '/payment-methods'),
+    ADD_PAYMENT_METHOD: buildApiUrl('/api/billing', '/payment-methods'),
+    DELETE_PAYMENT_METHOD: (methodId) => buildApiUrl('/api/billing', `/payment-methods/${methodId}`)
   }
 };
 

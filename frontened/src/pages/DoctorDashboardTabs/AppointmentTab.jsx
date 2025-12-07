@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { appointmentApi, doctorApi, patientApi } from "../../lib/api";
-import { useDoctor } from "../../hooks/useDoctor";
+import { useAuth } from "../../contexts/AuthContext";
+import { API_URLS } from "../../config/api";
 
 const AppointmentTab = () => {
-    const { doctorId } = useDoctor();
+    const { user } = useAuth();
+    const doctorId = user?.id;
     const [appointments, setAppointments] = useState([]);
     const [allAppointments, setAllAppointments] = useState([]);
     const [patients, setPatients] = useState([]);
@@ -17,6 +18,8 @@ const AppointmentTab = () => {
     const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
     const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false);
     const [editingAppointment, setEditingAppointment] = useState(null);
+    
+    // Settings states
     const [settingsEditing, setSettingsEditing] = useState(false);
     const [tempSettings, setTempSettings] = useState(null);
     
@@ -91,16 +94,39 @@ const AppointmentTab = () => {
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const [allAppointmentsData, statsData, settingsData] = await Promise.all([
-                appointmentApi.getAll(doctorId),
-                doctorApi.getStats(doctorId),
-                doctorApi.getSettings(doctorId)
+            const token = localStorage.getItem('authToken');
+            
+            if (!doctorId || !token) {
+                throw new Error('Authentication required');
+            }
+            
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+            
+            const [appointmentsResponse, statsResponse, settingsResponse] = await Promise.all([
+                fetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), { headers }),
+                fetch(API_URLS.DOCTORS.STATS(doctorId), { headers }),
+                fetch(API_URLS.DOCTORS.SETTINGS(doctorId), { headers })
             ]);
             
-            setAllAppointments(allAppointmentsData.data || []);
-            setStats(statsData.data);
-            setSettings(settingsData.data);
-            setTempSettings(settingsData.data);
+            const appointmentsData = appointmentsResponse.ok ? await appointmentsResponse.json() : { data: [] };
+            const statsData = statsResponse.ok ? await statsResponse.json() : { data: null };
+            const settingsData = settingsResponse.ok ? await settingsResponse.json() : { 
+                data: {
+                    default_appointment_duration: 30,
+                    working_hours_start: '09:00',
+                    working_hours_end: '17:00',
+                    consultation_fee: 0,
+                    accept_new_patients: true
+                }
+            };
+            
+            setAllAppointments(appointmentsData.data || appointmentsData || []);
+            setStats(statsData.data || statsData);
+            setSettings(settingsData.data || settingsData);
+            setTempSettings(settingsData.data || settingsData);
             setError(null);
         } catch (err) {
             setError(err.message);
@@ -112,8 +138,20 @@ const AppointmentTab = () => {
 
     const fetchPatients = useCallback(async () => {
         try {
-            const patientsData = await patientApi.getAll(doctorId);
-            setPatients(patientsData.data || []);
+            const token = localStorage.getItem('authToken');
+            if (!doctorId || !token) return;
+            
+            const response = await fetch(API_URLS.PATIENTS.BY_DOCTOR(doctorId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const patientsData = await response.json();
+                setPatients(patientsData.data || patientsData || []);
+            }
         } catch (err) {
             console.error('Error fetching patients:', err);
         }
@@ -133,12 +171,30 @@ const AppointmentTab = () => {
         e.preventDefault();
         console.log('Submitting new appointment:', appointmentForm);
         try {
-            const result = await appointmentApi.create(doctorId, appointmentForm);
+            const token = localStorage.getItem('authToken');
+            if (!doctorId || !token) {
+                throw new Error('Authentication required');
+            }
+            
+            const response = await fetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ...appointmentForm, doctor_id: doctorId })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to create appointment');
+            }
+            
+            const result = await response.json();
             console.log('Appointment created successfully:', result);
             
             // Add new appointment to local state instead of full reload
             const newAppointment = {
-                ...result.data,
+                ...(result.data || result),
                 patient_first_name: patients.find(p => p.id == appointmentForm.patient_id)?.first_name || '',
                 patient_last_name: patients.find(p => p.id == appointmentForm.patient_id)?.last_name || '',
                 patient_unique_id: patients.find(p => p.id == appointmentForm.patient_id)?.unique_id || '',
@@ -158,7 +214,25 @@ const AppointmentTab = () => {
     const handleEditAppointment = useCallback(async (e) => {
         e.preventDefault();
         try {
-            const result = await appointmentApi.update(editingAppointment.id, appointmentForm);
+            const token = localStorage.getItem('authToken');
+            if (!editingAppointment || !token) {
+                throw new Error('Authentication required');
+            }
+            
+            const response = await fetch(`http://localhost:3001/api/appointments/${editingAppointment.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(appointmentForm)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update appointment');
+            }
+            
+            const result = await response.json();
             
             // Update appointment in local state instead of full reload
             setAllAppointments(prev => 
@@ -187,7 +261,23 @@ const AppointmentTab = () => {
     const handleCancelAppointment = useCallback(async (appointmentId) => {
         if (window.confirm('Are you sure you want to cancel this appointment?')) {
             try {
-                await appointmentApi.cancel(appointmentId);
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('Authentication required');
+                }
+                
+                const response = await fetch(`http://localhost:3001/api/appointments/${appointmentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'cancelled' })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to cancel appointment');
+                }
                 
                 // Update appointment status in local state instead of full reload
                 setAllAppointments(prev => 
@@ -205,7 +295,23 @@ const AppointmentTab = () => {
 
     const handleStatusChange = useCallback(async (appointmentId, newStatus) => {
         try {
-            await appointmentApi.update(appointmentId, { status: newStatus });
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('Authentication required');
+            }
+            
+            const response = await fetch(`http://localhost:3001/api/appointments/${appointmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update appointment status');
+            }
             
             // Update appointment status in local state instead of full reload
             setAllAppointments(prev => 
@@ -259,16 +365,34 @@ const AppointmentTab = () => {
             );
         }
         
+        
         return actions;
     }, [handleStatusChange]);
 
     const handleSaveSettings = useCallback(async () => {
         try {
-            const result = await doctorApi.updateSettings(doctorId, tempSettings);
+            const token = localStorage.getItem('authToken');
+            if (!doctorId || !token) {
+                throw new Error('Authentication required');
+            }
             
-            // Update settings in local state instead of full reload
+            const response = await fetch(API_URLS.DOCTORS.SETTINGS(doctorId), {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(tempSettings)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update settings');
+            }
+            
+            const result = await response.json();
             setSettings(result.data || tempSettings);
             setSettingsEditing(false);
+            setError(null);
         } catch (err) {
             setError(err.message);
         }

@@ -18,7 +18,8 @@ import fileRoutes from './routes/fileRoutes.js';
 import labRoutes from './routes/labRoutes.js';
 import websiteRoutes from './routes/websiteRoutes.js';
 import authRoutes from './routes/authRoutes.js';
-import { initWebsiteTables } from './sampleData/websiteTables.js';
+import helpRoutes from './routes/helpRoutes.js';
+// import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
 
@@ -133,6 +134,9 @@ app.use('/api/website', websiteRoutes);
 // Authentication routes
 app.use('/api/auth', authRoutes);
 
+// Help & Support routes
+app.use('/api/help', helpRoutes);
+
 // Database initialization
 async function initDB() {
   try {
@@ -160,6 +164,8 @@ async function initDB() {
         years_of_experience INTEGER,
         bio TEXT,
         profile_image_url VARCHAR(500),
+        two_factor_enabled BOOLEAN DEFAULT false,
+        backup_codes JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
@@ -174,6 +180,9 @@ async function initDB() {
         working_hours_end TIME DEFAULT '17:00',
         consultation_fee DECIMAL(10, 2) DEFAULT 0,
         accept_new_patients BOOLEAN DEFAULT true,
+        notification_settings JSONB,
+        billing_settings JSONB,
+        payment_methods JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(doctor_id)
@@ -258,9 +267,9 @@ async function initDB() {
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`;
 
-    // Initialize website-related tables
-    console.log('Initializing website tables...');
-    await initWebsiteTables();
+    // Initialize website-related tables - DISABLED to prevent auto-adding data
+    // console.log('Initializing website tables...');
+    // await initWebsiteTables();
 
     console.log('Database initialized successfully');
   } catch (error) {
