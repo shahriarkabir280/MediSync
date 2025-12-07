@@ -92,6 +92,10 @@ export const API_URLS = {
   DOCTORS: {
     PROFILE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}`),
     SETTINGS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/settings`),
+    SETTINGS_AUTH: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/settings'),
+    NOTIFICATIONS: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/settings/notifications'),
+    NOTIFICATION_PREFERENCES: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/settings/notification-preferences'),
+    TEST_NOTIFICATION: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/settings/test-notification'),
     STATS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/stats`),
     DELETE_ACCOUNT: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/delete-account')
   },

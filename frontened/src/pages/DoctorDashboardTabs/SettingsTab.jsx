@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URLS } from '../../config/api';
-import { Bell, Shield, CreditCard, Settings } from 'lucide-react';
+import { Bell, Shield, CreditCard, Settings, Calendar, MessageCircle, Mail, Users, AlertCircle } from 'lucide-react';
 
 const SettingsTab = () => {
   const { user, logout } = useAuth();
@@ -10,16 +10,53 @@ const SettingsTab = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  // Notification Settings State
+  // Notification Settings State - Enhanced to match NotificationTab
   const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    appointmentReminders: true,
-    newPatientAlerts: true,
-    billingAlerts: true,
-    marketingEmails: false,
-    smsNotifications: true,
-    pushNotifications: true,
-    weeklyReports: true
+    // Category-based settings
+    appointments: {
+      email: true,
+      push: true,
+      sms: false,
+      enabled: true
+    },
+    billing: {
+      email: true,
+      push: true,
+      sms: true,
+      enabled: true
+    },
+    chat: {
+      email: false,
+      push: true,
+      sms: false,
+      enabled: true
+    },
+    email: {
+      email: true,
+      push: false,
+      sms: false,
+      enabled: true
+    },
+    patients: {
+      email: true,
+      push: true,
+      sms: false,
+      enabled: true
+    },
+    system: {
+      email: true,
+      push: true,
+      sms: false,
+      enabled: true
+    },
+    // Global settings
+    globalMute: false,
+    quietHours: {
+      enabled: false,
+      startTime: '22:00',
+      endTime: '08:00'
+    },
+    frequency: 'immediate' // immediate, hourly, daily
   });
 
   // Account Settings State
@@ -62,7 +99,7 @@ const SettingsTab = () => {
       
       // Load notification settings
       try {
-        const notifyResponse = await fetch(`${API_URLS.DOCTORS.SETTINGS}/notifications`, {
+        const notifyResponse = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -72,6 +109,20 @@ const SettingsTab = () => {
         }
       } catch (notifyError) {
         console.log('Notification settings not available yet:', notifyError.message);
+      }
+
+      // Load general settings
+      try {
+        const generalResponse = await fetch(API_URLS.DOCTORS.SETTINGS_AUTH, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (generalResponse.ok) {
+          const generalData = await generalResponse.json();
+          // Handle general settings if needed
+        }
+      } catch (generalError) {
+        console.log('General settings not available yet:', generalError.message);
       }
 
       // Load billing settings
@@ -112,7 +163,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
       
-      const response = await fetch(`${API_URLS.DOCTORS.SETTINGS}/notifications`, {
+      const response = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,6 +182,30 @@ const SettingsTab = () => {
       console.error('Update notification settings error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testNotification = async (type, method) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await fetch(API_URLS.DOCTORS.TEST_NOTIFICATION, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type, method })
+      });
+
+      if (response.ok) {
+        showSuccessMessage(`Test ${method} notification sent successfully`);
+      } else {
+        throw new Error('Failed to send test notification');
+      }
+    } catch (error) {
+      showErrorMessage('Failed to send test notification');
+      console.error('Test notification error:', error);
     }
   };
 
@@ -347,104 +422,466 @@ const SettingsTab = () => {
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Notification Preferences</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Notification Settings</h2>
+                <div className="flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-gray-400" />
+                  <span className="text-sm text-gray-600">Manage how you receive notifications</span>
+                </div>
+              </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Email Notifications</h4>
-                    <p className="text-sm text-gray-600">Receive notifications via email</p>
+              {/* Global Controls */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800">Global Notification Control</h4>
+                      <p className="text-sm text-yellow-700">Temporarily mute all notifications</p>
+                    </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={notificationSettings.emailNotifications}
+                      checked={notificationSettings.globalMute}
                       onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, emailNotifications: e.target.checked
+                        ...prev, globalMute: e.target.checked
                       }))}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
                   </label>
+                </div>
+              </div>
+
+              {/* Notification Categories */}
+              <div className="grid gap-4">
+                {/* Appointments */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <h4 className="font-medium">Appointments</h4>
+                        <p className="text-sm text-gray-600">New appointments, changes, reminders</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.appointments.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev, 
+                          appointments: { ...prev.appointments, enabled: e.target.checked }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  {notificationSettings.appointments.enabled && (
+                    <div className="grid grid-cols-3 gap-4 ml-8">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.appointments.email}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            appointments: { ...prev.appointments, email: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Email</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.appointments.push}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            appointments: { ...prev.appointments, push: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Push</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.appointments.sms}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            appointments: { ...prev.appointments, sms: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">SMS</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Appointment Reminders</h4>
-                    <p className="text-sm text-gray-600">Get reminded about upcoming appointments</p>
+                {/* Billing */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-5 w-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium">Billing & Payments</h4>
+                        <p className="text-sm text-gray-600">Payment alerts, invoice updates</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.billing.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev, 
+                          billing: { ...prev.billing, enabled: e.target.checked }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notificationSettings.appointmentReminders}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, appointmentReminders: e.target.checked
-                      }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
+                  {notificationSettings.billing.enabled && (
+                    <div className="grid grid-cols-3 gap-4 ml-8">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.billing.email}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            billing: { ...prev.billing, email: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Email</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.billing.push}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            billing: { ...prev.billing, push: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Push</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.billing.sms}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            billing: { ...prev.billing, sms: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">SMS</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium">New Patient Alerts</h4>
-                    <p className="text-sm text-gray-600">Notifications when new patients register</p>
+                {/* Chat/Messages */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <h4 className="font-medium">Messages & Chat</h4>
+                        <p className="text-sm text-gray-600">New messages from colleagues and patients</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.chat.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev, 
+                          chat: { ...prev.chat, enabled: e.target.checked }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notificationSettings.newPatientAlerts}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, newPatientAlerts: e.target.checked
-                      }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
+                  {notificationSettings.chat.enabled && (
+                    <div className="grid grid-cols-3 gap-4 ml-8">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.chat.email}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            chat: { ...prev.chat, email: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Email</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.chat.push}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            chat: { ...prev.chat, push: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Push</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.chat.sms}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            chat: { ...prev.chat, sms: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">SMS</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Billing Alerts</h4>
-                    <p className="text-sm text-gray-600">Payment and invoice notifications</p>
+                {/* Patients */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <h4 className="font-medium">Patient Updates</h4>
+                        <p className="text-sm text-gray-600">New registrations, medical records</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.patients.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev, 
+                          patients: { ...prev.patients, enabled: e.target.checked }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                    </label>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notificationSettings.billingAlerts}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, billingAlerts: e.target.checked
-                      }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
+                  {notificationSettings.patients.enabled && (
+                    <div className="grid grid-cols-3 gap-4 ml-8">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.patients.email}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            patients: { ...prev.patients, email: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Email</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.patients.push}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            patients: { ...prev.patients, push: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Push</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.patients.sms}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            patients: { ...prev.patients, sms: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">SMS</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                {/* System Notifications */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Settings className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <h4 className="font-medium">System Notifications</h4>
+                        <p className="text-sm text-gray-600">Maintenance, updates, announcements</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.system.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev, 
+                          system: { ...prev.system, enabled: e.target.checked }
+                        }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                    </label>
+                  </div>
+                  {notificationSettings.system.enabled && (
+                    <div className="grid grid-cols-3 gap-4 ml-8">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.system.email}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            system: { ...prev.system, email: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Email</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.system.push}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            system: { ...prev.system, push: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">Push</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={notificationSettings.system.sms}
+                          onChange={(e) => setNotificationSettings(prev => ({
+                            ...prev,
+                            system: { ...prev.system, sms: e.target.checked }
+                          }))}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">SMS</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notification Frequency */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium mb-3">Notification Frequency</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="frequency"
+                      value="immediate"
+                      checked={notificationSettings.frequency === 'immediate'}
+                      onChange={(e) => setNotificationSettings(prev => ({
+                        ...prev, frequency: e.target.value
+                      }))}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm">Immediate - Get notifications as they happen</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="frequency"
+                      value="hourly"
+                      checked={notificationSettings.frequency === 'hourly'}
+                      onChange={(e) => setNotificationSettings(prev => ({
+                        ...prev, frequency: e.target.value
+                      }))}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm">Hourly digest - Bundled notifications every hour</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="frequency"
+                      value="daily"
+                      checked={notificationSettings.frequency === 'daily'}
+                      onChange={(e) => setNotificationSettings(prev => ({
+                        ...prev, frequency: e.target.value
+                      }))}
+                      className="text-blue-600"
+                    />
+                    <span className="text-sm">Daily summary - Once per day summary</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Quiet Hours */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h4 className="font-medium">SMS Notifications</h4>
-                    <p className="text-sm text-gray-600">Receive text message alerts</p>
+                    <h4 className="font-medium">Quiet Hours</h4>
+                    <p className="text-sm text-gray-600">Limit notifications during specific hours</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={notificationSettings.smsNotifications}
+                      checked={notificationSettings.quietHours.enabled}
                       onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, smsNotifications: e.target.checked
+                        ...prev, 
+                        quietHours: { ...prev.quietHours, enabled: e.target.checked }
                       }))}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
+                {notificationSettings.quietHours.enabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">From</label>
+                      <input
+                        type="time"
+                        value={notificationSettings.quietHours.startTime}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev,
+                          quietHours: { ...prev.quietHours, startTime: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">To</label>
+                      <input
+                        type="time"
+                        value={notificationSettings.quietHours.endTime}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev,
+                          quietHours: { ...prev.quietHours, endTime: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
                 onClick={updateNotificationSettings}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 {loading ? 'Updating...' : 'Save Notification Settings'}
               </button>
