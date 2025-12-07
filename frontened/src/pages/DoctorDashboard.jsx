@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotificationCount } from '../hooks/useNotificationCount';
 import { BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 
 // Import tab components
@@ -25,6 +26,7 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout } = useAuth();
+  const { unreadCount, refreshCount } = useNotificationCount();
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -77,7 +79,7 @@ const DoctorDashboard = () => {
       case 'analytics':
         return <AnalyticsTab/>;
       case 'notifications':
-        return <NotificationTab/>;   
+        return <NotificationTab onCountChange={refreshCount} />;   
       case 'billing':
         return <BillingTab/>;    
       case 'help':
@@ -121,15 +123,24 @@ const DoctorDashboard = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center ${
                       isCollapsed ? 'justify-center p-2' : 'space-x-3 px-3 py-1.5'
-                    } rounded-lg text-left transition-colors ${
+                    } rounded-lg text-left transition-colors relative ${
                       activeTab === tab.id
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     }`}
                     title={isCollapsed ? tab.label : undefined}
                   >
-                    <Icon size={20} />
-                    {!isCollapsed && <span className="font-medium">{tab.label}</span>}
+                    <div className="relative">
+                      <Icon size={20} />
+                      {tab.id === 'notifications' && unreadCount > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium min-w-[1.25rem]">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    {!isCollapsed && (
+                      <span className="font-medium">{tab.label}</span>
+                    )}
                   </button>
                 </li>
               );

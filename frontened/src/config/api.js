@@ -110,6 +110,16 @@ export const API_URLS = {
     PAYMENT_METHODS: buildApiUrl('/api/billing', '/payment-methods'),
     ADD_PAYMENT_METHOD: buildApiUrl('/api/billing', '/payment-methods'),
     DELETE_PAYMENT_METHOD: (methodId) => buildApiUrl('/api/billing', `/payment-methods/${methodId}`)
+  },
+  NOTIFICATIONS: {
+    LIST: buildApiUrl('/api/notifications'),
+    STATS: buildApiUrl('/api/notifications', '/stats'),
+    MARK_READ: (notificationId) => buildApiUrl('/api/notifications', `/${notificationId}/read`),
+    MARK_UNREAD: (notificationId) => buildApiUrl('/api/notifications', `/${notificationId}/unread`),
+    MARK_ALL_READ: buildApiUrl('/api/notifications', '/mark-all-read'),
+    DELETE: (notificationId) => buildApiUrl('/api/notifications', `/${notificationId}`),
+    DELETE_MULTIPLE: buildApiUrl('/api/notifications'),
+    CREATE: buildApiUrl('/api/notifications')
   }
 };
 

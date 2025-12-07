@@ -19,6 +19,7 @@ import labRoutes from './routes/labRoutes.js';
 import websiteRoutes from './routes/websiteRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
@@ -119,6 +120,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
@@ -259,6 +261,37 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
 
+    // Notifications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        data JSONB,
+        read BOOLEAN DEFAULT false,
+        priority VARCHAR(20) DEFAULT 'medium',
+        actionable BOOLEAN DEFAULT false,
+        action_url VARCHAR(500),
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        read_at TIMESTAMP
+      )`;
+
+    // Notification delivery logs table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notification_delivery_logs (
+        id SERIAL PRIMARY KEY,
+        notification_id INTEGER REFERENCES notifications(id) ON DELETE CASCADE,
+        delivery_method VARCHAR(20) NOT NULL,
+        recipient VARCHAR(255) NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        delivered_at TIMESTAMP,
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id)`;
@@ -266,6 +299,11 @@ async function initDB() {
     await sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_notification_id ON notification_delivery_logs(notification_id)`;
 
     // Initialize website-related tables - DISABLED to prevent auto-adding data
     // console.log('Initializing website tables...');
