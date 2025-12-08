@@ -20,6 +20,7 @@ import websiteRoutes from './routes/websiteRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
@@ -121,6 +122,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/blog', blogRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
@@ -292,12 +294,63 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
 
+    // Blog posts table
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id SERIAL PRIMARY KEY,
+        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+        title VARCHAR(500) NOT NULL,
+        slug VARCHAR(600) UNIQUE NOT NULL,
+        content TEXT NOT NULL,
+        excerpt TEXT,
+        featured_image VARCHAR(500),
+        category VARCHAR(100),
+        tags JSONB DEFAULT '[]',
+        status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+        published_at TIMESTAMP,
+        views INTEGER DEFAULT 0,
+        read_time INTEGER DEFAULT 0,
+        meta_title VARCHAR(600),
+        meta_description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
+
+    // Blog categories table
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        slug VARCHAR(120) UNIQUE NOT NULL,
+        description TEXT,
+        color VARCHAR(7) DEFAULT '#3B82F6',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
+
+    // Blog comments table
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_comments (
+        id SERIAL PRIMARY KEY,
+        blog_post_id INTEGER REFERENCES blog_posts(id) ON DELETE CASCADE,
+        author_name VARCHAR(100) NOT NULL,
+        author_email VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_doctor_id ON blog_posts(doctor_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`;

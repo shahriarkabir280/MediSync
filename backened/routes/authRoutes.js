@@ -181,7 +181,8 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.doctorId = decoded.doctorId;
+    req.user = { id: decoded.doctorId }; // Set user for blog controller
+    req.doctorId = decoded.doctorId; // Keep backward compatibility
     next();
   } catch (error) {
     res.status(401).json({ success: false, message: 'Invalid token' });
@@ -329,3 +330,4 @@ router.delete('/disable-2fa', authenticateToken, async (req, res) => {
 });
 
 export default router;
+export { authenticateToken };

@@ -1,6 +1,85 @@
 // API Configuration and Helper Functions
 const API_BASE_URL = '/api';
 
+// Generic API client
+export const api = {
+  get: async (endpoint, options = {}) => {
+    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers,
+      ...options
+    });
+
+    return handleResponse(response);
+  },
+
+  post: async (endpoint, data = null, options = {}) => {
+    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    };
+
+    // Handle FormData (for file uploads)
+    const isFormData = data instanceof FormData;
+    if (isFormData) {
+      delete headers['Content-Type']; // Let browser set it for FormData
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: isFormData ? data : JSON.stringify(data),
+      ...options
+    });
+
+    return handleResponse(response);
+  },
+
+  put: async (endpoint, data = null, options = {}) => {
+    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+      ...options
+    });
+
+    return handleResponse(response);
+  },
+
+  delete: async (endpoint, options = {}) => {
+    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers,
+      ...options
+    });
+
+    return handleResponse(response);
+  }
+};
+
 // Helper function to handle API responses
 const handleResponse = async (response) => {
   const data = await response.json();
@@ -215,6 +294,7 @@ export const billingApi = {
 };
 
 export default {
+  api,
   doctorApi,
   appointmentApi,
   patientApi,

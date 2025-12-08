@@ -59,6 +59,11 @@ const SettingsTab = () => {
     frequency: 'immediate' // immediate, hourly, daily
   });
 
+  // Temporary edit state for notifications
+  const [editedNotificationSettings, setEditedNotificationSettings] = useState(null);
+  const [isEditingNotifications, setIsEditingNotifications] = useState(false);
+  const [notificationChanges, setNotificationChanges] = useState(false);
+
   // Account Settings State
   const [accountSettings, setAccountSettings] = useState({
     currentPassword: '',
@@ -169,11 +174,23 @@ const SettingsTab = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(notificationSettings)
+        body: JSON.stringify(editedNotificationSettings || notificationSettings)
       });
 
       if (response.ok) {
+        // Apply the changes to the main state
+        if (editedNotificationSettings) {
+          setNotificationSettings(editedNotificationSettings);
+          setEditedNotificationSettings(null);
+        }
+        setIsEditingNotifications(false);
+        setNotificationChanges(false);
         showSuccessMessage('Notification settings updated successfully');
+        
+        // Reload settings to ensure we have the latest data
+        setTimeout(() => {
+          loadSettings();
+        }, 1000);
       } else {
         throw new Error('Failed to update notification settings');
       }
@@ -182,6 +199,52 @@ const SettingsTab = () => {
       console.error('Update notification settings error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEditingNotifications = () => {
+    setIsEditingNotifications(true);
+    setEditedNotificationSettings({ ...notificationSettings });
+    setNotificationChanges(false);
+  };
+
+  const cancelEditingNotifications = () => {
+    setIsEditingNotifications(false);
+    setEditedNotificationSettings(null);
+    setNotificationChanges(false);
+  };
+
+  const updateEditedNotificationSetting = (path, value) => {
+    setEditedNotificationSettings(prev => {
+      const newSettings = { ...prev };
+      const keys = path.split('.');
+      let current = newSettings;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        current = current[keys[i]];
+      }
+      current[keys[keys.length - 1]] = value;
+      
+      setNotificationChanges(true);
+      return newSettings;
+    });
+  };
+
+  // Helper function to get current setting value (edit or saved state)
+  const getCurrentNotificationSetting = (path) => {
+    const keys = path.split('.');
+    const source = isEditingNotifications ? editedNotificationSettings : notificationSettings;
+    let current = source;
+    for (let key of keys) {
+      current = current?.[key];
+    }
+    return current;
+  };
+
+  // Helper function to handle notification setting changes
+  const handleNotificationChange = (path, value) => {
+    if (isEditingNotifications) {
+      updateEditedNotificationSetting(path, value);
     }
   };
 
@@ -423,12 +486,52 @@ const SettingsTab = () => {
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Notification Settings</h2>
-                <div className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600">Manage how you receive notifications</span>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold">Notification Settings</h2>
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">Manage how you receive notifications</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {!isEditingNotifications ? (
+                    <button
+                      onClick={startEditingNotifications}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Edit Settings
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={cancelEditingNotifications}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={updateNotificationSettings}
+                        disabled={loading || !notificationChanges}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Edit mode indicator */}
+              {isEditingNotifications && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800 font-medium">
+                      Edit Mode: Make your changes and click "Save Changes" to apply them
+                    </span>
+                  </div>
+                </div>
+              )}
               
               {/* Global Controls */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -443,13 +546,12 @@ const SettingsTab = () => {
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={notificationSettings.globalMute}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, globalMute: e.target.checked
-                      }))}
+                      checked={getCurrentNotificationSetting('globalMute')}
+                      onChange={(e) => handleNotificationChange('globalMute', e.target.checked)}
+                      disabled={!isEditingNotifications}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                    <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                   </label>
                 </div>
               </div>
@@ -469,26 +571,22 @@ const SettingsTab = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={notificationSettings.appointments.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev, 
-                          appointments: { ...prev.appointments, enabled: e.target.checked }
-                        }))}
+                        checked={isEditingNotifications ? editedNotificationSettings?.appointments?.enabled : notificationSettings.appointments.enabled}
+                        onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.enabled', e.target.checked)}
+                        disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
-                  {notificationSettings.appointments.enabled && (
+                  {(isEditingNotifications ? editedNotificationSettings?.appointments?.enabled : notificationSettings.appointments.enabled) && (
                     <div className="grid grid-cols-3 gap-4 ml-8">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.appointments.email}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            appointments: { ...prev.appointments, email: e.target.checked }
-                          }))}
+                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.email : notificationSettings.appointments.email}
+                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.email', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Email</span>
@@ -496,11 +594,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.appointments.push}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            appointments: { ...prev.appointments, push: e.target.checked }
-                          }))}
+                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.push : notificationSettings.appointments.push}
+                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.push', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Push</span>
@@ -508,11 +604,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.appointments.sms}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            appointments: { ...prev.appointments, sms: e.target.checked }
-                          }))}
+                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.sms : notificationSettings.appointments.sms}
+                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.sms', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">SMS</span>
@@ -534,26 +628,22 @@ const SettingsTab = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={notificationSettings.billing.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev, 
-                          billing: { ...prev.billing, enabled: e.target.checked }
-                        }))}
+                        checked={getCurrentNotificationSetting('billing.enabled')}
+                        onChange={(e) => handleNotificationChange('billing.enabled', e.target.checked)}
+                        disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
-                  {notificationSettings.billing.enabled && (
+                  {getCurrentNotificationSetting('billing.enabled') && (
                     <div className="grid grid-cols-3 gap-4 ml-8">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.billing.email}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            billing: { ...prev.billing, email: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('billing.email')}
+                          onChange={(e) => handleNotificationChange('billing.email', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Email</span>
@@ -561,11 +651,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.billing.push}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            billing: { ...prev.billing, push: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('billing.push')}
+                          onChange={(e) => handleNotificationChange('billing.push', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Push</span>
@@ -573,11 +661,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.billing.sms}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            billing: { ...prev.billing, sms: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('billing.sms')}
+                          onChange={(e) => handleNotificationChange('billing.sms', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">SMS</span>
@@ -599,26 +685,22 @@ const SettingsTab = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={notificationSettings.chat.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev, 
-                          chat: { ...prev.chat, enabled: e.target.checked }
-                        }))}
+                        checked={getCurrentNotificationSetting('chat.enabled')}
+                        onChange={(e) => handleNotificationChange('chat.enabled', e.target.checked)}
+                        disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
-                  {notificationSettings.chat.enabled && (
+                  {getCurrentNotificationSetting('chat.enabled') && (
                     <div className="grid grid-cols-3 gap-4 ml-8">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.chat.email}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            chat: { ...prev.chat, email: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('chat.email')}
+                          onChange={(e) => handleNotificationChange('chat.email', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Email</span>
@@ -626,11 +708,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.chat.push}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            chat: { ...prev.chat, push: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('chat.push')}
+                          onChange={(e) => handleNotificationChange('chat.push', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Push</span>
@@ -638,11 +718,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.chat.sms}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            chat: { ...prev.chat, sms: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('chat.sms')}
+                          onChange={(e) => handleNotificationChange('chat.sms', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">SMS</span>
@@ -664,26 +742,21 @@ const SettingsTab = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={notificationSettings.patients.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev, 
-                          patients: { ...prev.patients, enabled: e.target.checked }
-                        }))}
+                        checked={getCurrentNotificationSetting('patients.enabled')}
+                        onChange={(e) => handleNotificationChange('patients.enabled', e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
-                  {notificationSettings.patients.enabled && (
+                  {getCurrentNotificationSetting('patients.enabled') && (
                     <div className="grid grid-cols-3 gap-4 ml-8">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.patients.email}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            patients: { ...prev.patients, email: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('patients.email')}
+                          onChange={(e) => handleNotificationChange('patients.email', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Email</span>
@@ -691,11 +764,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.patients.push}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            patients: { ...prev.patients, push: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('patients.push')}
+                          onChange={(e) => handleNotificationChange('patients.push', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Push</span>
@@ -703,11 +774,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.patients.sms}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            patients: { ...prev.patients, sms: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('patients.sms')}
+                          onChange={(e) => handleNotificationChange('patients.sms', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">SMS</span>
@@ -729,26 +798,22 @@ const SettingsTab = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={notificationSettings.system.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev, 
-                          system: { ...prev.system, enabled: e.target.checked }
-                        }))}
+                        checked={getCurrentNotificationSetting('system.enabled')}
+                        onChange={(e) => handleNotificationChange('system.enabled', e.target.checked)}
+                        disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
-                  {notificationSettings.system.enabled && (
+                  {getCurrentNotificationSetting('system.enabled') && (
                     <div className="grid grid-cols-3 gap-4 ml-8">
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.system.email}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            system: { ...prev.system, email: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('system.email')}
+                          onChange={(e) => handleNotificationChange('system.email', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Email</span>
@@ -756,11 +821,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.system.push}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            system: { ...prev.system, push: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('system.push')}
+                          onChange={(e) => handleNotificationChange('system.push', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">Push</span>
@@ -768,11 +831,9 @@ const SettingsTab = () => {
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={notificationSettings.system.sms}
-                          onChange={(e) => setNotificationSettings(prev => ({
-                            ...prev,
-                            system: { ...prev.system, sms: e.target.checked }
-                          }))}
+                          checked={getCurrentNotificationSetting('system.sms')}
+                          onChange={(e) => handleNotificationChange('system.sms', e.target.checked)}
+                          disabled={!isEditingNotifications}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm">SMS</span>
@@ -791,10 +852,9 @@ const SettingsTab = () => {
                       type="radio"
                       name="frequency"
                       value="immediate"
-                      checked={notificationSettings.frequency === 'immediate'}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, frequency: e.target.value
-                      }))}
+                      checked={getCurrentNotificationSetting('frequency') === 'immediate'}
+                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
+                      disabled={!isEditingNotifications}
                       className="text-blue-600"
                     />
                     <span className="text-sm">Immediate - Get notifications as they happen</span>
@@ -804,10 +864,9 @@ const SettingsTab = () => {
                       type="radio"
                       name="frequency"
                       value="hourly"
-                      checked={notificationSettings.frequency === 'hourly'}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, frequency: e.target.value
-                      }))}
+                      checked={getCurrentNotificationSetting('frequency') === 'hourly'}
+                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
+                      disabled={!isEditingNotifications}
                       className="text-blue-600"
                     />
                     <span className="text-sm">Hourly digest - Bundled notifications every hour</span>
@@ -817,10 +876,9 @@ const SettingsTab = () => {
                       type="radio"
                       name="frequency"
                       value="daily"
-                      checked={notificationSettings.frequency === 'daily'}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, frequency: e.target.value
-                      }))}
+                      checked={getCurrentNotificationSetting('frequency') === 'daily'}
+                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
+                      disabled={!isEditingNotifications}
                       className="text-blue-600"
                     />
                     <span className="text-sm">Daily summary - Once per day summary</span>
@@ -838,27 +896,23 @@ const SettingsTab = () => {
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={notificationSettings.quietHours.enabled}
-                      onChange={(e) => setNotificationSettings(prev => ({
-                        ...prev, 
-                        quietHours: { ...prev.quietHours, enabled: e.target.checked }
-                      }))}
+                      checked={getCurrentNotificationSetting('quietHours.enabled')}
+                      onChange={(e) => handleNotificationChange('quietHours.enabled', e.target.checked)}
+                      disabled={!isEditingNotifications}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
-                {notificationSettings.quietHours.enabled && (
+                {getCurrentNotificationSetting('quietHours.enabled') && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">From</label>
                       <input
                         type="time"
-                        value={notificationSettings.quietHours.startTime}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev,
-                          quietHours: { ...prev.quietHours, startTime: e.target.value }
-                        }))}
+                        value={getCurrentNotificationSetting('quietHours.startTime')}
+                        onChange={(e) => handleNotificationChange('quietHours.startTime', e.target.value)}
+                        disabled={!isEditingNotifications}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -866,25 +920,15 @@ const SettingsTab = () => {
                       <label className="block text-sm font-medium mb-1">To</label>
                       <input
                         type="time"
-                        value={notificationSettings.quietHours.endTime}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev,
-                          quietHours: { ...prev.quietHours, endTime: e.target.value }
-                        }))}
+                        value={getCurrentNotificationSetting('quietHours.endTime')}
+                        onChange={(e) => handleNotificationChange('quietHours.endTime', e.target.value)}
+                        disabled={!isEditingNotifications}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
                 )}
               </div>
-
-              <button
-                onClick={updateNotificationSettings}
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Updating...' : 'Save Notification Settings'}
-              </button>
             </div>
           )}
 

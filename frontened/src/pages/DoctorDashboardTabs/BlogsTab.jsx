@@ -1,39 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Search, Filter, Calendar, Eye, Edit3, Trash2, BarChart3 } from 'lucide-react';
+import { api } from '../../lib/api';
 
 const BlogsTab = () => {
   // State for blogs
-  const [blogs, setBlogs] = useState([
-    {
-      id: 1,
-      title: "Understanding Heart Health",
-      content: "Heart health is crucial for overall wellbeing...",
-      excerpt: "Learn about the importance of cardiovascular health and prevention strategies.",
-      author: "Dr. John Smith",
-      publishDate: "2024-01-15",
-      status: "published",
-      category: "Cardiology",
-      tags: ["heart", "health", "prevention"],
-      readTime: "5 min read",
-      views: 1250,
-      image: "/api/placeholder/400/200"
-    },
-    {
-      id: 2,
-      title: "Diabetes Management Tips",
-      content: "Managing diabetes requires consistent care...",
-      excerpt: "Essential tips for managing diabetes and maintaining quality of life.",
-      author: "Dr. John Smith",
-      publishDate: "2024-01-10",
-      status: "draft",
-      category: "Endocrinology",
-      tags: ["diabetes", "management", "lifestyle"],
-      readTime: "7 min read",
-      views: 890,
-      image: "/api/placeholder/400/200"
-    }
-  ]);
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    publishedPosts: 0,
+    draftPosts: 0,
+    totalViews: 0,
+    totalComments: 0
+  });
 
   const [blogForm, setBlogForm] = useState({
     title: '',
@@ -51,6 +32,65 @@ const BlogsTab = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
 
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchBlogPosts();
+    fetchCategories();
+    fetchStats();
+  }, []);
+
+  // API Functions
+  const fetchBlogPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/blog/posts');
+      
+      // Handle different possible response structures
+      const posts = response?.data?.posts || response?.posts || [];
+      if (posts && posts.length > 0) {
+        setBlogs(posts);
+      } else {
+        setBlogs([]);
+      }
+    } catch (error) {
+      setBlogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/blog/categories');
+      const categories = response?.data?.categories || response?.categories || [];
+      setCategories(categories);
+    } catch (error) {
+      setCategories([
+        { id: 1, name: 'Cardiology', color: '#EF4444' },
+        { id: 2, name: 'Endocrinology', color: '#10B981' },
+        { id: 3, name: 'Mental Health', color: '#8B5CF6' },
+        { id: 4, name: 'Preventive Care', color: '#3B82F6' },
+        { id: 5, name: 'Nutrition', color: '#F59E0B' }
+      ]);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await api.get('/blog/stats');
+      const stats = response?.data?.stats || response?.stats || {
+        totalPosts: 0,
+        publishedPosts: 0,
+        draftPosts: 0,
+        totalViews: 0,
+        totalComments: 0
+      };
+      setStats(stats);
+    } catch (error) {
+      // Use default stats on error
+    }
+  };
+
   const blogCategories = [
     'Cardiology', 'Endocrinology', 'Neurology', 'Orthopedics', 
     'Pediatrics', 'Dermatology', 'General Health', 'Preventive Care'
@@ -61,30 +101,47 @@ const BlogsTab = () => {
     setBlogForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCreateBlog = () => {
-    const newBlog = {
-      id: Date.now(),
-      ...blogForm,
-      author: "Dr. John Smith",
-      publishDate: new Date().toISOString().split('T')[0],
-      tags: blogForm.tags.split(',').map(tag => tag.trim()),
-      readTime: Math.ceil(blogForm.content.length / 200) + " min read",
-      views: 0,
-      image: blogForm.image || "/api/placeholder/400/200"
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (editingBlog) {
+      await handleUpdateBlog();
+    } else {
+      await handleCreateBlog();
+    }
+  };
 
-    setBlogs(prev => [newBlog, ...prev]);
-    setBlogForm({
-      title: '',
-      content: '',
-      excerpt: '',
-      category: '',
-      tags: '',
-      status: 'draft',
-      image: ''
-    });
-    setShowBlogForm(false);
-    alert('Blog created successfully!');
+  const handleCreateBlog = async () => {
+    try {
+      const blogData = {
+        title: blogForm.title,
+        content: blogForm.content,
+        excerpt: blogForm.excerpt,
+        status: blogForm.status,
+        category: blogForm.category,
+        tags: blogForm.tags.split(',').map(tag => tag.trim())
+      };
+
+      await api.post('/blog/posts', blogData);
+      
+      // Refresh blog posts after creating
+      await fetchBlogPosts();
+      await fetchStats();
+      
+      // Reset form
+      setBlogForm({
+        title: '',
+        content: '',
+        excerpt: '',
+        category: '',
+        tags: '',
+        status: 'draft',
+        image: ''
+      });
+      setShowBlogForm(false);
+    } catch (error) {
+      alert('Error creating blog post. Please try again.');
+    }
   };
 
   const handleEditBlog = (blog) => {
@@ -94,52 +151,80 @@ const BlogsTab = () => {
       content: blog.content,
       excerpt: blog.excerpt,
       category: blog.category,
-      tags: blog.tags.join(', '),
+      tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : blog.tags || '',
       status: blog.status,
-      image: blog.image
+      image: blog.featured_image || ''
     });
     setShowBlogForm(true);
   };
 
-  const handleUpdateBlog = () => {
-    setBlogs(prev => prev.map(blog => 
-      blog.id === editingBlog 
-        ? {
-            ...blog,
-            ...blogForm,
-            tags: blogForm.tags.split(',').map(tag => tag.trim()),
-            readTime: Math.ceil(blogForm.content.length / 200) + " min read"
-          }
-        : blog
-    ));
-    
-    setEditingBlog(null);
-    setBlogForm({
-      title: '',
-      content: '',
-      excerpt: '',
-      category: '',
-      tags: '',
-      status: 'draft',
-      image: ''
-    });
-    setShowBlogForm(false);
-    alert('Blog updated successfully!');
-  };
+  const handleUpdateBlog = async () => {
+    try {
+      const blogData = {
+        title: blogForm.title,
+        content: blogForm.content,
+        excerpt: blogForm.excerpt,
+        status: blogForm.status,
+        category: blogForm.category,
+        tags: blogForm.tags.split(',').map(tag => tag.trim())
+      };
 
-  const handleDeleteBlog = (blogId) => {
-    if (window.confirm('Are you sure you want to delete this blog?')) {
-      setBlogs(prev => prev.filter(blog => blog.id !== blogId));
-      alert('Blog deleted successfully!');
+      await api.put(`/blog/posts/${editingBlog}`, blogData);
+      
+      // Refresh blog posts after updating
+      await fetchBlogPosts();
+      await fetchStats();
+      
+      // Reset form
+      setBlogForm({
+        title: '',
+        content: '',
+        excerpt: '',
+        category: '',
+        tags: '',
+        status: 'draft',
+        image: ''
+      });
+      setEditingBlog(null);
+      setShowBlogForm(false);
+    } catch (error) {
+      alert('Error updating blog post. Please try again.');
     }
   };
 
-  const handlePublishBlog = (blogId) => {
-    setBlogs(prev => prev.map(blog => 
-      blog.id === blogId 
-        ? { ...blog, status: blog.status === 'published' ? 'draft' : 'published' }
-        : blog
-    ));
+  const handleDeleteBlog = async (blogId) => {
+    if (window.confirm('Are you sure you want to delete this blog?')) {
+      try {
+        await api.delete(`/blog/posts/${blogId}`);
+        await fetchBlogPosts();
+        await fetchStats();
+      } catch (error) {
+        alert('Error deleting blog post. Please try again.');
+      }
+    }
+  };
+
+  const handlePublishBlog = async (blogId) => {
+    try {
+      // Find the current blog to get its data
+      const currentBlog = blogs.find(blog => blog.id === blogId);
+      if (!currentBlog) return;
+
+      // Toggle publish status
+      const newStatus = currentBlog.status === 'published' ? 'draft' : 'published';
+      
+      await api.put(`/blog/posts/${blogId}`, {
+        ...currentBlog,
+        status: newStatus,
+        tags: Array.isArray(currentBlog.tags) ? currentBlog.tags : []
+      });
+      
+      // Refresh blog posts after updating
+      await fetchBlogPosts();
+      await fetchStats();
+    } catch (error) {
+      alert('Error updating blog status. Please try again.');
+    }
   };
 
   const filteredBlogs = blogs.filter(blog => {
@@ -266,13 +351,22 @@ const BlogsTab = () => {
                 onClick={() => {
                   setShowBlogForm(false);
                   setEditingBlog(null);
+                  setBlogForm({
+                    title: '',
+                    content: '',
+                    excerpt: '',
+                    category: '',
+                    tags: '',
+                    status: 'draft',
+                    image: ''
+                  });
                 }}
                 className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={editingBlog ? handleUpdateBlog : handleCreateBlog}
+                onClick={handleSubmit}
                 disabled={!blogForm.title || !blogForm.content}
                 className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -381,7 +475,13 @@ const BlogsTab = () => {
         </div>
         
         <div className="divide-y divide-gray-200">
-          {filteredBlogs.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center">
+              <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-pulse" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading blogs...</h3>
+              <p className="text-gray-500">Please wait while we fetch your blog posts.</p>
+            </div>
+          ) : filteredBlogs.length === 0 ? (
             <div className="p-12 text-center">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No blogs found</h3>

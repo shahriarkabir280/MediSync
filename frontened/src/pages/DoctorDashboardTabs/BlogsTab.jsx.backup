@@ -1,0 +1,2145 @@
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Plus, Search, Filter, Calendar, Eye, Edit3, Trash2, BarChart3, Save, X, Tag, Globe, FileText, Folder } from 'lucide-react';
+import { api } from '../../lib/api';
+
+const BlogsTab = () => {
+  // State management
+  const [blogs, setBlogs] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    publishedPosts: 0,
+    draftPosts: 0,
+    totalViews: 0,
+    totalComments: 0
+  });
+  
+  // Form states
+  const [blogForm, setBlogForm] = useState({
+    title: '',
+    content: '',
+    excerpt: '',
+    category_id: '',
+    tags: [],
+    status: 'draft'
+  });
+  
+  // Category form state
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6'
+  });
+  
+  // UI states
+  const [editingBlog, setEditingBlog] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [showBlogForm, setShowBlogForm] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  // Fetch data on component mount and when filters change
+  useEffect(() => {
+    fetchBlogPosts();
+    fetchCategories();
+    fetchStats();
+  }, [filterStatus, filterCategory, searchTerm]);
+
+  // API Functions
+  const fetchBlogPosts = async () => {
+    try {
+      console.log('🔥 fetchBlogPosts: Starting fetch...');
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: 1,
+        limit: 50,
+        status: filterStatus,
+        category: filterCategory,
+        search: searchTerm
+      });
+      
+      console.log('🔥 fetchBlogPosts: Making API call to:', `/blog/posts?${params}`);
+      const response = await api.get(`/blog/posts?${params}`);
+      console.log('🔥 fetchBlogPosts: API response:', response);
+      setBlogs(response.data.posts || []);
+    } catch (error) {
+      console.error('💥 Error fetching blogs:', error);
+      console.error('💥 Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      // Use comprehensive demo data with detailed medical content
+      setBlogs([
+        {
+          id: 1,
+          title: "Understanding Cardiovascular Health: A Comprehensive Guide",
+          content: `Cardiovascular health is the cornerstone of overall well-being, affecting millions worldwide. As a cardiologist, I witness daily how proper heart care can transform lives.
+
+## What is Cardiovascular Health?
+
+Cardiovascular health encompasses the proper functioning of your heart and blood vessels. Your cardiovascular system is responsible for:
+
+- Pumping oxygen-rich blood throughout your body
+- Delivering nutrients to vital organs
+- Removing waste products from tissues
+- Regulating blood pressure and circulation
+
+## Key Risk Factors
+
+### Modifiable Risk Factors:
+1. **High Blood Pressure**: Often called the silent killer, affecting 1 in 3 adults
+2. **High Cholesterol**: LDL levels above 100 mg/dL increase risk
+3. **Smoking**: Damages blood vessels and reduces oxygen in blood
+4. **Diabetes**: Increases risk of heart disease by 2-4 times
+5. **Physical Inactivity**: Sedentary lifestyle weakens the heart muscle
+6. **Poor Diet**: High sodium, saturated fats, and processed foods
+7. **Obesity**: BMI over 30 significantly increases cardiac workload
+8. **Excessive Alcohol**: More than moderate consumption damages heart tissue
+9. **Stress**: Chronic stress elevates cortisol and blood pressure
+
+### Non-Modifiable Risk Factors:
+- Age (men 45+, women 55+)
+- Gender (men at higher risk until menopause)
+- Family history of heart disease
+- Ethnicity (African Americans, Hispanics at higher risk)
+
+## Prevention Strategies
+
+### Diet and Nutrition:
+**The Mediterranean Diet** has shown remarkable results:
+- Rich in omega-3 fatty acids from fish
+- Abundant fruits and vegetables (7-9 servings daily)
+- Whole grains instead of refined carbohydrates
+- Healthy fats from olive oil, nuts, and avocados
+- Limited red meat and processed foods
+- Moderate red wine consumption (if appropriate)
+
+**Specific Recommendations:**
+- Sodium intake < 2,300mg daily (ideally 1,500mg)
+- Fiber intake 25-35g daily
+- Include potassium-rich foods (bananas, spinach, potatoes)
+- Choose lean proteins (fish, poultry, legumes)
+
+### Exercise Guidelines:
+**Aerobic Activity:**
+- Minimum 150 minutes moderate-intensity weekly
+- Or 75 minutes vigorous-intensity weekly
+- Examples: brisk walking, swimming, cycling, dancing
+
+**Strength Training:**
+- 2+ days per week
+- Target major muscle groups
+- Helps improve metabolism and weight management
+
+## Warning Signs to Watch For
+
+**Seek immediate medical attention for:**
+- Chest pain or pressure
+- Shortness of breath during rest or mild activity
+- Irregular heartbeat or palpitations
+- Dizziness or fainting
+- Swelling in legs, ankles, or feet
+- Extreme fatigue
+- Pain radiating to arm, jaw, or back
+
+## Conclusion
+
+Cardiovascular health is not just about avoiding heart attacks – it's about optimizing your entire circulatory system for longevity and quality of life. Small, consistent changes in diet, exercise, and lifestyle can yield profound benefits.
+
+Remember: it's never too early or too late to start caring for your heart. Partner with your healthcare provider to develop a personalized cardiovascular wellness plan.
+
+*Schedule your cardiovascular screening today. Your heart will thank you tomorrow.*`,
+          excerpt: "A comprehensive guide to understanding and improving cardiovascular health, covering risk factors, prevention strategies, warning signs, and the latest medical recommendations for heart wellness.",
+          created_at: "2024-12-07",
+          status: "published",
+          category: "Cardiology",
+          tags: ["cardiology", "heart-health", "prevention", "wellness", "medical-guide"],
+          view_count: 2847
+        },
+        {
+          id: 2,
+          title: "Diabetes Management: Your Complete Guide to Living Well with Diabetes",
+          content: `Living with diabetes doesn't mean compromising on quality of life. With proper management, people with diabetes can lead healthy, active, and fulfilling lives. This comprehensive guide covers everything you need to know about effective diabetes management.
+
+## Understanding Diabetes
+
+Diabetes is a chronic condition affecting how your body processes blood glucose (blood sugar). There are three main types:
+
+### Type 1 Diabetes
+- Autoimmune condition where the pancreas produces little to no insulin
+- Usually diagnosed in childhood or young adulthood
+- Requires lifelong insulin therapy
+- Affects approximately 5-10% of people with diabetes
+
+### Type 2 Diabetes
+- Body doesn't use insulin effectively (insulin resistance)
+- Most common form (90-95% of cases)
+- Often develops in adults over 45
+- Strongly linked to lifestyle factors
+- Can often be managed with lifestyle changes and medication
+
+### Gestational Diabetes
+- Develops during pregnancy
+- Usually resolves after delivery
+- Increases risk of developing Type 2 diabetes later
+
+## Blood Sugar Management: The Foundation
+
+### Target Blood Sugar Levels:
+**For Most Adults with Diabetes:**
+- Before meals: 80-130 mg/dL
+- 2 hours after meals: Less than 180 mg/dL
+- Hemoglobin A1C: Less than 7% (individualized goals may vary)
+
+**For Older Adults or Those with Complications:**
+- A1C targets may be 7.5-8.5% to prevent hypoglycemia
+
+### Blood Sugar Monitoring
+
+**Traditional Fingerstick Method:**
+- Check before meals and at bedtime
+- Document results in a log
+- Note patterns and trends
+- Share data with healthcare team
+
+**Continuous Glucose Monitors (CGM):**
+- Real-time glucose readings
+- Trend arrows showing direction
+- Alarms for high/low glucose
+- Reduces fingerstick frequency
+- Provides detailed glucose patterns
+
+## Nutrition: The Cornerstone of Management
+
+### Carbohydrate Counting
+**Basic Principles:**
+- 45-60 grams of carbs per meal for women
+- 60-75 grams of carbs per meal for men
+- 15-30 grams for snacks
+- Focus on timing and consistency
+
+### The Diabetes Plate Method
+**Fill your plate with:**
+- 1/2 non-starchy vegetables (broccoli, spinach, tomatoes)
+- 1/4 lean protein (chicken, fish, tofu, eggs)
+- 1/4 carbohydrates (brown rice, whole grain bread)
+- Small amount of healthy fats (avocado, nuts, olive oil)
+
+## Exercise: Your Powerful Ally
+
+### Benefits for Diabetes:
+- Improves insulin sensitivity
+- Lowers blood glucose
+- Aids weight management
+- Reduces cardiovascular risk
+- Enhances mood and energy
+
+### Exercise Guidelines:
+**Aerobic Activity:**
+- 150 minutes moderate-intensity weekly
+- Examples: brisk walking, swimming, cycling
+- Spread over at least 3 days
+- No more than 2 consecutive days without activity
+
+**Resistance Training:**
+- 2+ sessions per week
+- Target major muscle groups
+- Improves glucose uptake by muscles
+- Helps maintain muscle mass
+
+## Complication Prevention
+
+### Regular Screenings:
+**Annual Eye Exams:**
+- Diabetic retinopathy screening
+- Early detection prevents blindness
+- Dilated eye examination required
+
+**Kidney Function Tests:**
+- Annual microalbumin test
+- Serum creatinine and eGFR
+- Blood pressure monitoring
+
+**Foot Care:**
+- Daily self-examination
+- Annual comprehensive foot exam
+- Proper nail care
+- Appropriate footwear
+
+## Managing Hypoglycemia
+
+### Recognition:
+**Symptoms include:**
+- Shakiness, sweating
+- Rapid heartbeat
+- Confusion, irritability
+- Dizziness, weakness
+- Hunger
+
+### Treatment (Rule of 15):
+1. Consume 15g fast-acting carbs
+2. Wait 15 minutes
+3. Recheck blood sugar
+4. Repeat if still below 70 mg/dL
+5. Eat a snack or meal once stable
+
+**Fast-Acting Carb Examples:**
+- 4 glucose tablets
+- 1/2 cup fruit juice
+- 1 cup skim milk
+- 1 tablespoon honey
+
+## Conclusion
+
+Successful diabetes management requires a comprehensive approach combining blood sugar monitoring, proper nutrition, regular exercise, medication adherence, and preventive care. Remember, small consistent changes lead to significant long-term benefits.
+
+Work closely with your healthcare team to develop a personalized management plan. With the right tools, knowledge, and support, you can thrive while managing diabetes.
+
+*Take charge of your diabetes today. Every healthy choice is an investment in your future.*`,
+          excerpt: "A complete guide to diabetes management covering blood sugar control, nutrition strategies, exercise guidelines, medication management, and complication prevention for living well with diabetes.",
+          created_at: "2024-12-06",
+          status: "published",
+          category: "Endocrinology",
+          tags: ["diabetes", "blood-sugar", "nutrition", "exercise", "medication-management", "prevention"],
+          view_count: 1923
+        },
+        {
+          id: 3,
+          title: "Mental Health in Healthcare: Managing Stress and Preventing Burnout",
+          content: `Mental health is just as important as physical health, yet it's often overlooked in healthcare discussions. As healthcare providers, we see the impact of stress, anxiety, and depression daily, both in our patients and ourselves. This comprehensive guide addresses mental wellness strategies for everyone.
+
+## Understanding Mental Health
+
+Mental health encompasses our emotional, psychological, and social well-being. It affects how we think, feel, and act, influencing how we handle stress, relate to others, and make choices.
+
+### Common Mental Health Conditions
+
+**Depression:**
+- Affects over 280 million people worldwide
+- Persistent sadness, hopelessness, loss of interest
+- Physical symptoms: fatigue, appetite changes, sleep disturbances
+- Can significantly impact daily functioning
+
+**Anxiety Disorders:**
+- Most common mental health condition
+- Excessive worry, fear, or panic
+- Physical symptoms: rapid heartbeat, sweating, trembling
+- Can interfere with work, relationships, and daily activities
+
+**Stress-Related Disorders:**
+- Result from chronic stress exposure
+- Can lead to physical health problems
+- Burnout syndrome increasingly common
+- Post-traumatic stress disorder (PTSD) in severe cases
+
+## The Mind-Body Connection
+
+### How Mental Health Affects Physical Health:
+- **Immune System**: Chronic stress weakens immunity
+- **Cardiovascular**: Stress increases heart disease risk
+- **Digestive**: Anxiety can cause GI problems
+- **Sleep**: Mental health issues disrupt sleep patterns
+- **Pain**: Stress can worsen chronic pain conditions
+
+### How Physical Health Affects Mental Health:
+- Exercise releases mood-boosting endorphins
+- Nutrition impacts brain chemistry
+- Sleep quality affects emotional regulation
+- Chronic illness can lead to depression
+- Medications may have mood side effects
+
+## Stress Management Strategies
+
+### Immediate Stress Relief Techniques:
+
+**Deep Breathing Exercises:**
+1. 4-7-8 Technique:
+   - Inhale for 4 counts
+   - Hold for 7 counts
+   - Exhale for 8 counts
+   - Repeat 3-4 times
+
+2. Box Breathing:
+   - Inhale for 4 counts
+   - Hold for 4 counts
+   - Exhale for 4 counts
+   - Hold for 4 counts
+
+**Progressive Muscle Relaxation:**
+- Systematically tense and release muscle groups
+- Start with toes, work up to head
+- Hold tension for 5 seconds, release for 10
+- Notice the contrast between tension and relaxation
+
+**Mindfulness and Grounding:**
+- 5-4-3-2-1 Technique:
+  - 5 things you can see
+  - 4 things you can touch
+  - 3 things you can hear
+  - 2 things you can smell
+  - 1 thing you can taste
+
+### Long-Term Stress Management:
+
+**Regular Exercise:**
+- 30 minutes of moderate activity daily
+- Releases endorphins and reduces cortisol
+- Improves sleep quality
+- Builds resilience to stress
+- Examples: walking, swimming, yoga, dancing
+
+**Healthy Sleep Hygiene:**
+- 7-9 hours of sleep nightly
+- Consistent sleep schedule
+- Cool, dark, quiet environment
+- Limit screens 1 hour before bed
+- Avoid caffeine 6 hours before sleep
+
+## Building Emotional Resilience
+
+### Cognitive Strategies:
+
+**Cognitive Behavioral Techniques:**
+- Identify negative thought patterns
+- Challenge irrational thoughts
+- Replace with balanced, realistic thoughts
+- Practice positive self-talk
+- Keep a thought record journal
+
+**Mindfulness Practice:**
+- Daily meditation (start with 5 minutes)
+- Mindful eating and walking
+- Body scan exercises
+- Acceptance of present moment
+- Non-judgmental awareness
+
+**Gratitude Practice:**
+- Daily gratitude journal
+- Three good things exercise
+- Gratitude letters to others
+- Mindful appreciation
+- Focus on small positive moments
+
+## Preventing Healthcare Burnout
+
+### Recognizing Burnout Symptoms:
+- Emotional exhaustion
+- Cynicism or detachment
+- Reduced sense of accomplishment
+- Physical symptoms: headaches, insomnia
+- Increased illness frequency
+- Substance use as coping mechanism
+
+### Prevention Strategies:
+
+**Work-Life Balance:**
+- Set clear boundaries between work and personal time
+- Take regular breaks during shifts
+- Use vacation time fully
+- Develop hobbies outside of healthcare
+- Limit overtime when possible
+
+**Professional Development:**
+- Continuous learning opportunities
+- Mentorship programs
+- Career advancement planning
+- Skill diversification
+- Professional networking
+
+## When to Seek Professional Help
+
+### Warning Signs:
+- Persistent sadness or hopelessness (2+ weeks)
+- Loss of interest in activities
+- Significant appetite or sleep changes
+- Difficulty concentrating
+- Thoughts of self-harm
+- Substance abuse
+- Inability to function at work or home
+- Social isolation
+
+### Treatment Options:
+
+**Psychotherapy:**
+- Cognitive Behavioral Therapy (CBT)
+- Dialectical Behavior Therapy (DBT)
+- Acceptance and Commitment Therapy (ACT)
+- Mindfulness-based interventions
+
+**Medication Management:**
+- Antidepressants (SSRIs, SNRIs)
+- Anti-anxiety medications
+- Mood stabilizers when appropriate
+- Regular monitoring and adjustment
+
+## Crisis Resources
+
+**National Suicide Prevention Lifeline:**
+- 988 (US) - 24/7 crisis support
+- Text and chat options available
+
+**Crisis Text Line:**
+- Text HOME to 741741
+- Trained crisis counselors
+- Anonymous and confidential
+
+## Conclusion
+
+Mental health is a critical component of overall wellness that requires ongoing attention and care. By understanding mental health conditions, developing coping strategies, building resilience, and knowing when to seek help, we can maintain our psychological well-being.
+
+Remember: seeking help is a sign of strength, not weakness. Taking care of your mental health enables you to better serve your patients, colleagues, and loved ones.
+
+*Prioritize your mental health today. You deserve the same compassionate care you provide to others.*`,
+          excerpt: "A comprehensive guide to mental health and wellness, covering stress management, burnout prevention, building resilience, and maintaining psychological well-being in healthcare settings.",
+          created_at: "2024-12-05",
+          status: "published",
+          category: "Mental Health",
+          tags: ["mental-health", "stress-management", "burnout-prevention", "wellness", "healthcare", "psychology"],
+          view_count: 1674
+        },
+        {
+          id: 4,
+          title: "Preventive Care: The Foundation of Long-Term Health",
+          content: `Preventive care is one of the most powerful tools we have in healthcare today. By focusing on prevention rather than treatment alone, we can dramatically improve health outcomes, reduce healthcare costs, and enhance quality of life. This comprehensive guide outlines essential preventive care strategies for all ages.
+
+## Understanding Preventive Care
+
+Preventive care encompasses services, screenings, and lifestyle interventions designed to prevent illness, detect health problems early, or maintain optimal health. It's divided into three main categories:
+
+### Primary Prevention
+- Prevents disease before it occurs
+- Examples: vaccinations, healthy lifestyle choices
+- Most cost-effective approach to healthcare
+
+### Secondary Prevention
+- Early detection of disease when treatment is most effective
+- Examples: cancer screenings, blood pressure checks
+- Catches problems before symptoms appear
+
+### Tertiary Prevention
+- Managing existing conditions to prevent complications
+- Examples: diabetes management, cardiac rehabilitation
+- Improves quality of life and outcomes
+
+## Age-Specific Preventive Care Guidelines
+
+### Children and Adolescents (0-18 years)
+
+**Infancy and Early Childhood (0-5 years):**
+- Regular pediatric checkups (15 visits by age 3)
+- Complete vaccination schedule
+- Vision and hearing screenings
+- Developmental milestone assessments
+- Lead poisoning screening
+- Growth and nutrition monitoring
+
+**School Age (6-11 years):**
+- Annual well-child visits
+- Vision and hearing checks
+- BMI monitoring
+- Blood pressure screening
+- Scoliosis screening
+- Dental care every 6 months
+
+**Adolescence (12-18 years):**
+- Annual physical examinations
+- HPV vaccination series
+- Mental health screening
+- Substance abuse education
+- Sexual health education
+- Sports physical examinations
+- College immunization updates
+
+### Young Adults (19-39 years)
+
+**Essential Screenings:**
+- Blood pressure: Every 2 years
+- Cholesterol: Every 4-6 years
+- Diabetes screening: Every 3 years (if risk factors present)
+- Skin cancer screening: Annual if high risk
+- Cervical cancer screening: Every 3 years (ages 21-65)
+- Testicular self-exam: Monthly
+- Breast self-exam: Monthly
+
+**Lifestyle Focus:**
+- Establish healthy eating patterns
+- Regular exercise routine (150 minutes weekly)
+- Stress management techniques
+- Limit alcohol consumption
+- No tobacco use
+- Safe sexual practices
+- Mental health awareness
+
+### Middle-Aged Adults (40-64 years)
+
+**Key Screenings:**
+- Mammography: Every 1-2 years (starting age 40-50)
+- Colonoscopy: Every 10 years (starting age 45-50)
+- Prostate screening: Discuss with provider (starting age 50)
+- Bone density: Post-menopausal women
+- Eye exams: Every 2-4 years
+- Skin cancer screening: Annual
+
+**Health Maintenance:**
+- Blood pressure monitoring
+- Cholesterol management
+- Diabetes prevention/management
+- Weight management
+- Hormone health (perimenopause/andropause)
+- Career stress management
+- Family health history updates
+
+### Older Adults (65+ years)
+
+**Medicare-Covered Preventive Services:**
+- Annual wellness visits
+- Mammography
+- Colonoscopy
+- Cardiovascular screening
+- Diabetes screening
+- Osteoporosis screening
+- Glaucoma screening
+
+**Geriatric-Specific Care:**
+- Fall risk assessment
+- Cognitive screening
+- Medication review
+- Immunizations (flu, pneumonia, shingles)
+- Hearing assessments
+- Depression screening
+- Advance directive discussions
+
+## Essential Health Screenings by Category
+
+### Cardiovascular Health
+
+**Blood Pressure Monitoring:**
+- Target: Less than 120/80 mmHg for most adults
+- Check every 2 years if normal
+- More frequent if elevated
+- Home monitoring beneficial
+
+**Cholesterol Screening:**
+- Total cholesterol, LDL, HDL, triglycerides
+- Starting age 20, every 4-6 years
+- More frequent if abnormal
+- Lifestyle modifications first-line
+
+**Cardiovascular Risk Assessment:**
+- 10-year risk calculators
+- Consider family history
+- Lifestyle factor evaluation
+- Early intervention strategies
+
+### Cancer Screening
+
+**Breast Cancer:**
+- Self-exam: Monthly starting age 20
+- Clinical exam: Every 1-3 years ages 20-39
+- Mammography: Annually starting age 40-50
+- High-risk individuals: Earlier screening, MRI
+
+**Cervical Cancer:**
+- Pap smear: Every 3 years ages 21-65
+- HPV testing: Every 5 years ages 30-65
+- Combination testing preferred
+- Stop at age 65 if adequate screening
+
+**Colorectal Cancer:**
+- Colonoscopy: Every 10 years starting age 45
+- Stool testing: Annual
+- CT colonography: Every 5 years
+- Flexible sigmoidoscopy: Every 5 years
+
+**Prostate Cancer:**
+- Discuss screening at age 50 (45 if high risk)
+- PSA testing with digital rectal exam
+- Shared decision-making important
+- Consider life expectancy and preferences
+
+**Skin Cancer:**
+- Monthly self-examination
+- Annual dermatology screening if high risk
+- Sun protection education
+- Mole mapping for high-risk patients
+
+### Metabolic Health
+
+**Diabetes Screening:**
+- Fasting glucose or A1C
+- Every 3 years starting age 45
+- Earlier if risk factors present
+- Prediabetes interventions
+
+**Thyroid Function:**
+- TSH screening
+- Consider in women over 60
+- Symptoms-based testing
+- Pregnancy screening
+
+**Lipid Disorders:**
+- Comprehensive metabolic panel
+- Lifestyle counseling
+- Medication when appropriate
+- Regular monitoring
+
+## Immunizations Across the Lifespan
+
+### Childhood Vaccines
+- DTaP (Diphtheria, Tetanus, Pertussis)
+- Polio (IPV)
+- MMR (Measles, Mumps, Rubella)
+- Varicella (Chickenpox)
+- Hepatitis A and B
+- HIB (Haemophilus influenzae type b)
+- Pneumococcal (PCV13)
+- Rotavirus
+- Influenza (annual)
+
+### Adolescent Vaccines
+- Tdap booster
+- HPV series (ages 11-12, catch-up to 26)
+- Meningococcal ACWY
+- Annual influenza
+
+### Adult Vaccines
+- Tdap: Once, then Td every 10 years
+- Influenza: Annual
+- HPV: Through age 26 (catch-up)
+- Varicella: If no immunity
+- MMR: If no immunity
+- Hepatitis A/B: Based on risk factors
+
+### Older Adult Vaccines
+- Annual influenza
+- Pneumococcal (PCV13, PPSV23)
+- Shingles (Zoster): Age 50+
+- Tdap: If not previously received
+
+## Lifestyle Medicine and Prevention
+
+### Nutrition Guidelines
+
+**Mediterranean Diet Principles:**
+- Emphasis on fruits, vegetables, whole grains
+- Healthy fats (olive oil, nuts, avocados)
+- Lean proteins (fish, poultry, legumes)
+- Limited processed foods and added sugars
+- Moderate alcohol consumption (if appropriate)
+
+**Portion Control:**
+- Use smaller plates and bowls
+- Fill half plate with vegetables
+- Quarter plate lean protein
+- Quarter plate whole grains
+- Mindful eating practices
+
+### Physical Activity Recommendations
+
+**Aerobic Exercise:**
+- 150 minutes moderate-intensity weekly
+- Or 75 minutes vigorous-intensity
+- Break into manageable sessions
+- Include activities you enjoy
+
+**Strength Training:**
+- 2+ days per week
+- Major muscle groups
+- Progressive resistance
+- Functional movements
+
+**Flexibility and Balance:**
+- Daily stretching
+- Yoga or tai chi
+- Balance exercises for fall prevention
+- Improves quality of life
+
+### Sleep Hygiene
+
+**Sleep Recommendations:**
+- 7-9 hours for adults
+- Consistent sleep schedule
+- Cool, dark, quiet environment
+- Limit screens before bedtime
+- Comfortable mattress and pillows
+
+**Sleep Disorders:**
+- Sleep apnea screening
+- Insomnia management
+- Restless leg syndrome
+- Impact on overall health
+
+### Stress Management
+
+**Stress Reduction Techniques:**
+- Deep breathing exercises
+- Progressive muscle relaxation
+- Mindfulness meditation
+- Regular physical activity
+- Social support networks
+
+**Work-Life Balance:**
+- Set boundaries
+- Take regular breaks
+- Use vacation time
+- Pursue hobbies
+- Professional development
+
+## Environmental Health and Safety
+
+### Home Safety
+- Smoke and carbon monoxide detectors
+- Fire safety planning
+- Fall prevention modifications
+- Safe storage of medications
+- Water safety measures
+
+### Workplace Safety
+- Ergonomic assessments
+- Personal protective equipment
+- Injury prevention programs
+- Stress management resources
+- Regular safety training
+
+### Community Health
+- Air quality awareness
+- Water quality testing
+- Food safety practices
+- Environmental toxin reduction
+- Emergency preparedness
+
+## Technology in Preventive Care
+
+### Wearable Devices
+- Activity trackers
+- Heart rate monitors
+- Sleep tracking
+- Blood glucose monitors
+- Blood pressure cuffs
+
+### Health Apps
+- Medication reminders
+- Symptom tracking
+- Nutrition logging
+- Exercise planning
+- Appointment scheduling
+
+### Telemedicine
+- Remote consultations
+- Health monitoring
+- Medication management
+- Specialist access
+- Follow-up care
+
+## Creating Your Personal Prevention Plan
+
+### Health Risk Assessment
+1. Family medical history
+2. Personal health history
+3. Lifestyle factor evaluation
+4. Environmental exposures
+5. Social determinants of health
+
+### Goal Setting
+- SMART goals (Specific, Measurable, Achievable, Relevant, Time-bound)
+- Small, sustainable changes
+- Regular progress monitoring
+- Celebrate successes
+- Adjust as needed
+
+### Healthcare Partnership
+- Find primary care provider
+- Regular check-ups
+- Open communication
+- Shared decision-making
+- Care coordination
+
+## Financial Aspects of Preventive Care
+
+### Insurance Coverage
+- Understand your benefits
+- Maximize preventive services
+- In-network providers
+- Annual limits and restrictions
+- Health Savings Accounts (HSAs)
+
+### Cost-Effective Strategies
+- Community health programs
+- Workplace wellness initiatives
+- Generic medications
+- Lifestyle modifications
+- Early intervention
+
+## Conclusion
+
+Preventive care is an investment in your future health and quality of life. By following age-appropriate screening guidelines, maintaining healthy lifestyle choices, and partnering with healthcare providers, you can significantly reduce your risk of chronic disease and enjoy optimal health throughout your life.
+
+Remember: prevention is always easier and more cost-effective than treatment. Start today with small, manageable changes that will compound over time into significant health benefits.
+
+*Your future self will thank you for the preventive care choices you make today.*`,
+          excerpt: "A comprehensive guide to preventive healthcare covering age-specific screenings, immunizations, lifestyle medicine, and creating personalized prevention strategies for optimal long-term health.",
+          created_at: "2024-12-04",
+          status: "published",
+          category: "Preventive Care",
+          tags: ["preventive-care", "screening", "immunizations", "lifestyle-medicine", "health-maintenance"],
+          view_count: 1456
+        },
+        {
+          id: 5,
+          title: "Nutrition and Wellness: Evidence-Based Dietary Guidelines for Optimal Health",
+          content: `Nutrition plays a fundamental role in preventing disease, maintaining health, and optimizing quality of life. This comprehensive guide provides evidence-based dietary recommendations and practical strategies for achieving optimal nutrition throughout all stages of life.
+
+## Understanding Nutrition Fundamentals
+
+### Macronutrients
+
+**Carbohydrates:**
+- Primary energy source for the body
+- 45-65% of total daily calories
+- Focus on complex carbohydrates
+- Examples: whole grains, fruits, vegetables, legumes
+- Limit refined sugars and processed foods
+
+**Proteins:**
+- Essential for tissue repair and immune function
+- 10-35% of total daily calories
+- Complete vs. incomplete proteins
+- Animal sources: meat, fish, poultry, dairy, eggs
+- Plant sources: legumes, nuts, seeds, quinoa
+
+**Fats:**
+- Essential for hormone production and nutrient absorption
+- 20-35% of total daily calories
+- Emphasis on unsaturated fats
+- Omega-3 fatty acids particularly important
+- Limit saturated and trans fats
+
+### Micronutrients
+
+**Vitamins:**
+- Fat-soluble: A, D, E, K
+- Water-soluble: B-complex, C
+- Essential for metabolic processes
+- Best obtained from whole foods
+- Supplementation when deficient
+
+**Minerals:**
+- Calcium: Bone health, muscle function
+- Iron: Oxygen transport, energy production
+- Magnesium: Enzyme function, muscle health
+- Potassium: Blood pressure regulation
+- Zinc: Immune function, wound healing
+
+**Antioxidants:**
+- Combat oxidative stress
+- Reduce inflammation
+- Protect against chronic disease
+- Found in colorful fruits and vegetables
+- Include vitamin C, E, selenium, carotenoids
+
+## The Mediterranean Diet: Gold Standard
+
+### Core Principles:
+- High consumption of olive oil
+- Daily fruits and vegetables
+- Whole grains and legumes
+- Fish and seafood twice weekly
+- Moderate dairy consumption
+- Limited red meat
+- Moderate wine consumption (if appropriate)
+
+### Health Benefits:
+- Reduced cardiovascular disease risk
+- Lower rates of diabetes
+- Decreased inflammation
+- Better cognitive function
+- Improved longevity
+- Cancer risk reduction
+
+### Implementation Strategies:
+- Start with olive oil as primary fat
+- Increase vegetable servings gradually
+- Replace refined grains with whole grains
+- Add fish to weekly meal planning
+- Snack on nuts and fruits
+- Use herbs and spices instead of salt
+
+## Dietary Approaches by Health Condition
+
+### Cardiovascular Health
+
+**DASH Diet (Dietary Approaches to Stop Hypertension):**
+- Rich in fruits, vegetables, whole grains
+- Low-fat dairy products
+- Lean proteins
+- Limited sodium (< 2,300mg daily)
+- Reduced saturated and trans fats
+
+**Heart-Healthy Foods:**
+- Fatty fish (salmon, mackerel, sardines)
+- Nuts and seeds
+- Berries and dark leafy greens
+- Avocados and olive oil
+- Oatmeal and whole grains
+
+**Foods to Limit:**
+- Processed and packaged foods
+- Sugary beverages
+- Excessive alcohol
+- High-sodium foods
+- Fried and fast foods
+
+### Diabetes Management
+
+**Carbohydrate Management:**
+- Consistent carb intake at meals
+- Choose low glycemic index foods
+- Portion control using plate method
+- Regular meal timing
+- Monitor blood glucose response
+
+**Beneficial Foods:**
+- Non-starchy vegetables
+- Lean proteins
+- High-fiber whole grains
+- Healthy fats in moderation
+- Low-fat dairy
+
+**Blood Sugar Control:**
+- Pair carbs with protein or fat
+- Include fiber-rich foods
+- Stay hydrated
+- Regular physical activity
+- Medication adherence
+
+### Weight Management
+
+**Sustainable Weight Loss:**
+- Create moderate calorie deficit (500-750 calories/day)
+- Focus on nutrient-dense foods
+- Increase protein intake
+- Include regular physical activity
+- Set realistic goals
+
+**Mindful Eating:**
+- Eat slowly and without distractions
+- Listen to hunger and fullness cues
+- Practice portion control
+- Plan meals in advance
+- Keep food diary
+
+**Metabolism Boosters:**
+- Regular strength training
+- Adequate protein intake
+- Green tea consumption
+- Spicy foods
+- Adequate sleep
+
+### Digestive Health
+
+**Gut-Friendly Foods:**
+- Probiotics: yogurt, kefir, fermented vegetables
+- Prebiotics: garlic, onions, bananas, asparagus
+- Fiber-rich foods: fruits, vegetables, whole grains
+- Bone broth for gut lining
+- Anti-inflammatory foods
+
+**Foods to Avoid:**
+- Processed foods
+- Excessive sugar
+- Artificial sweeteners
+- Trans fats
+- Food allergens/intolerances
+
+## Special Population Nutrition
+
+### Pregnancy and Lactation
+
+**Key Nutrients:**
+- Folic acid: 400-800 mcg daily
+- Iron: 27mg daily during pregnancy
+- Calcium: 1,000mg daily
+- Omega-3 DHA: 200mg daily
+- Vitamin D: 600 IU daily
+
+**Food Safety:**
+- Avoid raw fish, meat, eggs
+- Limit high-mercury fish
+- Pasteurized dairy products only
+- Wash fruits and vegetables thoroughly
+- Limit caffeine intake
+
+### Pediatric Nutrition
+
+**Age-Appropriate Guidelines:**
+- Breastfeeding exclusive for 6 months
+- Introduction of solid foods at 6 months
+- Variety of colors and textures
+- Limit juice and sugary drinks
+- Family meal participation
+
+**Common Concerns:**
+- Picky eating behaviors
+- Food allergies and intolerances
+- Adequate calcium and vitamin D
+- Iron deficiency prevention
+- Healthy weight maintenance
+
+### Older Adult Nutrition
+
+**Aging-Related Changes:**
+- Decreased appetite
+- Reduced taste and smell
+- Medication interactions
+- Dental and swallowing issues
+- Decreased absorption
+
+**Nutritional Priorities:**
+- Adequate protein (1.0-1.2g/kg body weight)
+- Calcium and vitamin D
+- B12 supplementation
+- Hydration maintenance
+- Social dining opportunities
+
+## Meal Planning and Preparation
+
+### Weekly Meal Planning
+
+**Planning Steps:**
+1. Assess schedule and time availability
+2. Choose recipes with overlapping ingredients
+3. Create detailed shopping list
+4. Prep ingredients in advance
+5. Batch cook when possible
+
+**Time-Saving Strategies:**
+- One-pot meals
+- Slow cooker recipes
+- Freezer meal prep
+- Pre-cut vegetables
+- Protein batch cooking
+
+### Healthy Cooking Methods
+
+**Recommended Techniques:**
+- Steaming and sautéing
+- Grilling and broiling
+- Roasting and baking
+- Stir-frying with minimal oil
+- Raw preparations
+
+**Flavor Enhancement:**
+- Fresh and dried herbs
+- Spices and spice blends
+- Citrus juice and zest
+- Vinegars and healthy oils
+- Garlic and onions
+
+### Kitchen Equipment
+
+**Essential Tools:**
+- Sharp knives and cutting boards
+- Measuring cups and spoons
+- Food scale for portions
+- Steamer basket
+- Non-stick or ceramic cookware
+
+**Advanced Equipment:**
+- Food processor
+- High-speed blender
+- Instant pot or slow cooker
+- Air fryer
+- Herb garden
+
+## Nutritional Supplements
+
+### When Supplements Are Needed
+
+**Common Deficiencies:**
+- Vitamin D (especially in northern climates)
+- Vitamin B12 (vegans and older adults)
+- Iron (menstruating women, vegetarians)
+- Omega-3 fatty acids
+- Calcium (dairy-free diets)
+
+**Quality Considerations:**
+- Third-party testing
+- USP or NSF certification
+- Appropriate dosages
+- Bioavailable forms
+- Minimal additives
+
+**Supplement Safety:**
+- Consult healthcare provider
+- Check for medication interactions
+- Follow recommended dosages
+- Monitor for side effects
+- Regular blood testing
+
+## Hydration and Beverages
+
+### Water Intake Guidelines
+- 8-10 cups daily for most adults
+- Increase with exercise and heat
+- Monitor urine color
+- Include water-rich foods
+- Limit dehydrating beverages
+
+### Healthy Beverage Choices
+- Plain water (filtered if needed)
+- Herbal teas
+- Green tea
+- Low-fat milk
+- Vegetable juices
+
+### Beverages to Limit
+- Sugar-sweetened drinks
+- Excessive caffeine
+- Alcohol (moderate if consumed)
+- Energy drinks
+- Artificially sweetened beverages
+
+## Reading Food Labels
+
+### Understanding Labels
+
+**Ingredient Lists:**
+- Listed by weight (heaviest first)
+- Avoid long lists of unpronounceable ingredients
+- Watch for hidden sugars
+- Identify allergens
+- Look for whole food ingredients
+
+**Nutrition Facts Panel:**
+- Serving size awareness
+- Calories per serving
+- % Daily Value guidance
+- Fiber and protein content
+- Sodium and added sugar limits
+
+**Marketing Claims:**
+- "Natural" vs. "organic"
+- "Sugar-free" considerations
+- "Low-fat" vs. "reduced-fat"
+- "Whole grain" verification
+- "Heart-healthy" substantiation
+
+## Eating Out and Social Situations
+
+### Restaurant Strategies
+- Review menu online beforehand
+- Ask about preparation methods
+- Request modifications
+- Control portion sizes
+- Balance indulgences with healthy choices
+
+### Social Eating
+- Eat before events if needed
+- Bring healthy dish to share
+- Focus on socializing vs. food
+- Practice moderation
+- Don't feel guilty about occasional treats
+
+## Common Nutrition Myths
+
+### Debunked Myths:
+- "Carbs are bad for you"
+- "Fat makes you fat"
+- "Detox diets are necessary"
+- "Gluten-free is healthier for everyone"
+- "Supplements can replace a healthy diet"
+
+### Evidence-Based Facts:
+- Whole foods are superior to supplements
+- Balance and moderation work best
+- Individual needs vary
+- Sustainable changes beat quick fixes
+- Professional guidance is valuable
+
+## Building Healthy Habits
+
+### Behavior Change Strategies
+
+**Start Small:**
+- One change at a time
+- 21-day habit formation
+- Track progress
+- Celebrate successes
+- Learn from setbacks
+
+**Environmental Changes:**
+- Stock healthy foods
+- Remove tempting items
+- Prepare foods in advance
+- Create supportive social environment
+- Plan for challenging situations
+
+### Long-Term Success
+
+**Sustainable Practices:**
+- Flexible eating patterns
+- Regular self-monitoring
+- Continuous education
+- Professional support
+- Lifestyle integration
+
+**Avoiding Pitfalls:**
+- All-or-nothing thinking
+- Restriction-binge cycles
+- Comparison to others
+- Perfectionism
+- Ignoring hunger/fullness cues
+
+## Conclusion
+
+Optimal nutrition is achievable through evidence-based dietary patterns that emphasize whole foods, balance, and sustainability. By understanding nutrition fundamentals, implementing practical strategies, and making gradual changes, you can significantly improve your health and quality of life.
+
+Remember: the best diet is one you can maintain long-term that meets your individual needs, preferences, and health goals. Focus on progress, not perfection, and seek professional guidance when needed.
+
+*Invest in your health today through the power of nutrition. Your body is the only place you have to live – make it a healthy home.*`,
+          excerpt: "An evidence-based comprehensive guide to nutrition and wellness covering macronutrients, special diets, meal planning, supplementation, and sustainable healthy eating strategies for optimal health.",
+          created_at: "2024-12-03",
+          status: "draft",
+          category: "Nutrition",
+          tags: ["nutrition", "diet", "wellness", "meal-planning", "healthy-eating", "evidence-based"],
+          view_count: 987
+        }
+      ]);
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/blog/categories');
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([
+        { id: 1, name: 'Cardiology', color: '#EF4444', description: 'Heart and cardiovascular health' },
+        { id: 2, name: 'Endocrinology', color: '#10B981', description: 'Hormone and diabetes related topics' },
+        { id: 3, name: 'General Health', color: '#3B82F6', description: 'General health and wellness' }
+      ]);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await api.get('/blog/stats');
+      setStats(response.data || stats);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Calculate stats from current blogs
+      const published = blogs.filter(b => b.status === 'published').length;
+      const draft = blogs.filter(b => b.status === 'draft').length;
+      const totalViews = blogs.reduce((sum, b) => sum + (b.view_count || 0), 0);
+      
+      setStats({
+        totalPosts: blogs.length,
+        publishedPosts: published,
+        draftPosts: draft,
+        totalViews: totalViews,
+        totalComments: 0
+      });
+    }
+  };
+
+  // Form handlers
+  const handleBlogFormChange = (field, value) => {
+    setBlogForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddTag = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      const newTag = tagInput.trim();
+      if (!blogForm.tags.includes(newTag)) {
+        setBlogForm(prev => ({ 
+          ...prev, 
+          tags: [...prev.tags, newTag] 
+        }));
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setBlogForm(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  // Blog CRUD operations
+  const handleCreateBlog = async () => {
+    try {
+      console.log('💾 handleCreateBlog: Starting creation...', blogForm);
+      setLoading(true);
+      const response = await api.post('/blog/posts', blogForm);
+      console.log('💾 handleCreateBlog: API response:', response);
+      
+      resetForm();
+      setShowBlogForm(false);
+      fetchBlogPosts();
+      fetchStats();
+      alert('Blog created successfully!');
+    } catch (error) {
+      console.error('💥 Error creating blog:', error);
+      console.error('💥 Create blog error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Demo mode: Add to local state
+      const newBlog = {
+        id: Date.now(),
+        ...blogForm,
+        created_at: new Date().toISOString(),
+        view_count: 0
+      };
+      setBlogs(prev => [newBlog, ...prev]);
+      resetForm();
+      setShowBlogForm(false);
+      alert('Blog created successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditBlog = (blog) => {
+    setEditingBlog(blog.id);
+    setBlogForm({
+      title: blog.title || '',
+      content: blog.content || '',
+      excerpt: blog.excerpt || '',
+      category_id: blog.category_id || '',
+      tags: Array.isArray(blog.tags) ? blog.tags : 
+            (typeof blog.tags === 'string' ? JSON.parse(blog.tags || '[]') : []),
+      status: blog.status || 'draft'
+    });
+    setShowBlogForm(true);
+  };
+
+  const handleUpdateBlog = async () => {
+    if (!editingBlog) {
+      console.error('No blog selected for editing');
+      alert('Error: No blog selected for editing');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('🔄 handleUpdateBlog: Updating blog ID:', editingBlog, 'with data:', blogForm);
+      
+      const response = await api.put(`/blog/posts/${editingBlog}`, blogForm);
+      console.log('🔄 handleUpdateBlog: API response:', response);
+      
+      resetForm();
+      setEditingBlog(null);
+      setShowBlogForm(false);
+      fetchBlogPosts();
+      fetchStats();
+      alert('Blog updated successfully!');
+    } catch (error) {
+      console.error('💥 Error updating blog:', error);
+      console.error('💥 Update blog error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Demo mode: Update local state
+      setBlogs(prev => prev.map(blog => 
+        blog.id === editingBlog ? { ...blog, ...blogForm, updated_at: new Date().toISOString() } : blog
+      ));
+      resetForm();
+      setEditingBlog(null);
+      setShowBlogForm(false);
+      alert('Blog updated successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteBlog = async (blogId) => {
+    if (!window.confirm('Are you sure you want to delete this blog?')) return;
+    
+    try {
+      setLoading(true);
+      await api.delete(`/blog/posts/${blogId}`);
+      fetchBlogPosts();
+      fetchStats();
+      alert('Blog deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+      
+      // Demo mode: Remove from local state
+      setBlogs(prev => prev.filter(blog => blog.id !== blogId));
+      alert('Blog deleted successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Category CRUD operations
+  const handleCreateCategory = async () => {
+    try {
+      setLoading(true);
+      await api.post('/blog/categories', categoryForm);
+      
+      setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+      setShowCategoryForm(false);
+      fetchCategories();
+      alert('Category created successfully!');
+    } catch (error) {
+      console.error('Error creating category:', error);
+      
+      // Demo mode: Add to local state
+      const newCategory = {
+        id: Date.now(),
+        ...categoryForm
+      };
+      setCategories(prev => [...prev, newCategory]);
+      setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+      setShowCategoryForm(false);
+      alert('Category created successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category.id);
+    setCategoryForm({
+      name: category.name,
+      description: category.description || '',
+      color: category.color || '#3B82F6'
+    });
+    setShowCategoryForm(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    try {
+      setLoading(true);
+      await api.put(`/blog/categories/${editingCategory}`, categoryForm);
+      
+      setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+      setEditingCategory(null);
+      setShowCategoryForm(false);
+      fetchCategories();
+      alert('Category updated successfully!');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      
+      // Demo mode: Update local state
+      setCategories(prev => prev.map(cat => 
+        cat.id === editingCategory ? { ...cat, ...categoryForm } : cat
+      ));
+      setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+      setEditingCategory(null);
+      setShowCategoryForm(false);
+      alert('Category updated successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+      setLoading(true);
+      await api.delete(`/blog/categories/${categoryId}`);
+      fetchCategories();
+      alert('Category deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      
+      // Demo mode: Remove from local state
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      alert('Category deleted successfully! (Demo mode)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setBlogForm({
+      title: '',
+      content: '',
+      excerpt: '',
+      category_id: '',
+      tags: [],
+      status: 'draft'
+    });
+    setTagInput('');
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getCategoryById = (categoryId) => {
+    return categories.find(cat => cat.id === categoryId);
+  };
+
+  const filteredBlogs = blogs.filter(blog => {
+    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (blog.content || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (blog.excerpt || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || blog.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || blog.category_id?.toString() === filterCategory;
+    
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Blog Management</h1>
+          <p className="text-muted-foreground">Create and manage professional blog posts to share medical insights.</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCategoryForm(true)}
+            className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/90 transition-colors flex items-center gap-2"
+          >
+            <Folder size={20} />
+            Categories
+          </button>
+          <button
+            onClick={() => {
+              resetForm();
+              setEditingBlog(null);
+              setShowBlogForm(true);
+            }}
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            <Plus size={20} />
+            New Blog Post
+          </button>
+        </div>
+      </div>
+
+      {/* Blog Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Posts</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalPosts}</p>
+            </div>
+            <BookOpen className="h-8 w-8 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Published</p>
+              <p className="text-2xl font-bold text-green-600">{stats.publishedPosts}</p>
+            </div>
+            <Globe className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Drafts</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.draftPosts}</p>
+            </div>
+            <FileText className="h-8 w-8 text-orange-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Views</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.totalViews}</p>
+            </div>
+            <Eye className="h-8 w-8 text-purple-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Comments</p>
+              <p className="text-2xl font-bold text-indigo-600">{stats.totalComments}</p>
+            </div>
+            <BarChart3 className="h-8 w-8 text-indigo-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Category Management Modal */}
+      {showCategoryForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-2xl font-bold">
+                {editingCategory ? 'Edit Category' : 'Create New Category'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCategoryForm(false);
+                  setEditingCategory(null);
+                  setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Category Name *</label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Enter category name..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24 resize-none"
+                  placeholder="Optional description..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={categoryForm.color}
+                    onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-12 h-12 rounded border border-gray-300"
+                  />
+                  <span className="text-sm text-gray-600">{categoryForm.color}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  setShowCategoryForm(false);
+                  setEditingCategory(null);
+                  setCategoryForm({ name: '', description: '', color: '#3B82F6' });
+                }}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+                disabled={!categoryForm.name || loading}
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingCategory ? 'Update Category' : 'Create Category'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Blog Form Modal */}
+      {showBlogForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {editingBlog ? `Edit Blog Post (ID: ${editingBlog})` : 'Create New Blog Post'}
+                </h2>
+                {editingBlog && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Editing: {blogForm.title || 'Untitled'}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowBlogForm(false);
+                  setEditingBlog(null);
+                  resetForm();
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Blog Title *</label>
+                    <input
+                      type="text"
+                      value={blogForm.title}
+                      onChange={(e) => handleBlogFormChange('title', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Enter an engaging blog title..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Category</label>
+                    <select
+                      value={blogForm.category_id}
+                      onChange={(e) => handleBlogFormChange('category_id', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Status</label>
+                    <select
+                      value={blogForm.status}
+                      onChange={(e) => handleBlogFormChange('status', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Tags</label>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleAddTag}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Type a tag and press Enter..."
+                      />
+                      {blogForm.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {blogForm.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+                            >
+                              <Tag size={12} />
+                              {tag}
+                              <button
+                                onClick={() => handleRemoveTag(tag)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Excerpt</label>
+                  <textarea
+                    value={blogForm.excerpt}
+                    onChange={(e) => handleBlogFormChange('excerpt', e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-32 resize-none"
+                    placeholder="Brief description of the blog post..."
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Content *</label>
+                <textarea
+                  value={blogForm.content}
+                  onChange={(e) => handleBlogFormChange('content', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-64 resize-none"
+                  placeholder="Write your blog content here..."
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Tip: Use HTML tags for rich formatting like &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, etc.
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t flex justify-between">
+              <div className="text-sm text-gray-500">
+                * Required fields
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    resetForm();
+                    setEditingBlog(null);
+                    setShowBlogForm(false);
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingBlog ? handleUpdateBlog : handleCreateBlog}
+                  disabled={!blogForm.title || !blogForm.content || loading}
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save size={16} />
+                  {editingBlog ? `Update Blog (ID: ${editingBlog})` : 'Create Blog'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters and Search */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search blogs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+          </div>
+          
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="all">All Status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+          
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="all">All Categories</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          
+          <div className="flex items-center text-sm text-gray-600">
+            <Filter size={16} className="mr-2" />
+            {filteredBlogs.length} post(s) found
+          </div>
+        </div>
+      </div>
+
+      {/* Categories Section */}
+      {categories.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Categories</h3>
+            <button
+              onClick={() => setShowCategoryForm(true)}
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+            >
+              <Plus size={16} />
+              Add Category
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                style={{ borderLeftColor: category.color, borderLeftWidth: '4px' }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium text-gray-900">{category.name}</h4>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditCategory(category)}
+                      className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    >
+                      <Edit3 size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(category.id)}
+                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+                {category.description && (
+                  <p className="text-sm text-gray-600 mb-2">{category.description}</p>
+                )}
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{blogs.filter(blog => blog.category_id === category.id).length} posts</span>
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Blog List */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-6 border-b">
+          <h3 className="text-lg font-semibold">Blog Posts</h3>
+        </div>
+        
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin mx-auto h-8 w-8 border-2 border-primary border-t-transparent rounded-full mb-4"></div>
+            <p className="text-gray-500">Loading blog posts...</p>
+          </div>
+        ) : filteredBlogs.length === 0 ? (
+          <div className="p-12 text-center">
+            <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No blogs found</h3>
+            <p className="text-gray-500 mb-4">
+              {searchTerm || filterStatus !== 'all' || filterCategory !== 'all' 
+                ? 'Try adjusting your search or filters.' 
+                : 'Get started by creating your first blog post.'
+              }
+            </p>
+            {!searchTerm && filterStatus === 'all' && filterCategory === 'all' && (
+              <button
+                onClick={() => {
+                  resetForm();
+                  setEditingBlog(null);
+                  setShowBlogForm(true);
+                }}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Create Your First Blog
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredBlogs.map((blog) => {
+              const category = getCategoryById(blog.category_id);
+              const tags = Array.isArray(blog.tags) ? blog.tags : 
+                          (typeof blog.tags === 'string' ? JSON.parse(blog.tags || '[]') : []);
+              
+              return (
+                <div key={blog.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{blog.title}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          blog.status === 'published' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {blog.status === 'published' ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-600 mb-3 line-clamp-2">{blog.excerpt}</p>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          {formatDate(blog.created_at)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye size={14} />
+                          {blog.view_count || 0} views
+                        </span>
+                        {category && (
+                          <span 
+                            className="px-2 py-1 rounded text-xs"
+                            style={{ 
+                              backgroundColor: `${category.color}20`, 
+                              color: category.color 
+                            }}
+                          >
+                            {category.name}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {tags.map((tag, index) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => handleEditBlog(blog)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteBlog(blog.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BlogsTab;
