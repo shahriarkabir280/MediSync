@@ -76,7 +76,7 @@ export async function createChatSchema() {
         deleted_at TIMESTAMP,
         is_deleted BOOLEAN DEFAULT FALSE,
         delete_for_everyone BOOLEAN DEFAULT FALSE,
-        CONSTRAINT chk_message_type CHECK (message_type IN ('text', 'image', 'video', 'audio', 'file', 'voice', 'location'))
+        CONSTRAINT chk_message_type CHECK (message_type IN ('text', 'image', 'video', 'audio', 'file', 'voice', 'document', 'location'))
       )
     `;
     console.log('✅ Created messages table');

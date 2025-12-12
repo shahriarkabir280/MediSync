@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, Plus, Send, Paperclip, Smile, MoreVertical,
-  Phone, Video, ArrowLeft, Check, CheckCheck, X, Reply, Trash2, PinIcon, BellOff, Archive
+  Phone, Video, ArrowLeft, Check, CheckCheck, X, Reply, Trash2, PinIcon, BellOff, Archive,
+  Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
+  ExternalLink, Eye
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -35,11 +37,19 @@ const ChatTab = () => {
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   // Refs
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messageInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingIntervalRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   // WebSocket
   const socket = useChatSocket(currentUser);
@@ -221,6 +231,119 @@ const ChatTab = () => {
       scrollToBottom();
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file, messageType = 'file') => {
+    if (!selectedChat || !file) return;
+
+    try {
+      setUploadingFile(true);
+
+      // Upload file
+      const uploadResponse = await chatApi.uploadFile(file);
+      const fileData = uploadResponse.file;
+
+      // Send message with file (use file.name or fileData.name)
+      const response = await chatApi.sendMessage(
+        selectedChat.id,
+        currentUser,
+        file.name || fileData.name || 'File',
+        {
+          messageType,
+          mediaUrl: fileData.url,
+          mediaName: fileData.name,
+          mediaSize: fileData.size,
+          mediaType: fileData.type || file.type
+        }
+      );
+
+      const newMessage = response.message;
+      setMessages(prev => [...prev, newMessage]);
+      
+      // Broadcast via WebSocket
+      socket.sendMessage(selectedChat.id, newMessage);
+      
+      // Update chat list
+      loadChats();
+      scrollToBottom();
+
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+      setShowAttachMenu(false);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e, type = 'file') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file, type);
+    }
+  };
+
+  // Start voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Create a file-like object from the blob
+        const fileName = `voice-${Date.now()}.webm`;
+        const audioFile = audioBlob;
+        audioFile.name = fileName;
+        audioFile.lastModified = Date.now();
+        
+        await handleFileUpload(audioFile, 'voice');
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      // Update recording time
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Failed to access microphone');
+    }
+  };
+
+  // Stop voice recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  // Cancel voice recording
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingIntervalRef.current);
+      audioChunksRef.current = [];
     }
   };
 
@@ -508,36 +631,123 @@ const ChatTab = () => {
 
           {/* Message Input */}
           <div className="bg-white border-t px-4 py-3">
-            <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Paperclip size={20} className="text-gray-600" />
-              </button>
-              
-              <input
-                ref={messageInputRef}
-                type="text"
-                placeholder="Type a message..."
-                value={messageInput}
-                onChange={(e) => {
-                  setMessageInput(e.target.value);
-                  handleTyping();
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Smile size={20} className="text-gray-600" />
-              </button>
-              
-              <button
-                onClick={handleSendMessage}
-                disabled={!messageInput.trim()}
-                className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <Send size={20} />
-              </button>
-            </div>
+            {isRecording ? (
+              // Recording UI
+              <div className="flex items-center space-x-3 py-2">
+                <div className="flex-1 flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Recording... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                  </span>
+                  <div className="flex-1 flex space-x-1">
+                    {[...Array(20)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-blue-500 rounded-full animate-pulse"
+                        style={{
+                          height: `${Math.random() * 20 + 10}px`,
+                          animationDelay: `${i * 0.1}s`
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={cancelRecording}
+                  className="p-2 hover:bg-gray-100 rounded-full text-red-600"
+                  title="Cancel"
+                >
+                  <X size={20} />
+                </button>
+                <button
+                  onClick={stopRecording}
+                  className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700"
+                  title="Send"
+                >
+                  <Send size={20} />
+                </button>
+              </div>
+            ) : (
+              // Normal input UI
+              <div className="flex items-center space-x-2">
+                {/* Attachment Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                    disabled={uploadingFile}
+                  >
+                    <Paperclip size={20} className="text-gray-600" />
+                  </button>
+                  
+                  {showAttachMenu && (
+                    <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border p-2 space-y-1 min-w-[150px]">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left"
+                      >
+                        <Image size={18} className="text-purple-600" />
+                        <span className="text-sm">Image</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar';
+                          input.onchange = (e) => handleFileSelect(e, 'document');
+                          input.click();
+                        }}
+                        className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-gray-100 rounded-lg text-left"
+                      >
+                        <File size={18} className="text-blue-600" />
+                        <span className="text-sm">Document</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Hidden file inputs */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => handleFileSelect(e, 'image')}
+                  className="hidden"
+                />
+                
+                <input
+                  type="text"
+                  ref={messageInputRef}
+                  placeholder={uploadingFile ? "Uploading..." : "Type a message..."}
+                  value={messageInput}
+                  onChange={(e) => {
+                    setMessageInput(e.target.value);
+                    handleTyping();
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && !uploadingFile && handleSendMessage()}
+                  disabled={uploadingFile}
+                  className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                />
+                
+                {messageInput.trim() ? (
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!messageInput.trim() || uploadingFile}
+                    className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <Send size={20} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={startRecording}
+                    className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+                    title="Record voice message"
+                  >
+                    <Mic size={20} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -657,21 +867,242 @@ const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete }) => {
         )}
         
         <div
-          className={`px-4 py-2 rounded-lg ${
+          className={`rounded-lg ${
             isOwn
               ? 'bg-blue-600 text-white'
               : 'bg-white text-gray-900 shadow'
           }`}
         >
-          {message.message_type !== 'text' && (
-            <div className="mb-2 text-sm font-medium opacity-80">
-              {message.message_type} message
+          {/* Image Message */}
+          {message.message_type === 'image' && message.media_url && (
+            <div className="relative group/image">
+              <img
+                src={`http://localhost:3001${message.media_url}`}
+                alt={message.media_name}
+                className="max-w-sm rounded-t-lg cursor-pointer hover:opacity-95 transition"
+                onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
+              />
+              
+              {/* Image Actions Overlay */}
+              <div className="absolute top-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity flex space-x-1">
+                <button
+                  onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
+                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
+                  title="View Full Size"
+                >
+                  <Eye size={16} />
+                </button>
+                <a
+                  href={`http://localhost:3001${message.media_url}`}
+                  download={message.media_name}
+                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
+                  title="Download"
+                >
+                  <Download size={16} />
+                </a>
+              </div>
+
+              {/* Image Info */}
+              <div className={`px-3 py-2 text-xs ${isOwn ? 'bg-blue-600' : 'bg-white'} rounded-b-lg border-t ${isOwn ? 'border-blue-500' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <FileImage size={14} className={isOwn ? 'text-blue-100' : 'text-gray-500'} />
+                    <span className={`truncate ${isOwn ? 'text-blue-100' : 'text-gray-600'}`}>
+                      {message.media_name || 'Image'}
+                    </span>
+                  </div>
+                  <span className={`ml-2 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                    {message.media_size ? `${(message.media_size / 1024).toFixed(0)} KB` : ''}
+                  </span>
+                </div>
+              </div>
+
+              {message.content && message.content !== message.media_name && (
+                <p className="px-4 py-2 whitespace-pre-wrap break-words">{message.content}</p>
+              )}
+            </div>
+          )}
+
+          {/* Voice Message */}
+          {message.message_type === 'voice' && message.media_url && (
+            <div className="px-4 py-3">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className={`p-2 rounded-full ${isOwn ? 'bg-blue-500' : 'bg-gray-200'}`}>
+                  <Mic size={18} className={isOwn ? 'text-white' : 'text-gray-600'} />
+                </div>
+                <div className="flex-1">
+                  <p className={`text-xs font-medium ${isOwn ? 'text-blue-100' : 'text-gray-600'}`}>
+                    Voice Message
+                  </p>
+                </div>
+                <a
+                  href={`http://localhost:3001${message.media_url}`}
+                  download={message.media_name || 'voice.webm'}
+                  className={`p-1.5 rounded-full hover:bg-opacity-80 transition ${isOwn ? 'hover:bg-blue-500' : 'hover:bg-gray-200'}`}
+                  title="Download"
+                >
+                  <Download size={14} className={isOwn ? 'text-blue-100' : 'text-gray-600'} />
+                </a>
+              </div>
+              <audio 
+                controls 
+                className="w-full"
+                style={{ 
+                  height: '36px',
+                  filter: isOwn ? 'invert(1) hue-rotate(180deg)' : 'none'
+                }}
+              >
+                <source src={`http://localhost:3001${message.media_url}`} type="audio/webm" />
+                <source src={`http://localhost:3001${message.media_url}`} type="audio/mp3" />
+                Your browser does not support audio playback.
+              </audio>
+            </div>
+          )}
+
+          {/* Video Message */}
+          {message.media_type?.startsWith('video/') && message.media_url && (
+            <div className="relative group/video">
+              <video
+                controls
+                className="max-w-sm rounded-t-lg"
+                style={{ maxHeight: '400px' }}
+              >
+                <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
+                Your browser does not support video playback.
+              </video>
+
+              {/* Video Actions Overlay */}
+              <div className="absolute top-2 right-2 opacity-0 group-hover/video:opacity-100 transition-opacity flex space-x-1">
+                <a
+                  href={`http://localhost:3001${message.media_url}`}
+                  download={message.media_name}
+                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
+                  title="Download"
+                >
+                  <Download size={16} />
+                </a>
+              </div>
+
+              {/* Video Info */}
+              <div className={`px-3 py-2 text-xs ${isOwn ? 'bg-blue-600' : 'bg-white'} rounded-b-lg border-t ${isOwn ? 'border-blue-500' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <FileVideo size={14} className={isOwn ? 'text-blue-100' : 'text-gray-500'} />
+                    <span className={`truncate ${isOwn ? 'text-blue-100' : 'text-gray-600'}`}>
+                      {message.media_name || 'Video'}
+                    </span>
+                  </div>
+                  <span className={`ml-2 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                    {message.media_size ? `${(message.media_size / (1024 * 1024)).toFixed(1)} MB` : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Document Message */}
+          {message.message_type === 'document' && message.media_url && (
+            <div className={`px-4 py-3 ${isOwn ? 'bg-blue-600' : 'bg-white'}`}>
+              <div className={`border rounded-lg p-3 ${isOwn ? 'border-blue-500 bg-blue-500' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-start space-x-3">
+                  {/* File Icon based on type */}
+                  <div className={`p-3 rounded-lg flex-shrink-0 ${isOwn ? 'bg-blue-400' : 'bg-gray-200'}`}>
+                    {message.media_name?.match(/\.(pdf)$/i) ? (
+                      <FileText size={24} className={isOwn ? 'text-white' : 'text-red-600'} />
+                    ) : message.media_name?.match(/\.(doc|docx)$/i) ? (
+                      <FileText size={24} className={isOwn ? 'text-white' : 'text-blue-600'} />
+                    ) : message.media_name?.match(/\.(zip|rar)$/i) ? (
+                      <File size={24} className={isOwn ? 'text-white' : 'text-yellow-600'} />
+                    ) : (
+                      <File size={24} className={isOwn ? 'text-white' : 'text-gray-600'} />
+                    )}
+                  </div>
+
+                  {/* File Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium text-sm truncate ${isOwn ? 'text-white' : 'text-gray-900'}`}>
+                      {message.media_name || 'Document'}
+                    </p>
+                    <p className={`text-xs mt-0.5 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {message.media_type?.split('/')[1]?.toUpperCase() || 'FILE'} • {message.media_size ? `${(message.media_size / 1024).toFixed(1)} KB` : 'Unknown size'}
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-2 mt-3">
+                      <a
+                        href={`http://localhost:3001${message.media_url}`}
+                        download={message.media_name}
+                        className={`flex items-center space-x-1 px-3 py-1.5 text-xs rounded-lg transition ${
+                          isOwn 
+                            ? 'bg-white text-blue-600 hover:bg-blue-50' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        <Download size={12} />
+                        <span>Download</span>
+                      </a>
+                      <a
+                        href={`http://localhost:3001${message.media_url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center space-x-1 px-3 py-1.5 text-xs rounded-lg transition ${
+                          isOwn 
+                            ? 'bg-blue-500 text-white hover:bg-blue-400' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        <ExternalLink size={12} />
+                        <span>Open</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Text Message */}
+          {(message.message_type === 'text' || !message.message_type) && (
+            <div className="px-4 py-2">
+              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            </div>
+          )}
+
+          {/* File Message (generic) */}
+          {message.message_type === 'file' && message.media_url && (
+            <div className={`px-4 py-3 ${isOwn ? 'bg-blue-600' : 'bg-white'}`}>
+              <div className={`border rounded-lg p-3 ${isOwn ? 'border-blue-500 bg-blue-500' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${isOwn ? 'bg-blue-400' : 'bg-gray-200'}`}>
+                    <Paperclip size={20} className={isOwn ? 'text-white' : 'text-gray-600'} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900'}`}>
+                      {message.media_name || 'File'}
+                    </p>
+                    <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {message.media_size ? `${(message.media_size / 1024).toFixed(1)} KB` : 'Unknown size'}
+                    </p>
+                  </div>
+                  <a
+                    href={`http://localhost:3001${message.media_url}`}
+                    download={message.media_name}
+                    className={`p-2 rounded-lg transition ${
+                      isOwn 
+                        ? 'bg-white text-blue-600 hover:bg-blue-50' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    title="Download"
+                  >
+                    <Download size={16} />
+                  </a>
+                </div>
+              </div>
             </div>
           )}
           
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          
-          <div className="flex items-center justify-end space-x-1 mt-1">
+          {/* Timestamp and Status */}
+          <div className="px-4 pb-2 flex items-center justify-end space-x-1">
             <span className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
               {formatTime(message.created_at)}
             </span>

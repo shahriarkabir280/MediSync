@@ -46,7 +46,7 @@ export const chatApi = {
   },
 
   /**
-   * Send a text message
+   * Send a message
    */
   async sendMessage(chatId, sender, content, options = {}) {
     const response = await api.post(`/chat/chats/${chatId}/messages`, {
@@ -55,6 +55,11 @@ export const chatApi = {
       senderName: sender.userName,
       content,
       messageType: options.messageType || 'text',
+      mediaUrl: options.mediaUrl || null,
+      mediaName: options.mediaName || null,
+      mediaSize: options.mediaSize || null,
+      mediaType: options.mediaType || null,
+      thumbnailUrl: options.thumbnailUrl || null,
       replyToId: options.replyToId || null,
       encryptedContent: options.encryptedContent || null
     });
@@ -139,6 +144,40 @@ export const chatApi = {
       reaction
     });
     return response;
+  },
+
+  /**
+   * Upload file (image, voice, document)
+   */
+  async uploadFile(file) {
+    const formData = new FormData();
+    
+    // If it's a Blob without a name property, add filename
+    if (file instanceof Blob && !file.name) {
+      formData.append('file', file, file.name || `file-${Date.now()}`);
+    } else {
+      formData.append('file', file, file.name);
+    }
+
+    const token = localStorage.getItem('authToken');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch('http://localhost:3001/api/chat/upload', {
+      method: 'POST',
+      headers,
+      body: formData
+      // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(errorData.error || 'Failed to upload file');
+    }
+
+    return response.json();
   },
 
   /**
