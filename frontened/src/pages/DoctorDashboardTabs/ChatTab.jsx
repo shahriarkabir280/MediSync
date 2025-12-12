@@ -1,1265 +1,721 @@
-import React, { useState, useEffect, useRef } from "react";
-import { 
-  User, 
-  Search, 
-  Phone, 
-  Video, 
-  MoreVertical, 
-  Send, 
-  Paperclip, 
-  Mic, 
-  Smile, 
-  Image, 
-  File, 
-  Check, 
-  CheckCheck,
-  Clock,
-  ArrowLeft,
-  Settings,
-  Archive,
-  Pin,
-  X,
-  Upload,
-  Camera,
-  Download
-} from "lucide-react";
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Search, Plus, Send, Paperclip, Smile, MoreVertical,
+  Phone, Video, ArrowLeft, Check, CheckCheck, X, Reply, Trash2, PinIcon, BellOff, Archive
+} from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
-import useWebSocket from '../../hooks/useWebSocket';
-import { useDoctor } from '../../hooks/useDoctor';
-import { fileUploader, createDropZone } from '../../utils/fileUpload';
-import FileMessage from '../../components/FileMessage';
+import { useChatSocket } from '../../hooks/useChatSocket';
+import { useAuth } from '../../contexts/AuthContext';
+
+/**
+ * Modern Chat Component - WhatsApp/Telegram Style
+ * Full-featured messaging interface with real-time updates
+ */
 
 const ChatTab = () => {
-  const { doctor } = useDoctor();
+  const { user } = useAuth();
   
-  // WebSocket connection
-  const webSocket = useWebSocket();
-  
-  // Refs - must be called before any conditional logic
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const dropZoneRef = useRef(null);
-  
-  // State management - all useState hooks together
-  const [conversations, setConversations] = useState([]);
-  const [messages, setMessages] = useState({});
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [newMessage, setNewMessage] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [showChatList, setShowChatList] = useState(true);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [replyToMessage, setReplyToMessage] = useState(null);
-  const [typingUsers, setTypingUsers] = useState([]);
-  
-  // New file upload states
-  const [uploadProgress, setUploadProgress] = useState({});
-  const [filePreview, setFilePreview] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadQueue, setUploadQueue] = useState([]);
+  // User info
+  const currentUser = {
+    userId: user?.uniqueId,
+    userType: 'doctor',
+    userName: user?.name || '',
+    userEmail: user?.email || '',
+    userAvatar: user?.profileImage || ''
+  };
 
-  // User search and new chat states
+  // State
+  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const [typingUsers, setTypingUsers] = useState(new Set());
 
-  // All useEffect hooks must be called in the same order every render
-  // Initialize WebSocket and fetch data
+  // Refs
+  const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const messageInputRef = useRef(null);
+
+  // WebSocket
+  const socket = useChatSocket(currentUser);
+
+  // Load chats on mount
   useEffect(() => {
-    if (initialized) return; // Prevent multiple initialization
-    
-    console.log('ChatTab: Doctor data:', doctor);
-    console.log('ChatTab: Doctor ID:', doctor?.id);
-    console.log('ChatTab: Doctor UniqueId:', doctor?.uniqueId);
-    
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const effectiveDoctor = {
-      id: doctor?.uniqueId || 'DOC-001', // Use uniqueId from auth, fallback to DOC-001
-      name: doctor?.name || 'Dr. Test'
-    };
-    
-    console.log('ChatTab: Using effective doctor:', effectiveDoctor);
-    
-    // Connect to WebSocket
-    webSocket.connect({
-      userId: effectiveDoctor.id,
-      userType: 'doctor',
-      userName: effectiveDoctor.name
+    if (currentUser.userId) {
+      loadChats();
+    }
+  }, [currentUser.userId]);
+
+  // WebSocket event handlers
+  useEffect(() => {
+    if (!socket.socket) return;
+
+    // New message received
+    socket.on('new_message', (data) => {
+      if (selectedChat && data.chatId === selectedChat.id) {
+        setMessages(prev => [...prev, data.message]);
+        scrollToBottom();
+        
+        // Mark as read
+        socket.markAsRead(data.chatId, [data.message.id], currentUser.userId, currentUser.userType);
+      }
+      
+      // Update chat list
+      loadChats();
     });
-    
-    // Fetch conversations with the effective ID
-    fetchConversationsWithTempId(effectiveDoctor.id);
-    setInitialized(true);
-    
+
+    // Message delivered
+    socket.on('message_delivered', (data) => {
+      if (selectedChat && data.chatId === selectedChat.id) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === data.messageId
+            ? { ...msg, my_status: { status: 'delivered', delivered_at: new Date() } }
+            : msg
+        ));
+      }
+    });
+
+    // Messages read
+    socket.on('messages_read', (data) => {
+      if (selectedChat && data.chatId === selectedChat.id) {
+        setMessages(prev => prev.map(msg =>
+          data.messageIds.includes(msg.id)
+            ? { ...msg, my_status: { status: 'read', read_at: new Date() } }
+            : msg
+        ));
+      }
+    });
+
+    // Typing indicator
+    socket.on('user_typing', (data) => {
+      if (selectedChat && data.chatId === selectedChat.id) {
+        setTypingUsers(prev => new Set(prev).add(`${data.userId}_${data.userType}`));
+      }
+    });
+
+    socket.on('user_stopped_typing', (data) => {
+      if (selectedChat && data.chatId === selectedChat.id) {
+        setTypingUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(`${data.userId}_${data.userType}`);
+          return newSet;
+        });
+      }
+    });
+
+    // Reaction added
+    socket.on('reaction_added', (data) => {
+      setMessages(prev => prev.map(msg =>
+        msg.id === data.messageId
+          ? {
+              ...msg,
+              reactions: [
+                ...(msg.reactions || []).filter(r => !(r.user_id === data.userId && r.user_type === data.userType)),
+                { user_id: data.userId, user_type: data.userType, reaction: data.reaction }
+              ]
+            }
+          : msg
+      ));
+    });
+
     return () => {
-      webSocket.disconnect();
+      socket.off('new_message');
+      socket.off('message_delivered');
+      socket.off('messages_read');
+      socket.off('user_typing');
+      socket.off('user_stopped_typing');
+      socket.off('reaction_added');
     };
-  }, []); // Empty dependency array to run only once
-  
-  // Auto scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, selectedConversation]);
+  }, [socket.socket, selectedChat, currentUser]);
 
-  // Fetch messages when conversation is selected
-  useEffect(() => {
-    if (selectedConversation && !loading) {
-      fetchMessages(selectedConversation);
-    }
-  }, [selectedConversation, loading]);
-
-  // Handle window resize for responsive design
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(window.innerWidth < 1024);
-      if (window.innerWidth >= 1024) {
-        setShowChatList(true);
-      }
-    };
-
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.emoji-picker') && !event.target.closest('.emoji-button')) {
-        setShowEmojiPicker(false);
-      }
-      if (!event.target.closest('.attachment-menu') && !event.target.closest('.attachment-button')) {
-        setShowAttachmentMenu(false);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Setup drag and drop zone
-  useEffect(() => {
-    if (dropZoneRef.current && selectedConversation) {
-      const cleanup = createDropZone(dropZoneRef.current, handleFileDrop);
-      
-      // Add drag state handlers
-      const handleDragEnter = () => setIsDragging(true);
-      const handleDragLeave = (e) => {
-        if (!dropZoneRef.current?.contains(e.relatedTarget)) {
-          setIsDragging(false);
-        }
-      };
-      
-      if (dropZoneRef.current) {
-        dropZoneRef.current.addEventListener('dragenter', handleDragEnter);
-        dropZoneRef.current.addEventListener('dragleave', handleDragLeave);
-      }
-      
-      return () => {
-        cleanup();
-        if (dropZoneRef.current) {
-          dropZoneRef.current.removeEventListener('dragenter', handleDragEnter);
-          dropZoneRef.current.removeEventListener('dragleave', handleDragLeave);
-        }
-      };
-    }
-  }, [selectedConversation]);
-
-  // Fetch conversations from API
-  const fetchConversations = async () => {
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const doctorId = doctor?.uniqueId || doctor?.id || 'DOC-001';
-    if (!doctorId) return;
-    
-    try {
-      setLoading(true);
-      const data = await chatApi.getConversations(doctorId, 'doctor');
-      console.log('Conversations data (regular):', data);
-      console.log('Using doctor ID for conversations:', doctorId);
-      
-      // Check if data and conversations exist
-      if (!data || !data.conversations) {
-        console.error('Invalid response structure:', data);
-        setConversations([]);
-        return;
-      }
-      
-      // Transform API data to match component state
-      const transformedConversations = data.conversations.map(conv => ({
-        id: conv.id,
-        name: conv.other_participant?.name || conv.name || 'Unknown',
-        avatar: null,
-        lastMessage: conv.last_message || 'No messages yet',
-        lastMessageTime: formatTime(conv.last_message_time),
-        unreadCount: conv.unread_count || 0,
-        isOnline: conv.other_participant?.is_online || false,
-        isPinned: conv.is_pinned || false,
-        isTyping: false,
-        lastSeen: formatTime(conv.other_participant?.last_seen),
-        otherParticipant: conv.other_participant
-      }));
-      
-      setConversations(transformedConversations);
-      
-      // Select first conversation if none selected
-      if (transformedConversations.length > 0 && !selectedConversation) {
-        setSelectedConversation(transformedConversations[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Temporary function for testing without authentication
-  const fetchConversationsWithTempId = async (doctorId) => {
-    try {
-      setLoading(true);
-      console.log('Fetching conversations with temp doctor ID:', doctorId);
-      
-      const data = await chatApi.getConversations(doctorId, 'doctor');
-      console.log('Conversations data:', data);
-      console.log('Data type:', typeof data);
-      console.log('Data conversations:', data?.conversations);
-      
-      // Check if data and conversations exist
-      if (!data || !data.conversations) {
-        console.error('Invalid response structure:', data);
-        setConversations([]);
-        return;
-      }
-      
-      // Transform API data to match component state
-      const transformedConversations = data.conversations.map(conv => ({
-        id: conv.id,
-        name: conv.other_participant?.name || conv.name || 'Unknown',
-        avatar: null,
-        lastMessage: conv.last_message || 'No messages yet',
-        lastMessageTime: formatTime(conv.last_message_time),
-        unreadCount: conv.unread_count || 0,
-        isOnline: conv.other_participant?.is_online || false,
-        isPinned: conv.is_pinned || false,
-        isTyping: false,
-        lastSeen: formatTime(conv.other_participant?.last_seen),
-        otherParticipant: conv.other_participant
-      }));
-      
-      setConversations(transformedConversations);
-      
-      // Select first conversation if none selected
-      if (transformedConversations.length > 0 && !selectedConversation) {
-        setSelectedConversation(transformedConversations[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching conversations with temp ID:', error);
-      setConversations([]); // Set empty array to stop loading
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch messages for a conversation
-  const fetchMessages = async (conversationId) => {
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const doctorId = doctor?.uniqueId || 'DOC-001';
-    console.log('fetchMessages - Using doctor ID:', doctorId);
-    
-    if (!doctorId) return;
-    
-    try {
-      const data = await chatApi.getMessages(conversationId, doctorId, 'doctor');
-      
-      // Check if data and messages exist
-      if (!data || !data.messages) {
-        console.error('Invalid messages response structure:', data);
-        return;
-      }
-      
-      // Transform API messages
-      const transformedMessages = data.messages.map(msg => ({
-        id: msg.id,
-        senderId: msg.sender_id,
-        senderName: msg.sender_name,
-        content: msg.content,
-        timestamp: formatTime(msg.created_at),
-        type: msg.message_type || 'text',
-        status: msg.delivery_status || 'sent',
-        fileUrl: msg.file_url,
-        fileName: msg.file_name,
-        fileSize: msg.file_size,
-        replyTo: msg.reply_to,
-        replyContent: msg.reply_content,
-        replySenderName: msg.reply_sender_name
-      }));
-      
-      setMessages(prev => ({
-        ...prev,
-        [conversationId]: transformedMessages
-      }));
-      
-      // Join conversation room for real-time updates
-      webSocket.joinConversation(conversationId);
-      
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
-
-  // Format timestamp
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
-    // If the date is invalid
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid timestamp:', timestamp);
-      return '';
-    }
-    
-    // Show exact time if within the last 24 hours
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true // Show AM/PM
-      });
-    } else if (diffInHours < 48) {
-      return `Yesterday ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-    } else if (diffInHours < 168) { // Within a week
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      return `${dayNames[date.getDay()]} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-    } else {
-      return date.toLocaleDateString([], { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true
-      });
-    }
-  };
-
-  // Helper functions
+  // Auto-scroll to bottom
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Get current conversation
-  const currentConversation = conversations.find(conv => conv.id === selectedConversation);
-  const currentMessages = selectedConversation ? (messages[selectedConversation] || []) : [];
-  
-  // Show loading if no doctor data yet and not using temp fallback
-  const effectiveDoctorId = doctor?.uniqueId || 'DOC-001';
-  const effectiveDoctorName = doctor?.name || 'Dr. Test';
-  
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading conversations...</p>
-          <p className="text-xs text-gray-400 mt-2">
-            Doctor ID: {effectiveDoctorId}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-  // Filter conversations based on search term
-  const filteredConversations = conversations.filter(conversation =>
-    conversation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Handle file uploads with optimized system
-  const handleFileUpload = async (files, options = {}) => {
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const doctorId = doctor?.uniqueId || 'DOC-001';
-    const doctorName = doctor?.name || 'Dr. Test';
-    
-    if (!selectedConversation) {
-      console.error('No conversation selected');
-      return;
-    }
-    
-    // Convert to array if single file
-    const fileList = Array.isArray(files) ? files : [files];
-    
-    setUploadingFile(true);
-    setUploadProgress({});
-    
+  // Load all chats
+  const loadChats = async () => {
     try {
-      // Create preview for files
-      const previews = await Promise.all(
-        fileList.map(file => fileUploader.createFilePreview(file))
-      );
-      setFilePreview(previews);
-      
-      const uploadOptions = {
-        messageText: options.messageText || newMessage.trim(),
-        senderName: doctorName,
-        onProgress: (fileIndex, progress, uploaded, total) => {
-          setUploadProgress(prev => ({
-            ...prev,
-            [fileIndex]: { progress, uploaded, total }
-          }));
-        }
-      };
-      
-      // Use optimized file uploader
-      const result = await fileUploader.uploadFiles(
-        fileList,
-        selectedConversation,
-        doctorId,
-        'doctor',
-        uploadOptions
-      );
-      
-      console.log('File upload result:', result);
-      
-      if (result.success && result.success.length > 0) {
-        // Clear message input if files were uploaded with message
-        if (newMessage.trim()) {
-          setNewMessage('');
-        }
-        
-        // Show success notification
-        if (result.success.length === 1) {
-          console.log('File uploaded successfully:', result.success[0].file);
-        } else {
-          console.log(`${result.success.length} files uploaded successfully`);
-        }
-        
-        // Refresh messages to show new file messages
-        await fetchMessages(selectedConversation);
-      }
-      
-      if (result.errors && result.errors.length > 0) {
-        console.error('Upload errors:', result.errors);
-        alert(`${result.errors.length} file(s) failed to upload. Please try again.`);
-      }
-      
-      setReplyToMessage(null);
-      
+      const data = await chatApi.getMyChats(currentUser.userId, currentUser.userType);
+      setChats(data.chats || []);
     } catch (error) {
-      console.error('Failed to upload file:', error);
-      alert(`Failed to upload file: ${error.message}`);
+      console.error('Error loading chats:', error);
+    }
+  };
+
+  // Load messages for a chat
+  const loadMessages = async (chatId) => {
+    try {
+      setLoading(true);
+      const data = await chatApi.getMessages(chatId, currentUser.userId, currentUser.userType);
+      setMessages(data.messages || []);
+      
+      // Mark as read
+      if (data.messages && data.messages.length > 0) {
+        const unreadIds = data.messages
+          .filter(m => m.sender_id !== currentUser.userId && m.my_status?.status !== 'read')
+          .map(m => m.id);
+        
+        if (unreadIds.length > 0) {
+          await chatApi.markAsRead(chatId, currentUser.userId, currentUser.userType, unreadIds);
+          socket.markAsRead(chatId, unreadIds, currentUser.userId, currentUser.userType);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
     } finally {
-      setUploadingFile(false);
-      setShowAttachmentMenu(false);
-      setFilePreview([]);
-      setUploadProgress({});
+      setLoading(false);
     }
   };
 
-  // Handle drag and drop
-  const handleFileDrop = async (files) => {
-    if (files && files.length > 0) {
-      await handleFileUpload(files);
+  // Select a chat
+  const handleSelectChat = (chat) => {
+    if (selectedChat?.id) {
+      socket.leaveChat(selectedChat.id);
     }
-  };
-
-  // Handle file input change
-  const handleFileInputChange = (e, fileType) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      handleFileUpload(files, { fileType });
-    }
-    // Reset file input
-    e.target.value = '';
-  };
-
-  // Handle sending messages
-  const sendMessage = async () => {
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const doctorId = doctor?.uniqueId || 'DOC-001';
-    const doctorName = doctor?.name || 'Dr. Test';
     
-    console.log('sendMessage - Using doctor ID:', doctorId);
-    
-    if (!newMessage.trim() || !selectedConversation) return;
+    setSelectedChat(chat);
+    setMessages([]);
+    setReplyTo(null);
+    loadMessages(chat.id);
+    socket.joinChat(chat.id);
+  };
 
-    setSendingMessage(true);
+  // Send message
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat) return;
+
     try {
       const messageData = {
-        content: newMessage,
-        messageType: 'text',
-        senderId: doctorId,
-        senderName: doctorName,
-        senderType: 'doctor',
-        replyTo: replyToMessage?.id
-      };
-      
-      console.log('Sending message with data:', messageData);
-      console.log('Selected conversation:', selectedConversation);
-      
-      const response = await chatApi.sendMessage(selectedConversation, messageData);
-      console.log('Send message response:', response);
-      
-      // Check if response has the expected structure
-      if (!response || !response.message) {
-        throw new Error('Invalid response structure: missing message');
-      }
-      
-      // Add message to local state
-      const newMsg = {
-        id: response.message?.id || Date.now(), // Fallback ID if response doesn't have one
-        senderId: doctorId,
-        senderName: doctorName,
-        content: newMessage,
-        timestamp: formatTime(response.message?.created_at || new Date()),
-        type: 'text',
-        status: 'sent',
-        replyTo: replyToMessage?.id,
-        replyContent: response.message?.reply_content,
-        replySenderName: response.message?.reply_sender_name
+        content: messageInput,
+        replyToId: replyTo?.id || null
       };
 
-      console.log('Creating new message object:', newMsg);
+      const response = await chatApi.sendMessage(
+        selectedChat.id,
+        currentUser,
+        messageInput,
+        { replyToId: replyTo?.id }
+      );
 
-      setMessages(prev => ({
-        ...prev,
-        [selectedConversation]: [...(prev[selectedConversation] || []), newMsg]
-      }));
-
-      // Send via WebSocket for real-time delivery
-      webSocket.sendMessage(selectedConversation, newMsg);
+      const newMessage = response.message;
+      setMessages(prev => [...prev, newMessage]);
+      setMessageInput('');
+      setReplyTo(null);
       
-      // Update conversation last message
-      setConversations(prev => prev.map(conv =>
-        conv.id === selectedConversation
-          ? { ...conv, lastMessage: newMessage, lastMessageTime: newMsg.timestamp }
-          : conv
-      ));
-
-      setNewMessage("");
-      setReplyToMessage(null);
+      // Broadcast via WebSocket
+      socket.sendMessage(selectedChat.id, newMessage);
       
+      // Update chat list
+      loadChats();
+      
+      scrollToBottom();
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setSendingMessage(false);
     }
   };
 
-  // Handle key press in input
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  // Handle typing
+  const handleTyping = () => {
+    if (!selectedChat) return;
+
+    socket.startTyping(selectedChat.id, currentUser.userId, currentUser.userType, currentUser.userName);
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
+
+    // Stop typing after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.stopTyping(selectedChat.id, currentUser.userId, currentUser.userType);
+    }, 3000);
   };
 
-  // Handle input change with typing indicators
-  const handleInputChange = (e) => {
-    setNewMessage(e.target.value);
+  // Search users and chats
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
     
-    // Use unique_id for chat API calls (DOC-001, DOC-002, etc.)
-    const doctorId = doctor?.uniqueId || 'DOC-001';
-    const doctorName = doctor?.name || 'Dr. Test';
-    
-    if (doctorId && selectedConversation) {
-      // Send typing start
-      webSocket.updateTypingStatus(selectedConversation, {
-        userId: doctorId,
-        userType: 'doctor',
-        userName: doctorName
-      }, true);
-      
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
-      // Set timeout to stop typing indicator
-      typingTimeoutRef.current = setTimeout(() => {
-        webSocket.updateTypingStatus(selectedConversation, {
-          userId: doctorId,
-          userType: 'doctor',
-          userName: doctorName
-        }, false);
-      }, 1000);
-    }
-  };
-
-  // User search functions
-  const searchUsers = async (searchQuery) => {
-    if (!searchQuery.trim()) {
+    if (query.trim().length < 2) {
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-    
-    setSearchingUsers(true);
+
     try {
-      const currentUserId = doctor?.uniqueId || doctor?.id || 'DOC-001';
-      const currentUserType = 'doctor';
-      
-      const response = await chatApi.searchUsers(searchQuery, currentUserId, currentUserType);
-      setSearchResults(response.users || []);
+      setIsSearching(true);
+      const data = await chatApi.searchUsers(query, currentUser.userId, currentUser.userType);
+      setSearchResults(data.users || []);
     } catch (error) {
       console.error('Error searching users:', error);
       setSearchResults([]);
     } finally {
-      setSearchingUsers(false);
+      setIsSearching(false);
     }
   };
 
-  // Start conversation with selected user
-  const startConversationWith = async (selectedUser) => {
+  // Start new chat
+  const handleStartChat = async (user) => {
     try {
-      const currentUserId = doctor?.uniqueId || doctor?.id || 'DOC-001';
-      const currentUserType = 'doctor';
-      const currentUserName = doctor?.name || 'Dr. Test';
-      
-      const response = await chatApi.startConversation(
-        selectedUser.id,
-        selectedUser.type,
-        currentUserId,
-        currentUserType,
-        currentUserName,
-        selectedUser.name
-      );
+      const otherUser = {
+        userId: user.user_id,
+        userType: user.user_type,
+        userName: user.user_name,
+        userEmail: user.user_email,
+        userAvatar: user.user_avatar
+      };
 
-      if (response.conversation) {
-        // Clear search
-        setSearchTerm('');
-        setSearchResults([]);
-        
-        // Refresh conversations to include the new one
-        await fetchConversationsWithTempId(currentUserId);
-        
-        // Select the new conversation
-        setSelectedConversation(response.conversation.id);
-        
-        // Hide chat list on mobile
-        if (isMobileView) setShowChatList(false);
-        
-        if (response.isNew) {
-          console.log('Started new conversation:', response.conversation);
-        } else {
-          console.log('Opened existing conversation:', response.conversation);
-        }
-      }
+      const data = await chatApi.startChat(currentUser, otherUser);
+      
+      setSearchQuery('');
+      setSearchResults([]);
+      
+      // Reload chats and select the new/existing chat
+      await loadChats();
+      handleSelectChat(data.chat);
+      
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('Error starting chat:', error);
     }
   };
 
-  // Get status icon for messages
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'sent':
-        return <Check size={12} className="text-gray-400" />;
-      case 'delivered':
-        return <CheckCheck size={12} className="text-gray-400" />;
-      case 'read':
-        return <CheckCheck size={12} className="text-blue-500" />;
-      default:
-        return <Clock size={12} className="text-gray-400" />;
-    }
-  };
+  // Filter chats by search
+  const filteredChats = chats.filter(chat => {
+    if (!searchQuery.trim()) return true;
+    const otherUser = chat.other_user;
+    return otherUser?.user_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
-  // Conversation Item Component
-  const ConversationItem = ({ conversation, onClick, isSelected }) => (
-    <div
-      onClick={onClick}
-      className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-        isSelected ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-      }`}
-    >
-      <div className="relative">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-          <User className="w-6 h-6 text-white" />
-        </div>
-        {conversation.isOnline && (
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-        )}
-        {conversation.isPinned && (
-          <Pin className="absolute -top-1 -right-1 w-4 h-4 text-gray-600" />
-        )}
-      </div>
-      
-      <div className="ml-3 flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-gray-900 truncate">
-            {conversation.otherParticipant?.name || conversation.name}
-          </p>
-          <span className="text-xs text-gray-500">
-            {conversation.lastMessageTime}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600 truncate">
-            {typingUsers.some(user => user.conversationId === conversation.id) ? (
-              <span className="text-blue-600 italic">typing...</span>
-            ) : (
-              conversation.lastMessage
+  // Show search results when searching, otherwise show chats
+  const showSearchResults = searchQuery.trim().length >= 2 && searchResults.length > 0;
+  const showNoResults = searchQuery.trim().length >= 2 && searchResults.length === 0 && !isSearching;
+
+  return (
+    <div className="h-[calc(100vh-200px)] flex bg-gray-50 rounded-lg overflow-hidden shadow-lg">
+      {/* Left Sidebar - Chat List */}
+      <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-96 flex-col bg-white border-r`}>
+        {/* Header */}
+        <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold">Messages</h2>
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-200" size={18} />
+            <input
+              type="text"
+              placeholder="Search conversations or find users..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 rounded-lg bg-blue-500 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-200 hover:text-white"
+              >
+                <X size={18} />
+              </button>
             )}
-          </p>
-          {conversation.unreadCount > 0 && (
-            <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
-              {conversation.unreadCount}
-            </span>
+          </div>
+          {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
+            <p className="text-xs text-blue-100 mt-1">Type at least 2 characters to search</p>
+          )}
+        </div>
+
+        {/* Chat List / Search Results */}
+        <div className="flex-1 overflow-y-auto">
+          {isSearching ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : showSearchResults ? (
+            <>
+              <div className="px-4 py-2 bg-gray-50 border-b">
+                <p className="text-xs font-semibold text-gray-600">SEARCH RESULTS</p>
+              </div>
+              {searchResults.map((user) => (
+                <div
+                  key={`${user.user_id}_${user.user_type}`}
+                  onClick={() => handleStartChat(user)}
+                  className="p-4 border-b cursor-pointer hover:bg-gray-50 transition"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      {user.user_name?.charAt(0) || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 truncate">{user.user_name}</h4>
+                      <p className="text-sm text-gray-500 truncate">
+                        {user.user_type === 'doctor' ? 'Doctor' : 'Patient'}
+                        {user.specialization && ` • ${user.specialization}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : showNoResults ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8 text-center">
+              <Search size={48} className="mb-4 text-gray-300" />
+              <p className="text-lg font-medium mb-2">No users found</p>
+              <p className="text-sm">Try a different search term</p>
+            </div>
+          ) : filteredChats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8 text-center">
+              <Search size={48} className="mb-4 text-gray-300" />
+              <p className="text-lg font-medium mb-2">No conversations yet</p>
+              <p className="text-sm">Search above to find and chat with doctors or patients</p>
+            </div>
+          ) : (
+            <>
+              {searchQuery.trim().length > 0 && (
+                <div className="px-4 py-2 bg-gray-50 border-b">
+                  <p className="text-xs font-semibold text-gray-600">YOUR CONVERSATIONS</p>
+                </div>
+              )}
+              {filteredChats.map((chat) => (
+                <ChatListItem
+                  key={chat.id}
+                  chat={chat}
+                  isSelected={selectedChat?.id === chat.id}
+                  onClick={() => handleSelectChat(chat)}
+                  isOnline={socket.isUserOnline(chat.other_user?.user_id, chat.other_user?.user_type)}
+                />
+              ))}
+            </>
           )}
         </div>
       </div>
-    </div>
-  );
-  return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-            <p className="text-sm text-gray-500">Chat with patients and colleagues</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Settings size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat List Sidebar */}
-        <div className={`${
-          isMobileView ? (showChatList ? 'w-full' : 'hidden') : 'w-80'
-        } bg-white border-r border-gray-200 flex flex-col`}>
-          
-          {/* Search Bar */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search conversations and people..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  // Also search users when typing
-                  if (e.target.value.trim()) {
-                    searchUsers(e.target.value);
-                  } else {
-                    setSearchResults([]);
-                  }
-                }}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+      {/* Right Side - Chat Window */}
+      {selectedChat ? (
+        <div className="flex-1 flex flex-col bg-gray-50">
+          {/* Chat Header */}
+          <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setSelectedChat(null)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-full"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                  {selectedChat.other_user?.user_name?.charAt(0) || '?'}
+                </div>
+                {socket.isUserOnline(selectedChat.other_user?.user_id, selectedChat.other_user?.user_type) && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                )}
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  {selectedChat.other_user?.user_name}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {socket.isUserOnline(selectedChat.other_user?.user_id, selectedChat.other_user?.user_type)
+                    ? 'Online'
+                    : 'Offline'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <Phone size={20} className="text-gray-600" />
+              </button>
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <Video size={20} className="text-gray-600" />
+              </button>
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <MoreVertical size={20} className="text-gray-600" />
+              </button>
             </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex border-b border-gray-100">
-            <button className="flex-1 py-3 px-4 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
-              All
-            </button>
-            <button className="flex-1 py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700">
-              Unread
-            </button>
-            <button className="flex-1 py-3 px-4 text-sm font-medium text-gray-500 hover:text-gray-700">
-              Groups
-            </button>
-          </div>
-
-          {/* Conversations and People List */}
-          <div className="flex-1 overflow-y-auto">
-            {searchTerm ? (
-              /* Show search results: both conversations and people */
-              <div>
-                {/* Existing Conversations */}
-                {filteredConversations.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-                      Conversations
-                    </div>
-                    {filteredConversations.map((conversation) => (
-                      <ConversationItem 
-                        key={conversation.id}
-                        conversation={conversation}
-                        onClick={() => {
-                          setSelectedConversation(conversation.id);
-                          if (isMobileView) setShowChatList(false);
-                        }}
-                        isSelected={selectedConversation === conversation.id}
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                {/* Available People */}
-                {searchResults.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-                      People
-                    </div>
-                    {searchResults.map((user) => (
-                      <div
-                        key={user.id}
-                        onClick={() => startConversationWith(user)}
-                        className="flex items-center p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-white" />
-                          </div>
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium text-gray-900">{user.name}</h3>
-                          </div>
-                          <div className="mt-1 flex items-center space-x-1">
-                            <p className="text-xs text-gray-500">
-                              {user.type === 'doctor' ? `Dr. • ${user.specialization || 'General Practice'}` : 'Patient'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* No Results */}
-                {filteredConversations.length === 0 && searchResults.length === 0 && !searchingUsers && (
-                  <div className="flex flex-col items-center justify-center py-12 px-4">
-                    <Search className="w-12 h-12 text-gray-300 mb-4" />
-                    <p className="text-gray-500 text-center">No conversations or people found</p>
-                  </div>
-                )}
-                
-                {/* Loading */}
-                {searchingUsers && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                  </div>
-                )}
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {loading ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <p className="text-lg">No messages yet</p>
+                <p className="text-sm">Start the conversation!</p>
               </div>
             ) : (
-              /* Show all conversations when not searching */
-              filteredConversations.map((conversation) => (
-                <ConversationItem 
-                  key={conversation.id}
-                  conversation={conversation}
-                  onClick={() => {
-                    setSelectedConversation(conversation.id);
-                    if (isMobileView) setShowChatList(false);
-                  }}
-                  isSelected={selectedConversation === conversation.id}
+              messages.map((message, index) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  isOwn={message.sender_id === currentUser.userId && message.sender_type === currentUser.userType}
+                  showAvatar={
+                    index === 0 ||
+                    messages[index - 1].sender_id !== message.sender_id
+                  }
+                  onReply={() => setReplyTo(message)}
+                  onDelete={() => handleDeleteMessage(message.id)}
                 />
               ))
             )}
+            
+            {/* Typing indicator */}
+            {typingUsers.size > 0 && (
+              <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+                <span>typing...</span>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
           </div>
-        </div>
 
-        {/* Chat Window */}
-        <div className={`${
-          isMobileView ? (showChatList ? 'hidden' : 'w-full') : 'flex-1'
-        } flex flex-col bg-gray-50`}>
-          
-          {currentConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="bg-white border-b border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {isMobileView && (
-                      <button
-                        onClick={() => setShowChatList(true)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <ArrowLeft size={20} />
-                      </button>
-                    )}
-                    <div className="relative">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                      {currentConversation?.otherParticipant ? (
-                        webSocket.isUserOnline(
-                          currentConversation.otherParticipant.id, 
-                          currentConversation.otherParticipant.type
-                        ) && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                        )
-                      ) : (
-                        currentConversation?.isOnline && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                        )
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {currentConversation?.otherParticipant?.name || currentConversation.name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {currentConversation?.otherParticipant ? (
-                          webSocket.isUserOnline(
-                            currentConversation.otherParticipant.id, 
-                            currentConversation.otherParticipant.type
-                          ) ? 'Online' : `Last seen ${currentConversation.lastSeen}`
-                        ) : (
-                          currentConversation?.isOnline ? 'Online' : `Last seen ${currentConversation?.lastSeen}`
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Phone size={20} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Video size={20} className="text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreVertical size={20} className="text-gray-600" />
-                    </button>
-                  </div>
-                </div>
+          {/* Reply Preview */}
+          {replyTo && (
+            <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs text-blue-600 font-medium">Replying to {replyTo.sender_name}</p>
+                <p className="text-sm text-gray-600 truncate">{replyTo.content}</p>
               </div>
-
-              {/* Messages Container with Drag & Drop */}
-              <div 
-                ref={dropZoneRef}
-                className={`flex-1 overflow-y-auto p-4 space-y-4 relative ${
-                  isDragging ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
-                }`}
+              <button
+                onClick={() => setReplyTo(null)}
+                className="p-1 hover:bg-blue-100 rounded-full"
               >
-                {/* Drag and Drop Overlay */}
-                {isDragging && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-blue-50 bg-opacity-90 z-10">
-                    <div className="text-center p-8 rounded-lg bg-white shadow-lg border-2 border-dashed border-blue-300">
-                      <Upload size={48} className="mx-auto text-blue-500 mb-4" />
-                      <p className="text-lg font-semibold text-blue-700 mb-2">Drop files here to upload</p>
-                      <p className="text-sm text-blue-600">
-                        Images, documents, and other files supported<br/>
-                        Maximum 50MB per file • Up to 5 files at once
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* File Preview Area */}
-                {filePreview.length > 0 && (
-                  <div className="bg-gray-100 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Files to upload ({filePreview.length})
-                      </span>
-                      <button
-                        onClick={() => setFilePreview([])}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {filePreview.map((preview, index) => (
-                        <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded">
-                          {preview.type === 'image' ? (
-                            <img src={preview.src} alt={preview.name} className="w-8 h-8 object-cover rounded" />
-                          ) : (
-                            <File size={16} className="text-blue-500" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{preview.name}</p>
-                            <p className="text-xs text-gray-500">{fileUploader.formatFileSize(preview.size)}</p>
-                            {uploadProgress[index] && (
-                              <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-                                <div 
-                                  className="bg-blue-600 h-1 rounded-full transition-all duration-300"
-                                  style={{ width: `${uploadProgress[index].progress * 100}%` }}
-                                ></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Debug info - remove in production */}
-              <div className="text-xs text-gray-500 p-2 bg-yellow-50 mb-2 rounded">
-                Debug: Doctor ID={doctor?.id}, UniqueID={doctor?.uniqueId}, Name={doctor?.name}
-              </div>
-              
-              {/* Messages */}
-                {currentMessages.map((message) => {
-                  // Get current doctor ID for comparison
-                  const currentDoctorId = doctor?.uniqueId || doctor?.id || 'DOC-001';
-                  const isOwnMessage = message.senderId === currentDoctorId;
-                  
-                  // Debug logging
-                  console.log('Message debug:', {
-                    messageId: message.id,
-                    messageSenderId: message.senderId,
-                    doctorId: doctor?.id,
-                    doctorUniqueId: doctor?.uniqueId,
-                    currentDoctorId: currentDoctorId,
-                    isOwn: isOwnMessage,
-                    content: message.content
-                  });
-                  
-                  return (
-                  <div key={message.id} className="mb-4">
-                    {/* Reply indicator */}
-                    {message.replyTo && (
-                      <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                        <div className="text-xs text-gray-500 max-w-xs lg:max-w-md px-2">
-                          ↳ Replying to: {message.replyContent?.substring(0, 30) || 'Message'}...
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div
-                      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className="group relative max-w-xs lg:max-w-md">
-                        {/* Sender name for received messages */}
-                        {!isOwnMessage && (
-                          <p className="text-xs text-gray-500 mb-1 px-2">{message.senderName}</p>
-                        )}
-                        
-                        {/* Use FileMessage component for file types */}
-                        {(message.type === 'image' || message.type === 'file' || message.type === 'video' || message.type === 'audio') ? (
-                          <FileMessage 
-                            message={message} 
-                            isOwn={isOwnMessage}
-                          />
-                        ) : (
-                          /* Text messages */
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                              isOwnMessage
-                                ? 'bg-blue-500 text-white rounded-br-md'
-                                : 'bg-gray-100 border text-gray-900 rounded-bl-md'
-                            } shadow-sm`}
-                          >
-                            <p className="text-sm leading-relaxed">{message.content}</p>
-                            
-                            <div className={`flex items-center justify-end space-x-1 mt-2 ${
-                              isOwnMessage ? 'text-blue-200' : 'text-gray-500'
-                            }`}>
-                              <span className="text-xs">{message.timestamp}</span>
-                              {isOwnMessage && getStatusIcon(message.status)}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Message Actions */}
-                        <div className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => setReplyToMessage(message)}
-                            className="p-1 bg-gray-200 hover:bg-gray-300 rounded-full transition-colors"
-                          >
-                            <ArrowLeft size={12} className="rotate-180" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })}
-                
-                {/* Uploading indicator */}
-                {uploadingFile && (
-                  <div className="flex justify-end">
-                    <div className="bg-blue-500 text-white px-4 py-2 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        <span className="text-sm">Uploading...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message Input */}
-              <div className="bg-white border-t border-gray-200 p-4">
-                {/* Reply indicator */}
-                {replyToMessage && (
-                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg mb-3">
-                    <div className="flex items-center space-x-2">
-                      <ArrowLeft size={16} className="text-gray-600 rotate-180" />
-                      <span className="text-sm text-gray-600">Replying to:</span>
-                      <span className="text-sm font-medium">{replyToMessage.content.substring(0, 30)}...</span>
-                    </div>
-                    <button 
-                      onClick={() => setReplyToMessage(null)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-3">
-                  {/* Attachment Menu */}
-                  <div className="relative attachment-menu">
-                    <button 
-                      onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                      className="attachment-button p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <Paperclip size={20} className="text-gray-600" />
-                    </button>
-                    
-                    {showAttachmentMenu && (
-                      <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 space-y-1 min-w-[140px]">
-                        {/* Image Upload */}
-                        <input 
-                          ref={fileInputRef}
-                          type="file" 
-                          id="image-upload" 
-                          accept="image/*" 
-                          multiple
-                          className="hidden"
-                          onChange={(e) => handleFileInputChange(e, 'image')}
-                        />
-                        <button 
-                          onClick={() => document.getElementById('image-upload').click()}
-                          className="w-full flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-md text-left"
-                          disabled={uploadingFile}
-                        >
-                          <Image size={16} className="text-green-600" />
-                          <span className="text-sm">Photos</span>
-                        </button>
-                        
-                        {/* Document Upload */}
-                        <input 
-                          type="file" 
-                          id="file-upload" 
-                          multiple
-                          className="hidden"
-                          onChange={(e) => handleFileInputChange(e, 'document')}
-                        />
-                        <button 
-                          onClick={() => document.getElementById('file-upload').click()}
-                          className="w-full flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-md text-left"
-                          disabled={uploadingFile}
-                        >
-                          <File size={16} className="text-blue-600" />
-                          <span className="text-sm">Documents</span>
-                        </button>
-                        
-                        {/* Camera (for future implementation) */}
-                        <button 
-                          className="w-full flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-md text-left opacity-50"
-                          disabled
-                        >
-                          <Camera size={16} className="text-purple-600" />
-                          <span className="text-sm">Camera</span>
-                        </button>
-                        
-                        {/* Voice (for future implementation) */}
-                        <button 
-                          className="w-full flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-md text-left opacity-50"
-                          disabled
-                        >
-                          <Mic size={16} className="text-red-600" />
-                          <span className="text-sm">Voice</span>
-                        </button>
-                        
-                        {uploadingFile && (
-                          <div className="border-t pt-2 mt-2">
-                            <div className="flex items-center space-x-2 p-2">
-                              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                              <span className="text-xs text-gray-600">Uploading...</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 relative">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={handleInputChange}
-                      onKeyPress={handleKeyPress}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <button
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="emoji-button absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <Smile size={18} className="text-gray-600" />
-                    </button>
-                    
-                    {/* Simple Emoji Picker */}
-                    {showEmojiPicker && (
-                      <div className="emoji-picker absolute right-0 bottom-12 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-                        <div className="grid grid-cols-6 gap-2">
-                          {['😊', '😂', '🥰', '😍', '🤔', '😅', '👍', '❤️', '🙏', '👏', '🎉', '😊'].map((emoji, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                setNewMessage(prev => prev + emoji);
-                                setShowEmojiPicker(false);
-                              }}
-                              className="text-lg p-1 hover:bg-gray-100 rounded transition-colors"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || sendingMessage}
-                    className={`p-2 rounded-lg transition-colors ${
-                      newMessage.trim() && !sendingMessage
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {sendingMessage ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                    ) : (
-                      <Send size={20} />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            /* No Chat Selected */
-            <div className="flex-1 flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-10 h-10 text-gray-400" />
-                </div>
-                <p className="text-xl font-medium text-gray-900 mb-2">Welcome to CareConnect Chat</p>
-                <p className="text-gray-500">Select a conversation to start messaging or search for people to chat with</p>
-              </div>
+                <X size={16} className="text-blue-600" />
+              </button>
             </div>
           )}
+
+          {/* Message Input */}
+          <div className="bg-white border-t px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <Paperclip size={20} className="text-gray-600" />
+              </button>
+              
+              <input
+                ref={messageInputRef}
+                type="text"
+                placeholder="Type a message..."
+                value={messageInput}
+                onChange={(e) => {
+                  setMessageInput(e.target.value);
+                  handleTyping();
+                }}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <Smile size={20} className="text-gray-600" />
+              </button>
+              
+              <button
+                onClick={handleSendMessage}
+                disabled={!messageInput.trim()}
+                className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="hidden md:flex flex-1 items-center justify-center bg-gray-50">
+          <div className="text-center text-gray-500">
+            <div className="w-32 h-32 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+              <Search size={48} className="text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Select a chat to start messaging</h3>
+            <p className="text-sm">Choose a conversation from the list or start a new one</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Chat List Item Component
+const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
+  const formatTime = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now - d;
+    
+    if (diff < 86400000) { // Less than 24 hours
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } else if (diff < 604800000) { // Less than 7 days
+      return d.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`p-4 border-b cursor-pointer transition ${
+        isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+      }`}
+    >
+      <div className="flex items-center space-x-3">
+        <div className="relative flex-shrink-0">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            {chat.other_user?.user_name?.charAt(0) || '?'}
+          </div>
+          {isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="font-semibold text-gray-900 truncate">
+              {chat.other_user?.user_name}
+            </h4>
+            <span className="text-xs text-gray-500">
+              {formatTime(chat.last_message_at || chat.created_at)}
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600 truncate">
+              {chat.last_message?.is_deleted
+                ? 'Message deleted'
+                : chat.last_message?.content || 'No messages yet'}
+            </p>
+            {chat.unread_count > 0 && (
+              <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
+                {chat.unread_count}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+// Message Bubble Component
+const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete }) => {
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getStatusIcon = () => {
+    if (!isOwn) return null;
+    
+    const status = message.my_status?.status;
+    if (status === 'read') {
+      return <CheckCheck size={16} className="text-blue-500" />;
+    } else if (status === 'delivered') {
+      return <CheckCheck size={16} className="text-gray-400" />;
+    } else {
+      return <Check size={16} className="text-gray-400" />;
+    }
+  };
+
+  if (message.is_deleted) {
+    return (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+        <div className="max-w-xs px-4 py-2 rounded-lg bg-gray-100 text-gray-500 italic text-sm">
+          This message was deleted
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
+      <div className={`max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
+        {message.reply_to && (
+          <div className="mb-1 px-3 py-2 bg-gray-100 rounded-t-lg text-xs border-l-4 border-blue-500">
+            <p className="font-medium text-gray-700">{message.reply_to.sender_name}</p>
+            <p className="text-gray-600 truncate">{message.reply_to.content}</p>
+          </div>
+        )}
+        
+        <div
+          className={`px-4 py-2 rounded-lg ${
+            isOwn
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-900 shadow'
+          }`}
+        >
+          {message.message_type !== 'text' && (
+            <div className="mb-2 text-sm font-medium opacity-80">
+              {message.message_type} message
+            </div>
+          )}
+          
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          
+          <div className="flex items-center justify-end space-x-1 mt-1">
+            <span className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+              {formatTime(message.created_at)}
+            </span>
+            {getStatusIcon()}
+          </div>
+        </div>
+
+        {/* Reactions */}
+        {message.reactions && message.reactions.length > 0 && (
+          <div className="flex space-x-1 mt-1 text-sm">
+            {message.reactions.map((reaction, idx) => (
+              <span key={idx} className="bg-gray-100 px-2 py-1 rounded-full">
+                {reaction.reaction}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className={`flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition ${
+        isOwn ? 'order-1 mr-2' : 'order-2 ml-2'
+      }`}>
+        <button
+          onClick={onReply}
+          className="p-1 hover:bg-gray-200 rounded-full"
+          title="Reply"
+        >
+          <Reply size={14} className="text-gray-600" />
+        </button>
+        {isOwn && (
+          <button
+            onClick={onDelete}
+            className="p-1 hover:bg-gray-200 rounded-full"
+            title="Delete"
+          >
+            <Trash2 size={14} className="text-gray-600" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 
 export default ChatTab;

@@ -1,275 +1,156 @@
 import { api } from './api.js';
 
+/**
+ * Modern Chat API Client
+ * Frontend SDK for WhatsApp/Telegram-style messaging
+ */
+
 export const chatApi = {
-  // Get all conversations for current user
-  getConversations: async (userId, userType) => {
-    try {
-      const response = await api.get(`/chat/conversations?userId=${userId}&userType=${userType}`);
-      console.log('Raw API response:', response);
-      return response; // The response already contains the conversations property
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-      throw error;
-    }
+  /**
+   * Start or get existing chat with a user
+   */
+  async startChat(myUser, otherUser) {
+    const response = await api.post('/chat/chats/start', {
+      myUserId: myUser.userId,
+      myUserType: myUser.userType,
+      myUserName: myUser.userName,
+      myUserEmail: myUser.userEmail || '',
+      myUserAvatar: myUser.userAvatar || '',
+      otherUserId: otherUser.userId,
+      otherUserType: otherUser.userType,
+      otherUserName: otherUser.userName,
+      otherUserEmail: otherUser.userEmail || '',
+      otherUserAvatar: otherUser.userAvatar || ''
+    });
+    return response;
   },
 
-  // Get messages for a conversation
-  getMessages: async (conversationId, userId, userType, page = 1, limit = 50) => {
-    try {
-      const response = await api.get(
-        `/chat/conversations/${conversationId}/messages?userId=${userId}&userType=${userType}&page=${page}&limit=${limit}`
-      );
-      console.log('Raw messages API response:', response);
-      return response; // The response already contains the messages property
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      throw error;
-    }
+  /**
+   * Get all my chats (inbox)
+   */
+  async getMyChats(userId, userType) {
+    const response = await api.get(`/chat/chats?userId=${userId}&userType=${userType}`);
+    return response;
   },
 
-  // Send a text message
-  sendMessage: async (conversationId, messageData) => {
-    try {
-      const response = await api.post(`/chat/conversations/${conversationId}/messages`, messageData);
-      console.log('Send message response:', response);
-      return response; // The response contains the message property
-    } catch (error) {
-      console.error('Error sending message:', error);
-      throw error;
+  /**
+   * Get messages for a specific chat
+   */
+  async getMessages(chatId, userId, userType, limit = 50, before = null) {
+    let url = `/chat/chats/${chatId}/messages?userId=${userId}&userType=${userType}&limit=${limit}`;
+    if (before) {
+      url += `&before=${before}`;
     }
+    const response = await api.get(url);
+    return response;
   },
 
-  // Send a file message (legacy)
-  sendFile: async (conversationId, file, messageData) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('senderId', messageData.senderId);
-      formData.append('senderName', messageData.senderName);
-      formData.append('senderType', messageData.senderType);
-      if (messageData.replyTo) {
-        formData.append('replyTo', messageData.replyTo);
-      }
-
-      const response = await api.post(`/chat/conversations/${conversationId}/messages/file`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error sending file:', error);
-      throw error;
-    }
+  /**
+   * Send a text message
+   */
+  async sendMessage(chatId, sender, content, options = {}) {
+    const response = await api.post(`/chat/chats/${chatId}/messages`, {
+      senderId: sender.userId,
+      senderType: sender.userType,
+      senderName: sender.userName,
+      content,
+      messageType: options.messageType || 'text',
+      replyToId: options.replyToId || null,
+      encryptedContent: options.encryptedContent || null
+    });
+    return response;
   },
 
-  // Optimized file upload (multiple files)
-  uploadFiles: async (files, conversationId, senderId, senderType, options = {}) => {
-    try {
-      const formData = new FormData();
-      
-      // Append files
-      Array.from(files).forEach(file => {
-        formData.append('files', file);
-      });
-      
-      // Append metadata
-      formData.append('conversationId', conversationId);
-      formData.append('senderId', senderId);
-      formData.append('senderType', senderType);
-      
-      if (options.messageText) {
-        formData.append('messageText', options.messageText);
-      }
-      if (options.senderName) {
-        formData.append('senderName', options.senderName);
-      }
-
-      const response = await api.post('/chat/upload-optimized', formData);
-      return response;
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      throw error;
-    }
+  /**
+   * Send media message
+   */
+  async sendMediaMessage(chatId, sender, media, options = {}) {
+    const response = await api.post(`/chat/chats/${chatId}/messages`, {
+      senderId: sender.userId,
+      senderType: sender.userType,
+      senderName: sender.userName,
+      content: options.caption || '',
+      messageType: media.type,
+      mediaUrl: media.url,
+      mediaName: media.name,
+      mediaSize: media.size,
+      mediaType: media.mimeType,
+      thumbnailUrl: media.thumbnailUrl || null,
+      replyToId: options.replyToId || null
+    });
+    return response;
   },
 
-  // Chunked file upload for large files
-  uploadFileChunk: async (chunk, fileName, chunkIndex, totalChunks, fileId, options = {}) => {
-    try {
-      const queryParams = new URLSearchParams({
-        fileName,
-        chunkIndex: chunkIndex.toString(),
-        totalChunks: totalChunks.toString(),
-        fileId,
-        ...(options.conversationId && { conversationId: options.conversationId }),
-        ...(options.senderId && { senderId: options.senderId }),
-        ...(options.senderType && { senderType: options.senderType })
-      });
-
-      const response = await api.post(`/chat/upload-chunk?${queryParams}`, chunk, {
-        headers: {
-          'Content-Type': 'application/octet-stream'
-        },
-      });
-      return response;
-    } catch (error) {
-      console.error('Error uploading chunk:', error);
-      throw error;
-    }
+  /**
+   * Mark messages as read
+   */
+  async markAsRead(chatId, userId, userType, messageIds = null) {
+    const response = await api.post(`/chat/chats/${chatId}/read`, {
+      userId,
+      userType,
+      messageIds
+    });
+    return response;
   },
 
-  // Compressed file upload
-  uploadCompressedFile: async (file, conversationId, senderId, senderType, options = {}) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('conversationId', conversationId);
-      formData.append('senderId', senderId);
-      formData.append('senderType', senderType);
-      
-      if (options.senderName) {
-        formData.append('senderName', options.senderName);
-      }
-
-      const response = await api.post('/chat/compress-and-upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response;
-    } catch (error) {
-      console.error('Error uploading compressed file:', error);
-      throw error;
-    }
-  },
-
-  // Create a new conversation
-  createConversation: async (conversationData) => {
-    try {
-      const response = await api.post('/chat/conversations', conversationData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      throw error;
-    }
-  },
-
-  // Search conversations and messages
-  searchChat: async (query, userId, userType, type = 'all') => {
-    try {
-      const response = await api.get(
-        `/chat/search?query=${encodeURIComponent(query)}&userId=${userId}&userType=${userType}&type=${type}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error searching chat:', error);
-      throw error;
-    }
-  },
-
-  // Update typing indicator
-  updateTypingStatus: async (conversationId, userId, userType, userName, isTyping) => {
-    try {
-      const response = await api.put(`/chat/conversations/${conversationId}/typing`, {
+  /**
+   * Delete a message
+   */
+  async deleteMessage(messageId, userId, userType, deleteForEveryone = false) {
+    const response = await api.delete(`/chat/messages/${messageId}`, {
+      data: {
         userId,
         userType,
-        userName,
-        isTyping
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating typing status:', error);
-      throw error;
-    }
-  },
-
-  // Get typing indicators
-  getTypingIndicators: async (conversationId, excludeUserId, excludeUserType) => {
-    try {
-      let url = `/chat/conversations/${conversationId}/typing`;
-      if (excludeUserId && excludeUserType) {
-        url += `?excludeUserId=${excludeUserId}&excludeUserType=${excludeUserType}`;
+        deleteForEveryone
       }
-      const response = await api.get(url);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching typing indicators:', error);
-      throw error;
-    }
+    });
+    return response;
   },
 
-  // Update message status
-  updateMessageStatus: async (messageId, userId, userType, status) => {
-    try {
-      const response = await api.put(`/chat/messages/${messageId}/status`, {
-        userId,
-        userType,
-        status
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating message status:', error);
-      throw error;
-    }
+  /**
+   * Search users to start a new chat
+   */
+  async searchUsers(query, currentUserId, currentUserType) {
+    const response = await api.get(
+      `/chat/users/search?query=${encodeURIComponent(query)}&currentUserId=${currentUserId}&currentUserType=${currentUserType}`
+    );
+    return response;
   },
 
-  // Toggle conversation pin
-  togglePin: async (conversationId, userId, userType) => {
-    try {
-      const response = await api.put(`/chat/conversations/${conversationId}/pin`, {
+  /**
+   * Update chat settings
+   */
+  async updateChatSettings(chatId, userId, userType, settings) {
+    const response = await api.put(`/chat/chats/${chatId}/settings`, {
+      userId,
+      userType,
+      ...settings // isPinned, isMuted, isArchived, isBlocked
+    });
+    return response;
+  },
+
+  /**
+   * Add reaction to message
+   */
+  async addReaction(messageId, userId, userType, reaction) {
+    const response = await api.post(`/chat/messages/${messageId}/reactions`, {
+      userId,
+      userType,
+      reaction
+    });
+    return response;
+  },
+
+  /**
+   * Remove reaction from message
+   */
+  async removeReaction(messageId, userId, userType) {
+    const response = await api.delete(`/chat/messages/${messageId}/reactions`, {
+      data: {
         userId,
         userType
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error toggling pin:', error);
-      throw error;
-    }
-  },
-
-  // Delete message
-  deleteMessage: async (messageId, userId, userType) => {
-    try {
-      const response = await api.delete(`/chat/messages/${messageId}`, {
-        data: { userId, userType }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      throw error;
-    }
-  },
-
-  // Search all users (doctors and patients) for starting conversations
-  searchUsers: async (query = '', currentUserId, currentUserType) => {
-    try {
-      const response = await api.get(
-        `/chat/users/search?query=${encodeURIComponent(query)}&currentUserId=${currentUserId}&currentUserType=${currentUserType}`
-      );
-      console.log('Search users response:', response);
-      return response;
-    } catch (error) {
-      console.error('Error searching users:', error);
-      throw error;
-    }
-  },
-
-  // Start or get existing conversation with a user
-  startConversation: async (otherUserId, otherUserType, currentUserId, currentUserType, currentUserName, otherUserName) => {
-    try {
-      const response = await api.post('/chat/conversations/start', {
-        otherUserId,
-        otherUserType,
-        currentUserId,
-        currentUserType,
-        currentUserName,
-        otherUserName
-      });
-      console.log('Start conversation response:', response);
-      return response;
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      throw error;
-    }
+      }
+    });
+    return response;
   }
 };

@@ -1,672 +1,703 @@
 import { sql } from '../config/db.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs/promises';
+import crypto from 'crypto';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/**
+ * Modern Chat Controller
+ * WhatsApp/Telegram style messaging system
+ */
 
 export const chatController = {
-  // Get all conversations for a user
-  getConversations: async (req, res) => {
+  /**
+   * Get or create a private chat between two users
+   * This is the main entry point for starting a conversation
+   */
+  getOrCreateChat: async (req, res) => {
     try {
-      const { userId, userType } = req.query;
-      
-      if (!userId || !userType) {
-        return res.status(400).json({ error: 'userId and userType are required' });
+      const { myUserId, myUserType, myUserName, myUserEmail, myUserAvatar,
+              otherUserId, otherUserType, otherUserName, otherUserEmail, otherUserAvatar } = req.body;
+
+      if (!myUserId || !myUserType || !otherUserId || !otherUserType) {
+        return res.status(400).json({ error: 'Missing required user information' });
       }
 
-      const conversations = await sql`
-        SELECT 
-          c.id,
-          c.name,
-          c.type,
-          c.created_at,
-          c.updated_at,
-          cp.is_pinned,
-          cp.is_muted,
-          cp.last_seen,
-          lm.content as last_message,
-          lm.message_type as last_message_type,
-          lm.created_at as last_message_time,
-          lm.sender_name as last_sender_name,
-          (SELECT COUNT(*) FROM messages m 
-           LEFT JOIN message_status ms ON m.id = ms.message_id 
-           WHERE m.conversation_id = c.id 
-           AND m.sender_id != ${userId}
-           AND (ms.status IS NULL OR ms.status != 'read' OR ms.user_id != ${userId})
-          ) as unread_count,
-          -- Get other participant info for direct chats
-          CASE WHEN c.type = 'direct' THEN
-            (SELECT json_build_object(
-              'id', cp2.user_id,
-              'name', cp2.user_name,
-              'email', cp2.user_email,
-              'type', cp2.user_type,
-              'last_seen', cp2.last_seen,
-              'is_online', CASE WHEN cp2.last_seen > NOW() - INTERVAL '5 minutes' THEN true ELSE false END
-            ) FROM conversation_participants cp2 
-             WHERE cp2.conversation_id = c.id 
-             AND cp2.user_id != ${userId}
-             LIMIT 1)
-          ELSE NULL
-          END as other_participant
-        FROM conversations c
-        JOIN conversation_participants cp ON c.id = cp.conversation_id
-        LEFT JOIN messages lm ON c.last_message_id = lm.id
-        WHERE cp.user_id = ${userId} AND cp.user_type = ${userType}
-        ORDER BY c.updated_at DESC
+      // Check if chat already exists between these two users
+      const existingChat = await sql`
+        SELECT c.*, 
+          json_agg(
+            json_build_object(
+              'user_id', cp.user_id,
+              'user_type', cp.user_type,
+              'user_name', cp.user_name,
+              'user_email', cp.user_email,
+              'user_avatar', cp.user_avatar,
+              'is_muted', cp.is_muted,
+              'is_pinned', cp.is_pinned,
+              'last_read_at', cp.last_read_at
+            )
+          ) as participants
+        FROM chats c
+        JOIN chat_participants cp ON c.id = cp.chat_id
+        WHERE c.type = 'private'
+          AND c.id IN (
+            SELECT chat_id FROM chat_participants 
+            WHERE user_id = ${myUserId} AND user_type = ${myUserType}
+          )
+          AND c.id IN (
+            SELECT chat_id FROM chat_participants 
+            WHERE user_id = ${otherUserId} AND user_type = ${otherUserType}
+          )
+          AND (SELECT COUNT(*) FROM chat_participants WHERE chat_id = c.id) = 2
+        GROUP BY c.id
+        LIMIT 1
       `;
 
-      res.json({ conversations });
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-      res.status(500).json({ error: 'Failed to fetch conversations' });
-    }
-  },
+      if (existingChat.length > 0) {
+        // Get unread count for this user
+        const unreadCount = await sql`
+          SELECT COUNT(*) as count
+          FROM messages m
+          LEFT JOIN message_status ms ON m.id = ms.message_id 
+            AND ms.user_id = ${myUserId} 
+            AND ms.user_type = ${myUserType}
+          WHERE m.chat_id = ${existingChat[0].id}
+            AND m.sender_id != ${myUserId}
+            AND (ms.status IS NULL OR ms.status != 'read')
+            AND m.is_deleted = FALSE
+        `;
 
-  // Get messages for a conversation
-  getMessages: async (req, res) => {
-    try {
-      const { conversationId } = req.params;
-      const { userId, userType, page = 1, limit = 50 } = req.query;
-      
-      if (!userId || !userType) {
-        return res.status(400).json({ error: 'userId and userType are required' });
-      }
-
-      const offset = (page - 1) * limit;
-
-      // Verify user is participant in conversation
-      const participant = await sql`
-        SELECT id FROM conversation_participants 
-        WHERE conversation_id = ${conversationId} 
-        AND user_id = ${userId} 
-        AND user_type = ${userType}
-      `;
-
-      if (participant.length === 0) {
-        console.error(`🚫 PRIVACY VIOLATION ATTEMPT: User ${userId} (${userType}) tried to access messages in conversation ${conversationId} but is not a participant`);
-        return res.status(403).json({ 
-          error: 'Not authorized to access this conversation',
-          details: 'You are not a participant in this conversation' 
+        return res.json({
+          chat: {
+            ...existingChat[0],
+            unread_count: parseInt(unreadCount[0].count)
+          },
+          isNew: false
         });
       }
 
-      console.log(`✅ Message access authorized: User ${userId} (${userType}) -> Conversation ${conversationId}`);
+      // Create new chat
+      const [newChat] = await sql`
+        INSERT INTO chats (type, created_at, updated_at)
+        VALUES ('private', NOW(), NOW())
+        RETURNING *
+      `;
 
-      const messages = await sql`
+      // Add both participants
+      await sql`
+        INSERT INTO chat_participants 
+          (chat_id, user_id, user_type, user_name, user_email, user_avatar)
+        VALUES 
+          (${newChat.id}, ${myUserId}, ${myUserType}, ${myUserName}, ${myUserEmail || ''}, ${myUserAvatar || ''}),
+          (${newChat.id}, ${otherUserId}, ${otherUserType}, ${otherUserName}, ${otherUserEmail || ''}, ${otherUserAvatar || ''})
+      `;
+
+      // Get full chat with participants
+      const chat = await sql`
+        SELECT c.*, 
+          json_agg(
+            json_build_object(
+              'user_id', cp.user_id,
+              'user_type', cp.user_type,
+              'user_name', cp.user_name,
+              'user_email', cp.user_email,
+              'user_avatar', cp.user_avatar,
+              'is_muted', cp.is_muted,
+              'is_pinned', cp.is_pinned,
+              'last_read_at', cp.last_read_at
+            )
+          ) as participants
+        FROM chats c
+        JOIN chat_participants cp ON c.id = cp.chat_id
+        WHERE c.id = ${newChat.id}
+        GROUP BY c.id
+      `;
+
+      console.log(`✅ Created new chat ${newChat.id} between ${myUserId} and ${otherUserId}`);
+
+      res.json({
+        chat: { ...chat[0], unread_count: 0 },
+        isNew: true
+      });
+
+    } catch (error) {
+      console.error('Error getting/creating chat:', error);
+      res.status(500).json({ error: 'Failed to get or create chat' });
+    }
+  },
+
+  /**
+   * Get all chats for a user (their inbox)
+   */
+  getMyChats: async (req, res) => {
+    try {
+      const { userId, userType } = req.query;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'userId and userType required' });
+      }
+
+      const chats = await sql`
         SELECT 
-          m.*,
-          ms.status as delivery_status,
-          reply_msg.content as reply_content,
-          reply_msg.sender_name as reply_sender_name
-        FROM messages m
-        LEFT JOIN message_status ms ON m.id = ms.message_id 
-          AND ms.user_id = ${userId} AND ms.user_type = ${userType}
-        LEFT JOIN messages reply_msg ON m.reply_to = reply_msg.id
-        WHERE m.conversation_id = ${conversationId} 
-        AND m.is_deleted = false
-        ORDER BY m.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
+          c.id,
+          c.type,
+          c.created_at,
+          c.updated_at,
+          c.last_message_at,
+          c.is_archived,
+          cp.is_muted,
+          cp.is_pinned,
+          cp.is_blocked,
+          cp.last_read_at,
+          -- Other participant info
+          (
+            SELECT json_build_object(
+              'user_id', cp2.user_id,
+              'user_type', cp2.user_type,
+              'user_name', cp2.user_name,
+              'user_email', cp2.user_email,
+              'user_avatar', cp2.user_avatar
+            )
+            FROM chat_participants cp2
+            WHERE cp2.chat_id = c.id 
+              AND NOT (cp2.user_id = ${userId} AND cp2.user_type = ${userType})
+            LIMIT 1
+          ) as other_user,
+          -- Last message
+          (
+            SELECT json_build_object(
+              'id', m.id,
+              'content', m.content,
+              'message_type', m.message_type,
+              'sender_id', m.sender_id,
+              'sender_name', m.sender_name,
+              'created_at', m.created_at,
+              'is_deleted', m.is_deleted
+            )
+            FROM messages m
+            WHERE m.chat_id = c.id AND m.is_deleted = FALSE
+            ORDER BY m.created_at DESC
+            LIMIT 1
+          ) as last_message,
+          -- Unread count
+          (
+            SELECT COUNT(*)
+            FROM messages m
+            LEFT JOIN message_status ms ON m.id = ms.message_id 
+              AND ms.user_id = ${userId} 
+              AND ms.user_type = ${userType}
+            WHERE m.chat_id = c.id
+              AND m.sender_id != ${userId}
+              AND (ms.status IS NULL OR ms.status != 'read')
+              AND m.is_deleted = FALSE
+          ) as unread_count
+        FROM chats c
+        JOIN chat_participants cp ON c.id = cp.chat_id
+        WHERE cp.user_id = ${userId} 
+          AND cp.user_type = ${userType}
+          AND c.is_archived = FALSE
+        ORDER BY c.last_message_at DESC NULLS LAST, c.created_at DESC
       `;
 
-      // Mark messages as read
+      res.json({ chats });
+
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      res.status(500).json({ error: 'Failed to fetch chats' });
+    }
+  },
+
+  /**
+   * Get messages for a specific chat
+   */
+  getMessages: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { userId, userType, limit = 50, before } = req.query;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'userId and userType required' });
+      }
+
+      // Verify user is participant
+      const participant = await sql`
+        SELECT id FROM chat_participants
+        WHERE chat_id = ${chatId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+      `;
+
+      if (participant.length === 0) {
+        return res.status(403).json({ error: 'You are not a participant in this chat' });
+      }
+
+      // Build query with optional pagination
+      let messagesQuery;
+      if (before) {
+        messagesQuery = sql`
+          SELECT 
+            m.*,
+            -- Reply info
+            (
+              SELECT json_build_object(
+                'id', m2.id,
+                'content', m2.content,
+                'sender_name', m2.sender_name
+              )
+              FROM messages m2
+              WHERE m2.id = m.reply_to_id
+            ) as reply_to,
+            -- Message status for this user
+            (
+              SELECT json_build_object(
+                'status', ms.status,
+                'delivered_at', ms.delivered_at,
+                'read_at', ms.read_at
+              )
+              FROM message_status ms
+              WHERE ms.message_id = m.id
+                AND ms.user_id = ${userId}
+                AND ms.user_type = ${userType}
+            ) as my_status,
+            -- Reactions
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'user_id', mr.user_id,
+                  'user_type', mr.user_type,
+                  'reaction', mr.reaction
+                )
+              )
+              FROM message_reactions mr
+              WHERE mr.message_id = m.id
+            ) as reactions
+          FROM messages m
+          WHERE m.chat_id = ${chatId}
+            AND m.id < ${before}
+            AND (m.is_deleted = FALSE OR m.sender_id = ${userId})
+          ORDER BY m.created_at DESC
+          LIMIT ${limit}
+        `;
+      } else {
+        messagesQuery = sql`
+          SELECT 
+            m.*,
+            -- Reply info
+            (
+              SELECT json_build_object(
+                'id', m2.id,
+                'content', m2.content,
+                'sender_name', m2.sender_name
+              )
+              FROM messages m2
+              WHERE m2.id = m.reply_to_id
+            ) as reply_to,
+            -- Message status for this user
+            (
+              SELECT json_build_object(
+                'status', ms.status,
+                'delivered_at', ms.delivered_at,
+                'read_at', ms.read_at
+              )
+              FROM message_status ms
+              WHERE ms.message_id = m.id
+                AND ms.user_id = ${userId}
+                AND ms.user_type = ${userType}
+            ) as my_status,
+            -- Reactions
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'user_id', mr.user_id,
+                  'user_type', mr.user_type,
+                  'reaction', mr.reaction
+                )
+              )
+              FROM message_reactions mr
+              WHERE mr.message_id = m.id
+            ) as reactions
+          FROM messages m
+          WHERE m.chat_id = ${chatId}
+            AND (m.is_deleted = FALSE OR m.sender_id = ${userId})
+          ORDER BY m.created_at DESC
+          LIMIT ${limit}
+        `;
+      }
+
+      const messages = await messagesQuery;
+
+      // Mark messages as delivered for this user
       await sql`
-        INSERT INTO message_status (message_id, user_id, user_type, status)
-        SELECT m.id, ${userId}, ${userType}, 'read'
-        FROM messages m
-        WHERE m.conversation_id = ${conversationId}
-        AND m.sender_id != ${userId}
-        AND NOT EXISTS (
-          SELECT 1 FROM message_status ms 
-          WHERE ms.message_id = m.id 
-          AND ms.user_id = ${userId} 
-          AND ms.user_type = ${userType}
+        UPDATE message_status
+        SET status = 'delivered', delivered_at = NOW()
+        WHERE message_id IN (
+          SELECT id FROM messages WHERE chat_id = ${chatId}
         )
-        ON CONFLICT (message_id, user_id, user_type) 
-        DO UPDATE SET status = 'read', timestamp = CURRENT_TIMESTAMP
-      `;
-
-      // Update last seen timestamp
-      await sql`
-        UPDATE conversation_participants 
-        SET last_seen = CURRENT_TIMESTAMP
-        WHERE conversation_id = ${conversationId} 
-        AND user_id = ${userId} 
-        AND user_type = ${userType}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+          AND status = 'sent'
       `;
 
       res.json({ messages: messages.reverse() });
+
     } catch (error) {
       console.error('Error fetching messages:', error);
       res.status(500).json({ error: 'Failed to fetch messages' });
     }
   },
 
-  // Send a message
+  /**
+   * Send a new message
+   */
   sendMessage: async (req, res) => {
     try {
-      const { conversationId } = req.params;
+      const { chatId } = req.params;
       const { 
-        content, 
-        messageType = 'text', 
-        replyTo, 
-        senderId, 
-        senderName, 
-        senderType,
-        fileName,
-        fileUrl,
-        fileSize
+        senderId, senderType, senderName,
+        content, messageType = 'text',
+        mediaUrl, mediaName, mediaSize, mediaType, thumbnailUrl,
+        replyToId, encryptedContent
       } = req.body;
 
-      if (!content || !senderId || !senderType) {
-        return res.status(400).json({ error: 'content, senderId, and senderType are required' });
+      if (!senderId || !senderType || !senderName) {
+        return res.status(400).json({ error: 'Sender information required' });
       }
 
-      // Verify sender is participant in conversation
+      if (!content && !mediaUrl && !encryptedContent) {
+        return res.status(400).json({ error: 'Message content or media required' });
+      }
+
+      // Verify sender is participant
       const participant = await sql`
-        SELECT id FROM conversation_participants 
-        WHERE conversation_id = ${conversationId} 
-        AND user_id = ${senderId} 
-        AND user_type = ${senderType}
+        SELECT id FROM chat_participants
+        WHERE chat_id = ${chatId}
+          AND user_id = ${senderId}
+          AND user_type = ${senderType}
       `;
 
       if (participant.length === 0) {
-        console.error(`🚫 PRIVACY VIOLATION ATTEMPT: ${senderName} (${senderId}) tried to send message to conversation ${conversationId} but is not a participant`);
-        return res.status(403).json({ 
-          error: 'Not authorized to send messages to this conversation',
-          details: 'You are not a participant in this conversation'
-        });
+        return res.status(403).json({ error: 'You are not a participant in this chat' });
       }
 
-      console.log(`✅ Message authorization verified: ${senderName} (${senderId}) -> Conversation ${conversationId}`);
-
       // Insert message
-      const newMessage = await sql`
+      const [message] = await sql`
         INSERT INTO messages (
-          conversation_id, 
-          sender_id, 
-          sender_name, 
-          sender_type, 
-          content, 
-          message_type,
-          reply_to,
-          file_name,
-          file_url,
-          file_size
+          chat_id, sender_id, sender_type, sender_name,
+          content, encrypted_content, message_type,
+          media_url, media_name, media_size, media_type, thumbnail_url,
+          reply_to_id, created_at
         )
         VALUES (
-          ${conversationId}, 
-          ${senderId}, 
-          ${senderName || 'Unknown'}, 
-          ${senderType}, 
-          ${content}, 
-          ${messageType},
-          ${replyTo || null},
-          ${fileName || null},
-          ${fileUrl || null},
-          ${fileSize || null}
+          ${chatId}, ${senderId}, ${senderType}, ${senderName},
+          ${content || null}, ${encryptedContent || null}, ${messageType},
+          ${mediaUrl || null}, ${mediaName || null}, ${mediaSize || null}, 
+          ${mediaType || null}, ${thumbnailUrl || null},
+          ${replyToId || null}, NOW()
         )
         RETURNING *
       `;
 
-      const message = newMessage[0];
-
-      // Get all participants for status tracking
+      // Get all participants to create message status
       const participants = await sql`
-        SELECT user_id, user_type FROM conversation_participants 
-        WHERE conversation_id = ${conversationId}
+        SELECT user_id, user_type FROM chat_participants
+        WHERE chat_id = ${chatId}
       `;
 
-      // Insert message status for all participants
-      for (const participant of participants) {
-        const status = participant.user_id === senderId && participant.user_type === senderType ? 'read' : 'delivered';
+      // Create message status for each participant
+      for (const p of participants) {
+        const status = (p.user_id === senderId && p.user_type === senderType) ? 'read' : 'sent';
+        const readAt = (p.user_id === senderId && p.user_type === senderType) ? new Date() : null;
+        
         await sql`
-          INSERT INTO message_status (message_id, user_id, user_type, status)
-          VALUES (${message.id}, ${participant.user_id}, ${participant.user_type}, ${status})
+          INSERT INTO message_status (message_id, user_id, user_type, status, read_at)
+          VALUES (${message.id}, ${p.user_id}, ${p.user_type}, ${status}, ${readAt})
         `;
       }
 
-      // Get reply info if this is a reply
+      // Get reply info if exists
       let replyInfo = null;
-      if (replyTo) {
-        const replyMessage = await sql`
-          SELECT content, sender_name FROM messages WHERE id = ${replyTo}
+      if (replyToId) {
+        const reply = await sql`
+          SELECT id, content, sender_name FROM messages WHERE id = ${replyToId}
         `;
-        if (replyMessage.length > 0) {
-          replyInfo = {
-            content: replyMessage[0].content,
-            senderName: replyMessage[0].sender_name
-          };
+        if (reply.length > 0) {
+          replyInfo = reply[0];
         }
       }
 
-      const response = {
-        ...message,
-        delivery_status: 'read',
-        reply_content: replyInfo?.content,
-        reply_sender_name: replyInfo?.senderName
-      };
+      console.log(`✅ Message sent in chat ${chatId} by ${senderName}`);
 
-      res.status(201).json({ message: response });
+      res.json({
+        message: {
+          ...message,
+          reply_to: replyInfo,
+          reactions: []
+        }
+      });
+
     } catch (error) {
       console.error('Error sending message:', error);
       res.status(500).json({ error: 'Failed to send message' });
     }
   },
 
-  // Create a new conversation
-  createConversation: async (req, res) => {
+  /**
+   * Mark messages as read
+   */
+  markAsRead: async (req, res) => {
     try {
-      const { 
-        name, 
-        type = 'direct', 
-        createdBy, 
-        createdByType = 'doctor',
-        participants = [] 
-      } = req.body;
+      const { chatId } = req.params;
+      const { userId, userType, messageIds } = req.body;
 
-      if (!createdBy || participants.length === 0) {
-        return res.status(400).json({ error: 'createdBy and participants are required' });
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'userId and userType required' });
       }
 
-      // Create conversation
-      const newConversation = await sql`
-        INSERT INTO conversations (name, type, created_by)
-        VALUES (${name || 'New Conversation'}, ${type}, ${createdBy})
-        RETURNING *
+      // Verify user is participant
+      const participant = await sql`
+        SELECT id FROM chat_participants
+        WHERE chat_id = ${chatId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
       `;
 
-      const conversation = newConversation[0];
+      if (participant.length === 0) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
 
-      // Add creator as participant
-      await sql`
-        INSERT INTO conversation_participants (
-          conversation_id, 
-          user_id, 
-          user_type, 
-          user_name, 
-          user_email
-        )
-        VALUES (
-          ${conversation.id}, 
-          ${createdBy}, 
-          ${createdByType}, 
-          ${req.body.createdByName || 'Unknown'}, 
-          ${req.body.createdByEmail || ''}
-        )
-      `;
-
-      // Add other participants
-      for (const participant of participants) {
+      if (messageIds && messageIds.length > 0) {
+        // Mark specific messages as read
         await sql`
-          INSERT INTO conversation_participants (
-            conversation_id, 
-            user_id, 
-            user_type, 
-            user_name, 
-            user_email
+          UPDATE message_status
+          SET status = 'read', read_at = NOW()
+          WHERE message_id = ANY(${messageIds})
+            AND user_id = ${userId}
+            AND user_type = ${userType}
+            AND status != 'read'
+        `;
+      } else {
+        // Mark all messages in chat as read
+        await sql`
+          UPDATE message_status
+          SET status = 'read', read_at = NOW()
+          WHERE message_id IN (
+            SELECT id FROM messages WHERE chat_id = ${chatId}
           )
-          VALUES (
-            ${conversation.id}, 
-            ${participant.userId}, 
-            ${participant.userType}, 
-            ${participant.userName || 'Unknown'}, 
-            ${participant.userEmail || ''}
-          )
-          ON CONFLICT (conversation_id, user_id, user_type) DO NOTHING
+            AND user_id = ${userId}
+            AND user_type = ${userType}
+            AND status != 'read'
         `;
       }
 
-      res.status(201).json({ conversation });
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      res.status(500).json({ error: 'Failed to create conversation' });
-    }
-  },
-
-  // Search conversations and messages
-  searchChat: async (req, res) => {
-    try {
-      const { query, userId, userType, type = 'all' } = req.query;
-      
-      if (!query || !userId || !userType) {
-        return res.status(400).json({ error: 'query, userId, and userType are required' });
-      }
-
-      const searchResults = {};
-
-      // Search conversations
-      if (type === 'all' || type === 'conversations') {
-        searchResults.conversations = await sql`
-          SELECT DISTINCT
-            c.id,
-            c.name,
-            c.type,
-            c.updated_at,
-            COALESCE(cp_other.user_name, c.name) as display_name
-          FROM conversations c
-          JOIN conversation_participants cp ON c.id = cp.conversation_id
-          LEFT JOIN conversation_participants cp_other ON c.id = cp_other.conversation_id 
-            AND cp_other.user_id != ${userId}
-          WHERE cp.user_id = ${userId} 
-          AND cp.user_type = ${userType}
-          AND (
-            c.name ILIKE ${'%' + query + '%'} 
-            OR cp_other.user_name ILIKE ${'%' + query + '%'}
-          )
-          ORDER BY c.updated_at DESC
-          LIMIT 10
-        `;
-      }
-
-      // Search messages
-      if (type === 'all' || type === 'messages') {
-        searchResults.messages = await sql`
-          SELECT 
-            m.*,
-            c.name as conversation_name,
-            COALESCE(cp_other.user_name, c.name) as conversation_display_name
-          FROM messages m
-          JOIN conversations c ON m.conversation_id = c.id
-          JOIN conversation_participants cp ON c.id = cp.conversation_id
-          LEFT JOIN conversation_participants cp_other ON c.id = cp_other.conversation_id 
-            AND cp_other.user_id != ${userId}
-          WHERE cp.user_id = ${userId} 
-          AND cp.user_type = ${userType}
-          AND m.content ILIKE ${'%' + query + '%'}
-          AND m.is_deleted = false
-          ORDER BY m.created_at DESC
-          LIMIT 20
-        `;
-      }
-
-      res.json(searchResults);
-    } catch (error) {
-      console.error('Error searching chat:', error);
-      res.status(500).json({ error: 'Failed to search chat' });
-    }
-  },
-
-  // Update typing indicator
-  updateTypingStatus: async (req, res) => {
-    try {
-      const { conversationId } = req.params;
-      const { userId, userType, userName, isTyping } = req.body;
-
-      if (!userId || !userType) {
-        return res.status(400).json({ error: 'userId and userType are required' });
-      }
-
+      // Update last_read_at for participant
       await sql`
-        INSERT INTO typing_indicators (
-          conversation_id, 
-          user_id, 
-          user_type, 
-          user_name, 
-          is_typing,
-          updated_at
-        )
-        VALUES (
-          ${conversationId}, 
-          ${userId}, 
-          ${userType}, 
-          ${userName || 'Unknown'}, 
-          ${isTyping},
-          CURRENT_TIMESTAMP
-        )
-        ON CONFLICT (conversation_id, user_id, user_type) 
-        DO UPDATE SET 
-          is_typing = ${isTyping},
-          updated_at = CURRENT_TIMESTAMP
-      `;
-
-      // Clean up old typing indicators (older than 10 seconds)
-      await sql`
-        DELETE FROM typing_indicators 
-        WHERE updated_at < NOW() - INTERVAL '10 seconds'
+        UPDATE chat_participants
+        SET last_read_at = NOW()
+        WHERE chat_id = ${chatId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
       `;
 
       res.json({ success: true });
+
     } catch (error) {
-      console.error('Error updating typing status:', error);
-      res.status(500).json({ error: 'Failed to update typing status' });
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ error: 'Failed to mark messages as read' });
     }
   },
 
-  // Get typing indicators for a conversation
-  getTypingIndicators: async (req, res) => {
-    try {
-      const { conversationId } = req.params;
-      const { excludeUserId, excludeUserType } = req.query;
-
-      let typingUsers = await sql`
-        SELECT user_id, user_name, user_type, is_typing, updated_at
-        FROM typing_indicators 
-        WHERE conversation_id = ${conversationId}
-        AND is_typing = true
-        AND updated_at > NOW() - INTERVAL '10 seconds'
-      `;
-
-      // Exclude current user if specified
-      if (excludeUserId && excludeUserType) {
-        typingUsers = typingUsers.filter(
-          user => !(user.user_id === excludeUserId && user.user_type === excludeUserType)
-        );
-      }
-
-      res.json({ typingUsers });
-    } catch (error) {
-      console.error('Error fetching typing indicators:', error);
-      res.status(500).json({ error: 'Failed to fetch typing indicators' });
-    }
-  },
-
-  // Update message status (read, delivered)
-  updateMessageStatus: async (req, res) => {
-    try {
-      const { messageId } = req.params;
-      const { userId, userType, status } = req.body;
-
-      if (!userId || !userType || !status) {
-        return res.status(400).json({ error: 'userId, userType, and status are required' });
-      }
-
-      await sql`
-        INSERT INTO message_status (message_id, user_id, user_type, status, timestamp)
-        VALUES (${messageId}, ${userId}, ${userType}, ${status}, CURRENT_TIMESTAMP)
-        ON CONFLICT (message_id, user_id, user_type)
-        DO UPDATE SET 
-          status = ${status}, 
-          timestamp = CURRENT_TIMESTAMP
-      `;
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error updating message status:', error);
-      res.status(500).json({ error: 'Failed to update message status' });
-    }
-  },
-
-  // Toggle conversation pin status
-  togglePin: async (req, res) => {
-    try {
-      const { conversationId } = req.params;
-      const { userId, userType } = req.body;
-
-      if (!userId || !userType) {
-        return res.status(400).json({ error: 'userId and userType are required' });
-      }
-
-      const result = await sql`
-        UPDATE conversation_participants 
-        SET is_pinned = NOT is_pinned
-        WHERE conversation_id = ${conversationId} 
-        AND user_id = ${userId} 
-        AND user_type = ${userType}
-        RETURNING is_pinned
-      `;
-
-      if (result.length === 0) {
-        return res.status(404).json({ error: 'Participant not found' });
-      }
-
-      res.json({ isPinned: result[0].is_pinned });
-    } catch (error) {
-      console.error('Error toggling pin status:', error);
-      res.status(500).json({ error: 'Failed to toggle pin status' });
-    }
-  },
-
-  // Delete message (soft delete)
+  /**
+   * Delete a message
+   */
   deleteMessage: async (req, res) => {
     try {
       const { messageId } = req.params;
-      const { userId, userType } = req.body;
+      const { userId, userType, deleteForEveryone = false } = req.body;
 
-      if (!userId || !userType) {
-        return res.status(400).json({ error: 'userId and userType are required' });
-      }
-
-      // Verify user owns the message
+      // Verify user is sender
       const message = await sql`
-        SELECT id FROM messages 
-        WHERE id = ${messageId} 
-        AND sender_id = ${userId} 
-        AND sender_type = ${userType}
+        SELECT * FROM messages
+        WHERE id = ${messageId}
+          AND sender_id = ${userId}
+          AND sender_type = ${userType}
       `;
 
       if (message.length === 0) {
-        return res.status(403).json({ error: 'Not authorized to delete this message' });
+        return res.status(403).json({ error: 'You can only delete your own messages' });
       }
 
-      await sql`
-        UPDATE messages 
-        SET is_deleted = true, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${messageId}
-      `;
+      if (deleteForEveryone) {
+        // Delete for everyone (within time limit - 1 hour)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        if (new Date(message[0].created_at) < oneHourAgo) {
+          return res.status(400).json({ error: 'Can only delete for everyone within 1 hour' });
+        }
 
-      res.json({ success: true });
+        await sql`
+          UPDATE messages
+          SET is_deleted = TRUE, delete_for_everyone = TRUE, deleted_at = NOW()
+          WHERE id = ${messageId}
+        `;
+      } else {
+        // Just mark as deleted
+        await sql`
+          UPDATE messages
+          SET is_deleted = TRUE, deleted_at = NOW()
+          WHERE id = ${messageId}
+        `;
+      }
+
+      res.json({ success: true, deleteForEveryone });
+
     } catch (error) {
       console.error('Error deleting message:', error);
       res.status(500).json({ error: 'Failed to delete message' });
     }
   },
 
-  // Search all users (doctors and patients) for starting new conversations
+  /**
+   * Search all users to start a new chat
+   * Fixed: Using profile_image_url instead of profile_image
+   */
   searchUsers: async (req, res) => {
     try {
       const { query = '', currentUserId, currentUserType } = req.query;
-      
+
       if (!currentUserId || !currentUserType) {
-        return res.status(400).json({ error: 'currentUserId and currentUserType are required' });
+        return res.status(400).json({ error: 'Current user info required' });
       }
 
       // Search doctors
       const doctors = await sql`
         SELECT 
-          unique_id as id,
-          CONCAT(first_name, ' ', last_name) as name,
-          email,
-          'doctor' as type,
-          specialization,
-          CASE WHEN unique_id = ${currentUserId} THEN true ELSE false END as is_current_user
-        FROM doctors 
-        WHERE unique_id IS NOT NULL 
-        AND (
-          LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(${'%' + query + '%'}) OR
-          LOWER(email) LIKE LOWER(${'%' + query + '%'}) OR
-          LOWER(specialization) LIKE LOWER(${'%' + query + '%'})
-        )
-        AND unique_id != ${currentUserId}
-        ORDER BY first_name, last_name
+          unique_id as user_id,
+          'doctor' as user_type,
+          CONCAT(first_name, ' ', last_name) as user_name,
+          email as user_email,
+          profile_image_url as user_avatar,
+          specialization
+        FROM doctors
+        WHERE (LOWER(first_name) LIKE LOWER(${'%' + query + '%'})
+          OR LOWER(last_name) LIKE LOWER(${'%' + query + '%'})
+          OR LOWER(email) LIKE LOWER(${'%' + query + '%'}))
+          AND unique_id != ${currentUserId}
         LIMIT 20
       `;
 
-      // Search patients  
+      // Search patients
       const patients = await sql`
         SELECT 
-          unique_id as id,
-          CONCAT(first_name, ' ', last_name) as name,
-          email,
-          'patient' as type,
-          date_of_birth,
-          CASE WHEN unique_id = ${currentUserId} THEN true ELSE false END as is_current_user
-        FROM patients 
-        WHERE unique_id IS NOT NULL 
-        AND (
-          LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(${'%' + query + '%'}) OR
-          LOWER(email) LIKE LOWER(${'%' + query + '%'})
-        )
-        AND unique_id != ${currentUserId}
-        ORDER BY first_name, last_name
+          unique_id as user_id,
+          'patient' as user_type,
+          CONCAT(first_name, ' ', last_name) as user_name,
+          email as user_email,
+          NULL as user_avatar,
+          NULL as specialization
+        FROM patients
+        WHERE (LOWER(first_name) LIKE LOWER(${'%' + query + '%'})
+          OR LOWER(last_name) LIKE LOWER(${'%' + query + '%'})
+          OR LOWER(email) LIKE LOWER(${'%' + query + '%'}))
+          AND unique_id != ${currentUserId}
         LIMIT 20
       `;
 
-      // Combine and sort results
-      const allUsers = [...doctors, ...patients].sort((a, b) => a.name.localeCompare(b.name));
+      const users = [...doctors, ...patients].sort((a, b) => 
+        a.user_name.localeCompare(b.user_name)
+      );
 
-      res.json({ users: allUsers });
+      res.json({ users });
+
     } catch (error) {
       console.error('Error searching users:', error);
       res.status(500).json({ error: 'Failed to search users' });
     }
   },
 
-  // Create or get existing conversation with a user
-  startConversation: async (req, res) => {
+  /**
+   * Toggle chat settings (pin, mute, archive, block)
+   */
+  updateChatSettings: async (req, res) => {
     try {
-      const { otherUserId, otherUserType, currentUserId, currentUserType, currentUserName, otherUserName } = req.body;
-      
-      if (!otherUserId || !otherUserType || !currentUserId || !currentUserType) {
-        return res.status(400).json({ error: 'All user details are required' });
+      const { chatId } = req.params;
+      const { userId, userType, isPinned, isMuted, isArchived, isBlocked } = req.body;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'User info required' });
       }
 
-      // Check if conversation already exists
-      const existingConv = await sql`
-        SELECT c.id, c.name
-        FROM conversations c
-        JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
-        JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
-        WHERE c.type = 'direct'
-        AND cp1.user_id = ${currentUserId} AND cp1.user_type = ${currentUserType}
-        AND cp2.user_id = ${otherUserId} AND cp2.user_type = ${otherUserType}
-        LIMIT 1
-      `;
+      // Build update query dynamically
+      const updates = [];
+      if (isPinned !== undefined) updates.push(sql`is_pinned = ${isPinned}`);
+      if (isMuted !== undefined) updates.push(sql`is_muted = ${isMuted}`);
+      if (isBlocked !== undefined) updates.push(sql`is_blocked = ${isBlocked}`);
 
-      if (existingConv.length > 0) {
-        return res.json({ 
-          conversation: existingConv[0],
-          isNew: false
-        });
+      if (updates.length > 0) {
+        await sql`
+          UPDATE chat_participants
+          SET ${sql(updates, ', ')}
+          WHERE chat_id = ${chatId}
+            AND user_id = ${userId}
+            AND user_type = ${userType}
+        `;
       }
 
-      // Create new conversation
-      const conversationName = `${currentUserName} - ${otherUserName}`;
-      
-      const [newConversation] = await sql`
-        INSERT INTO conversations (name, type, created_by)
-        VALUES (${conversationName}, 'direct', ${currentUserId})
-        RETURNING *
-      `;
+      if (isArchived !== undefined) {
+        await sql`
+          UPDATE chats
+          SET is_archived = ${isArchived}
+          WHERE id = ${chatId}
+        `;
+      }
 
-      // Add both participants
-      await sql`
-        INSERT INTO conversation_participants (
-          conversation_id, user_id, user_type, user_name, user_email, joined_at
-        ) VALUES 
-        (${newConversation.id}, ${currentUserId}, ${currentUserType}, ${currentUserName}, '', NOW()),
-        (${newConversation.id}, ${otherUserId}, ${otherUserType}, ${otherUserName}, '', NOW())
-      `;
+      res.json({ success: true });
 
-      res.json({ 
-        conversation: newConversation,
-        isNew: true
-      });
     } catch (error) {
-      console.error('Error starting conversation:', error);
-      res.status(500).json({ error: 'Failed to start conversation' });
+      console.error('Error updating chat settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
+  },
+
+  /**
+   * Add reaction to a message
+   */
+  addReaction: async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const { userId, userType, reaction } = req.body;
+
+      await sql`
+        INSERT INTO message_reactions (message_id, user_id, user_type, reaction)
+        VALUES (${messageId}, ${userId}, ${userType}, ${reaction})
+        ON CONFLICT (message_id, user_id, user_type)
+        DO UPDATE SET reaction = ${reaction}, created_at = NOW()
+      `;
+
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      res.status(500).json({ error: 'Failed to add reaction' });
+    }
+  },
+
+  /**
+   * Remove reaction from a message
+   */
+  removeReaction: async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const { userId, userType } = req.body;
+
+      await sql`
+        DELETE FROM message_reactions
+        WHERE message_id = ${messageId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+      `;
+
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      res.status(500).json({ error: 'Failed to remove reaction' });
     }
   }
 };

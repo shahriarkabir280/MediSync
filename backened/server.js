@@ -1,3 +1,7 @@
+// Fix DNS resolution for Neon database
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
+
 //const express = require('express');
 import express from 'express';
 import cors from 'cors';
@@ -23,6 +27,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import { initializeWebSocket } from './lib/websocketServer.js';
+import { createChatSchema } from './schemas/chatSchema.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
@@ -390,13 +395,20 @@ async function initDB() {
 
 // Start server
 initDB().then(async () => {
+  // Initialize chat schema
+  try {
+    await createChatSchema();
+  } catch (error) {
+    console.error('❌ Chat schema initialization failed:', error);
+  }
+
   const server = app.listen(PORT,'0.0.0.0', () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
   });
   
-  // Initialize WebSocket server
+  // Initialize WebSocket for real-time chat
   const io = initializeWebSocket(server);
-  console.log('🔄 WebSocket server initialized for real-time chat');
+  console.log('✅ WebSocket server initialized for real-time messaging');
   
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);
