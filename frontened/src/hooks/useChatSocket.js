@@ -11,6 +11,7 @@ export function useChatSocket(user) {
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [userActivityStatus, setUserActivityStatus] = useState(new Map()); // userId_userType -> 'active' | 'away'
 
   useEffect(() => {
     if (!user?.userId || !user?.userType) {
@@ -29,7 +30,8 @@ export function useChatSocket(user) {
 
     // Connection handlers
     socket.on('connect', () => {
-      console.log('✅ Socket connected');
+      console.log('✅ Socket connected:', socket.id);
+      console.log('👤 User info:', { userId: user.userId, userType: user.userType, userName: user.userName });
       setIsConnected(true);
       
       // Announce user online
@@ -38,6 +40,8 @@ export function useChatSocket(user) {
         userType: user.userType,
         userName: user.userName
       });
+      
+      console.log('📡 Emitted user_online event');
     });
 
     socket.on('disconnect', () => {
@@ -52,14 +56,50 @@ export function useChatSocket(user) {
 
     // Online status handlers
     socket.on('user_status_changed', (data) => {
+      console.log('📊 User status changed:', data);
       const userKey = `${data.userId}_${data.userType}`;
       setOnlineUsers(prev => {
         const newSet = new Set(prev);
         if (data.isOnline) {
+          console.log(`✅ User ${userKey} is now ONLINE`);
           newSet.add(userKey);
         } else {
+          console.log(`❌ User ${userKey} is now OFFLINE`);
           newSet.delete(userKey);
+          // Remove activity status when offline
+          setUserActivityStatus(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(userKey);
+            return newMap;
+          });
         }
+        return newSet;
+      });
+    });
+
+    // Activity status handlers
+    socket.on('user_activity_changed', (data) => {
+      const userKey = `${data.userId}_${data.userType}`;
+      setUserActivityStatus(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userKey, data.status);
+        return newMap;
+      });
+    });
+
+    // Receive initial online users list
+    socket.on('online_users_list', (usersList) => {
+      console.log('📥 Received online users list:', usersList);
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        usersList.forEach(u => {
+          const userKey = `${u.userId}_${u.userType}`;
+          if (u.isOnline) {
+            newSet.add(userKey);
+            console.log(`✅ Added ${userKey} to online users`);
+          }
+        });
+        console.log('📊 Total online users after update:', newSet.size);
         return newSet;
       });
     });
@@ -140,11 +180,20 @@ export function useChatSocket(user) {
     return onlineUsers.has(`${userId}_${userType}`);
   };
 
+  // Get user activity status (active, away, or offline)
+  const getUserActivityStatus = (userId, userType) => {
+    const userKey = `${userId}_${userType}`;
+    if (!onlineUsers.has(userKey)) return 'offline';
+    return userActivityStatus.get(userKey) || 'active';
+  };
+
   return {
     socket: socketRef.current,
     isConnected,
     onlineUsers,
+    userActivityStatus,
     isUserOnline,
+    getUserActivityStatus,
     joinChat,
     leaveChat,
     sendMessage,

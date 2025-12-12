@@ -29,14 +29,14 @@ export function initializeWebSocket(httpServer) {
       const { userId, userType, userName } = data;
       
       if (!userId || !userType) {
-        console.error('❌ Invalid user_online data');
+        console.error('❌ Invalid user_online data:', data);
         return;
       }
 
       const userKey = `${userId}_${userType}`;
       
       // Store socket info
-      onlineUsers.set(socket.id, { userId, userType, userName });
+      onlineUsers.set(socket.id, { userId, userType, userName, status: 'active' });
       
       // Add socket to user's socket set
       if (!userSockets.has(userKey)) {
@@ -44,7 +44,17 @@ export function initializeWebSocket(httpServer) {
       }
       userSockets.get(userKey).add(socket.id);
 
-      console.log(`✅ ${userName} (${userId}) is online`);
+      console.log(`✅ ${userName} (${userKey}) is online - Socket: ${socket.id}`);
+      console.log(`📊 Total sockets for ${userKey}:`, userSockets.get(userKey).size);
+      console.log(`📊 All online users:`, Array.from(userSockets.keys()));
+
+      // Send current online users list to the newly connected user
+      const onlineUsersList = Array.from(userSockets.keys()).map(key => {
+        const [uid, utype] = key.split('_');
+        return { userId: uid, userType: utype, isOnline: true };
+      });
+      socket.emit('online_users_list', onlineUsersList);
+      console.log(`📤 Sent online users list to ${userName}:`, onlineUsersList.length, 'users');
 
       // Broadcast online status to relevant chats
       broadcastOnlineStatus(io, userId, userType, true);
@@ -231,6 +241,35 @@ export function initializeWebSocket(httpServer) {
     });
 
     /**
+     * User active status
+     */
+    socket.on('user_active', (data) => {
+      const { userId, userType } = data;
+      const user = onlineUsers.get(socket.id);
+      
+      if (user) {
+        user.status = 'active';
+        user.lastActivity = new Date();
+        broadcastActivityStatus(io, userId, userType, 'active');
+        console.log(`✅ User ${userId} is now active`);
+      }
+    });
+
+    /**
+     * User away status
+     */
+    socket.on('user_away', (data) => {
+      const { userId, userType } = data;
+      const user = onlineUsers.get(socket.id);
+      
+      if (user) {
+        user.status = 'away';
+        broadcastActivityStatus(io, userId, userType, 'away');
+        console.log(`💤 User ${userId} is now away`);
+      }
+    });
+
+    /**
      * Handle disconnect
      */
     socket.on('disconnect', () => {
@@ -280,6 +319,47 @@ export function initializeWebSocket(httpServer) {
  */
 async function broadcastOnlineStatus(io, userId, userType, isOnline) {
   try {
+    const userKey = `${userId}_${userType}`;
+    console.log(`📡 Broadcasting ${isOnline ? 'ONLINE' : 'OFFLINE'} status for ${userKey}`);
+    
+    // Find all chats this user is in
+    const chats = await sql`
+      SELECT DISTINCT chat_id FROM chat_participants
+      WHERE user_id = ${userId} AND user_type = ${userType}
+    `;
+
+    console.log(`📡 Found ${chats.length} chats to broadcast to`);
+
+    // Broadcast to each chat
+    chats.forEach(chat => {
+      console.log(`📡 Broadcasting to chat_${chat.chat_id}`);
+      io.to(`chat_${chat.chat_id}`).emit('user_status_changed', {
+        userId,
+        userType,
+        isOnline,
+        timestamp: new Date()
+      });
+    });
+    
+    // Also broadcast globally to all connected clients
+    io.emit('user_status_changed', {
+      userId,
+      userType,
+      isOnline,
+      timestamp: new Date()
+    });
+    
+    console.log(`📡 Broadcast complete for ${userKey}`);
+  } catch (error) {
+    console.error('Error broadcasting online status:', error);
+  }
+}
+
+/**
+ * Broadcast activity status (active/away) to users in common chats
+ */
+async function broadcastActivityStatus(io, userId, userType, status) {
+  try {
     // Find all chats this user is in
     const chats = await sql`
       SELECT DISTINCT chat_id FROM chat_participants
@@ -288,15 +368,15 @@ async function broadcastOnlineStatus(io, userId, userType, isOnline) {
 
     // Broadcast to each chat
     chats.forEach(chat => {
-      io.to(`chat_${chat.chat_id}`).emit('user_status_changed', {
+      io.to(`chat_${chat.chat_id}`).emit('user_activity_changed', {
         userId,
         userType,
-        isOnline,
+        status,
         timestamp: new Date()
       });
     });
   } catch (error) {
-    console.error('Error broadcasting online status:', error);
+    console.error('Error broadcasting activity status:', error);
   }
 }
 

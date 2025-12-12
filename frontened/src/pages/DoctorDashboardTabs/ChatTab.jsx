@@ -41,6 +41,9 @@ const ChatTab = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [userActivity, setUserActivity] = useState('active'); // active, away, offline
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -50,9 +53,52 @@ const ChatTab = () => {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const activityTimeoutRef = useRef(null);
 
   // WebSocket
   const socket = useChatSocket(currentUser);
+
+  // Track user activity for away status
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+      if (userActivity !== 'active') {
+        setUserActivity('active');
+        // Notify server of active status
+        if (socket.socket) {
+          socket.socket.emit('user_active', {
+            userId: currentUser.userId,
+            userType: currentUser.userType
+          });
+        }
+      }
+    };
+
+    // Activity events
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
+    events.forEach(event => window.addEventListener(event, handleActivity));
+
+    // Check for inactivity every 30 seconds
+    const inactivityInterval = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivity;
+      
+      // 5 minutes of inactivity = away
+      if (timeSinceLastActivity > 5 * 60 * 1000 && userActivity === 'active') {
+        setUserActivity('away');
+        if (socket.socket) {
+          socket.socket.emit('user_away', {
+            userId: currentUser.userId,
+            userType: currentUser.userType
+          });
+        }
+      }
+    }, 30000);
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, handleActivity));
+      clearInterval(inactivityInterval);
+    };
+  }, [lastActivity, userActivity, socket.socket, currentUser.userId, currentUser.userType]);
 
   // Load chats on mount
   useEffect(() => {
@@ -765,10 +811,36 @@ const ChatTab = () => {
                 <h3 className="font-semibold text-gray-900">
                   {selectedChat.other_user?.user_name}
                 </h3>
-                <p className="text-xs text-gray-500">
-                  {socket.isUserOnline(selectedChat.other_user?.user_id, selectedChat.other_user?.user_type)
-                    ? 'Online'
-                    : 'Offline'}
+                <p className="text-xs flex items-center space-x-1">
+                  {(() => {
+                    const activityStatus = socket.getUserActivityStatus(
+                      selectedChat.other_user?.user_id, 
+                      selectedChat.other_user?.user_type
+                    );
+                    
+                    if (activityStatus === 'active') {
+                      return (
+                        <>
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                          <span className="text-green-600 font-medium">Active now</span>
+                        </>
+                      );
+                    } else if (activityStatus === 'away') {
+                      return (
+                        <>
+                          <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                          <span className="text-amber-600 font-medium">Away</span>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                          <span className="text-gray-500">Offline</span>
+                        </>
+                      );
+                    }
+                  })()}
                 </p>
               </div>
             </div>
@@ -970,6 +1042,66 @@ const ChatTab = () => {
                   onChange={(e) => handleFileSelect(e, 'image')}
                   className="hidden"
                 />
+                
+                {/* Emoji Picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-2.5 hover:bg-gradient-to-br hover:from-yellow-50 hover:to-amber-50 rounded-full transition-all duration-200"
+                    disabled={uploadingFile}
+                  >
+                    <Smile size={20} className="text-gray-600 hover:text-amber-500" />
+                  </button>
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full mb-2 left-0 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 w-80 max-h-96 overflow-y-auto z-50">
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b">
+                        <h4 className="text-sm font-semibold text-gray-700">Emoji & GIF</h4>
+                        <button
+                          onClick={() => setShowEmojiPicker(false)}
+                          className="p-1 hover:bg-gray-100 rounded-full"
+                        >
+                          <X size={16} className="text-gray-500" />
+                        </button>
+                      </div>
+                      
+                      {/* Emoji Grid */}
+                      <div className="grid grid-cols-8 gap-1">
+                        {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', 
+                          '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒',
+                          '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+                          '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶',
+                          '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴',
+                          '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀',
+                          '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾',
+                          '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆',
+                          '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️',
+                          '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀',
+                          '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+                          '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
+                          '🔥', '💯', '💢', '💬', '👁️‍🗨️', '💭', '💤', '👋', '🎉', '🎊', '🎁', '🎈', '🎂', '🎀', '🏆', '🥇'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              setMessageInput(prev => prev + emoji);
+                              messageInputRef.current?.focus();
+                            }}
+                            className="text-2xl hover:bg-gray-100 rounded p-1 transition-all hover:scale-125"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* GIF Note */}
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-gray-500 text-center">
+                          💡 Tip: You can also paste GIF links directly in your message
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <input
                   type="text"
