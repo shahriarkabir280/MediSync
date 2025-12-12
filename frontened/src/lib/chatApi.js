@@ -102,12 +102,10 @@ export const chatApi = {
    * Delete a message
    */
   async deleteMessage(messageId, userId, userType, deleteForEveryone = false) {
-    const response = await api.delete(`/chat/messages/${messageId}`, {
-      data: {
-        userId,
-        userType,
-        deleteForEveryone
-      }
+    const response = await api.post(`/chat/messages/${messageId}/delete`, {
+      userId,
+      userType,
+      deleteForEveryone
     });
     return response;
   },
@@ -189,6 +187,19 @@ export const chatApi = {
         userId,
         userType
       }
+    });
+    return response;
+  },
+
+  /**
+   * Forward a message to other chats
+   */
+  async forwardMessage(messageId, toChatIds, userId, userType) {
+    const response = await api.post('/chat/messages/forward', {
+      messageId,
+      toChatIds,
+      userId,
+      userType
     });
     return response;
   }

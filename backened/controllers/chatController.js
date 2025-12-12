@@ -505,12 +505,14 @@ export const chatController = {
   },
 
   /**
-   * Delete a message
+   * Delete a message (Unsend)
    */
   deleteMessage: async (req, res) => {
     try {
       const { messageId } = req.params;
       const { userId, userType, deleteForEveryone = false } = req.body;
+
+      console.log('Delete message request:', { messageId, userId, userType, deleteForEveryone });
 
       // Verify user is sender
       const message = await sql`
@@ -520,36 +522,187 @@ export const chatController = {
           AND sender_type = ${userType}
       `;
 
+      console.log('Found message:', message.length > 0 ? 'Yes' : 'No');
+
       if (message.length === 0) {
         return res.status(403).json({ error: 'You can only delete your own messages' });
       }
 
       if (deleteForEveryone) {
-        // Delete for everyone (within time limit - 1 hour)
+        // Unsend for everyone (within time limit - 1 hour)
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        if (new Date(message[0].created_at) < oneHourAgo) {
-          return res.status(400).json({ error: 'Can only delete for everyone within 1 hour' });
+        const messageTime = new Date(message[0].created_at);
+        
+        console.log('Message time:', messageTime, 'One hour ago:', oneHourAgo);
+        
+        if (messageTime < oneHourAgo) {
+          return res.status(400).json({ error: 'Can only unsend for everyone within 1 hour' });
         }
 
+        console.log('Updating message as deleted for everyone');
+        
         await sql`
           UPDATE messages
-          SET is_deleted = TRUE, delete_for_everyone = TRUE, deleted_at = NOW()
+          SET is_deleted = ${true}, 
+              delete_for_everyone = ${true}, 
+              deleted_at = NOW()
           WHERE id = ${messageId}
         `;
+
+        // Emit socket event for real-time update
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`chat_${message[0].chat_id}`).emit('message_deleted', {
+            messageId,
+            chatId: message[0].chat_id,
+            deleteForEveryone: true
+          });
+        }
       } else {
-        // Just mark as deleted
+        // Delete for me only
+        console.log('Updating message as deleted for sender only');
+        
         await sql`
           UPDATE messages
-          SET is_deleted = TRUE, deleted_at = NOW()
+          SET is_deleted = ${true}, 
+              deleted_at = NOW()
           WHERE id = ${messageId}
         `;
       }
 
+      console.log('Delete successful');
       res.json({ success: true, deleteForEveryone });
 
     } catch (error) {
       console.error('Error deleting message:', error);
-      res.status(500).json({ error: 'Failed to delete message' });
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to delete message', details: error.message });
+    }
+  },
+
+  /**
+   * Forward a message to another chat
+   */
+  forwardMessage: async (req, res) => {
+    try {
+      const { messageId, toChatIds, userId, userType } = req.body;
+
+      if (!messageId || !toChatIds || !Array.isArray(toChatIds) || toChatIds.length === 0) {
+        return res.status(400).json({ error: 'messageId and toChatIds array required' });
+      }
+
+      // Get original message
+      const originalMessage = await sql`
+        SELECT * FROM messages
+        WHERE id = ${messageId}
+      `;
+
+      if (originalMessage.length === 0) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+
+      const message = originalMessage[0];
+
+      // Verify user has access to the original message's chat
+      const hasAccess = await sql`
+        SELECT id FROM chat_participants
+        WHERE chat_id = ${message.chat_id}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+      `;
+
+      if (hasAccess.length === 0) {
+        return res.status(403).json({ error: 'You do not have access to this message' });
+      }
+
+      const forwardedMessages = [];
+      const io = req.app.get('io');
+
+      // Forward to each chat
+      for (const chatId of toChatIds) {
+        // Verify user is participant in target chat
+        const isParticipant = await sql`
+          SELECT id FROM chat_participants
+          WHERE chat_id = ${chatId}
+            AND user_id = ${userId}
+            AND user_type = ${userType}
+        `;
+
+        if (isParticipant.length === 0) {
+          continue; // Skip this chat
+        }
+
+        // Get sender name
+        let senderName = '';
+        if (userType === 'doctor') {
+          const doctor = await sql`
+            SELECT CONCAT(first_name, ' ', last_name) as name FROM doctors WHERE unique_id = ${userId}
+          `;
+          senderName = doctor[0]?.name || 'Doctor';
+        } else {
+          const patient = await sql`
+            SELECT CONCAT(first_name, ' ', last_name) as name FROM patients WHERE unique_id = ${userId}
+          `;
+          senderName = patient[0]?.name || 'Patient';
+        }
+
+        // Create forwarded message
+        const newMessage = await sql`
+          INSERT INTO messages (
+            chat_id, sender_id, sender_type, sender_name,
+            message_type, content,
+            media_url, media_name, media_size, media_type,
+            is_forwarded, forwarded_from_message_id
+          ) VALUES (
+            ${chatId}, ${userId}, ${userType}, ${senderName},
+            ${message.message_type}, ${message.content},
+            ${message.media_url}, ${message.media_name}, ${message.media_size}, ${message.media_type},
+            TRUE, ${messageId}
+          )
+          RETURNING *
+        `;
+
+        forwardedMessages.push(newMessage[0]);
+
+        // Update chat's last message
+        await sql`
+          UPDATE chats
+          SET last_message_at = NOW()
+          WHERE id = ${chatId}
+        `;
+
+        // Create message status for all participants
+        const participants = await sql`
+          SELECT user_id, user_type FROM chat_participants WHERE chat_id = ${chatId}
+        `;
+
+        for (const participant of participants) {
+          await sql`
+            INSERT INTO message_status (message_id, user_id, user_type, status)
+            VALUES (
+              ${newMessage[0].id},
+              ${participant.user_id},
+              ${participant.user_type},
+              ${participant.user_id === userId && participant.user_type === userType ? 'read' : 'sent'}
+            )
+          `;
+        }
+
+        // Emit socket event
+        if (io) {
+          io.to(`chat_${chatId}`).emit('new_message', newMessage[0]);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        forwardedCount: forwardedMessages.length,
+        messages: forwardedMessages
+      });
+
+    } catch (error) {
+      console.error('Error forwarding message:', error);
+      res.status(500).json({ error: 'Failed to forward message' });
     }
   },
 

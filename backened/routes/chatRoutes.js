@@ -59,8 +59,11 @@ router.post('/chats/:chatId/messages', chatController.sendMessage);
 // Mark messages as read
 router.post('/chats/:chatId/read', chatController.markAsRead);
 
-// Delete a message
-router.delete('/messages/:messageId', chatController.deleteMessage);
+// Delete a message (Unsend) - using POST to properly handle body
+router.post('/messages/:messageId/delete', chatController.deleteMessage);
+
+// Forward a message
+router.post('/messages/forward', chatController.forwardMessage);
 
 // Search users to start a chat
 router.get('/users/search', chatController.searchUsers);
