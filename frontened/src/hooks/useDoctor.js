@@ -5,6 +5,13 @@ export const useDoctor = () => {
   const { user, isAuthenticated } = useAuth();
   
   return {
+    doctor: {
+      id: user?.id,
+      name: user?.name,
+      email: user?.email,
+      specialization: user?.specialization,
+      profileImage: user?.profileImage,
+    },
     doctorId: user?.id,
     doctorName: user?.name,
     doctorEmail: user?.email,

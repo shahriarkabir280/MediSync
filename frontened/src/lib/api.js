@@ -1,5 +1,5 @@
 // API Configuration and Helper Functions
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 // Generic API client
 export const api = {
@@ -82,10 +82,34 @@ export const api = {
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
-  const data = await response.json();
+  console.log('Response status:', response.status);
+  console.log('Response headers:', response.headers);
+  
+  let data;
+  const contentType = response.headers.get('content-type');
+  
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+      console.log('Parsed response data:', data);
+    } else {
+      // Handle non-JSON responses (like HTML error pages)
+      const text = await response.text();
+      console.error('Non-JSON response received:', text.substring(0, 200) + '...');
+      data = { 
+        error: 'Server returned non-JSON response',
+        details: `Status: ${response.status}, Content-Type: ${contentType}`,
+        preview: text.substring(0, 200)
+      };
+    }
+  } catch (error) {
+    console.error('Failed to parse response:', error);
+    throw new Error(`Failed to parse server response: ${error.message}`);
+  }
   
   if (!response.ok) {
-    throw new Error(data.error || 'An error occurred');
+    console.error('API Error:', data);
+    throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
   }
   
   return data;

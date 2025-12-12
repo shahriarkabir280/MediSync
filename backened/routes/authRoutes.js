@@ -27,6 +27,7 @@ router.post('/login', async (req, res) => {
     const doctors = await sql`
       SELECT 
         id,
+        unique_id,
         first_name,
         last_name,
         email,
@@ -91,6 +92,7 @@ router.post('/login', async (req, res) => {
       token,
       doctor: {
         id: doctor.id,
+        uniqueId: doctor.unique_id,
         name: `${doctor.first_name} ${doctor.last_name}`,
         email: doctor.email,
         specialization: doctor.specialization,
@@ -125,6 +127,7 @@ router.get('/verify', async (req, res) => {
     const doctors = await sql`
       SELECT 
         id,
+        unique_id,
         first_name,
         last_name,
         email,
@@ -147,6 +150,7 @@ router.get('/verify', async (req, res) => {
       success: true,
       doctor: {
         id: doctor.id,
+        uniqueId: doctor.unique_id,
         name: `${doctor.first_name} ${doctor.last_name}`,
         email: doctor.email,
         specialization: doctor.specialization,

@@ -21,6 +21,8 @@ import authRoutes from './routes/authRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+import { initializeWebSocket } from './lib/websocketServer.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
@@ -50,9 +52,11 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174', 
+    'http://localhost:5175',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174'
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5175'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -123,6 +127,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/chat', chatRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
@@ -144,6 +149,21 @@ app.use('/api/help', helpRoutes);
 // Database initialization
 async function initDB() {
   try {
+    // Quick check if main tables already exist
+    const doctorsTableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'doctors'
+      );
+    `;
+    
+    if (doctorsTableCheck[0].exists) {
+      console.log('✅ Database tables already exist, skipping creation');
+      return;
+    }
+    
+    console.log('🔄 Initializing database tables...');
     // Products table
     await sql`
       CREATE TABLE IF NOT EXISTS products (
@@ -369,10 +389,15 @@ async function initDB() {
 }
 
 // Start server
-initDB().then(() => {
-  app.listen(PORT,'0.0.0.0', () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+initDB().then(async () => {
+  const server = app.listen(PORT,'0.0.0.0', () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
   });
+  
+  // Initialize WebSocket server
+  const io = initializeWebSocket(server);
+  console.log('🔄 WebSocket server initialized for real-time chat');
+  
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);
   process.exit(1);

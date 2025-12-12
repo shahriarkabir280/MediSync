@@ -1,3 +1,6 @@
+/* Import custom file upload styles */
+@import './styles/fileUpload.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

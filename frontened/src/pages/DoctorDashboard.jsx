@@ -12,7 +12,7 @@ import AppointmentTab from './DoctorDashboardTabs/AppointmentTab';
 import ProfileTab from './DoctorDashboardTabs/ProfileTab';
 import LabratoryTab from './DoctorDashboardTabs/LabratoryTab';
 import PatientTab from './DoctorDashboardTabs/PatientTab';
-import Chattab from './DoctorDashboardTabs/ChatTab';
+import ChatTab from './DoctorDashboardTabs/ChatTab';
 import EmailTab from './DoctorDashboardTabs/EmailTab';
 import CalendarTab from './DoctorDashboardTabs/CalendarTab';
 import NotificationTab from './DoctorDashboardTabs/NotificationTab';
@@ -69,7 +69,7 @@ const DoctorDashboard = () => {
       case 'laboratory':
         return <LabratoryTab/>; 
       case 'chat':
-        return <Chattab/>;
+        return <ChatTab/>;
       case 'blogs':
         return <BlogsTab />;
       case 'email':
