@@ -270,6 +270,87 @@ export function initializeWebSocket(httpServer) {
     });
 
     /**
+     * WebRTC Call Signaling
+     */
+    socket.on('call_user', (data) => {
+      const { to, toType, from, fromType, fromName, callType, offer } = data;
+      console.log(`📞 Call from ${fromName} to ${to}_${toType}`);
+      
+      const userKey = `${to}_${toType}`;
+      const socketIds = userSockets.get(userKey);
+      
+      if (socketIds && socketIds.size > 0) {
+        socketIds.forEach(sid => {
+          io.to(sid).emit('incoming_call', {
+            from,
+            fromType,
+            fromName,
+            callType,
+            offer
+          });
+        });
+        console.log(`📞 Incoming call notification sent to ${to}`);
+      } else {
+        socket.emit('call_failed', { reason: 'User offline' });
+      }
+    });
+
+    socket.on('accept_call', (data) => {
+      const { to, toType, answer } = data;
+      console.log(`✅ Call accepted by user, sending to ${to}_${toType}`);
+      
+      const userKey = `${to}_${toType}`;
+      const socketIds = userSockets.get(userKey);
+      
+      if (socketIds && socketIds.size > 0) {
+        socketIds.forEach(sid => {
+          io.to(sid).emit('call_accepted', { answer });
+        });
+      }
+    });
+
+    socket.on('reject_call', (data) => {
+      const { to, toType } = data;
+      console.log(`❌ Call rejected, notifying ${to}_${toType}`);
+      
+      const userKey = `${to}_${toType}`;
+      const socketIds = userSockets.get(userKey);
+      
+      if (socketIds && socketIds.size > 0) {
+        socketIds.forEach(sid => {
+          io.to(sid).emit('call_rejected');
+        });
+      }
+    });
+
+    socket.on('end_call', (data) => {
+      const { to, toType } = data;
+      console.log(`📞 Call ended, notifying ${to}_${toType}`);
+      
+      const userKey = `${to}_${toType}`;
+      const socketIds = userSockets.get(userKey);
+      
+      if (socketIds && socketIds.size > 0) {
+        socketIds.forEach(sid => {
+          io.to(sid).emit('call_ended');
+        });
+      }
+    });
+
+    socket.on('ice_candidate', (data) => {
+      const { to, toType, candidate } = data;
+      
+      const userKey = `${to}_${toType}`;
+      const socketIds = userSockets.get(userKey);
+      
+      if (socketIds && socketIds.size > 0) {
+        socketIds.forEach(sid => {
+          io.to(sid).emit('ice_candidate', { candidate });
+        });
+      }
+    });
+
+    /**
      * Handle disconnect
      */
     socket.on('disconnect', () => {
@@ -308,8 +389,6 @@ export function initializeWebSocket(httpServer) {
       console.error('Error cleaning typing indicators:', error);
     }
   }, 30000);
-
-  console.log('✅ WebSocket server initialized');
   
   return io;
 }

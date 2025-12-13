@@ -13,8 +13,6 @@ import { sql } from '../config/db.js';
  */
 
 export async function createChatSchema() {
-  console.log('📦 Creating modern chat schema...');
-
   try {
     // 1. CHATS TABLE - Stores individual chat conversations
     await sql`
@@ -28,7 +26,6 @@ export async function createChatSchema() {
         CONSTRAINT chk_chat_type CHECK (type IN ('private', 'group'))
       )
     `;
-    console.log('✅ Created chats table');
 
     // 2. CHAT_PARTICIPANTS TABLE - Links users to chats (2 for private, many for group)
     await sql`
@@ -45,12 +42,25 @@ export async function createChatSchema() {
         is_muted BOOLEAN DEFAULT FALSE,
         is_pinned BOOLEAN DEFAULT FALSE,
         is_blocked BOOLEAN DEFAULT FALSE,
+        is_archived BOOLEAN DEFAULT FALSE,
         custom_nickname VARCHAR(255),
         UNIQUE(chat_id, user_id, user_type),
         CONSTRAINT chk_user_type CHECK (user_type IN ('doctor', 'patient', 'admin'))
       )
     `;
-    console.log('✅ Created chat_participants table');
+
+    // Add is_archived column if it doesn't exist (for existing tables)
+    await sql`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name='chat_participants' AND column_name='is_archived'
+        ) THEN
+          ALTER TABLE chat_participants ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;
+        END IF;
+      END $$;
+    `;
 
     // 3. MESSAGES TABLE - Stores all messages
     await sql`
@@ -76,10 +86,9 @@ export async function createChatSchema() {
         deleted_at TIMESTAMP,
         is_deleted BOOLEAN DEFAULT FALSE,
         delete_for_everyone BOOLEAN DEFAULT FALSE,
-        CONSTRAINT chk_message_type CHECK (message_type IN ('text', 'image', 'video', 'audio', 'file', 'voice', 'document', 'location'))
+        CONSTRAINT chk_message_type CHECK (message_type IN ('text', 'image', 'video', 'audio', 'file', 'voice', 'document', 'location', 'call'))
       )
     `;
-    console.log('✅ Created messages table');
 
     // 4. MESSAGE_STATUS TABLE - Tracks delivery and read status for each recipient
     await sql`
@@ -95,7 +104,6 @@ export async function createChatSchema() {
         CONSTRAINT chk_status CHECK (status IN ('sent', 'delivered', 'read'))
       )
     `;
-    console.log('✅ Created message_status table');
 
     // 5. MESSAGE_REACTIONS TABLE - Emoji reactions to messages
     await sql`
@@ -109,7 +117,6 @@ export async function createChatSchema() {
         UNIQUE(message_id, user_id, user_type)
       )
     `;
-    console.log('✅ Created message_reactions table');
 
     // 6. TYPING_INDICATORS TABLE - Real-time typing status
     await sql`
@@ -125,7 +132,6 @@ export async function createChatSchema() {
         UNIQUE(chat_id, user_id, user_type)
       )
     `;
-    console.log('✅ Created typing_indicators table');
 
     // 7. USER_ENCRYPTION_KEYS TABLE - For end-to-end encryption
     await sql`
@@ -140,10 +146,6 @@ export async function createChatSchema() {
         UNIQUE(user_id, user_type)
       )
     `;
-    console.log('✅ Created user_encryption_keys table');
-
-    // CREATE INDEXES for performance
-    console.log('\n📑 Creating indexes...');
 
     await sql`CREATE INDEX IF NOT EXISTS idx_chats_updated ON chats(updated_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_chats_last_message ON chats(last_message_at DESC)`;
@@ -159,8 +161,6 @@ export async function createChatSchema() {
     await sql`CREATE INDEX IF NOT EXISTS idx_message_status_user ON message_status(user_id, user_type, status)`;
     
     await sql`CREATE INDEX IF NOT EXISTS idx_typing_chat ON typing_indicators(chat_id, expires_at)`;
-
-    console.log('✅ Created indexes');
 
     // CREATE TRIGGER to update chats.updated_at
     await sql`
@@ -186,9 +186,43 @@ export async function createChatSchema() {
       EXECUTE FUNCTION update_chat_timestamp()
     `;
 
-    console.log('✅ Created triggers');
+    // 6. CHAT_SETTINGS TABLE - Stores user-specific chat preferences
+    await sql`
+      CREATE TABLE IF NOT EXISTS chat_settings (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        user_type VARCHAR(20) NOT NULL,
+        
+        -- Notification Settings
+        sound_enabled BOOLEAN DEFAULT TRUE,
+        desktop_notifications BOOLEAN DEFAULT TRUE,
+        message_preview BOOLEAN DEFAULT TRUE,
+        
+        -- Privacy Settings
+        read_receipts BOOLEAN DEFAULT TRUE,
+        online_status BOOLEAN DEFAULT TRUE,
+        typing_indicator BOOLEAN DEFAULT TRUE,
+        last_seen BOOLEAN DEFAULT TRUE,
+        
+        -- Media Settings
+        auto_download BOOLEAN DEFAULT TRUE,
+        auto_play BOOLEAN DEFAULT FALSE,
+        
+        -- Chat Preferences
+        enter_to_send BOOLEAN DEFAULT TRUE,
+        font_size VARCHAR(20) DEFAULT 'medium',
+        theme VARCHAR(20) DEFAULT 'light',
+        
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        
+        UNIQUE(user_id, user_type),
+        CONSTRAINT chk_user_type_settings CHECK (user_type IN ('doctor', 'patient', 'admin')),
+        CONSTRAINT chk_font_size CHECK (font_size IN ('small', 'medium', 'large')),
+        CONSTRAINT chk_theme CHECK (theme IN ('light', 'dark', 'auto'))
+      )
+    `;
 
-    console.log('\n✨ Chat schema created successfully!\n');
     return true;
 
   } catch (error) {
@@ -201,7 +235,6 @@ export async function createChatSchema() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   createChatSchema()
     .then(() => {
-      console.log('✅ Schema initialization complete');
       process.exit(0);
     })
     .catch((error) => {

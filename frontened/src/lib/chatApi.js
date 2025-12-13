@@ -202,5 +202,83 @@ export const chatApi = {
       userType
     });
     return response;
+  },
+
+  /**
+   * Get chat settings for a user
+   */
+  async getChatSettings(userId, userType) {
+    const response = await api.get(`/chat/settings?userId=${userId}&userType=${userType}`);
+    return response;
+  },
+
+  /**
+   * Update chat settings for a user (global/centralized settings)
+   */
+  async updateChatSettings(userId, userType, settings) {
+    const response = await api.put('/chat/settings', {
+      userId,
+      userType,
+      settings
+    });
+    return response;
+  },
+
+  /**
+   * Get per-chat settings (mute, pin, block for specific conversation)
+   */
+  async getPerChatSettings(chatId, userId, userType) {
+    const response = await api.get(`/chat/chats/${chatId}/settings?userId=${userId}&userType=${userType}`);
+    return response;
+  },
+
+  /**
+   * Update per-chat settings (mute, pin, block for specific conversation)
+   */
+  async updatePerChatSettings(chatId, userId, userType, settings) {
+    const response = await api.put(`/chat/chats/${chatId}/settings`, {
+      userId,
+      userType,
+      ...settings
+    });
+    return response;
+  },
+
+  /**
+   * Archive/Unarchive a chat
+   */
+  async archiveChat(chatId, userId, userType, isArchived) {
+    const response = await api.put(`/chat/chats/${chatId}/archive`, {
+      userId,
+      userType,
+      isArchived
+    });
+    return response;
+  },
+
+  /**
+   * Clear all messages in a chat
+   */
+  async clearChat(chatId, userId, userType) {
+    const response = await api.delete(`/chat/chats/${chatId}/clear`, {
+      data: {
+        userId,
+        userType
+      }
+    });
+    return response;
+  },
+
+  /**
+   * Delete a specific message
+   */
+  async deleteMessage(messageId, userId, userType) {
+    const response = await api.delete(`/chat/messages/${messageId}`, {
+      data: {
+        userId,
+        userType
+      }
+    });
+    return response;
   }
 };

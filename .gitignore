@@ -30,3 +30,19 @@ build/
 
 # Misc
 .cache/
+
+# Test and Debug files
+test-*.js
+debug-*.js
+*.log
+nohup.out
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+
+# Migration and seed scripts (keep only in version control)
+add-*.js
+update-*.js
+populate-*.js

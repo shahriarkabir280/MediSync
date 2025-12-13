@@ -3,11 +3,13 @@ import {
   Search, Plus, Send, Paperclip, Smile, MoreVertical,
   Phone, Video, ArrowLeft, Check, CheckCheck, X, Reply, Trash2, PinIcon, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
-  ExternalLink, Eye, MessageCircle, Forward
+  ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
+  Type, Zap, Shield, Users
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { useAuth } from '../../contexts/AuthContext';
+import VideoCall from '../../components/VideoCall';
 
 /**
  * Modern Chat Component - WhatsApp/Telegram Style
@@ -44,6 +46,46 @@ const ChatTab = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [userActivity, setUserActivity] = useState('active'); // active, away, offline
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [callType, setCallType] = useState(null); // 'audio' or 'video'
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showChatInfo, setShowChatInfo] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Global Chat Settings State (Centralized)
+  const [chatSettings, setChatSettings] = useState({
+    notifications: {
+      sound: true,
+      desktop: true,
+      messagePreview: true
+    },
+    privacy: {
+      readReceipts: true,
+      onlineStatus: true,
+      typingIndicator: true,
+      lastSeen: true
+    },
+    media: {
+      autoDownload: true,
+      autoPlay: false
+    },
+    chat: {
+      enterToSend: true,
+      fontSize: 'medium',
+      theme: 'light'
+    }
+  });
+
+  // Per-Chat Settings State (For current selected chat)
+  const [perChatSettings, setPerChatSettings] = useState({
+    isMuted: false,
+    isPinned: false,
+    isBlocked: false,
+    isArchived: false,
+    customNickname: null
+  });
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -57,6 +99,45 @@ const ChatTab = () => {
 
   // WebSocket
   const socket = useChatSocket(currentUser);
+
+  // Load global chat settings from backend on mount
+  useEffect(() => {
+    const loadChatSettings = async () => {
+      if (currentUser.userId && currentUser.userType) {
+        try {
+          const settings = await chatApi.getChatSettings(currentUser.userId, currentUser.userType);
+          setChatSettings(settings);
+        } catch (error) {
+          console.error('Failed to load chat settings:', error);
+          // Keep default settings if load fails
+        }
+      }
+    };
+    loadChatSettings();
+  }, [currentUser.userId, currentUser.userType]);
+
+  // Load per-chat settings when chat is selected
+  useEffect(() => {
+    const loadPerChatSettings = async () => {
+      if (selectedChat?.id && currentUser.userId && currentUser.userType) {
+        try {
+          const settings = await chatApi.getPerChatSettings(selectedChat.id, currentUser.userId, currentUser.userType);
+          setPerChatSettings(settings);
+        } catch (error) {
+          console.error('Failed to load per-chat settings:', error);
+          // Reset to defaults if load fails
+          setPerChatSettings({
+            isMuted: false,
+            isPinned: false,
+            isBlocked: false,
+            isArchived: false,
+            customNickname: null
+          });
+        }
+      }
+    };
+    loadPerChatSettings();
+  }, [selectedChat?.id, currentUser.userId, currentUser.userType]);
 
   // Track user activity for away status
   useEffect(() => {
@@ -99,6 +180,25 @@ const ChatTab = () => {
       clearInterval(inactivityInterval);
     };
   }, [lastActivity, userActivity, socket.socket, currentUser.userId, currentUser.userType]);
+
+  // Listen for incoming calls
+  useEffect(() => {
+    if (!socket.socket) return;
+
+    const handleIncomingCall = (data) => {
+      console.log('📞 Incoming call from:', data.fromName);
+      setIncomingCallData(data);
+      setCallType(data.callType);
+      setIsIncomingCall(true);
+      setShowVideoCall(true);
+    };
+
+    socket.socket.on('incoming_call', handleIncomingCall);
+
+    return () => {
+      socket.socket.off('incoming_call', handleIncomingCall);
+    };
+  }, [socket.socket]);
 
   // Load chats on mount
   useEffect(() => {
@@ -291,6 +391,60 @@ const ChatTab = () => {
     } catch (error) {
       console.error('Error sending message:', error);
     }
+  };
+
+  // Send call status message
+  const handleCallStatusChange = async (callInfo) => {
+    if (!selectedChat) return;
+
+    try {
+      const callIcon = callInfo.type === 'video' ? 'video' : 'audio';
+      let content = '';
+      
+      // Format content based on call status
+      if (callInfo.status === 'completed') {
+        const duration = formatCallDuration(callInfo.duration);
+        content = `${callIcon}|${callInfo.isIncoming ? 'incoming' : 'outgoing'}|completed|${duration}`;
+      } else if (callInfo.status === 'declined') {
+        content = `${callIcon}|${callInfo.isIncoming ? 'incoming' : 'outgoing'}|declined|0`;
+      } else if (callInfo.status === 'not_answered') {
+        content = `${callIcon}|outgoing|not_answered|0`;
+      } else if (callInfo.status === 'missed') {
+        content = `${callIcon}|incoming|missed|0`;
+      }
+
+      const response = await chatApi.sendMessage(
+        selectedChat.id,
+        currentUser,
+        content,
+        { 
+          messageType: 'call',
+          callType: callInfo.type,
+          callStatus: callInfo.status,
+          callDuration: callInfo.duration || 0
+        }
+      );
+
+      const newMessage = response.message;
+      setMessages(prev => [...prev, newMessage]);
+      
+      // Broadcast via WebSocket
+      socket.sendMessage(selectedChat.id, newMessage);
+      
+      // Update chat list
+      loadChats();
+      
+      scrollToBottom();
+    } catch (error) {
+      console.error('Error sending call message:', error);
+    }
+  };
+
+  const formatCallDuration = (seconds) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Handle file upload
@@ -511,32 +665,86 @@ const ChatTab = () => {
     if (!messageToDelete) return;
 
     try {
-      await chatApi.deleteMessage(messageToDelete.id, currentUser.userId, currentUser.userType, deleteForEveryone);
+      await chatApi.deleteMessage(messageToDelete.id, currentUser.userId, currentUser.userType);
       
-      // Update local messages
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageToDelete.id 
-          ? { ...msg, is_deleted: true, delete_for_everyone: deleteForEveryone }
-          : msg
-      ));
+      // Remove message from local state
+      setMessages(prev => prev.filter(msg => msg.id !== messageToDelete.id));
       
       // Show success message
-      const successMsg = deleteForEveryone ? 'Message deleted for everyone' : 'Message deleted for you';
-      
-      // Create temporary toast notification
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-pulse';
-      toast.textContent = successMsg;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      showToast('Message deleted successfully', 'success');
       
       setShowDeleteModal(false);
       setMessageToDelete(null);
       loadChats();
     } catch (error) {
       console.error('Error deleting message:', error);
-      alert('Failed to delete message: ' + (error.message || 'Unknown error'));
+      showToast('Failed to delete message', 'error');
     }
+  };
+
+  // Archive chat handler
+  const handleArchiveChat = async () => {
+    if (!selectedChat) return;
+
+    const isArchived = !perChatSettings.isArchived;
+    
+    try {
+      setShowChatInfo(false);
+      await chatApi.archiveChat(selectedChat.id, currentUser.userId, currentUser.userType, isArchived);
+      
+      // Update local state
+      setPerChatSettings({ ...perChatSettings, isArchived });
+      
+      // Reload chats to update list
+      await loadChats();
+      
+      showToast(isArchived ? 'Chat archived' : 'Chat unarchived', 'success');
+      
+      // If archived, go back to chat list
+      if (isArchived) {
+        setSelectedChat(null);
+      }
+    } catch (error) {
+      console.error('Error archiving chat:', error);
+      showToast('Failed to archive chat', 'error');
+    }
+  };
+
+  // Clear chat handler
+  const handleClearChat = () => {
+    setShowChatInfo(false);
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearChat = async () => {
+    if (!selectedChat) return;
+
+    try {
+      await chatApi.clearChat(selectedChat.id, currentUser.userId, currentUser.userType);
+      
+      // Clear messages from local state
+      setMessages([]);
+      
+      showToast('Chat cleared successfully', 'success');
+      
+      setShowClearConfirm(false);
+      loadChats();
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      showToast('Failed to clear chat', 'error');
+    }
+  };
+
+  // Toast notification helper
+  const showToast = (message, type = 'success') => {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' 
+      ? 'from-green-500 to-emerald-600' 
+      : 'from-red-500 to-rose-600';
+    toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r ${bgColor} text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-pulse`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   // Add reaction to message
@@ -682,6 +890,13 @@ const ChatTab = () => {
         <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold">Messages</h2>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-blue-500 rounded-lg transition-all"
+              title="App Settings"
+            >
+              <Settings size={20} />
+            </button>
           </div>
           
           {/* Search */}
@@ -779,7 +994,7 @@ const ChatTab = () => {
                   onClick={() => handleSelectChat(chat)}
                   isOnline={socket.isUserOnline(chat.other_user?.user_id, chat.other_user?.user_type)}
                 />
-              ))}
+               ))}
             </>
           )}
         </div>
@@ -846,15 +1061,135 @@ const ChatTab = () => {
             </div>
 
             <div className="flex items-center space-x-1">
-              <button className="p-2.5 hover:bg-green-50 rounded-full transition-all duration-200 group" title="Voice Call">
+              <button 
+                onClick={() => {
+                  setCallType('audio');
+                  setIsIncomingCall(false);
+                  setShowVideoCall(true);
+                }}
+                className="p-2.5 hover:bg-green-50 rounded-full transition-all duration-200 group" 
+                title="Voice Call"
+              >
                 <Phone size={20} className="text-gray-600 group-hover:text-green-600 transition-colors" />
               </button>
-              <button className="p-2.5 hover:bg-blue-50 rounded-full transition-all duration-200 group" title="Video Call">
+              <button 
+                onClick={() => {
+                  setCallType('video');
+                  setIsIncomingCall(false);
+                  setShowVideoCall(true);
+                }}
+                className="p-2.5 hover:bg-blue-50 rounded-full transition-all duration-200 group" 
+                title="Video Call"
+              >
                 <Video size={20} className="text-gray-600 group-hover:text-blue-600 transition-colors" />
               </button>
-              <button className="p-2.5 hover:bg-purple-50 rounded-full transition-all duration-200 group" title="More Options">
-                <MoreVertical size={20} className="text-gray-600 group-hover:text-purple-600 transition-colors" />
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowChatInfo(!showChatInfo)}
+                  className="p-2.5 hover:bg-purple-50 rounded-full transition-all duration-200 group" 
+                  title="Chat Info"
+                >
+                  <Info size={20} className="text-gray-600 group-hover:text-purple-600 transition-colors" />
+                </button>
+                
+                {showChatInfo && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowChatInfo(false)}
+                    />
+                    <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      {/* Per-Chat Settings */}
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase">Chat Settings</div>
+                      <button 
+                        onClick={async () => {
+                          const newMutedState = !perChatSettings.isMuted;
+                          setPerChatSettings({ ...perChatSettings, isMuted: newMutedState });
+                          try {
+                            await chatApi.updatePerChatSettings(selectedChat.id, currentUser.userId, currentUser.userType, { isMuted: newMutedState });
+                          } catch (error) {
+                            console.error('Failed to toggle mute:', error);
+                            setPerChatSettings({ ...perChatSettings, isMuted: !newMutedState });
+                          }
+                        }}
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <BellOff size={18} className={perChatSettings.isMuted ? 'text-blue-600' : ''} />
+                          <span>Mute Notifications</span>
+                        </div>
+                        {perChatSettings.isMuted && (
+                          <Check size={16} className="text-blue-600" />
+                        )}
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const newPinnedState = !perChatSettings.isPinned;
+                          setPerChatSettings({ ...perChatSettings, isPinned: newPinnedState });
+                          try {
+                            await chatApi.updatePerChatSettings(selectedChat.id, currentUser.userId, currentUser.userType, { isPinned: newPinnedState });
+                          } catch (error) {
+                            console.error('Failed to toggle pin:', error);
+                            setPerChatSettings({ ...perChatSettings, isPinned: !newPinnedState });
+                          }
+                        }}
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <PinIcon size={18} className={perChatSettings.isPinned ? 'text-blue-600' : ''} />
+                          <span>Pin Chat</span>
+                        </div>
+                        {perChatSettings.isPinned && (
+                          <Check size={16} className="text-blue-600" />
+                        )}
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const newBlockedState = !perChatSettings.isBlocked;
+                          setPerChatSettings({ ...perChatSettings, isBlocked: newBlockedState });
+                          try {
+                            await chatApi.updatePerChatSettings(selectedChat.id, currentUser.userId, currentUser.userType, { isBlocked: newBlockedState });
+                          } catch (error) {
+                            console.error('Failed to toggle block:', error);
+                            setPerChatSettings({ ...perChatSettings, isBlocked: !newBlockedState });
+                          }
+                        }}
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Lock size={18} className={perChatSettings.isBlocked ? 'text-red-600' : ''} />
+                          <span>Block User</span>
+                        </div>
+                        {perChatSettings.isBlocked && (
+                          <Check size={16} className="text-red-600" />
+                        )}
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1"></div>
+                      
+                      <button 
+                        onClick={handleArchiveChat}
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between text-sm text-gray-700"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Archive size={18} className={perChatSettings.isArchived ? 'text-blue-600' : ''} />
+                          <span>{perChatSettings.isArchived ? 'Unarchive Chat' : 'Archive Chat'}</span>
+                        </div>
+                        {perChatSettings.isArchived && (
+                          <Check size={16} className="text-blue-600" />
+                        )}
+                      </button>
+                      <button 
+                        onClick={handleClearChat}
+                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center space-x-3 text-sm text-red-600"
+                      >
+                        <Trash2 size={18} />
+                        <span>Clear Chat</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -894,6 +1229,11 @@ const ChatTab = () => {
                   onDelete={() => handleDeleteMessage(message)}
                   onForward={() => handleForwardMessage(message)}
                   onReact={(emoji) => handleAddReaction(message, emoji)}
+                  onCallBack={(type) => {
+                    setCallType(type);
+                    setIsIncomingCall(false);
+                    setShowVideoCall(true);
+                  }}
                 />
               ))
             )}
@@ -1244,6 +1584,60 @@ const ChatTab = () => {
         </div>
       )}
 
+      {/* Clear Chat Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            {/* Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-red-500 to-rose-600">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                  <Trash2 size={24} />
+                  <span>Clear Chat</span>
+                </h3>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="p-1 hover:bg-white/20 rounded-full transition"
+                >
+                  <X size={24} className="text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                  <Trash2 size={32} className="text-red-600" />
+                </div>
+              </div>
+              <p className="text-center text-gray-700 mb-2 font-semibold">
+                Clear all messages?
+              </p>
+              <p className="text-center text-sm text-gray-500">
+                This will permanently delete all messages in this conversation. This action cannot be undone.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t flex space-x-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearChat}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg hover:from-red-600 hover:to-rose-700 transition font-medium shadow-lg"
+              >
+                Clear Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Forward Message Modal */}
       {showForwardModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1326,6 +1720,306 @@ const ChatTab = () => {
           </div>
         </div>
       )}
+
+      {/* Video/Audio Call Component */}
+      {showVideoCall && selectedChat && (
+        <VideoCall
+          socket={socket}
+          currentUser={currentUser}
+          otherUser={isIncomingCall && incomingCallData ? {
+            user_id: incomingCallData.from,
+            user_type: incomingCallData.fromType,
+            user_name: incomingCallData.fromName
+          } : selectedChat.other_user}
+          isIncoming={isIncomingCall}
+          callType={callType}
+          incomingOffer={incomingCallData?.offer}
+          chatId={selectedChat.id}
+          onCallStatusChange={handleCallStatusChange}
+          onClose={() => {
+            setShowVideoCall(false);
+            setIsIncomingCall(false);
+            setIncomingCallData(null);
+          }}
+        />
+      )}
+
+      {/* Global Chat Settings Modal (Centralized) */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Settings size={20} />
+                <h2 className="text-lg font-semibold">App Settings</h2>
+              </div>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="p-1.5 hover:bg-blue-500 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-100px)]">
+              {/* Notifications Section */}
+              <div className="mb-5">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                    <Bell size={16} className="text-blue-600" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                </div>
+                <div className="space-y-2 ml-8">
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Sound</p>
+                      <p className="text-xs text-gray-500">Play sound for new messages</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.notifications.sound}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        notifications: { ...chatSettings.notifications, sound: e.target.checked }
+                      })}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Desktop Notifications</p>
+                      <p className="text-xs text-gray-500">Show notifications on desktop</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.notifications.desktop}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        notifications: { ...chatSettings.notifications, desktop: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Message Preview</p>
+                      <p className="text-xs text-gray-500">Show message content in notifications</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.notifications.messagePreview}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        notifications: { ...chatSettings.notifications, messagePreview: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Privacy Section */}
+              <div className="mb-5">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="p-1.5 bg-purple-100 rounded-lg">
+                    <Shield size={16} className="text-purple-600" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Privacy & Security</h3>
+                </div>
+                <div className="space-y-2 ml-8">
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Read Receipts</p>
+                      <p className="text-xs text-gray-500">Let others know when you've read messages</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.privacy.readReceipts}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        privacy: { ...chatSettings.privacy, readReceipts: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Online Status</p>
+                      <p className="text-xs text-gray-500">Show when you're online</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.privacy.onlineStatus}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        privacy: { ...chatSettings.privacy, onlineStatus: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Typing Indicator</p>
+                      <p className="text-xs text-gray-500">Show when you're typing</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.privacy.typingIndicator}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        privacy: { ...chatSettings.privacy, typingIndicator: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Last Seen</p>
+                      <p className="text-xs text-gray-500">Show your last activity time</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.privacy.lastSeen}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        privacy: { ...chatSettings.privacy, lastSeen: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Media Section */}
+              <div className="mb-5">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="p-1.5 bg-green-100 rounded-lg">
+                    <Image size={16} className="text-green-600" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Media & Storage</h3>
+                </div>
+                <div className="space-y-2 ml-8">
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Auto-Download Media</p>
+                      <p className="text-xs text-gray-500">Automatically download images and videos</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.media.autoDownload}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        media: { ...chatSettings.media, autoDownload: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Auto-Play Videos</p>
+                      <p className="text-xs text-gray-500">Play videos automatically when visible</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.media.autoPlay}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        media: { ...chatSettings.media, autoPlay: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Chat Preferences */}
+              <div className="mb-5">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="p-1.5 bg-orange-100 rounded-lg">
+                    <MessageCircle size={16} className="text-orange-600" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Chat Preferences</h3>
+                </div>
+                <div className="space-y-2 ml-8">
+                  <label className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Enter to Send</p>
+                      <p className="text-xs text-gray-500">Press Enter to send, Shift+Enter for new line</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={chatSettings.chat.enterToSend}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        chat: { ...chatSettings.chat, enterToSend: e.target.checked }
+                      })}
+                      className="w-4 h-4 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+                    />
+                  </label>
+                  <div className="p-2 hover:bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900 mb-1.5">Font Size</p>
+                    <select 
+                      value={chatSettings.chat.fontSize}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        chat: { ...chatSettings.chat, fontSize: e.target.value }
+                      })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="small">Small</option>
+                      <option value="medium">Medium</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </div>
+                  <div className="p-2 hover:bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900 mb-1.5">Theme</p>
+                    <select 
+                      value={chatSettings.chat.theme}
+                      onChange={(e) => setChatSettings({
+                        ...chatSettings,
+                        chat: { ...chatSettings.chat, theme: e.target.value }
+                      })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                      <option value="auto">Auto</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t px-4 py-2.5 bg-gray-50 flex justify-end space-x-2">
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-all font-medium"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    // Save settings to backend
+                    await chatApi.updateChatSettings(currentUser.userId, currentUser.userType, chatSettings);
+                    setShowSettings(false);
+                  } catch (error) {
+                    console.error('Failed to save settings:', error);
+                    alert('Failed to save settings. Please try again.');
+                  }
+                }}
+                className="px-4 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-medium shadow-lg"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1347,12 +2041,16 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
     }
   };
 
+  const isArchived = chat.is_archived || false;
+  const isMuted = chat.is_muted || false;
+  const isPinned = chat.is_pinned || false;
+
   return (
     <div
       onClick={onClick}
       className={`p-4 border-b cursor-pointer transition ${
         isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
-      }`}
+      } ${isArchived ? 'opacity-60' : ''} ${isPinned ? 'bg-blue-50/30' : ''}`}
     >
       <div className="flex items-center space-x-3">
         <div className="relative flex-shrink-0">
@@ -1362,16 +2060,34 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
           {isOnline && (
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
           )}
+          {isArchived && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-500 rounded-full flex items-center justify-center">
+              <Archive size={12} className="text-white" />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <h4 className="font-semibold text-gray-900 truncate">
-              {chat.other_user?.user_name}
-            </h4>
-            <span className="text-xs text-gray-500">
-              {formatTime(chat.last_message_at || chat.created_at)}
-            </span>
+            <div className="flex items-center space-x-2 flex-1 min-w-0">
+              {isPinned && (
+                <PinIcon size={14} className="text-blue-600 flex-shrink-0" />
+              )}
+              <h4 className="font-semibold text-gray-900 truncate">
+                {chat.other_user?.user_name}
+              </h4>
+              {isArchived && (
+                <span className="text-xs px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded">Archived</span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+              {isMuted && (
+                <BellOff size={14} className="text-gray-400" />
+              )}
+              <span className="text-xs text-gray-500">
+                {formatTime(chat.last_message_at || chat.created_at)}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center justify-between">
@@ -1380,8 +2096,13 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
                 ? 'Message deleted'
                 : chat.last_message?.content || 'No messages yet'}
             </p>
-            {chat.unread_count > 0 && (
+            {!isMuted && chat.unread_count > 0 && (
               <span className="ml-2 px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                {chat.unread_count}
+              </span>
+            )}
+            {isMuted && chat.unread_count > 0 && (
+              <span className="ml-2 px-2 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">
                 {chat.unread_count}
               </span>
             )}
@@ -1393,7 +2114,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
 };
 
 // Message Bubble Component
-const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete, onForward, onReact }) => {
+const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete, onForward, onReact, onCallBack }) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
   
@@ -1698,6 +2419,78 @@ const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete, onForwar
               )}
             </div>
           )}
+
+          {/* Call Message - Modern WhatsApp Style */}
+          {message.message_type === 'call' && (() => {
+            // Parse call data: format is "callType|direction|status|duration"
+            const [callIcon, direction, status, duration] = (message.content || '').split('|');
+            const isVideo = callIcon === 'video';
+            const isIncoming = direction === 'incoming';
+            const isMissed = status === 'missed';
+            const isDeclined = status === 'declined';
+            const isNotAnswered = status === 'not_answered';
+            const isCompleted = status === 'completed';
+            
+            // WhatsApp-like color scheme
+            const iconColor = isMissed ? 'text-red-500' : isDeclined || isNotAnswered ? 'text-gray-400' : 'text-green-500';
+            const textColor = isMissed ? 'text-red-600' : isDeclined || isNotAnswered ? 'text-gray-600' : isOwn ? 'text-blue-100' : 'text-gray-700';
+            const bgColor = isOwn ? 'bg-blue-50' : 'bg-white';
+            
+            // Format call text with call type
+            const callType = isVideo ? 'Video call' : 'Audio call';
+            let callText = '';
+            let subText = '';
+            
+            if (isMissed) {
+              callText = `Missed ${callType.toLowerCase()}`;
+              subText = 'Tap to call back';
+            } else if (isDeclined) {
+              callText = `${callType} declined`;
+              subText = 'Tap to call again';
+            } else if (isNotAnswered) {
+              callText = `${callType}`;
+              subText = 'No answer';
+            } else if (isCompleted) {
+              callText = `${callType}`;
+              subText = `Call time: ${duration}`;
+            }
+            
+            return (
+              <div 
+                className={`px-3 py-2.5 ${bgColor} ${isOwn ? '' : 'border border-gray-100'} ${
+                  (isMissed || isDeclined) && onCallBack ? 'cursor-pointer hover:bg-opacity-80 transition-all' : ''
+                }`}
+                onClick={(isMissed || isDeclined) && onCallBack ? () => onCallBack(isVideo ? 'video' : 'audio') : undefined}
+              >
+                <div className="flex items-center space-x-3">
+                  {/* Call Icon */}
+                  <div className="flex-shrink-0">
+                    {isVideo ? (
+                      <Video size={20} className={iconColor} strokeWidth={2.5} />
+                    ) : (
+                      <Phone size={20} className={iconColor} strokeWidth={2.5} />
+                    )}
+                  </div>
+                  
+                  {/* Call info text */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${textColor}`}>
+                      {callText}
+                    </p>
+                    {subText && (
+                      <p className={`text-xs mt-0.5 ${
+                        isMissed || isDeclined 
+                          ? isOwn ? 'text-blue-200' : 'text-gray-500' 
+                          : isOwn ? 'text-blue-200' : 'text-gray-500'
+                      }`}>
+                        {subText}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Text Message with URL Preview */}
           {(message.message_type === 'text' || !message.message_type) && (

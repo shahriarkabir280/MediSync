@@ -101,4 +101,25 @@ router.post('/upload', upload.single('file'), (req, res) => {
   }
 });
 
+// Get chat settings for a user (global/centralized settings)
+router.get('/settings', chatController.getChatSettings);
+
+// Update chat settings for a user (global/centralized settings)
+router.put('/settings', chatController.updateChatSettings);
+
+// Get per-chat settings (mute, pin, block for specific chat)
+router.get('/chats/:chatId/settings', chatController.getPerChatSettings);
+
+// Update per-chat settings (mute, pin, block for specific chat)
+router.put('/chats/:chatId/settings', chatController.updatePerChatSettings);
+
+// Archive/Unarchive a chat
+router.put('/chats/:chatId/archive', chatController.archiveChat);
+
+// Clear all messages in a chat
+router.delete('/chats/:chatId/clear', chatController.clearChat);
+
+// Delete a specific message
+router.delete('/messages/:messageId', chatController.deleteMessage);
+
 export default router;

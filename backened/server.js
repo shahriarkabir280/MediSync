@@ -48,8 +48,6 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Serve uploaded files statically with absolute path
 const uploadsPath = path.join(__dirname, '../uploads');
-console.log('📁 Serving uploads from:', uploadsPath);
-console.log('📁 Uploads directory exists:', fs.existsSync(uploadsPath));
 app.use('/uploads', express.static(uploadsPath));
 
 // Configure CORS to allow frontend requests
@@ -141,8 +139,6 @@ app.use('/api', fileRoutes);
 app.use('/api/lab', labRoutes);
 
 // Website/Profile routes
-console.log('Loading website routes...');
-console.log('websiteRoutes:', typeof websiteRoutes);
 app.use('/api/website', websiteRoutes);
 
 // Authentication routes
@@ -164,11 +160,9 @@ async function initDB() {
     `;
     
     if (doctorsTableCheck[0].exists) {
-      console.log('✅ Database tables already exist, skipping creation');
       return;
     }
     
-    console.log('🔄 Initializing database tables...');
     // Products table
     await sql`
       CREATE TABLE IF NOT EXISTS products (
@@ -387,28 +381,26 @@ async function initDB() {
     // console.log('Initializing website tables...');
     // await initWebsiteTables();
 
-    console.log('Database initialized successfully');
   } catch (error) {
-    console.error('Error initializing the database:', error);
+    console.error('❌ Database initialization error:', error.message);
   }
 }
 
 // Start server
 initDB().then(async () => {
-  // Initialize chat schema
+  // Initialize chat schema silently
   try {
     await createChatSchema();
   } catch (error) {
-    console.error('❌ Chat schema initialization failed:', error);
+    console.error('❌ Chat schema error:', error.message);
   }
 
   const server = app.listen(PORT,'0.0.0.0', () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
   });
   
   // Initialize WebSocket for real-time chat
-  const io = initializeWebSocket(server);
-  console.log('✅ WebSocket server initialized for real-time messaging');
+  initializeWebSocket(server);
   
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);

@@ -852,5 +852,376 @@ export const chatController = {
       console.error('Error removing reaction:', error);
       res.status(500).json({ error: 'Failed to remove reaction' });
     }
+  },
+
+  /**
+   * Get chat settings for a user
+   */
+  getChatSettings: async (req, res) => {
+    try {
+      const { userId, userType } = req.query;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'Missing userId or userType' });
+      }
+
+      const settings = await sql`
+        SELECT 
+          sound_enabled,
+          desktop_notifications,
+          message_preview,
+          read_receipts,
+          online_status,
+          typing_indicator,
+          last_seen,
+          auto_download,
+          auto_play,
+          enter_to_send,
+          font_size,
+          theme,
+          updated_at
+        FROM chat_settings
+        WHERE user_id = ${userId} AND user_type = ${userType}
+      `;
+
+      // If no settings exist, return defaults
+      if (settings.length === 0) {
+        return res.json({
+          notifications: {
+            sound: true,
+            desktop: true,
+            messagePreview: true
+          },
+          privacy: {
+            readReceipts: true,
+            onlineStatus: true,
+            typingIndicator: true,
+            lastSeen: true
+          },
+          media: {
+            autoDownload: true,
+            autoPlay: false
+          },
+          chat: {
+            enterToSend: true,
+            fontSize: 'medium',
+            theme: 'light'
+          }
+        });
+      }
+
+      const setting = settings[0];
+      res.json({
+        notifications: {
+          sound: setting.sound_enabled,
+          desktop: setting.desktop_notifications,
+          messagePreview: setting.message_preview
+        },
+        privacy: {
+          readReceipts: setting.read_receipts,
+          onlineStatus: setting.online_status,
+          typingIndicator: setting.typing_indicator,
+          lastSeen: setting.last_seen
+        },
+        media: {
+          autoDownload: setting.auto_download,
+          autoPlay: setting.auto_play
+        },
+        chat: {
+          enterToSend: setting.enter_to_send,
+          fontSize: setting.font_size,
+          theme: setting.theme
+        },
+        updatedAt: setting.updated_at
+      });
+
+    } catch (error) {
+      console.error('Error getting chat settings:', error);
+      res.status(500).json({ error: 'Failed to get chat settings' });
+    }
+  },
+
+  /**
+   * Update chat settings for a user (global settings)
+   */
+  updateChatSettings: async (req, res) => {
+    try {
+      const { userId, userType, settings } = req.body;
+
+      if (!userId || !userType || !settings) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Upsert settings
+      await sql`
+        INSERT INTO chat_settings (
+          user_id,
+          user_type,
+          sound_enabled,
+          desktop_notifications,
+          message_preview,
+          read_receipts,
+          online_status,
+          typing_indicator,
+          last_seen,
+          auto_download,
+          auto_play,
+          enter_to_send,
+          font_size,
+          theme,
+          updated_at
+        ) VALUES (
+          ${userId},
+          ${userType},
+          ${settings.notifications.sound},
+          ${settings.notifications.desktop},
+          ${settings.notifications.messagePreview},
+          ${settings.privacy.readReceipts},
+          ${settings.privacy.onlineStatus},
+          ${settings.privacy.typingIndicator},
+          ${settings.privacy.lastSeen},
+          ${settings.media.autoDownload},
+          ${settings.media.autoPlay},
+          ${settings.chat.enterToSend},
+          ${settings.chat.fontSize},
+          ${settings.chat.theme},
+          NOW()
+        )
+        ON CONFLICT (user_id, user_type)
+        DO UPDATE SET
+          sound_enabled = ${settings.notifications.sound},
+          desktop_notifications = ${settings.notifications.desktop},
+          message_preview = ${settings.notifications.messagePreview},
+          read_receipts = ${settings.privacy.readReceipts},
+          online_status = ${settings.privacy.onlineStatus},
+          typing_indicator = ${settings.privacy.typingIndicator},
+          last_seen = ${settings.privacy.lastSeen},
+          auto_download = ${settings.media.autoDownload},
+          auto_play = ${settings.media.autoPlay},
+          enter_to_send = ${settings.chat.enterToSend},
+          font_size = ${settings.chat.fontSize},
+          theme = ${settings.chat.theme},
+          updated_at = NOW()
+      `;
+
+      res.json({ success: true, message: 'Settings updated successfully' });
+
+    } catch (error) {
+      console.error('Error updating chat settings:', error);
+      res.status(500).json({ error: 'Failed to update chat settings' });
+    }
+  },
+
+  /**
+   * Update per-chat settings (mute, pin, block for specific conversation)
+   */
+  updatePerChatSettings: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { userId, userType, isMuted, isPinned, isBlocked, customNickname } = req.body;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'Missing userId or userType' });
+      }
+
+      // Build dynamic update query
+      const updates = [];
+      const values = [];
+      
+      if (typeof isMuted === 'boolean') {
+        updates.push('is_muted = $' + (values.length + 1));
+        values.push(isMuted);
+      }
+      if (typeof isPinned === 'boolean') {
+        updates.push('is_pinned = $' + (values.length + 1));
+        values.push(isPinned);
+      }
+      if (typeof isBlocked === 'boolean') {
+        updates.push('is_blocked = $' + (values.length + 1));
+        values.push(isBlocked);
+      }
+      if (customNickname !== undefined) {
+        updates.push('custom_nickname = $' + (values.length + 1));
+        values.push(customNickname);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No settings to update' });
+      }
+
+      // Add chatId, userId, userType to values
+      values.push(chatId, userId, userType);
+
+      await sql.unsafe(`
+        UPDATE chat_participants
+        SET ${updates.join(', ')}
+        WHERE chat_id = $${values.length - 2}
+          AND user_id = $${values.length - 1}
+          AND user_type = $${values.length}
+      `, values);
+
+      res.json({ success: true, message: 'Per-chat settings updated successfully' });
+
+    } catch (error) {
+      console.error('Error updating per-chat settings:', error);
+      res.status(500).json({ error: 'Failed to update per-chat settings' });
+    }
+  },
+
+  /**
+   * Get per-chat settings for current user
+   */
+  getPerChatSettings: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { userId, userType } = req.query;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'Missing userId or userType' });
+      }
+
+      const result = await sql`
+        SELECT is_muted, is_pinned, is_blocked, is_archived, custom_nickname
+        FROM chat_participants
+        WHERE chat_id = ${chatId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+      `;
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Chat participant not found' });
+      }
+
+      res.json({
+        isMuted: result[0].is_muted,
+        isPinned: result[0].is_pinned,
+        isBlocked: result[0].is_blocked,
+        isArchived: result[0].is_archived || false,
+        customNickname: result[0].custom_nickname
+      });
+
+    } catch (error) {
+      console.error('Error getting per-chat settings:', error);
+      res.status(500).json({ error: 'Failed to get per-chat settings' });
+    }
+  },
+
+  /**
+   * Archive/Unarchive a chat
+   */
+  archiveChat: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { userId, userType, isArchived } = req.body;
+
+      if (!userId || !userType || typeof isArchived !== 'boolean') {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Update is_archived in chat_participants table for this user
+      await sql`
+        UPDATE chat_participants
+        SET is_archived = ${isArchived}
+        WHERE chat_id = ${chatId}
+          AND user_id = ${userId}
+          AND user_type = ${userType}
+      `;
+
+      res.json({ 
+        success: true, 
+        message: isArchived ? 'Chat archived successfully' : 'Chat unarchived successfully'
+      });
+
+    } catch (error) {
+      console.error('Error archiving chat:', error);
+      res.status(500).json({ error: 'Failed to archive chat' });
+    }
+  },
+
+  /**
+   * Clear all messages in a chat
+   */
+  clearChat: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { userId, userType } = req.body;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'Missing userId or userType' });
+      }
+
+      // Delete all messages in this chat
+      await sql`
+        DELETE FROM messages
+        WHERE chat_id = ${chatId}
+      `;
+
+      // Also delete all reactions and forwards related to those messages
+      await sql`
+        DELETE FROM message_reactions
+        WHERE message_id IN (
+          SELECT id FROM messages WHERE chat_id = ${chatId}
+        )
+      `;
+
+      res.json({ 
+        success: true, 
+        message: 'Chat cleared successfully'
+      });
+
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      res.status(500).json({ error: 'Failed to clear chat' });
+    }
+  },
+
+  /**
+   * Delete a specific message
+   */
+  deleteMessage: async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const { userId, userType } = req.body;
+
+      if (!userId || !userType) {
+        return res.status(400).json({ error: 'Missing userId or userType' });
+      }
+
+      // Check if user owns the message
+      const message = await sql`
+        SELECT sender_id, sender_type
+        FROM messages
+        WHERE id = ${messageId}
+      `;
+
+      if (message.length === 0) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+
+      if (message[0].sender_id !== userId || message[0].sender_type !== userType) {
+        return res.status(403).json({ error: 'You can only delete your own messages' });
+      }
+
+      // Delete the message
+      await sql`
+        DELETE FROM messages
+        WHERE id = ${messageId}
+      `;
+
+      // Delete associated reactions
+      await sql`
+        DELETE FROM message_reactions
+        WHERE message_id = ${messageId}
+      `;
+
+      res.json({ 
+        success: true, 
+        message: 'Message deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      res.status(500).json({ error: 'Failed to delete message' });
+    }
   }
 };

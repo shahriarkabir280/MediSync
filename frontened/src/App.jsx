@@ -39,9 +39,10 @@ function App() {
     <AuthProvider>
       <div className="min-h-screen bg-base-200 transition-colors duration-300"> 
         <Routes>
-          <Route path="/" element={<PublicWebsite/>} />
+           {/*
+          <Route path="/" element={<PublicWebsite/>} />*/}
           <Route 
-            path="/doctordashboard" 
+            path="/" 
             element={
               <ProtectedRoute>
                 <DoctorDashboard />
