@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { analyticsApi, doctorApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
 
-const AnalyticsTab = () => {
+const AnalyticsTab = memo(() => {
     const { doctorId } = useDoctor();
     const [appointmentAnalytics, setAppointmentAnalytics] = useState(null);
     const [patientAnalytics, setPatientAnalytics] = useState(null);
@@ -11,13 +11,22 @@ const AnalyticsTab = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Memoize expensive calculations
+    const totalRevenue = useMemo(() => {
+        return revenueAnalytics?.revenueThisMonth || 0;
+    }, [revenueAnalytics]);
+
+    const totalPatients = useMemo(() => {
+        return patientAnalytics?.totalPatients || 0;
+    }, [patientAnalytics]);
+
     useEffect(() => {
         if (doctorId) {
             fetchAnalytics();
         }
     }, [doctorId]);
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         if (!doctorId) return;
         try {
             setLoading(true);
@@ -39,7 +48,7 @@ const AnalyticsTab = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [doctorId]);
 
     if (loading) {
         return (
@@ -226,6 +235,6 @@ const AnalyticsTab = () => {
             </div>
           </div>
     );
-};
+});
 
 export default AnalyticsTab;

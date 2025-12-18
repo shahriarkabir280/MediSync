@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Search, Plus, Send, Paperclip, Smile, MoreVertical,
   Phone, Video, ArrowLeft, Check, CheckCheck, X, Reply, Trash2, PinIcon, BellOff, Archive,
@@ -10,6 +10,7 @@ import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { useAuth } from '../../contexts/AuthContext';
 import VideoCall from '../../components/VideoCall';
+import { debounce } from '../../utils/performance';
 
 /**
  * Modern Chat Component - WhatsApp/Telegram Style

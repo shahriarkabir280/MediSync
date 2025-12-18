@@ -1,10 +1,50 @@
 // API Configuration and Helper Functions
 const API_BASE_URL = 'http://localhost:3001/api';
 
+// Simple in-memory cache for GET requests
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Cache helper
+const getCached = (key) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCache = (key, data) => {
+  cache.set(key, { data, timestamp: Date.now() });
+};
+
+// Clear cache for specific endpoint or all
+export const clearCache = (endpoint) => {
+  if (endpoint) {
+    // Clear all cache entries that start with the endpoint
+    for (const key of cache.keys()) {
+      if (key.startsWith(endpoint)) {
+        cache.delete(key);
+      }
+    }
+  } else {
+    cache.clear();
+  }
+};
+
 // Generic API client
 export const api = {
   get: async (endpoint, options = {}) => {
-    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    // Check cache first (unless explicitly disabled)
+    if (!options.noCache) {
+      const cached = getCached(endpoint);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const token = localStorage.getItem('authToken');
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -17,11 +57,18 @@ export const api = {
       ...options
     });
 
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Cache successful GET requests
+    if (response.ok && !options.noCache) {
+      setCache(endpoint, result);
+    }
+
+    return result;
   },
 
   post: async (endpoint, data = null, options = {}) => {
-    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const token = localStorage.getItem('authToken');
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -41,11 +88,19 @@ export const api = {
       ...options
     });
 
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Clear related cache on successful mutation
+    if (response.ok) {
+      const baseEndpoint = endpoint.split('?')[0].split('/').slice(0, -1).join('/');
+      clearCache(baseEndpoint);
+    }
+
+    return result;
   },
 
   put: async (endpoint, data = null, options = {}) => {
-    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const token = localStorage.getItem('authToken');
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -59,11 +114,19 @@ export const api = {
       ...options
     });
 
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Clear related cache on successful mutation
+    if (response.ok) {
+      const baseEndpoint = endpoint.split('?')[0].split('/').slice(0, -1).join('/');
+      clearCache(baseEndpoint);
+    }
+
+    return result;
   },
 
   delete: async (endpoint, options = {}) => {
-    const token = localStorage.getItem('authToken'); // Fixed: was 'token', should be 'authToken'
+    const token = localStorage.getItem('authToken');
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -76,7 +139,15 @@ export const api = {
       ...options
     });
 
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Clear related cache on successful mutation
+    if (response.ok) {
+      const baseEndpoint = endpoint.split('?')[0].split('/').slice(0, -1).join('/');
+      clearCache(baseEndpoint);
+    }
+
+    return result;
   }
 };
 

@@ -1,7 +1,8 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback, useMemo, memo} from "react";
 import { User, FlaskConical, Plus, Upload, Search, Filter, Eye, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { debounce } from "../../utils/performance";
 
-const LabratoryTab = () => {
+const LabratoryTab = memo(() => {
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [patients, setPatients] = useState([]);
     const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -30,7 +31,7 @@ const LabratoryTab = () => {
         fetchPatients();
     }, []);
 
-    const fetchLabStats = async () => {
+    const fetchLabStats = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/lab/stats');
@@ -43,9 +44,9 @@ const LabratoryTab = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchRecentOrders = async () => {
+    const fetchRecentOrders = useCallback(async () => {
         try {
             const response = await fetch('/api/lab/recent?limit=10');
             const result = await response.json();
@@ -56,9 +57,9 @@ const LabratoryTab = () => {
         } catch (error) {
             console.error('Error fetching recent orders:', error);
         }
-    };
+    }, []);
 
-    const fetchLabCategories = async () => {
+    const fetchLabCategories = useCallback(async () => {
         try {
             const response = await fetch('/api/lab/categories');
             const result = await response.json();
@@ -68,9 +69,9 @@ const LabratoryTab = () => {
         } catch (error) {
             console.error('Error fetching lab categories:', error);
         }
-    };
+    }, []);
 
-    const fetchPatients = async (searchTerm = '') => {
+    const fetchPatients = useCallback(async (searchTerm = '') => {
         try {
             const url = searchTerm ? 
                 `/api/lab/patients?search=${encodeURIComponent(searchTerm)}&limit=10` : 
@@ -83,7 +84,13 @@ const LabratoryTab = () => {
         } catch (error) {
             console.error('Error fetching patients:', error);
         }
-    };
+    }, []);
+
+    // Debounced search for better performance
+    const debouncedFetchPatients = useMemo(
+        () => debounce(fetchPatients, 500),
+        [fetchPatients]
+    );
 
     const handleNewTestOrder = () => {
         setShowNewOrderModal(true);
@@ -93,7 +100,7 @@ const LabratoryTab = () => {
         alert('Bulk actions functionality - to be implemented');
     };
 
-    const handleSearch = async (term) => {
+    const handleSearch = useCallback(async (term) => {
         try {
             setLoading(true);
             const response = await fetch(`/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
@@ -106,7 +113,7 @@ const LabratoryTab = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const handleQuickFilter = async (filterType) => {
         try {
@@ -1029,6 +1036,6 @@ const LabratoryTab = () => {
           </div>
         </div>
     );
-};
+});
 
 export default LabratoryTab;

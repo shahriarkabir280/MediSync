@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { patientApi, appointmentApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
 import { User, Phone, Mail, Calendar, Heart, AlertCircle, Plus, Edit2, Edit, Eye, X, Save, FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle } from "lucide-react";
+import { debounce } from "../../utils/performance";
 
-const PatientTab = () => {
+const PatientTab = memo(() => {
     const { doctorId } = useDoctor();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1393,6 +1394,6 @@ const PatientTab = () => {
             )}
         </div>
     );
-};
+});
 
 export default PatientTab;

@@ -12,8 +12,28 @@ import { sql } from '../config/db.js';
  * - Message reactions
  */
 
+// Cache for chat schema initialization
+let chatSchemaInitialized = false;
+
 export async function createChatSchema() {
   try {
+    // Return immediately if already initialized this session
+    if (chatSchemaInitialized) {
+      return true;
+    }
+
+    // Quick check if chat tables already exist
+    const chatTableCheck = await sql`
+      SELECT COUNT(*) as count FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('chats', 'chat_participants', 'messages', 'message_status')
+    `;
+    
+    // If all core chat tables exist, skip initialization
+    if (parseInt(chatTableCheck[0].count) >= 4) {
+      chatSchemaInitialized = true;
+      return true;
+    }
     // 1. CHATS TABLE - Stores individual chat conversations
     await sql`
       CREATE TABLE IF NOT EXISTS chats (
@@ -147,20 +167,19 @@ export async function createChatSchema() {
       )
     `;
 
-    await sql`CREATE INDEX IF NOT EXISTS idx_chats_updated ON chats(updated_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_chats_last_message ON chats(last_message_at DESC)`;
-    
-    await sql`CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(user_id, user_type)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_chat_participants_chat ON chat_participants(chat_id)`;
-    
-    await sql`CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id, created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id, sender_type)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at DESC)`;
-    
-    await sql`CREATE INDEX IF NOT EXISTS idx_message_status_message ON message_status(message_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_message_status_user ON message_status(user_id, user_type, status)`;
-    
-    await sql`CREATE INDEX IF NOT EXISTS idx_typing_chat ON typing_indicators(chat_id, expires_at)`;
+    // Create all indexes in parallel for faster initialization
+    await Promise.all([
+      sql`CREATE INDEX IF NOT EXISTS idx_chats_updated ON chats(updated_at DESC)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_chats_last_message ON chats(last_message_at DESC)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(user_id, user_type)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_chat_participants_chat ON chat_participants(chat_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id, created_at DESC)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id, sender_type)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at DESC)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_message_status_message ON message_status(message_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_message_status_user ON message_status(user_id, user_type, status)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_typing_chat ON typing_indicators(chat_id, expires_at)`
+    ]);
 
     // CREATE TRIGGER to update chats.updated_at
     await sql`
@@ -222,6 +241,9 @@ export async function createChatSchema() {
         CONSTRAINT chk_theme CHECK (theme IN ('light', 'dark', 'auto'))
       )
     `;
+
+    // Mark as initialized
+    chatSchemaInitialized = true;
 
     return true;
 

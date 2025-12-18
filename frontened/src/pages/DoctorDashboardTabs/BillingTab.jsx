@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { billingApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
+import { debounce } from "../../utils/performance";
 
-const BillingTab = () => {
+const BillingTab = memo(() => {
     const { doctorId } = useDoctor();
     const [billingRecords, setBillingRecords] = useState([]);
     const [summary, setSummary] = useState(null);
@@ -21,13 +22,23 @@ const BillingTab = () => {
         status: 'pending'
     });
 
+    // Memoize filtered billing records
+    const filteredRecords = useMemo(() => {
+        return billingRecords.filter(record => {
+            const matchesSearch = !searchTerm || 
+                record.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                record.description?.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesSearch;
+        });
+    }, [billingRecords, searchTerm]);
+
     useEffect(() => {
         if (doctorId) {
             fetchBillingData();
         }
     }, [filter, doctorId]);
 
-    const fetchBillingData = async () => {
+    const fetchBillingData = useCallback(async () => {
         if (!doctorId) return;
         try {
             setLoading(true);
@@ -46,7 +57,7 @@ const BillingTab = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [doctorId, filter]);
 
     const handleMarkAsPaid = async (billingId) => {
         if (!confirm('Mark this billing record as paid?')) return;
@@ -495,6 +506,6 @@ const BillingTab = () => {
             )}
         </div>
     );
-};
+});
 
 export default BillingTab;

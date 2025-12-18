@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Bell, Calendar, CreditCard, MessageCircle, Mail, Users, Settings, Check, X, Trash2, Filter, Search, Clock, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URLS } from '../../config/api';
+import { debounce } from "../../utils/performance";
 
-const NotificationTab = ({ onCountChange }) => {
+const NotificationTab = memo(({ onCountChange }) => {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ const NotificationTab = ({ onCountChange }) => {
     });
 
     // Load notifications from API
-    const loadNotifications = async (page = 1, type = filter, search = searchQuery) => {
+    const loadNotifications = useCallback(async (page = 1, type = filter, search = searchQuery) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
@@ -71,10 +72,10 @@ const NotificationTab = ({ onCountChange }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filter, searchQuery]);
 
     // Load notification statistics
-    const loadStats = async () => {
+    const loadStats = useCallback(async () => {
         try {
             const token = localStorage.getItem('authToken');
             
@@ -93,10 +94,20 @@ const NotificationTab = ({ onCountChange }) => {
         } catch (error) {
             console.error('Error loading notification stats:', error);
         }
-    };
+    }, []);
+
+    // Debounced search
+    const debouncedLoadNotifications = useMemo(
+        () => debounce((page, type, search) => loadNotifications(page, type, search), 500),
+        [loadNotifications]
+    );
 
     useEffect(() => {
-        loadNotifications();
+        if (searchQuery) {
+            debouncedLoadNotifications(1, filter, searchQuery);
+        } else {
+            loadNotifications();
+        }
         loadStats();
     }, []);
 
@@ -528,6 +539,6 @@ const NotificationTab = ({ onCountChange }) => {
             )}
         </div>
     );
-};
+});
 
 export default NotificationTab;

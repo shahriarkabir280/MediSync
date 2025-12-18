@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_URLS } from "../../config/api";
+import { debounce } from "../../utils/performance";
 
-const AppointmentTab = () => {
+const AppointmentTab = memo(() => {
     const { user } = useAuth();
     const doctorId = user?.id;
     const [appointments, setAppointments] = useState([]);
@@ -12,7 +13,7 @@ const AppointmentTab = () => {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [actionLoading, setActionLoading] = useState(null); // Track which action is loading
+    const [actionLoading, setActionLoading] = useState(null);
     
     // Modal states
     const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
@@ -92,11 +93,13 @@ const AppointmentTab = () => {
     }, [filteredAppointments]);
 
     const fetchData = useCallback(async () => {
+        if (!doctorId) return;
+        
         try {
             setLoading(true);
             const token = localStorage.getItem('authToken');
             
-            if (!doctorId || !token) {
+            if (!token) {
                 throw new Error('Authentication required');
             }
             
@@ -971,6 +974,6 @@ const AppointmentTab = () => {
             )}
         </div>
     );
-};
+});
 
 export default AppointmentTab;

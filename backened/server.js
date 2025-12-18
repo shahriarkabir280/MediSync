@@ -147,19 +147,27 @@ app.use('/api/auth', authRoutes);
 // Help & Support routes
 app.use('/api/help', helpRoutes);
 
+// Cache for database initialization status
+let dbInitialized = false;
+
 // Database initialization
 async function initDB() {
   try {
+    // Return immediately if already initialized this session
+    if (dbInitialized) {
+      return;
+    }
+
     // Quick check if main tables already exist
-    const doctorsTableCheck = await sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'doctors'
-      );
+    const tableCheck = await sql`
+      SELECT COUNT(*) as count FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('doctors', 'patients', 'appointments', 'chats', 'messages')
     `;
     
-    if (doctorsTableCheck[0].exists) {
+    // If all core tables exist, skip initialization
+    if (parseInt(tableCheck[0].count) >= 5) {
+      dbInitialized = true;
       return;
     }
     
@@ -358,24 +366,27 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
 
-    // Create indexes for better performance
-    await sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_doctor_id ON blog_posts(doctor_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_notification_id ON notification_delivery_logs(notification_id)`;
+    // Create indexes in parallel for better performance
+    await Promise.all([
+      sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_notification_id ON notification_delivery_logs(notification_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_doctor_id ON blog_posts(doctor_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`
+    ]);
+
+    // Mark as initialized
+    dbInitialized = true;
 
     // Initialize website-related tables - DISABLED to prevent auto-adding data
     // console.log('Initializing website tables...');

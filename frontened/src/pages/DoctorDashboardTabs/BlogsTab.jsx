@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { BookOpen, Plus, Search, Filter, Calendar, Eye, Edit3, Trash2, BarChart3 } from 'lucide-react';
 import { api } from '../../lib/api';
+import { debounce } from '../../utils/performance';
 
-const BlogsTab = () => {
+const BlogsTab = memo(() => {
   // State for blogs
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,16 @@ const BlogsTab = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
 
+  // Memoize filtered blogs
+  const filteredBlogs = useMemo(() => {
+    return blogs.filter(blog => {
+      const matchesSearch = !searchTerm || blog.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || blog.status === filterStatus;
+      const matchesCategory = filterCategory === 'all' || blog.category === filterCategory;
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [blogs, searchTerm, filterStatus, filterCategory]);
+
   // Fetch data on component mount
   useEffect(() => {
     fetchBlogPosts();
@@ -40,7 +51,7 @@ const BlogsTab = () => {
   }, []);
 
   // API Functions
-  const fetchBlogPosts = async () => {
+  const fetchBlogPosts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/blog/posts');
@@ -57,7 +68,7 @@ const BlogsTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -226,15 +237,6 @@ const BlogsTab = () => {
       alert('Error updating blog status. Please try again.');
     }
   };
-
-  const filteredBlogs = blogs.filter(blog => {
-    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         blog.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || blog.status === filterStatus;
-    const matchesCategory = filterCategory === 'all' || blog.category === filterCategory;
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
 
   return (
     <div className="space-y-6">
@@ -579,6 +581,6 @@ const BlogsTab = () => {
       </div>
     </div>
   );
-};
+});
 
 export default BlogsTab;

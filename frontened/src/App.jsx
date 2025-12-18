@@ -1,11 +1,21 @@
 import { Routes, Route } from "react-router-dom"
+import { lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import ProductPage from "./pages/ProductPage";
-import SettingsPage from "./pages/SettingsPage";
-import VerticalTabLayout from "./pages/VerticleTab";
-import DoctorDashboard from "./pages/DoctorDashboard";
-import PublicWebsite from "./pages/PublicWebsite";
 import LoginForm from "./components/LoginForm";
+
+// Lazy load pages for better performance
+const ProductPage = lazy(() => import("./pages/ProductPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const VerticalTabLayout = lazy(() => import("./pages/VerticleTab"));
+const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
+const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
+
+// Loading component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -38,20 +48,22 @@ function App() {
   return(
     <AuthProvider>
       <div className="min-h-screen bg-base-200 transition-colors duration-300"> 
-        <Routes>
-           {/*
-          <Route path="/" element={<PublicWebsite/>} />*/}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <DoctorDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="/products/:id" element={<ProductPage/>} />
-          <Route path="*" element={<h1 className="text-3xl text-center mt-10">404 Not Found</h1>} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+             {/*
+            <Route path="/" element={<PublicWebsite/>} />*/}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <DoctorDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/products/:id" element={<ProductPage/>} />
+            <Route path="*" element={<h1 className="text-3xl text-center mt-10">404 Not Found</h1>} />
+          </Routes>
+        </Suspense>
       </div>
     </AuthProvider>
   )

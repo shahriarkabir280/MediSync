@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { reportWebVitals } from './utils/performance';
 
 // Global error handling for unhandled promise rejections
 window.addEventListener('unhandledrejection', function(event) {
@@ -26,3 +27,10 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>
 )
+
+// Report web vitals in development
+if (process.env.NODE_ENV === 'development') {
+  reportWebVitals((metric) => {
+    console.log(`[Web Vital] ${metric.name}:`, metric.value);
+  });
+}

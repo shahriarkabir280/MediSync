@@ -1,25 +1,32 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotificationCount } from '../hooks/useNotificationCount';
 import { BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 
-// Import tab components
-import BlogsTab from '../pages/DoctorDashboardTabs/BlogsTab';
-import PublicWebsiteTab from './DoctorDashboardTabs/PublicWebsiteTab';
-import SettingsTab from './DoctorDashboardTabs/SettingsTab';
-import AppointmentTab from './DoctorDashboardTabs/AppointmentTab';
-import ProfileTab from './DoctorDashboardTabs/ProfileTab';
-import LabratoryTab from './DoctorDashboardTabs/LabratoryTab';
-import PatientTab from './DoctorDashboardTabs/PatientTab';
-import ChatTab from './DoctorDashboardTabs/ChatTab';
-import EmailTab from './DoctorDashboardTabs/EmailTab';
-import CalendarTab from './DoctorDashboardTabs/CalendarTab';
-import NotificationTab from './DoctorDashboardTabs/NotificationTab';
-import BillingTab from './DoctorDashboardTabs/BillingTab';
-import HelpTab from './DoctorDashboardTabs/HelpTab';
-import LogoutTab from './DoctorDashboardTabs/LogoutTab';
-import AnalyticsTab from './DoctorDashboardTabs/AnalyticsTab';
+// Lazy load tab components for better performance
+const BlogsTab = lazy(() => import('./DoctorDashboardTabs/BlogsTab'));
+const PublicWebsiteTab = lazy(() => import('./DoctorDashboardTabs/PublicWebsiteTab'));
+const SettingsTab = lazy(() => import('./DoctorDashboardTabs/SettingsTab'));
+const AppointmentTab = lazy(() => import('./DoctorDashboardTabs/AppointmentTab'));
+const ProfileTab = lazy(() => import('./DoctorDashboardTabs/ProfileTab'));
+const LabratoryTab = lazy(() => import('./DoctorDashboardTabs/LabratoryTab'));
+const PatientTab = lazy(() => import('./DoctorDashboardTabs/PatientTab'));
+const ChatTab = lazy(() => import('./DoctorDashboardTabs/ChatTab'));
+const EmailTab = lazy(() => import('./DoctorDashboardTabs/EmailTab'));
+const CalendarTab = lazy(() => import('./DoctorDashboardTabs/CalendarTab'));
+const NotificationTab = lazy(() => import('./DoctorDashboardTabs/NotificationTab'));
+const BillingTab = lazy(() => import('./DoctorDashboardTabs/BillingTab'));
+const HelpTab = lazy(() => import('./DoctorDashboardTabs/HelpTab'));
+const LogoutTab = lazy(() => import('./DoctorDashboardTabs/LogoutTab'));
+const AnalyticsTab = lazy(() => import('./DoctorDashboardTabs/AnalyticsTab'));
+
+// Loading component for lazy-loaded tabs
+const TabLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 
 const DoctorDashboard = () => {
@@ -54,45 +61,48 @@ const DoctorDashboard = () => {
   ];
 
   const renderContent = () => {
-    switch (activeTab) {
-      // ... keep existing code (settings case) the same ...
-      case 'settings':
-        return <SettingsTab />;      
-      case 'profile':
-        return <ProfileTab/>;
-      case 'website':
-        return <PublicWebsiteTab/>;
-      case 'appointments':
-        return <AppointmentTab/>;
-      case 'patients':
-        return <PatientTab/>; 
-      case 'laboratory':
-        return <LabratoryTab/>; 
-      case 'chat':
-        return <ChatTab/>;
-      case 'blogs':
-        return <BlogsTab />;
-      case 'email':
-        return <EmailTab/>;
-      case 'calendar':
-        return <CalendarTab/>;
-      case 'analytics':
-        return <AnalyticsTab/>;
-      case 'notifications':
-        return <NotificationTab onCountChange={refreshCount} />;   
-      case 'billing':
-        return <BillingTab/>;    
-      case 'help':
-        return <HelpTab/>;
-      case 'logout':
-        return <LogoutTab/>;    
-      default:
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Select a tab to view content</p>
-          </div>
-        );
-    }
+    const content = (() => {
+      switch (activeTab) {
+        case 'settings':
+          return <SettingsTab />;      
+        case 'profile':
+          return <ProfileTab/>;
+        case 'website':
+          return <PublicWebsiteTab/>;
+        case 'appointments':
+          return <AppointmentTab/>;
+        case 'patients':
+          return <PatientTab/>; 
+        case 'laboratory':
+          return <LabratoryTab/>; 
+        case 'chat':
+          return <ChatTab/>;
+        case 'blogs':
+          return <BlogsTab />;
+        case 'email':
+          return <EmailTab/>;
+        case 'calendar':
+          return <CalendarTab/>;
+        case 'analytics':
+          return <AnalyticsTab/>;
+        case 'notifications':
+          return <NotificationTab onCountChange={refreshCount} />;   
+        case 'billing':
+          return <BillingTab/>;    
+        case 'help':
+          return <HelpTab/>;
+        case 'logout':
+          return <LogoutTab/>;    
+        default:
+          return (
+            <div className="flex items-center justify-center h-64">
+              <p className="text-muted-foreground">Select a tab to view content</p>
+            </div>
+          );
+      }
+    })();
+
+    return <Suspense fallback={<TabLoader />}>{content}</Suspense>;
   };
 
   return (
