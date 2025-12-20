@@ -26,6 +26,7 @@ import helpRoutes from './routes/helpRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
 import { initializeWebSocket } from './lib/websocketServer.js';
 import { createChatSchema } from './schemas/chatSchema.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
@@ -131,6 +132,7 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/email', emailRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
@@ -365,7 +367,32 @@ async function initDB() {
         status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
-
+    // Emails table
+    await sql`
+      CREATE TABLE IF NOT EXISTS emails (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+        sender_email VARCHAR(255) NOT NULL,
+        sender_name VARCHAR(255) NOT NULL,
+        recipient_id INTEGER,
+        recipient_email VARCHAR(255) NOT NULL,
+        recipient_name VARCHAR(255),
+        subject VARCHAR(500) NOT NULL,
+        body TEXT,
+        cc TEXT,
+        bcc TEXT,
+        attachments JSONB DEFAULT '[]',
+        is_read BOOLEAN DEFAULT false,
+        is_starred BOOLEAN DEFAULT false,
+        is_draft BOOLEAN DEFAULT false,
+        folder VARCHAR(50) DEFAULT 'inbox',
+        reply_to_id INTEGER REFERENCES emails(id) ON DELETE SET NULL,
+        deleted_by_sender BOOLEAN DEFAULT false,
+        deleted_by_recipient BOOLEAN DEFAULT false,
+        read_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
     // Create indexes in parallel for better performance
     await Promise.all([
       sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`,
@@ -382,7 +409,12 @@ async function initDB() {
       sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_doctor_id ON blog_posts(doctor_id)`,
       sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)`,
       sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`
+      sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_sender_id ON emails(sender_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_recipient_id ON emails(recipient_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_folder ON emails(folder)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_is_read ON emails(is_read)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_created_at ON emails(created_at DESC)`
     ]);
 
     // Mark as initialized
