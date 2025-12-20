@@ -27,6 +27,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 import { initializeWebSocket } from './lib/websocketServer.js';
 import { createChatSchema } from './schemas/chatSchema.js';
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
@@ -55,7 +56,7 @@ app.use('/uploads', express.static(uploadsPath));
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'http://localhost:5174', 
+    'http://localhost:5174',
     'http://localhost:5175',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
@@ -133,6 +134,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // File upload routes
 app.use('/api', fileRoutes);
@@ -164,15 +166,15 @@ async function initDB() {
     const tableCheck = await sql`
       SELECT COUNT(*) as count FROM information_schema.tables 
       WHERE table_schema = 'public' 
-      AND table_name IN ('doctors', 'patients', 'appointments', 'chats', 'messages')
+      AND table_name IN ('doctors', 'patients', 'appointments', 'chats', 'messages', 'emails', 'calendar_events')
     `;
-    
+
     // If all core tables exist, skip initialization
-    if (parseInt(tableCheck[0].count) >= 5) {
+    if (parseInt(tableCheck[0].count) >= 7) {
       dbInitialized = true;
       return;
     }
-    
+
     // Products table
     await sql`
       CREATE TABLE IF NOT EXISTS products (
@@ -393,6 +395,19 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`;
+    // Calendar events table
+    await sql`
+      CREATE TABLE IF NOT EXISTS calendar_events (
+        id SERIAL PRIMARY KEY,
+        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+        title VARCHAR(500) NOT NULL,
+        start_time TIMESTAMP NOT NULL,
+        end_time TIMESTAMP NOT NULL,
+        type VARCHAR(100),
+        color VARCHAR(50) DEFAULT 'blue',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`;
     // Create indexes in parallel for better performance
     await Promise.all([
       sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`,
@@ -414,7 +429,9 @@ async function initDB() {
       sql`CREATE INDEX IF NOT EXISTS idx_emails_recipient_id ON emails(recipient_id)`,
       sql`CREATE INDEX IF NOT EXISTS idx_emails_folder ON emails(folder)`,
       sql`CREATE INDEX IF NOT EXISTS idx_emails_is_read ON emails(is_read)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_created_at ON emails(created_at DESC)`
+      sql`CREATE INDEX IF NOT EXISTS idx_emails_created_at ON emails(created_at DESC)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_doctor_id ON calendar_events(doctor_id)`,
+      sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time)`
     ]);
 
     // Mark as initialized
@@ -438,13 +455,13 @@ initDB().then(async () => {
     console.error('❌ Chat schema error:', error.message);
   }
 
-  const server = app.listen(PORT,'0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
   });
-  
+
   // Initialize WebSocket for real-time chat
   initializeWebSocket(server);
-  
+
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);
   process.exit(1);
