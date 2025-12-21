@@ -4,7 +4,7 @@ import {
   Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
-  Type, Zap, Shield, Users, Copy
+  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -1870,13 +1870,15 @@ const ChatTab = () => {
                 </div>
                 <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-1">
                   {[
-                    { key: 'sound', label: 'Sound', desc: 'Play sound for new messages', icon: '🔔' },
-                    { key: 'desktop', label: 'Desktop Notifications', desc: 'Show notifications on desktop', icon: '💻' },
-                    { key: 'messagePreview', label: 'Message Preview', desc: 'Show message content in notifications', icon: '👁️' }
+                    { key: 'sound', label: 'Sound', desc: 'Play sound for new messages', icon: Volume2 },
+                    { key: 'desktop', label: 'Desktop Notifications', desc: 'Show notifications on desktop', icon: Monitor },
+                    { key: 'messagePreview', label: 'Message Preview', desc: 'Show message content in notifications', icon: Eye }
                   ].map((item) => (
                     <label key={item.key} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition-colors group">
                       <div className="flex items-center space-x-4">
-                        <span className="text-xl grayscale group-hover:grayscale-0 transition-all">{item.icon}</span>
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                          <item.icon size={20} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                        </div>
                         <div>
                           <p className="text-sm font-bold text-slate-800">{item.label}</p>
                           <p className="text-[11px] text-slate-400 font-medium">{item.desc}</p>
@@ -1909,14 +1911,16 @@ const ChatTab = () => {
                 </div>
                 <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-1">
                   {[
-                    { key: 'readReceipts', label: 'Read Receipts', desc: 'Let others know when you\'ve read messages', icon: '📖' },
-                    { key: 'onlineStatus', label: 'Online Status', desc: 'Show when you\'re online', icon: '🟢' },
-                    { key: 'typingIndicator', label: 'Typing Indicator', desc: 'Show when you\'re typing', icon: '✍️' },
-                    { key: 'lastSeen', label: 'Last Seen', desc: 'Show your last activity time', icon: '🕒' }
+                    { key: 'readReceipts', label: 'Read Receipts', desc: 'Let others know when you\'ve read messages', icon: CheckCheck },
+                    { key: 'onlineStatus', label: 'Online Status', desc: 'Show when you\'re online', icon: Circle },
+                    { key: 'typingIndicator', label: 'Typing Indicator', desc: 'Show when you\'re typing', icon: Type },
+                    { key: 'lastSeen', label: 'Last Seen', desc: 'Show your last activity time', icon: Clock }
                   ].map((item) => (
                     <label key={item.key} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition-colors group">
                       <div className="flex items-center space-x-4">
-                        <span className="text-xl grayscale group-hover:grayscale-0 transition-all">{item.icon}</span>
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                          <item.icon size={20} className="text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                        </div>
                         <div>
                           <p className="text-sm font-bold text-slate-800">{item.label}</p>
                           <p className="text-[11px] text-slate-400 font-medium">{item.desc}</p>
@@ -1950,7 +1954,9 @@ const ChatTab = () => {
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div className="flex items-center space-x-4">
-                      <span className="text-xl grayscale group-hover:grayscale-0 transition-all">⌨️</span>
+                      <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <Keyboard size={20} className="text-slate-400 group-hover:text-amber-600 transition-colors" />
+                      </div>
                       <div>
                         <p className="text-sm font-bold text-slate-800">Enter to Send</p>
                         <p className="text-[11px] text-slate-400 font-medium">Shift + Enter for new line</p>
@@ -1973,7 +1979,9 @@ const ChatTab = () => {
                   <div className="flex flex-col space-y-4 border-t border-slate-50 pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <span className="text-xl grayscale hover:grayscale-0 transition-all">🖋️</span>
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+                          <Type size={20} className="text-slate-400" />
+                        </div>
                         <p className="text-sm font-bold text-slate-800">Font Size</p>
                       </div>
                       <div className="flex bg-slate-100 p-1 rounded-xl">
@@ -1994,7 +2002,9 @@ const ChatTab = () => {
 
                     <div className="flex items-center justify-between border-t border-slate-50 pt-4">
                       <div className="flex items-center space-x-4">
-                        <span className="text-xl grayscale hover:grayscale-0 transition-all">🎨</span>
+                        <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+                          <Palette size={20} className="text-slate-400" />
+                        </div>
                         <p className="text-sm font-bold text-slate-800">Theme</p>
                       </div>
                       <div className="flex bg-slate-100 p-1 rounded-xl">
