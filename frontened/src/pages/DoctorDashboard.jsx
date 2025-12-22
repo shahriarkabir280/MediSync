@@ -1,8 +1,12 @@
-
+ 
 import React, { useState, lazy, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotificationCount } from '../hooks/useNotificationCount';
-import { BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut, Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import {
+  BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut,
+  Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical,
+  ChevronLeft, ChevronRight, Menu, Search, Clock, ShieldCheck
+} from 'lucide-react';
 
 // Lazy load tab components for better performance
 const BlogsTab = lazy(() => import('./DoctorDashboardTabs/BlogsTab'));
@@ -23,11 +27,14 @@ const AnalyticsTab = lazy(() => import('./DoctorDashboardTabs/AnalyticsTab'));
 
 // Loading component for lazy-loaded tabs
 const TabLoader = () => (
-  <div className="flex items-center justify-center h-64">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+  <div className="flex flex-col items-center justify-center h-full space-y-4">
+    <div className="relative w-12 h-12">
+      <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-100 rounded-full"></div>
+      <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+    </div>
+    <p className="text-xs font-black text-indigo-600/40 uppercase tracking-widest">Hydrating Dashboard...</p>
   </div>
 );
-
 
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
@@ -42,7 +49,6 @@ const DoctorDashboard = () => {
   };
 
   const tabs = [
-    
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'laboratory', label: 'Laboratory', icon: FlaskConical },
@@ -63,40 +69,28 @@ const DoctorDashboard = () => {
   const renderContent = () => {
     const content = (() => {
       switch (activeTab) {
-        case 'settings':
-          return <SettingsTab />;      
-        case 'profile':
-          return <ProfileTab/>;
-        case 'website':
-          return <PublicWebsiteTab/>;
-        case 'appointments':
-          return <AppointmentTab/>;
-        case 'patients':
-          return <PatientTab/>; 
-        case 'laboratory':
-          return <LabratoryTab/>; 
-        case 'chat':
-          return <ChatTab/>;
-        case 'blogs':
-          return <BlogsTab />;
-        case 'email':
-          return <EmailTab/>;
-        case 'calendar':
-          return <CalendarTab/>;
-        case 'analytics':
-          return <AnalyticsTab/>;
-        case 'notifications':
-          return <NotificationTab onCountChange={refreshCount} />;   
-        case 'billing':
-          return <BillingTab/>;    
-        case 'help':
-          return <HelpTab/>;
-        case 'logout':
-          return <LogoutTab/>;    
+        case 'settings': return <SettingsTab />;
+        case 'profile': return <ProfileTab />;
+        case 'website': return <PublicWebsiteTab />;
+        case 'appointments': return <AppointmentTab />;
+        case 'patients': return <PatientTab />;
+        case 'laboratory': return <LabratoryTab />;
+        case 'chat': return <ChatTab />;
+        case 'blogs': return <BlogsTab />;
+        case 'email': return <EmailTab />;
+        case 'calendar': return <CalendarTab />;
+        case 'analytics': return <AnalyticsTab />;
+        case 'notifications': return <NotificationTab onCountChange={refreshCount} />;
+        case 'billing': return <BillingTab />;
+        case 'help': return <HelpTab />;
+        case 'logout': return <LogoutTab />;
         default:
           return (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">Select a tab to view content</p>
+            <div className="flex flex-col items-center justify-center h-64 space-y-2 opacity-50">
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <BarChart3 className="text-gray-400 w-6 h-6" />
+              </div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select a module to begin</p>
             </div>
           );
       }
@@ -106,113 +100,199 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Left Sidebar - Tabs */}
-      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out`}>
-        <div className={`${isCollapsed ? 'p-2' : 'p-6'} border-b border-border flex items-center justify-between`}>
+    <div className="flex h-screen bg-[#F8FAFC] selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Left Sidebar */}
+      <aside
+        className={`${isCollapsed ? 'w-20' : 'w-72'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative z-50`}
+      >
+        {/* Sidebar Header */}
+        <div className={`h-24 flex items-center justify-between ${isCollapsed ? 'px-0 justify-center' : 'px-8'} border-b border-gray-800/50`}>
           {!isCollapsed && (
-            <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-500/10">
+                <ShieldCheck className="text-white w-6 h-6" />
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-black text-white tracking-tight leading-none">CareConnect</h2>
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">Practitioner</span>
+              </div>
+            </div>
           )}
+
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-accent-foreground transition-colors ${
-              isCollapsed ? 'w-full justify-center' : ''
-            }`}
+            className={`p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-all ${isCollapsed ? 'w-10 h-10 flex items-center justify-center' : ''}`}
           >
-            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            {isCollapsed ? <ChevronRight size={22} className="text-indigo-400" /> : <ChevronLeft size={20} />}
           </button>
         </div>
-        
-        <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
-          <ul className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <li key={tab.id}>
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center ${
-                      isCollapsed ? 'justify-center p-2' : 'space-x-3 px-3 py-1.5'
-                    } rounded-lg text-left transition-colors relative ${
-                      activeTab === tab.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                    title={isCollapsed ? tab.label : undefined}
-                  >
-                    <div className="relative">
-                      <Icon size={20} />
-                      {tab.id === 'notifications' && unreadCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium min-w-[1.25rem]">
-                          {unreadCount > 99 ? '99+' : unreadCount}
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-8 overflow-y-auto no-scrollbar space-y-8">
+          <div className="space-y-1">
+            {!isCollapsed && <p className="px-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Core Workspace</p>}
+            <ul className="space-y-1.5">
+              {tabs.slice(0, 7).map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <li key={tab.id}>
+                    <button
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-4 py-2.5'} rounded-xl transition-all duration-300 ${isActive
+                        ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      title={isCollapsed ? tab.label : undefined}
+                    >
+                      <Icon size={isActive ? 22 : 19} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      {!isCollapsed && (
+                        <span className={`ml-3 text-sm font-semibold tracking-wide transition-colors ${isActive ? 'text-white' : 'group-hover:text-white'}`}>
+                          {tab.label}
                         </span>
                       )}
-                    </div>
-                    {!isCollapsed && (
-                      <span className="font-medium">{tab.label}</span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </div>
+                      {isActive && !isCollapsed && (
+                        <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_white]" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
-      {/* Right Content Area */}
-      <div className="flex-1 overflow-auto">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome, Dr. {user?.name || 'Doctor'}
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {user?.specialization || 'Medical Professional'} • {user?.email}
+          <div className="space-y-1">
+            {!isCollapsed && <p className="px-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">System & Config</p>}
+            <ul className="space-y-1.5">
+              {tabs.slice(7).map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                const isLogout = tab.id === 'logout';
+                return (
+                  <li key={tab.id}>
+                    <button
+                      onClick={isLogout ? handleLogout : () => setActiveTab(tab.id)}
+                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-4 py-2.5'} rounded-xl transition-all duration-300 ${isActive
+                        ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/20'
+                        : isLogout
+                          ? 'text-rose-400 hover:text-rose-300 hover:bg-rose-500/10'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      title={isCollapsed ? tab.label : undefined}
+                    >
+                      <div className="relative">
+                        <Icon size={isActive ? 22 : 19} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                        {tab.id === 'notifications' && unreadCount > 0 && (
+                          <span className="absolute -top-3 -right-3 bg-rose-500 text-white text-[9px] font-black rounded-full h-5 w-5 flex items-center justify-center ring-4 ring-[#0F172A] group-hover:ring-gray-800 transition-all">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      {!isCollapsed && (
+                        <span className={`ml-3 text-sm font-semibold tracking-wide ${isActive ? 'text-white' : ''}`}>
+                          {tab.label}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-6 border-t border-gray-800/50 bg-[#0F172A]/50 backdrop-blur-sm">
+          {!isCollapsed && (
+            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">
+              CareConnect © 2024
+            </p>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Top Navbar */}
+        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-8 justify-between relative z-40 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h1 className="text-xl font-black text-gray-900 tracking-tight">
+                  Welcome, Dr. {user?.name || 'Doctor'}
+                </h1>
+              </div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 ml-4">
+                {user?.specialization || 'Clinical Lead'} • {user?.email}
               </p>
             </div>
-            <div className="flex items-center space-x-4">
-              {/* Debug: Log user data */}
-              {console.log('DoctorDashboard user data:', user)}
-              
-              <div className="relative">
-                {user?.profileImage ? (
-                  <img
-                    src={user.profileImage}
-                    alt="Profile"
-                    className="h-10 w-10 rounded-full object-cover"
-                    onError={(e) => {
-                      console.error('Profile image failed to load:', user.profileImage);
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                
-                {/* Fallback avatar */}
-                <div 
-                  className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium"
-                  style={{ display: user?.profileImage ? 'none' : 'flex' }}
-                >
-                  {user?.name?.charAt(0) || 'D'}
-                </div>
+          </div>
+
+          <div className="flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-6 pr-8 border-r border-gray-100">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
+                <Clock className="w-4 h-4 text-indigo-500" />
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">Active Shift</span>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">System Secured</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end mr-2">
+                <span className="text-xs font-black text-gray-900 leading-none">{user?.name}</span>
+                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-1">Admin Access</span>
+              </div>
+              <div className="relative group p-1 bg-gradient-to-tr from-indigo-500 to-indigo-400 rounded-2xl shadow-lg ring-4 ring-indigo-50">
+                <div className="h-11 w-11 rounded-xl overflow-hidden bg-white border-2 border-white">
+                  {user?.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt="Profile"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className="h-full w-full flex items-center justify-center text-indigo-600 text-lg font-black"
+                    style={{ display: user?.profileImage ? 'none' : 'flex' }}
+                  >
+                    {user?.name?.charAt(0) || 'D'}
+                  </div>
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full" />
+              </div>
             </div>
           </div>
+        </header>
+
+        {/* Dynamic Canvas */}
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F8FAFC] custom-scrollbar">
+          <div className="p-8 pb-20">
+            {renderContent()}
+          </div>
         </div>
+      </main>
+
+      {/* Design Utility Styles */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        <div className="p-8">
-          {renderContent()}
-        </div>
-      </div>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+          background: #E2E8F0; 
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+      `}</style>
     </div>
   );
 };
