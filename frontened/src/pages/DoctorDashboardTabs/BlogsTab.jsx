@@ -55,7 +55,7 @@ const BlogsTab = memo(() => {
     try {
       setLoading(true);
       const response = await api.get('/blog/posts');
-      
+
       // Handle different possible response structures
       const posts = response?.data?.posts || response?.posts || [];
       if (posts && posts.length > 0) {
@@ -103,7 +103,7 @@ const BlogsTab = memo(() => {
   };
 
   const blogCategories = [
-    'Cardiology', 'Endocrinology', 'Neurology', 'Orthopedics', 
+    'Cardiology', 'Endocrinology', 'Neurology', 'Orthopedics',
     'Pediatrics', 'Dermatology', 'General Health', 'Preventive Care'
   ];
 
@@ -114,7 +114,7 @@ const BlogsTab = memo(() => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (editingBlog) {
       await handleUpdateBlog();
     } else {
@@ -134,11 +134,11 @@ const BlogsTab = memo(() => {
       };
 
       await api.post('/blog/posts', blogData);
-      
+
       // Refresh blog posts after creating
       await fetchBlogPosts();
       await fetchStats();
-      
+
       // Reset form
       setBlogForm({
         title: '',
@@ -181,11 +181,11 @@ const BlogsTab = memo(() => {
       };
 
       await api.put(`/blog/posts/${editingBlog}`, blogData);
-      
+
       // Refresh blog posts after updating
       await fetchBlogPosts();
       await fetchStats();
-      
+
       // Reset form
       setBlogForm({
         title: '',
@@ -223,13 +223,13 @@ const BlogsTab = memo(() => {
 
       // Toggle publish status
       const newStatus = currentBlog.status === 'published' ? 'draft' : 'published';
-      
+
       await api.put(`/blog/posts/${blogId}`, {
         ...currentBlog,
         status: newStatus,
         tags: Array.isArray(currentBlog.tags) ? currentBlog.tags : []
       });
-      
+
       // Refresh blog posts after updating
       await fetchBlogPosts();
       await fetchStats();
@@ -239,11 +239,11 @@ const BlogsTab = memo(() => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Manage Blogs</h1>
-          <p className="text-muted-foreground">Create, edit, and manage your blog posts to share medical insights with your patients.</p>
+          <h1 className="text-3xl font-black text-foreground mb-2 tracking-tighter">Manage Blogs</h1>
+          <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.3em]">Create, edit, and manage your blog posts to share medical insights</p>
         </div>
         <button
           onClick={() => {
@@ -259,7 +259,7 @@ const BlogsTab = memo(() => {
               image: ''
             });
           }}
-          className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+          className="bg-indigo-600 text-white px-8 py-4 rounded-[1.5rem] hover:bg-indigo-700 transition-all flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:-translate-y-1 active:scale-95"
         >
           <Plus size={20} />
           New Blog Post
@@ -268,33 +268,33 @@ const BlogsTab = memo(() => {
 
       {/* Blog Form Modal */}
       {showBlogForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <h2 className="text-2xl font-bold">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-card/80 backdrop-blur-3xl rounded-[3rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-border shadow-2xl">
+            <div className="p-8 border-b border-border">
+              <h2 className="text-2xl font-black text-foreground tracking-tighter">
                 {editingBlog ? 'Edit Blog Post' : 'Create New Blog Post'}
               </h2>
             </div>
-            
-            <div className="p-6 space-y-6">
+
+            <div className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Blog Title</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Blog Title</label>
                   <input
                     type="text"
                     value={blogForm.title}
                     onChange={(e) => handleBlogFormChange('title', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
                     placeholder="Enter blog title..."
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Category</label>
                   <select
                     value={blogForm.category}
                     onChange={(e) => handleBlogFormChange('category', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                   >
                     <option value="">Select Category</option>
                     {blogCategories.map(category => (
@@ -302,53 +302,53 @@ const BlogsTab = memo(() => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Status</label>
                   <select
                     value={blogForm.status}
                     onChange={(e) => handleBlogFormChange('status', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                   >
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                   </select>
                 </div>
-                
+
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Tags (comma separated)</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Tags (comma separated)</label>
                   <input
                     type="text"
                     value={blogForm.tags}
                     onChange={(e) => handleBlogFormChange('tags', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
                     placeholder="health, medicine, tips..."
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Excerpt</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Excerpt</label>
                   <textarea
                     value={blogForm.excerpt}
                     onChange={(e) => handleBlogFormChange('excerpt', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24 resize-none"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium h-24 resize-none"
                     placeholder="Brief description of the blog post..."
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Content</label>
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Content</label>
                   <textarea
                     value={blogForm.content}
                     onChange={(e) => handleBlogFormChange('content', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-64 resize-none"
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium h-64 resize-none"
                     placeholder="Write your blog content here..."
                   />
                 </div>
               </div>
             </div>
-            
-            <div className="p-6 border-t flex justify-end gap-4">
+
+            <div className="p-8 border-t border-border flex justify-end gap-4">
               <button
                 onClick={() => {
                   setShowBlogForm(false);
@@ -363,14 +363,14 @@ const BlogsTab = memo(() => {
                     image: ''
                   });
                 }}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-6 py-4 border border-border rounded-2xl text-foreground font-black text-[11px] uppercase tracking-[0.2em] hover:bg-muted transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!blogForm.title || !blogForm.content}
-                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {editingBlog ? 'Update Blog' : 'Create Blog'}
               </button>
@@ -379,198 +379,207 @@ const BlogsTab = memo(() => {
         </div>
       )}
 
-      {/* Filters and Search */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      {/* Search and Filters */}
+      <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-2xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
             <input
               type="text"
               placeholder="Search blogs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
             />
           </div>
-          
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
           >
             <option value="all">All Status</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
           </select>
-          
+
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
           >
             <option value="all">All Categories</option>
             {blogCategories.map(category => (
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
-          
-          <div className="flex items-center text-sm text-gray-600">
+
+          <div className="flex items-center text-sm text-muted-foreground font-black uppercase tracking-wider">
             <Filter size={16} className="mr-2" />
             {filteredBlogs.length} blog(s) found
           </div>
         </div>
       </div>
 
-      {/* Blog Statistics */}
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-indigo-500/10 transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Blogs</p>
-              <p className="text-2xl font-bold text-gray-900">{blogs.length}</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Total Blogs</p>
+              <p className="text-3xl font-black text-foreground tracking-tighter">{blogs.length}</p>
             </div>
-            <BookOpen className="h-8 w-8 text-blue-600" />
+            <div className="p-4 bg-blue-500/10 rounded-2xl">
+              <BookOpen className="h-8 w-8 text-blue-600" />
+            </div>
           </div>
         </div>
-        
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+
+        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-green-500/10 transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Published</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Published</p>
+              <p className="text-3xl font-black text-green-600 tracking-tighter">
                 {blogs.filter(blog => blog.status === 'published').length}
               </p>
             </div>
-            <Eye className="h-8 w-8 text-green-600" />
+            <div className="p-4 bg-green-500/10 rounded-2xl">
+              <Eye className="h-8 w-8 text-green-600" />
+            </div>
           </div>
         </div>
-        
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+
+        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-orange-500/10 transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Drafts</p>
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Drafts</p>
+              <p className="text-3xl font-black text-orange-600 tracking-tighter">
                 {blogs.filter(blog => blog.status === 'draft').length}
               </p>
             </div>
-            <Edit3 className="h-8 w-8 text-orange-600" />
+            <div className="p-4 bg-orange-500/10 rounded-2xl">
+              <Edit3 className="h-8 w-8 text-orange-600" />
+            </div>
           </div>
         </div>
-        
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+
+        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-purple-500/10 transition-all">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Views</p>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Total Views</p>
+              <p className="text-3xl font-black text-purple-600 tracking-tighter">
                 {blogs.reduce((total, blog) => total + blog.views, 0)}
               </p>
             </div>
-            <BarChart3 className="h-8 w-8 text-purple-600" />
+            <div className="p-4 bg-purple-500/10 rounded-2xl">
+              <BarChart3 className="h-8 w-8 text-purple-600" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Blog List */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold">Blog Posts</h3>
+      <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="p-8 border-b border-border">
+          <h3 className="text-xl font-black text-foreground tracking-tighter">Blog Posts</h3>
         </div>
-        
-        <div className="divide-y divide-gray-200">
+
+        <div className="divide-y divide-border/40">
           {loading ? (
-            <div className="p-12 text-center">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-pulse" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading blogs...</h3>
-              <p className="text-gray-500">Please wait while we fetch your blog posts.</p>
+            <div className="p-20 text-center">
+              <BookOpen className="mx-auto h-16 w-16 text-indigo-500/30 mb-6 animate-pulse" />
+              <h3 className="text-xl font-black text-foreground mb-2">Loading medical insights...</h3>
+              <p className="text-muted-foreground text-sm font-medium tracking-wide">Fetching your premium content</p>
             </div>
           ) : filteredBlogs.length === 0 ? (
-            <div className="p-12 text-center">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No blogs found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm || filterStatus !== 'all' || filterCategory !== 'all' 
-                  ? 'Try adjusting your search or filters.' 
-                  : 'Get started by creating your first blog post.'
+            <div className="p-20 text-center">
+              <BookOpen className="mx-auto h-16 w-16 text-muted-foreground/20 mb-6" />
+              <h3 className="text-xl font-black text-foreground mb-2">No blogs found</h3>
+              <p className="text-muted-foreground mb-8 text-sm font-medium max-w-sm mx-auto leading-relaxed">
+                {searchTerm || filterStatus !== 'all' || filterCategory !== 'all'
+                  ? 'We couldn\'t find any blogs matching your current filters. Try adjusting your search.'
+                  : 'Your dashboard is empty. Start sharing your medical expertise with your patients today.'
                 }
               </p>
               {!searchTerm && filterStatus === 'all' && filterCategory === 'all' && (
                 <button
                   onClick={() => setShowBlogForm(true)}
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                  className="bg-indigo-600 text-white px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 active:scale-95"
                 >
-                  Create Your First Blog
+                  Create Your First Entry
                 </button>
               )}
             </div>
           ) : (
             filteredBlogs.map((blog) => (
-              <div key={blog.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={blog.id} className="p-8 hover:bg-muted/30 transition-all group border-l-4 border-transparent hover:border-indigo-600">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{blog.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        blog.status === 'published' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-4 mb-3">
+                      <h3 className="text-xl font-black text-foreground tracking-tight truncate group-hover:text-indigo-600 transition-colors">{blog.title}</h3>
+                      <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${blog.status === 'published'
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                        : 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                        }`}>
                         {blog.status === 'published' ? 'Published' : 'Draft'}
                       </span>
                     </div>
-                    
-                    <p className="text-gray-600 mb-3 line-clamp-2">{blog.excerpt}</p>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={14} />
+
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2 font-medium">{blog.excerpt}</p>
+
+                    <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      <span className="flex items-center gap-2">
+                        <Calendar size={14} className="text-indigo-500" />
                         {blog.publishDate}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Eye size={14} />
+                      <span className="flex items-center gap-2">
+                        <Eye size={14} className="text-indigo-500" />
                         {blog.views} views
                       </span>
-                      <span>{blog.readTime}</span>
-                      <span className="bg-gray-100 px-2 py-1 rounded text-xs">{blog.category}</span>
+                      <span className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-indigo-500" />
+                        {blog.readTime}
+                      </span>
+                      <span className="bg-muted px-3 py-1 rounded-lg text-foreground/70">{blog.category}</span>
                     </div>
-                    
+
                     {blog.tags && blog.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-4">
                         {blog.tags.map((tag, index) => (
-                          <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                          <span key={index} className="bg-indigo-500/5 text-indigo-500/80 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-500/10">
                             #{tag}
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
+
+                  <div className="flex items-center gap-3 ml-8 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                     <button
                       onClick={() => handleEditBlog(blog)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit"
+                      className="p-3 bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-95 shadow-lg shadow-indigo-500/5"
+                      title="Edit Post"
                     >
-                      <Edit3 size={16} />
+                      <Edit3 size={18} />
                     </button>
-                    
+
                     <button
                       onClick={() => handlePublishBlog(blog.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        blog.status === 'published'
-                          ? 'text-orange-600 hover:bg-orange-50'
-                          : 'text-green-600 hover:bg-green-50'
-                      }`}
-                      title={blog.status === 'published' ? 'Unpublish' : 'Publish'}
+                      className={`p-3 rounded-2xl transition-all active:scale-95 shadow-lg ${blog.status === 'published'
+                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white shadow-orange-500/5'
+                        : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white shadow-emerald-500/5'
+                        }`}
+                      title={blog.status === 'published' ? 'Move to Draft' : 'Publish Post'}
                     >
-                      <Eye size={16} />
+                      <Eye size={18} />
                     </button>
-                    
+
                     <button
                       onClick={() => handleDeleteBlog(blog.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
+                      className="p-3 bg-red-500/10 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-500/5"
+                      title="Delete Post"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
