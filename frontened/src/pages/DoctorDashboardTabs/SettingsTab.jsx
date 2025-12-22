@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URLS } from '../../config/api';
-import { Bell, Shield, CreditCard, Settings, Calendar, MessageCircle, Mail, Users, AlertCircle } from 'lucide-react';
+import { Bell, Shield, CreditCard, Settings, Calendar, MessageCircle, Mail, Users, AlertCircle, Trash2, FileText, MapPin, Plus, Globe } from 'lucide-react';
 
 const SettingsTab = () => {
   const { user, logout } = useAuth();
@@ -101,13 +101,13 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       // Load notification settings
       try {
         const notifyResponse = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (notifyResponse.ok) {
           const notifyData = await notifyResponse.json();
           setNotificationSettings(prev => ({ ...prev, ...notifyData }));
@@ -121,7 +121,7 @@ const SettingsTab = () => {
         const generalResponse = await fetch(API_URLS.DOCTORS.SETTINGS_AUTH, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (generalResponse.ok) {
           const generalData = await generalResponse.json();
           // Handle general settings if needed
@@ -135,7 +135,7 @@ const SettingsTab = () => {
         const billingResponse = await fetch(API_URLS.BILLING.SETTINGS, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (billingResponse.ok) {
           const billingData = await billingResponse.json();
           setBillingSettings(prev => ({ ...prev, ...billingData }));
@@ -167,7 +167,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
         method: 'PUT',
         headers: {
@@ -186,7 +186,7 @@ const SettingsTab = () => {
         setIsEditingNotifications(false);
         setNotificationChanges(false);
         showSuccessMessage('Notification settings updated successfully');
-        
+
         // Reload settings to ensure we have the latest data
         setTimeout(() => {
           loadSettings();
@@ -219,12 +219,12 @@ const SettingsTab = () => {
       const newSettings = { ...prev };
       const keys = path.split('.');
       let current = newSettings;
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         current = current[keys[i]];
       }
       current[keys[keys.length - 1]] = value;
-      
+
       setNotificationChanges(true);
       return newSettings;
     });
@@ -251,7 +251,7 @@ const SettingsTab = () => {
   const testNotification = async (type, method) => {
     try {
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.DOCTORS.TEST_NOTIFICATION, {
         method: 'POST',
         headers: {
@@ -286,7 +286,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.AUTH.CHANGE_PASSWORD, {
         method: 'PUT',
         headers: {
@@ -322,7 +322,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.AUTH.ENABLE_2FA, {
         method: 'POST',
         headers: {
@@ -352,7 +352,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.AUTH.DISABLE_2FA, {
         method: 'DELETE',
         headers: {
@@ -381,7 +381,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.BILLING.SETTINGS, {
         method: 'PUT',
         headers: {
@@ -412,7 +412,7 @@ const SettingsTab = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      
+
       const response = await fetch(API_URLS.DOCTORS.DELETE_ACCOUNT, {
         method: 'DELETE',
         headers: {
@@ -441,78 +441,80 @@ const SettingsTab = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your account preferences and configurations.</p>
+        <h1 className="text-3xl font-black text-foreground mb-2 tracking-tighter">Settings</h1>
+        <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.3em]">Manage your premium account preferences and security configurations</p>
       </div>
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-wider backdrop-blur-xl">
           {success}
         </div>
       )}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-wider backdrop-blur-xl">
           {error}
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="flex flex-wrap border-b border-gray-200">
+      <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="flex flex-wrap border-b border-border p-2">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`flex items-center gap-3 px-8 py-4 text-[11px] font-black uppercase tracking-[0.2em] transition-all rounded-2xl ${isActive
+                  ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/30'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
               >
-                <IconComponent className="mr-2 h-4 w-4 inline" />
+                <IconComponent className={`h-4 w-4 ${isActive ? 'text-white' : 'text-indigo-500'}`} />
                 {tab.name}
               </button>
             );
           })}
         </div>
 
-        <div className="p-6">
+        <div className="p-10">
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-semibold">Notification Settings</h2>
-                  <div className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600">Manage how you receive notifications</span>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                    <Bell className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-foreground tracking-tighter">Notification Settings</h2>
+                    <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">Manage how you receive critical medical alerts</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   {!isEditingNotifications ? (
                     <button
                       onClick={startEditingNotifications}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-8 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 active:scale-95"
                     >
                       Edit Settings
                     </button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <button
                         onClick={cancelEditingNotifications}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                        className="px-8 py-3 bg-muted text-foreground rounded-2xl hover:bg-muted/80 transition-all font-black text-[11px] uppercase tracking-[0.2em] active:scale-95 border border-border"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={updateNotificationSettings}
                         disabled={loading || !notificationChanges}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-8 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-all font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                       >
                         {loading ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -523,24 +525,33 @@ const SettingsTab = () => {
 
               {/* Edit mode indicator */}
               {isEditingNotifications && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 font-medium">
-                      Edit Mode: Make your changes and click "Save Changes" to apply them
-                    </span>
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 backdrop-blur-3xl">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-500/20 rounded-xl">
+                      <Settings className="h-5 w-5 text-indigo-600 animate-spin-slow" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-indigo-600 font-black uppercase tracking-[0.2em]">
+                        Configuration Mode Active
+                      </span>
+                      <p className="text-muted-foreground text-[11px] font-medium tracking-wide mt-1">
+                        Make your changes and click "Save Changes" to apply them to your profile
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
-              
+
               {/* Global Controls */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-orange-500/5 border border-orange-500/10 rounded-3xl p-6 backdrop-blur-3xl">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-orange-500/10 rounded-2xl">
+                      <AlertCircle className="h-6 w-6 text-orange-600" />
+                    </div>
                     <div>
-                      <h4 className="font-medium text-yellow-800">Global Notification Control</h4>
-                      <p className="text-sm text-yellow-700">Temporarily mute all notifications</p>
+                      <h4 className="text-sm font-black text-orange-950 dark:text-orange-400 uppercase tracking-[0.2em]">Global Notification Control</h4>
+                      <p className="text-[11px] text-orange-700 dark:text-orange-500/70 font-medium tracking-wide">Temporarily mute all incoming dashboard alerts</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -551,21 +562,23 @@ const SettingsTab = () => {
                       disabled={!isEditingNotifications}
                       className="sr-only peer"
                     />
-                    <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                    <div className={`w-14 h-7 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-orange-600 ${!isEditingNotifications ? 'opacity-30 cursor-not-allowed' : 'shadow-lg'}`}></div>
                   </label>
                 </div>
               </div>
 
               {/* Notification Categories */}
-              <div className="grid gap-4">
+              <div className="grid gap-6">
                 {/* Appointments */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="bg-muted/20 border border-border rounded-[2rem] p-8 hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <Calendar className="h-6 w-6 text-indigo-600 group-hover:text-white" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Appointments</h4>
-                        <p className="text-sm text-gray-600">New appointments, changes, reminders</p>
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Appointments</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide">New appointments, status changes, and clinical reminders</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -576,53 +589,37 @@ const SettingsTab = () => {
                         disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>
                   {(isEditingNotifications ? editedNotificationSettings?.appointments?.enabled : notificationSettings.appointments.enabled) && (
-                    <div className="grid grid-cols-3 gap-4 ml-8">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.email : notificationSettings.appointments.email}
-                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.email', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Email</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.push : notificationSettings.appointments.push}
-                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.push', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Push</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isEditingNotifications ? editedNotificationSettings?.appointments?.sms : notificationSettings.appointments.sms}
-                          onChange={(e) => isEditingNotifications && updateEditedNotificationSetting('appointments.sms', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">SMS</span>
-                      </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ml-8">
+                      {['Email', 'Push', 'SMS'].map((method) => (
+                        <label key={method} className="flex items-center gap-4 cursor-pointer group/label">
+                          <input
+                            type="checkbox"
+                            checked={isEditingNotifications ? editedNotificationSettings?.appointments?.[method.toLowerCase()] : notificationSettings.appointments[method.toLowerCase()]}
+                            onChange={(e) => isEditingNotifications && updateEditedNotificationSetting(`appointments.${method.toLowerCase()}`, e.target.checked)}
+                            disabled={!isEditingNotifications}
+                            className="w-5 h-5 rounded-lg border-border text-indigo-600 focus:ring-indigo-500/20 bg-muted/30"
+                          />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/label:text-foreground transition-colors">{method}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 {/* Billing */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="h-5 w-5 text-green-600" />
+                <div className="bg-muted/20 border border-border rounded-[2rem] p-8 hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-emerald-500/10 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <CreditCard className="h-6 w-6 text-emerald-600 group-hover:text-white" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Billing & Payments</h4>
-                        <p className="text-sm text-gray-600">Payment alerts, invoice updates</p>
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Billing & Payments</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide">Payment alerts, invoice updates, and subscription changes</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -633,53 +630,37 @@ const SettingsTab = () => {
                         disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-emerald-600 ${!isEditingNotifications ? 'opacity-30 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {getCurrentNotificationSetting('billing.enabled') && (
-                    <div className="grid grid-cols-3 gap-4 ml-8">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('billing.email')}
-                          onChange={(e) => handleNotificationChange('billing.email', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Email</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('billing.push')}
-                          onChange={(e) => handleNotificationChange('billing.push', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Push</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('billing.sms')}
-                          onChange={(e) => handleNotificationChange('billing.sms', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">SMS</span>
-                      </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ml-8">
+                      {['Email', 'Push', 'SMS'].map((method) => (
+                        <label key={method} className="flex items-center gap-4 cursor-pointer group/label">
+                          <input
+                            type="checkbox"
+                            checked={getCurrentNotificationSetting(`billing.${method.toLowerCase()}`)}
+                            onChange={(e) => handleNotificationChange(`billing.${method.toLowerCase()}`, e.target.checked)}
+                            disabled={!isEditingNotifications}
+                            className="w-5 h-5 rounded-lg border-border text-emerald-600 focus:ring-emerald-500/20 bg-muted/30"
+                          />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/label:text-foreground transition-colors">{method}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 {/* Chat/Messages */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <MessageCircle className="h-5 w-5 text-purple-600" />
+                <div className="bg-muted/20 border border-border rounded-[2rem] p-8 hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <MessageCircle className="h-6 w-6 text-indigo-600 group-hover:text-white" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Messages & Chat</h4>
-                        <p className="text-sm text-gray-600">New messages from colleagues and patients</p>
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Messages & Chat</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide">New messages from colleagues, staff, and direct patient interaction</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -690,53 +671,37 @@ const SettingsTab = () => {
                         disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-indigo-600 ${!isEditingNotifications ? 'opacity-30 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {getCurrentNotificationSetting('chat.enabled') && (
-                    <div className="grid grid-cols-3 gap-4 ml-8">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('chat.email')}
-                          onChange={(e) => handleNotificationChange('chat.email', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Email</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('chat.push')}
-                          onChange={(e) => handleNotificationChange('chat.push', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Push</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('chat.sms')}
-                          onChange={(e) => handleNotificationChange('chat.sms', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">SMS</span>
-                      </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ml-8">
+                      {['Email', 'Push', 'SMS'].map((method) => (
+                        <label key={method} className="flex items-center gap-4 cursor-pointer group/label">
+                          <input
+                            type="checkbox"
+                            checked={getCurrentNotificationSetting(`chat.${method.toLowerCase()}`)}
+                            onChange={(e) => handleNotificationChange(`chat.${method.toLowerCase()}`, e.target.checked)}
+                            disabled={!isEditingNotifications}
+                            className="w-5 h-5 rounded-lg border-border text-indigo-600 focus:ring-indigo-500/20 bg-muted/30"
+                          />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/label:text-foreground transition-colors">{method}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 {/* Patients */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-orange-600" />
+                <div className="bg-muted/20 border border-border rounded-[2rem] p-8 hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-500/10 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <Users className="h-6 w-6 text-indigo-600 group-hover:text-white" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">Patient Updates</h4>
-                        <p className="text-sm text-gray-600">New registrations, medical records</p>
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Patient Updates</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide">New registrations, medical records updates, and file shares</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -746,53 +711,37 @@ const SettingsTab = () => {
                         onChange={(e) => handleNotificationChange('patients.enabled', e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-indigo-600 ${!isEditingNotifications ? 'opacity-30 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {getCurrentNotificationSetting('patients.enabled') && (
-                    <div className="grid grid-cols-3 gap-4 ml-8">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('patients.email')}
-                          onChange={(e) => handleNotificationChange('patients.email', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Email</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('patients.push')}
-                          onChange={(e) => handleNotificationChange('patients.push', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Push</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('patients.sms')}
-                          onChange={(e) => handleNotificationChange('patients.sms', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">SMS</span>
-                      </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ml-8">
+                      {['Email', 'Push', 'SMS'].map((method) => (
+                        <label key={method} className="flex items-center gap-4 cursor-pointer group/label">
+                          <input
+                            type="checkbox"
+                            checked={getCurrentNotificationSetting(`patients.${method.toLowerCase()}`)}
+                            onChange={(e) => handleNotificationChange(`patients.${method.toLowerCase()}`, e.target.checked)}
+                            disabled={!isEditingNotifications}
+                            className="w-5 h-5 rounded-lg border-border text-indigo-600 focus:ring-indigo-500/20 bg-muted/30"
+                          />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/label:text-foreground transition-colors">{method}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 {/* System Notifications */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Settings className="h-5 w-5 text-gray-600" />
+                <div className="bg-muted/20 border border-border rounded-[2rem] p-8 hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-muted rounded-2xl group-hover:bg-foreground group-hover:text-background transition-all">
+                        <Settings className="h-6 w-6 text-foreground group-hover:text-background" />
+                      </div>
                       <div>
-                        <h4 className="font-medium">System Notifications</h4>
-                        <p className="text-sm text-gray-600">Maintenance, updates, announcements</p>
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">System Notifications</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide">Maintenance schedules, platform updates, and security announcements</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -803,95 +752,63 @@ const SettingsTab = () => {
                         disabled={!isEditingNotifications}
                         className="sr-only peer"
                       />
-                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 ${!isEditingNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                      <div className={`w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-foreground ${!isEditingNotifications ? 'opacity-30 cursor-not-allowed' : ''}`}></div>
                     </label>
                   </div>
                   {getCurrentNotificationSetting('system.enabled') && (
-                    <div className="grid grid-cols-3 gap-4 ml-8">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('system.email')}
-                          onChange={(e) => handleNotificationChange('system.email', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Email</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('system.push')}
-                          onChange={(e) => handleNotificationChange('system.push', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">Push</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={getCurrentNotificationSetting('system.sms')}
-                          onChange={(e) => handleNotificationChange('system.sms', e.target.checked)}
-                          disabled={!isEditingNotifications}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">SMS</span>
-                      </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ml-8">
+                      {['Email', 'Push', 'SMS'].map((method) => (
+                        <label key={method} className="flex items-center gap-4 cursor-pointer group/label">
+                          <input
+                            type="checkbox"
+                            checked={getCurrentNotificationSetting(`system.${method.toLowerCase()}`)}
+                            onChange={(e) => handleNotificationChange(`system.${method.toLowerCase()}`, e.target.checked)}
+                            disabled={!isEditingNotifications}
+                            className="w-5 h-5 rounded-lg border-border text-foreground focus:ring-foreground/20 bg-muted/30"
+                          />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/label:text-foreground transition-colors">{method}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Notification Frequency */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium mb-3">Notification Frequency</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="immediate"
-                      checked={getCurrentNotificationSetting('frequency') === 'immediate'}
-                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
-                      disabled={!isEditingNotifications}
-                      className="text-blue-600"
-                    />
-                    <span className="text-sm">Immediate - Get notifications as they happen</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="hourly"
-                      checked={getCurrentNotificationSetting('frequency') === 'hourly'}
-                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
-                      disabled={!isEditingNotifications}
-                      className="text-blue-600"
-                    />
-                    <span className="text-sm">Hourly digest - Bundled notifications every hour</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="frequency"
-                      value="daily"
-                      checked={getCurrentNotificationSetting('frequency') === 'daily'}
-                      onChange={(e) => handleNotificationChange('frequency', e.target.value)}
-                      disabled={!isEditingNotifications}
-                      className="text-blue-600"
-                    />
-                    <span className="text-sm">Daily summary - Once per day summary</span>
-                  </label>
+              <div className="bg-muted/20 border border-border rounded-[2rem] p-8">
+                <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6">Notification Frequency</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { val: 'immediate', label: 'Immediate', desc: 'Alerts as they happen' },
+                    { val: 'hourly', label: 'Hourly Digest', desc: 'Bundled alerts every hour' },
+                    { val: 'daily', label: 'Daily Summary', desc: 'End-of-day summary' }
+                  ].map((freq) => (
+                    <label key={freq.val} className={`p-6 bg-card border rounded-2xl transition-all cursor-pointer group ${getCurrentNotificationSetting('frequency') === freq.val
+                      ? 'border-indigo-600 ring-2 ring-indigo-600/10'
+                      : 'border-border grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:border-indigo-500/30'
+                      }`}>
+                      <input
+                        type="radio"
+                        name="frequency"
+                        value={freq.val}
+                        checked={getCurrentNotificationSetting('frequency') === freq.val}
+                        onChange={(e) => handleNotificationChange('frequency', e.target.value)}
+                        disabled={!isEditingNotifications}
+                        className="sr-only"
+                      />
+                      <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground mb-1">{freq.label}</h5>
+                      <p className="text-[10px] text-muted-foreground font-medium tracking-wide">{freq.desc}</p>
+                    </label>
+                  ))}
                 </div>
               </div>
 
               {/* Quiet Hours */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-muted/20 border border-border rounded-[2rem] p-8">
+                <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h4 className="font-medium">Quiet Hours</h4>
-                    <p className="text-sm text-gray-600">Limit notifications during specific hours</p>
+                    <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Quiet Hours</h4>
+                    <p className="text-[11px] text-muted-foreground font-medium tracking-wide mt-1">Silence notifications during specific periods of the day</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -901,29 +818,29 @@ const SettingsTab = () => {
                       disabled={!isEditingNotifications}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
                 {getCurrentNotificationSetting('quietHours.enabled') && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">From</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ml-4">
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Daily Start Time</label>
                       <input
                         type="time"
                         value={getCurrentNotificationSetting('quietHours.startTime')}
                         onChange={(e) => handleNotificationChange('quietHours.startTime', e.target.value)}
                         disabled={!isEditingNotifications}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">To</label>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Daily End Time</label>
                       <input
                         type="time"
                         value={getCurrentNotificationSetting('quietHours.endTime')}
                         onChange={(e) => handleNotificationChange('quietHours.endTime', e.target.value)}
                         disabled={!isEditingNotifications}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                       />
                     </div>
                   </div>
@@ -934,146 +851,181 @@ const SettingsTab = () => {
 
           {/* Account Security Tab */}
           {activeTab === 'account' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Account Security</h2>
-              
+            <div className="space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                  <Shield className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground tracking-tighter">Account Security</h2>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">Protect your medical profile and patient data integrity</p>
+                </div>
+              </div>
+
               {/* Password Change */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Change Password</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Current Password</label>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <Shield className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Credential Management</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Current Password</label>
                     <input
                       type="password"
                       value={accountSettings.currentPassword}
                       onChange={(e) => setAccountSettings(prev => ({
                         ...prev, currentPassword: e.target.value
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                      placeholder="••••••••"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">New Password</label>
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
                     <input
                       type="password"
                       value={accountSettings.newPassword}
                       onChange={(e) => setAccountSettings(prev => ({
                         ...prev, newPassword: e.target.value
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                      placeholder="Minimum 8 characters"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Confirm Profile Password</label>
                     <input
                       type="password"
                       value={accountSettings.confirmPassword}
                       onChange={(e) => setAccountSettings(prev => ({
                         ...prev, confirmPassword: e.target.value
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                      placeholder="••••••••"
                     />
                   </div>
+                </div>
+                <div className="mt-10 flex justify-end">
                   <button
                     onClick={changePassword}
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
                   >
-                    {loading ? 'Changing...' : 'Change Password'}
+                    {loading ? 'Processing...' : 'Update Secure Password'}
                   </button>
                 </div>
               </div>
 
               {/* Two-Factor Authentication */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="font-medium">2FA Status</p>
-                    <p className="text-sm text-gray-600">
-                      {accountSettings.twoFactorEnabled ? 'Enabled - Your account is secure' : 'Disabled - Enable for better security'}
-                    </p>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 rounded-xl">
+                      <Shield className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Multi-Factor Authentication</h3>
+                      <p className="text-[11px] text-muted-foreground font-medium tracking-wide mt-1">Add an extra layer of security to your clinical login</p>
+                    </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    accountSettings.twoFactorEnabled 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {accountSettings.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                  <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${accountSettings.twoFactorEnabled
+                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                    : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                    }`}>
+                    {accountSettings.twoFactorEnabled ? 'Highly Secure' : 'At Risk'}
                   </span>
                 </div>
-                
+
                 {accountSettings.twoFactorEnabled ? (
-                  <div className="space-y-4">
+                  <div className="space-y-8">
                     {accountSettings.backupCodes.length > 0 && (
-                      <div className="bg-yellow-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-yellow-800 mb-2">Backup Codes</h4>
-                        <p className="text-sm text-yellow-700 mb-2">Save these codes in a safe place:</p>
-                        <div className="grid grid-cols-2 gap-2 font-mono text-sm">
+                      <div className="bg-indigo-500/5 border border-indigo-500/10 p-8 rounded-[2rem] backdrop-blur-xl">
+                        <div className="flex items-center gap-3 mb-6">
+                          <AlertCircle className="h-5 w-5 text-indigo-600" />
+                          <h4 className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">Emergency Recovery Codes</h4>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground font-medium tracking-wide mb-6">Keep these codes in a paper-based secure location. They allow access if your primary 2FA method is lost.</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           {accountSettings.backupCodes.map((code, index) => (
-                            <code key={index} className="bg-white p-2 rounded border">{code}</code>
+                            <code key={index} className="bg-muted px-4 py-3 rounded-xl border border-border text-foreground font-mono text-sm text-center">{code}</code>
                           ))}
                         </div>
                       </div>
                     )}
-                    <button
-                      onClick={disableTwoFactor}
-                      disabled={loading}
-                      className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Disabling...' : 'Disable 2FA'}
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={disableTwoFactor}
+                        disabled={loading}
+                        className="bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all active:scale-95 border border-red-500/20"
+                      >
+                        {loading ? 'Deactivating...' : 'Deactivate MFA'}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={enableTwoFactor}
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-                  >
-                    {loading ? 'Enabling...' : 'Enable 2FA'}
-                  </button>
+                  <div className="flex justify-center py-6">
+                    <button
+                      onClick={enableTwoFactor}
+                      disabled={loading}
+                      className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95"
+                    >
+                      {loading ? 'Activating...' : 'Setup Multi-Factor Auth'}
+                    </button>
+                  </div>
                 )}
               </div>
 
               {/* Session Management */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Session Management</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Session Timeout (minutes)</label>
-                    <select
-                      value={accountSettings.sessionTimeout}
-                      onChange={(e) => setAccountSettings(prev => ({
-                        ...prev, sessionTimeout: e.target.value
-                      }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="15">15 minutes</option>
-                      <option value="30">30 minutes</option>
-                      <option value="60">1 hour</option>
-                      <option value="120">2 hours</option>
-                      <option value="480">8 hours</option>
-                    </select>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <Settings className="h-4 w-4 text-indigo-600" />
                   </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Session Governance</h3>
+                </div>
+                <div className="max-w-md space-y-3">
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Automated Logout Timeout</label>
+                  <select
+                    value={accountSettings.sessionTimeout}
+                    onChange={(e) => setAccountSettings(prev => ({
+                      ...prev, sessionTimeout: e.target.value
+                    }))}
+                    className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
+                  >
+                    <option value="15">15 Minutes of Inactivity</option>
+                    <option value="30">30 Minutes of Inactivity</option>
+                    <option value="60">1 Hour of Inactivity</option>
+                    <option value="120">2 Hours of Inactivity</option>
+                    <option value="480">8 Hours (Full Shift)</option>
+                  </select>
+                  <p className="text-[10px] text-muted-foreground font-medium tracking-wide mt-3 px-1 italic">HIPAA compliance recommends shorter session timeouts in shared medical environments.</p>
                 </div>
               </div>
 
               {/* Danger Zone */}
-              <div className="bg-red-50 border border-red-200 p-6 rounded-lg">
-                <h3 className="text-lg font-medium text-red-800 mb-4">Danger Zone</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-red-700">Delete Account</h4>
-                    <p className="text-sm text-red-600 mb-3">
-                      This will permanently delete your account and all associated data. This action cannot be undone.
-                    </p>
-                    <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-                    >
-                      Delete Account
-                    </button>
+              <div className="bg-red-500/5 border border-red-500/10 p-10 rounded-[2.5rem] backdrop-blur-3xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-red-500/10 rounded-xl">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
                   </div>
+                  <h3 className="text-sm font-black text-red-900 dark:text-red-400 uppercase tracking-[0.2em]">Critical Actions</h3>
+                </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                  <div className="max-w-lg">
+                    <h4 className="text-sm font-black text-red-950 dark:text-red-300 uppercase tracking-widest mb-2">Irreversible Account Deletion</h4>
+                    <p className="text-[11px] text-red-700 dark:text-red-500/70 font-medium tracking-wide leading-relaxed">
+                      Permanently terminate your clinical profile, patient records access, and all associated healthcare data. This operation is encrypted and physically irreversible once completed.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="bg-red-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-red-500/30 hover:bg-red-700 transition-all active:scale-95 whitespace-nowrap"
+                  >
+                    Delete My Credentials
+                  </button>
                 </div>
               </div>
             </div>
@@ -1081,86 +1033,104 @@ const SettingsTab = () => {
 
           {/* Billing & Payment Tab */}
           {activeTab === 'billing' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Billing & Payment Settings</h2>
-              
+            <div className="space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                  <CreditCard className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground tracking-tighter">Billing & Payment Settings</h2>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">Manage your professional subscription and payment protocols</p>
+                </div>
+              </div>
+
               {/* Billing Information */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Billing Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Invoice Email</label>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <FileText className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Administrative Details</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Primary Invoice Dispatch Email</label>
                     <input
                       type="email"
                       value={billingSettings.invoiceEmail}
                       onChange={(e) => setBillingSettings(prev => ({
                         ...prev, invoiceEmail: e.target.value
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Tax ID</label>
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Professional Tax Identification (TID)</label>
                     <input
                       type="text"
                       value={billingSettings.taxId}
                       onChange={(e) => setBillingSettings(prev => ({
                         ...prev, taxId: e.target.value
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter your tax ID"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
+                      placeholder="Format: XX-XXXXXXX"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Billing Address */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Billing Address</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Street Address</label>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <MapPin className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Official Billing Address</h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Street / Practice Location</label>
                     <input
                       type="text"
                       value={billingSettings.billingAddress.street}
                       onChange={(e) => setBillingSettings(prev => ({
                         ...prev, billingAddress: { ...prev.billingAddress, street: e.target.value }
                       }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">City</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">City</label>
                       <input
                         type="text"
                         value={billingSettings.billingAddress.city}
                         onChange={(e) => setBillingSettings(prev => ({
                           ...prev, billingAddress: { ...prev.billingAddress, city: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">State</label>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">State / Province</label>
                       <input
                         type="text"
                         value={billingSettings.billingAddress.state}
                         onChange={(e) => setBillingSettings(prev => ({
                           ...prev, billingAddress: { ...prev.billingAddress, state: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">ZIP Code</label>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">ZIP / Postal Code</label>
                       <input
                         type="text"
                         value={billingSettings.billingAddress.zipCode}
                         onChange={(e) => setBillingSettings(prev => ({
                           ...prev, billingAddress: { ...prev.billingAddress, zipCode: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
                       />
                     </div>
                   </div>
@@ -1168,39 +1138,49 @@ const SettingsTab = () => {
               </div>
 
               {/* Payment Methods */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Payment Methods</h3>
-                <div className="space-y-4">
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <CreditCard className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Authorized Payment Methods</h3>
+                </div>
+                <div className="space-y-6">
                   {billingSettings.paymentMethods.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <p className="mb-4">No payment methods added yet</p>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
-                        Add Payment Method
+                    <div className="text-center py-12 bg-muted/20 border-2 border-dashed border-border rounded-3xl">
+                      <p className="text-muted-foreground font-medium mb-6">No clinical payment methods registered</p>
+                      <button className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95">
+                        Initialize New Card
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {billingSettings.paymentMethods.map((method, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white p-4 rounded-lg border">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-6 bg-gray-200 rounded"></div>
+                        <div key={index} className="flex items-center justify-between bg-card border border-border p-6 rounded-[1.5rem] shadow-sm hover:shadow-md transition-all group">
+                          <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-muted rounded-xl bg-indigo-500/5">
+                              <CreditCard className="h-6 w-6 text-indigo-600" />
+                            </div>
                             <div>
-                              <p className="font-medium">•••• •••• •••• {method.last4}</p>
-                              <p className="text-sm text-gray-500">Expires {method.expiry}</p>
+                              <p className="font-mono text-foreground font-black tracking-widest text-sm">•••• {method.last4}</p>
+                              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Expiry: {method.expiry}</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-4">
                             {method.isDefault && (
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
-                                Default
+                              <span className="bg-indigo-500/10 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/20">
+                                Primary
                               </span>
                             )}
-                            <button className="text-red-600 hover:text-red-700">Remove</button>
+                            <button className="text-red-500 hover:text-red-600 p-2 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-500/5">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                       ))}
-                      <button className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors">
-                        Add Another Payment Method
+                      <button className="flex items-center justify-center gap-3 border-2 border-dashed border-border rounded-[1.5rem] p-6 text-muted-foreground hover:text-indigo-600 hover:border-indigo-600/30 hover:bg-indigo-500/5 transition-all group active:scale-[0.98]">
+                        <Plus className="h-5 w-5 group-hover:scale-110 transition-all font-black" />
+                        <span className="text-[11px] font-black uppercase tracking-widest">Add Professional Method</span>
                       </button>
                     </div>
                   )}
@@ -1208,12 +1188,16 @@ const SettingsTab = () => {
               </div>
 
               {/* Auto-pay Settings */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Auto-pay Settings</h3>
+              <div className="bg-emerald-500/5 border border-emerald-500/10 p-10 rounded-[2.5rem] backdrop-blur-3xl">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Enable Auto-pay</p>
-                    <p className="text-sm text-gray-600">Automatically pay invoices when due</p>
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                      <Settings className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-emerald-950 dark:text-emerald-400 uppercase tracking-[0.2em]">Automatic Settlement</h4>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-500/70 font-medium tracking-wide">Automatically process professional invoices on due dates</p>
+                    </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -1224,41 +1208,56 @@ const SettingsTab = () => {
                       }))}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-emerald-600 shadow-lg"></div>
                   </label>
                 </div>
               </div>
 
-              <button
-                onClick={updateBillingSettings}
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Updating...' : 'Save Billing Settings'}
-              </button>
+              <div className="mt-10 flex justify-end">
+                <button
+                  onClick={updateBillingSettings}
+                  disabled={loading}
+                  className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {loading ? 'Synchronizing...' : 'Save Administrative Changes'}
+                </button>
+              </div>
             </div>
           )}
 
           {/* Preferences Tab */}
           {activeTab === 'preferences' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">General Preferences</h2>
-              
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Language & Region</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Language</label>
-                    <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      <option>English</option>
-                      <option>Spanish</option>
-                      <option>French</option>
-                      <option>German</option>
+            <div className="space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                  <Globe className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground tracking-tighter">General Preferences</h2>
+                  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">Configure your clinical environment and accessibility settings</p>
+                </div>
+              </div>
+
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <Globe className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Localization & Time</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Interface Language</label>
+                    <select className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium appearance-none">
+                      <option>English (United States)</option>
+                      <option>Spanish (Castilian)</option>
+                      <option>French (Standard)</option>
+                      <option>German (Standard)</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Timezone</label>
-                    <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Clinical Timezone</label>
+                    <select className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium appearance-none">
                       <option>UTC-5 (Eastern Time)</option>
                       <option>UTC-8 (Pacific Time)</option>
                       <option>UTC+0 (GMT)</option>
@@ -1268,19 +1267,30 @@ const SettingsTab = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium mb-4">Theme Settings</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Dark Mode</p>
-                      <p className="text-sm text-gray-600">Toggle between light and dark themes</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
+              <div className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-10 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl">
+                    <Shield className="h-4 w-4 text-indigo-600" />
                   </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em]">Accessibility & Display</h3>
+                </div>
+                <div className="space-y-6">
+                  {[
+                    { label: 'High Contrast Mode', desc: 'Enhanced visibility for clinical data elements' },
+                    { label: 'Screen Reader Optimization', desc: 'Optimized ARIA labels for assistive technology' },
+                    { label: 'Reduced Motion', desc: 'Minimize animations during critical operations' }
+                  ].map((pref) => (
+                    <div key={pref.label} className="flex items-center justify-between py-4 border-b border-border last:border-0">
+                      <div>
+                        <h4 className="text-[11px] font-black text-foreground uppercase tracking-widest">{pref.label}</h4>
+                        <p className="text-[10px] text-muted-foreground font-medium tracking-wide mt-1">{pref.desc}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" />
+                        <div className="w-14 h-7 bg-muted/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-indigo-600 shadow-sm"></div>
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1290,39 +1300,58 @@ const SettingsTab = () => {
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
-            <p className="text-gray-600 mb-4">
-              This action cannot be undone. All your data will be permanently deleted.
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Type <strong>DELETE</strong> to confirm:
-            </p>
-            <input
-              type="text"
-              value={deleteConfirmation}
-              onChange={(e) => setDeleteConfirmation(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              placeholder="Type DELETE"
-            />
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteConfirmation('');
-                }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={deleteAccount}
-                disabled={loading || deleteConfirmation !== 'DELETE'}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Deleting...' : 'Delete Account'}
-              </button>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-6">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}></div>
+          <div className="bg-card border border-red-500/20 w-full max-w-lg rounded-[2.5rem] p-12 shadow-2xl relative z-10 overflow-hidden text-card-foreground">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-orange-500"></div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-red-500/10 rounded-2xl">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-foreground tracking-tighter uppercase tracking-widest">Terminate Credentials</h3>
+                <p className="text-[10px] text-red-600 font-black uppercase tracking-widest mt-1">High-Stakes Irreversible Operation</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-6">
+                <p className="text-sm text-red-900 dark:text-red-400 font-medium leading-relaxed">
+                  Warning: Deleting your account will permanently remove all associated medical data, practice configurations, and platform access. This cannot be undone.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+                  Type <span className="text-red-600 font-black">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all text-foreground font-black tracking-[0.2em] placeholder:text-muted-foreground/30"
+                  placeholder="CONFIRMATION KEY"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmation('');
+                  }}
+                  className="flex-1 px-8 py-4 bg-muted text-foreground rounded-2xl hover:bg-muted/80 transition-all font-black text-[11px] uppercase tracking-[0.2em]"
+                >
+                  Abstain
+                </button>
+                <button
+                  onClick={deleteAccount}
+                  disabled={deleteConfirmation !== 'DELETE' || loading}
+                  className="flex-1 px-8 py-4 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-all font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Terminating...' : 'Terminate Now'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
