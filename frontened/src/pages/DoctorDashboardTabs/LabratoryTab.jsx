@@ -294,23 +294,22 @@ const LabratoryTab = memo(() => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'urgent': return 'text-red-600 bg-red-50';
-      case 'high': return 'text-orange-600 bg-orange-50';
-      case 'normal': return 'text-blue-600 bg-blue-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'urgent': return 'text-rose-500 bg-rose-500/10 border border-rose-500/20';
+      case 'high': return 'text-amber-600 bg-amber-500/10 border border-amber-500/20';
+      case 'normal': return 'text-blue-600 bg-blue-500/10 border border-blue-500/20';
+      default: return 'text-muted-foreground bg-muted border border-border';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-50';
-      case 'in_progress': return 'text-blue-600 bg-blue-50';
-      case 'completed': return 'text-green-600 bg-green-50';
-      case 'urgent': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'pending': return 'text-amber-600 bg-amber-500/10 border border-amber-500/20';
+      case 'in_progress': return 'text-blue-600 bg-blue-500/10 border border-blue-500/20';
+      case 'completed': return 'text-emerald-600 bg-emerald-500/10 border border-emerald-500/20';
+      case 'urgent': return 'text-rose-500 bg-rose-500/10 border border-rose-500/20';
+      default: return 'text-muted-foreground bg-muted border border-border';
     }
   };
-
   // Initialize filters on component mount
   useEffect(() => {
     if (recentOrders.length > 0 && filteredOrders.length === 0) {
@@ -318,10 +317,10 @@ const LabratoryTab = memo(() => {
     }
   }, [recentOrders]);
   return (
-    <div className="space-y-8 p-2 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+    <div className="space-y-8 p-2 min-h-screen bg-background">
       {/* Header Section */}
       {/* Header Section with Navigation */}
-      <div className="bg-white/80 backdrop-blur-sm sticky top-0 z-30 border-b border-gray-100 shadow-sm">
+      <div className="bg-card/80 backdrop-blur-md sticky top-0 z-30 border-b border-border shadow-sm">
         <div className="p-6 pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -338,7 +337,7 @@ const LabratoryTab = memo(() => {
               </button>
               <button
                 onClick={handleBulkActions}
-                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 flex items-center space-x-2 font-medium shadow-sm hover:shadow active:scale-95"
+                className="px-5 py-2.5 bg-card border border-border text-foreground rounded-xl hover:bg-muted transition-all duration-300 flex items-center space-x-2 font-medium shadow-sm hover:shadow active:scale-95"
               >
                 <Upload className="w-5 h-5" />
                 <span>Bulk Actions</span>
@@ -359,7 +358,7 @@ const LabratoryTab = memo(() => {
               onClick={() => setActiveTab(tab.id)}
               className={`pb-4 flex items-center space-x-2 font-medium text-sm border-b-2 transition-colors ${activeTab === tab.id
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
               {tab.icon}
@@ -375,28 +374,28 @@ const LabratoryTab = memo(() => {
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                 <div className="flex items-center justify-between mb-4 relative">
-                  <h4 className="font-semibold text-gray-600">Today's Reports</h4>
-                  <div className="w-3 h-3 bg-blue-500 rounded-full ring-4 ring-blue-50"></div>
+                  <h4 className="font-semibold text-muted-foreground">Today's Reports</h4>
+                  <div className="w-3 h-3 bg-blue-500 rounded-full ring-4 ring-blue-500/20"></div>
                 </div>
                 <div className="relative">
-                  <p className="text-3xl font-bold mb-2 text-gray-900">{loading ? '...' : labStats.today?.total_today || 0}</p>
+                  <p className="text-3xl font-bold mb-2 text-foreground">{loading ? '...' : labStats.today?.total_today || 0}</p>
                   <div className="flex items-center space-x-3 text-sm font-medium">
-                    <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{labStats.today?.pending_today || 0} Pending</span>
-                    <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{labStats.today?.completed_today || 0} Done</span>
+                    <span className="text-orange-600 dark:text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full">{labStats.today?.pending_today || 0} Pending</span>
+                    <span className="text-green-600 dark:text-green-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">{labStats.today?.completed_today || 0} Done</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                 <div className="flex items-center justify-between mb-4 relative">
-                  <h4 className="font-semibold text-gray-600">Urgent Reports</h4>
+                  <h4 className="font-semibold text-muted-foreground">Urgent Reports</h4>
                   <div className="relative">
                     <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-25"></div>
-                    <div className="w-3 h-3 bg-red-500 rounded-full ring-4 ring-red-50 relative z-10"></div>
+                    <div className="w-3 h-3 bg-red-500 rounded-full ring-4 ring-red-500/20 relative z-10"></div>
                   </div>
                 </div>
                 <div className="relative">
@@ -405,11 +404,11 @@ const LabratoryTab = memo(() => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                 <div className="flex items-center justify-between mb-4 relative">
-                  <h4 className="font-semibold text-gray-600">Unreviewed</h4>
-                  <div className="w-3 h-3 bg-orange-500 rounded-full ring-4 ring-orange-50"></div>
+                  <h4 className="font-semibold text-muted-foreground">Unreviewed</h4>
+                  <div className="w-3 h-3 bg-orange-500 rounded-full ring-4 ring-amber-500/20"></div>
                 </div>
                 <div className="relative">
                   <p className="text-3xl font-bold mb-2 text-orange-600">{loading ? '...' : labStats.unreviewed?.unreviewed_count || 0}</p>
@@ -417,17 +416,17 @@ const LabratoryTab = memo(() => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                 <div className="flex items-center justify-between mb-4 relative">
-                  <h4 className="font-semibold text-gray-600">This Week</h4>
-                  <div className="w-3 h-3 bg-green-500 rounded-full ring-4 ring-green-50"></div>
+                  <h4 className="font-semibold text-muted-foreground">This Week</h4>
+                  <div className="w-3 h-3 bg-green-500 rounded-full ring-4 ring-emerald-500/20"></div>
                 </div>
                 <div className="relative">
-                  <p className="text-3xl font-bold mb-2 text-gray-900">156</p>
+                  <p className="text-3xl font-bold mb-2 text-foreground">156</p>
                   <div className="flex items-center text-sm">
-                    <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium flex items-center">
-                      +23% <span className="text-gray-500 ml-1 font-normal">from last week</span>
+                    <span className="text-green-600 dark:text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full font-medium flex items-center">
+                      +23% <span className="text-muted-foreground ml-1 font-normal">from last week</span>
                     </span>
                   </div>
                 </div>
@@ -436,44 +435,44 @@ const LabratoryTab = memo(() => {
 
             {/* Quick Actions & Recent Activity for Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+                <h3 className="text-lg font-bold text-foreground mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => alert('Order Templates feature coming soon')} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors">
-                    <Sparkles className="w-6 h-6 text-blue-600" />
-                    <span className="font-medium text-blue-900">Templates</span>
+                  <button onClick={() => alert('Order Templates feature coming soon')} className="p-4 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors border border-blue-500/10 group">
+                    <Sparkles className="w-6 h-6 text-blue-600 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-blue-700 dark:text-blue-400 text-sm">Templates</span>
                   </button>
-                  <button onClick={() => setActiveTab('patients')} className="p-4 bg-indigo-50 hover:bg-indigo-100 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors">
-                    <Search className="w-6 h-6 text-indigo-600" />
-                    <span className="font-medium text-indigo-900">Find Patient</span>
+                  <button onClick={() => setActiveTab('patients')} className="p-4 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors border border-indigo-500/10 group">
+                    <Search className="w-6 h-6 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-indigo-700 dark:text-indigo-400 text-sm">Find Patient</span>
                   </button>
-                  <button className="p-4 bg-green-50 hover:bg-green-100 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors">
-                    <FlaskConical className="w-6 h-6 text-green-600" />
-                    <span className="font-medium text-green-900">Lab Results</span>
+                  <button className="p-4 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors border border-emerald-500/10 group">
+                    <FlaskConical className="w-6 h-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Lab Results</span>
                   </button>
-                  <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors">
-                    <Calendar className="w-6 h-6 text-purple-600" />
-                    <span className="font-medium text-purple-900">Schedule</span>
+                  <button className="p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl flex flex-col items-center justify-center space-y-2 transition-colors border border-purple-500/10 group">
+                    <Calendar className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-purple-700 dark:text-purple-400 text-sm">Schedule</span>
                   </button>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center justify-between">
                   <span>Pending Reviews</span>
-                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">Urgent</span>
+                  <span className="text-xs bg-orange-500/10 text-orange-600 px-2 py-1 rounded-full border border-orange-500/20 uppercase tracking-wider font-bold">Urgent</span>
                 </h3>
                 <div className="space-y-3">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">P{i}</div>
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-600 font-bold text-xs">P{i}</div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">Lipid Profile</p>
-                          <p className="text-xs text-gray-500">2 hrs ago</p>
+                          <p className="text-sm font-bold text-foreground">Lipid Profile</p>
+                          <p className="text-xs text-muted-foreground">2 hrs ago</p>
                         </div>
                       </div>
-                      <button className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-md font-medium text-gray-700 hover:bg-gray-50">Review</button>
+                      <button className="text-xs bg-card border border-border px-3 py-1.5 rounded-md font-medium text-muted-foreground hover:bg-muted">Review</button>
                     </div>
                   ))}
                 </div>
@@ -487,15 +486,15 @@ const LabratoryTab = memo(() => {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* Search and Filter Section */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                 <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 w-full lg:w-auto">
                   <div className="relative flex-1 w-full lg:w-96 group">
-                    <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-blue-500 transition-colors" />
                     <input
                       type="text"
                       placeholder="Search orders, patients..."
-                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white transition-all duration-300"
+                      className="w-full pl-11 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 focus:bg-card transition-all duration-300 text-foreground placeholder:text-muted-foreground/50"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchTerm)}
@@ -503,7 +502,7 @@ const LabratoryTab = memo(() => {
                   </div>
                   <button
                     onClick={() => handleSearch(searchTerm)}
-                    className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-300 shadow-lg shadow-gray-200 flex items-center justify-center space-x-2 font-medium active:scale-95"
+                    className="w-full sm:w-auto px-6 py-3 bg-foreground text-background rounded-xl hover:opacity-90 transition-all duration-300 shadow-lg shadow-foreground/10 flex items-center justify-center space-x-2 font-medium active:scale-95"
                   >
                     <Search className="w-4 h-4" />
                     <span>Search</span>
@@ -511,7 +510,7 @@ const LabratoryTab = memo(() => {
                 </div>
                 <button
                   onClick={() => setShowSearchModal(true)}
-                  className="w-full sm:w-auto px-6 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 flex items-center justify-center space-x-2 font-medium"
+                  className="w-full sm:w-auto px-6 py-3 border border-border text-muted-foreground rounded-xl hover:bg-muted transition-all duration-300 flex items-center justify-center space-x-2 font-medium"
                 >
                   <Filter className="w-4 h-4" />
                   <span>Advanced Search</span>
@@ -520,20 +519,20 @@ const LabratoryTab = memo(() => {
 
               {/* Quick Filters */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-gray-500 mr-2">Quick Filters:</span>
+                <span className="text-sm font-medium text-muted-foreground mr-2">Quick Filters:</span>
                 {[
-                  { key: 'all', label: 'All Orders', color: 'hover:bg-gray-100', active: 'bg-gray-900 text-white shadow-md' },
-                  { key: 'urgent', label: `Urgent (${labStats.urgent?.urgent_count || 0})`, color: 'hover:bg-red-50 text-red-600', active: 'bg-red-500 text-white shadow-md shadow-red-200' },
-                  { key: 'pending', label: 'Pending', color: 'hover:bg-yellow-50 text-yellow-600', active: 'bg-yellow-500 text-white shadow-md shadow-yellow-200' },
-                  { key: 'today', label: 'Today', color: 'hover:bg-blue-50 text-blue-600', active: 'bg-blue-500 text-white shadow-md shadow-blue-200' },
-                  { key: 'completed', label: 'Completed', color: 'hover:bg-green-50 text-green-600', active: 'bg-green-500 text-white shadow-md shadow-green-200' }
+                  { key: 'all', label: 'All Orders', color: 'hover:bg-muted', active: 'bg-foreground text-background shadow-md' },
+                  { key: 'urgent', label: `Urgent (${labStats.urgent?.urgent_count || 0})`, color: 'hover:bg-rose-500/10 text-rose-500', active: 'bg-rose-500 text-white shadow-md shadow-rose-500/20' },
+                  { key: 'pending', label: 'Pending', color: 'hover:bg-yellow-500/10 text-yellow-600', active: 'bg-yellow-500 text-white shadow-md shadow-yellow-500/20' },
+                  { key: 'today', label: 'Today', color: 'hover:bg-blue-500/10 text-blue-600', active: 'bg-blue-500 text-white shadow-md shadow-blue-500/20' },
+                  { key: 'completed', label: 'Completed', color: 'hover:bg-emerald-500/10 text-emerald-600', active: 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' }
                 ].map((filter) => (
                   <button
                     key={filter.key}
                     onClick={() => handleQuickFilter(filter.key)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeFilter === filter.key
                       ? filter.active
-                      : 'bg-white border border-gray-200 text-gray-600 ' + filter.color
+                      : 'bg-card border border-border text-muted-foreground ' + filter.color
                       }`}
                   >
                     {filter.label}
@@ -543,18 +542,18 @@ const LabratoryTab = memo(() => {
             </div>
 
             {/* Lab Orders Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-border flex justify-between items-center bg-muted/30">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">
+                  <h3 className="text-lg font-bold text-foreground">
                     Lab Orders {activeFilter !== 'all' && <span className="text-blue-600 capitalize">({activeFilter})</span>}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {loading ? 'Loading...' : `${filteredOrders.length} orders found`}
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors">
+                  <button className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors">
                     <Filter className="w-4 h-4" />
                   </button>
                 </div>
@@ -562,63 +561,63 @@ const LabratoryTab = memo(() => {
 
               <div className="max-h-[500px] overflow-y-auto scrollbar-thin">
                 <table className="w-full">
-                  <thead className="bg-gray-50/50 sticky top-0 z-10 backdrop-blur-sm">
+                  <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Order Info</th>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Patient</th>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Priority</th>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Tests</th>
-                      <th className="text-left p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="text-right p-4 font-semibold text-xs text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Order Info</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Patient</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Priority</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Tests</th>
+                      <th className="text-left p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Date</th>
+                      <th className="text-right p-4 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-border">
                     {loading ? (
                       <tr>
                         <td colSpan="7" className="text-center p-12">
                           <div className="flex flex-col items-center justify-center space-y-3">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                            <span className="text-gray-400 text-sm">Loading orders...</span>
+                            <span className="text-muted-foreground text-sm">Loading orders...</span>
                           </div>
                         </td>
                       </tr>
                     ) : filteredOrders.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center p-12 text-gray-400">
+                        <td colSpan="7" className="text-center p-12 text-muted-foreground">
                           <div className="flex flex-col items-center justify-center space-y-2">
-                            <Search className="w-8 h-8 text-gray-300" />
+                            <Search className="w-8 h-8 text-muted-foreground/30" />
                             <p>No lab orders found found matching your criteria</p>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50/80 transition-colors group cursor-default">
+                        <tr key={order.id} className="hover:bg-muted/50 transition-colors group cursor-default">
                           <td className="p-4">
-                            <div className="font-semibold text-gray-900 mb-0.5">{order.order_number}</div>
-                            <div className="text-xs text-gray-500 truncate max-w-[140px]" title={order.clinical_notes}>{order.clinical_notes || 'No notes'}</div>
+                            <div className="font-semibold text-foreground mb-0.5">{order.order_number}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[140px]" title={order.clinical_notes}>{order.clinical_notes || 'No notes'}</div>
                           </td>
                           <td className="p-4">
-                            <div className="font-medium text-gray-900">{order.patient_first_name} {order.patient_last_name}</div>
-                            <div className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-0.5">{order.patient_unique_id}</div>
+                            <div className="font-medium text-foreground">{order.patient_first_name} {order.patient_last_name}</div>
+                            <div className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-0.5">{order.patient_unique_id}</div>
                           </td>
                           <td className="p-4">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border ${order.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-                              order.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                'bg-blue-50 text-blue-600 border-blue-100'
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border ${order.priority === 'urgent' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                              order.priority === 'high' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                'bg-blue-500/10 text-blue-600 border-blue-500/20'
                               }`}>
                               {order.priority}
                             </span>
                           </td>
                           <td className="p-4">
-                            <span className={`flex items-center space-x-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-medium ${order.status === 'completed' ? 'bg-green-50 text-green-700' :
-                              order.status === 'urgent' ? 'bg-red-50 text-red-700' :
-                                order.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                                  'bg-blue-50 text-blue-700'
+                            <span className={`flex items-center space-x-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-medium ${order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-700' :
+                              order.status === 'urgent' ? 'bg-rose-500/10 text-rose-700' :
+                                order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-700' :
+                                  'bg-blue-500/10 text-blue-700'
                               }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${order.status === 'completed' ? 'bg-green-500' :
-                                order.status === 'urgent' ? 'bg-red-500' :
+                              <span className={`w-1.5 h-1.5 rounded-full ${order.status === 'completed' ? 'bg-emerald-500' :
+                                order.status === 'urgent' ? 'bg-rose-500' :
                                   order.status === 'pending' ? 'bg-yellow-500' :
                                     'bg-blue-500'
                                 }`}></span>
@@ -627,26 +626,26 @@ const LabratoryTab = memo(() => {
                           </td>
                           <td className="p-4">
                             <div className="flex items-center space-x-1">
-                              <span className="text-sm text-gray-600">{order.test_count}</span>
-                              <span className="text-xs text-gray-400">tests</span>
+                              <span className="text-sm text-foreground">{order.test_count}</span>
+                              <span className="text-xs text-muted-foreground">tests</span>
                             </div>
                           </td>
                           <td className="p-4">
-                            <div className="text-sm text-gray-900">{new Date(order.order_date).toLocaleDateString()}</div>
-                            <div className="text-xs text-gray-400">{new Date(order.order_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div className="text-sm text-foreground">{new Date(order.order_date).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(order.order_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={() => handleViewReport(order.id)}
-                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all"
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 rounded-lg transition-all"
                                 title="View Report"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => alert(`Edit order ${order.order_number} - to be implemented`)}
-                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
                                 title="Edit Order"
                               >
                                 <Clock className="w-4 h-4" />
@@ -666,25 +665,25 @@ const LabratoryTab = memo(() => {
         {/* Patient Console View */}
         {activeTab === 'patients' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-8">
+              <h3 className="text-xl font-bold text-foreground mb-6 flex items-center">
                 <User className="w-5 h-5 mr-2 text-blue-600" />
                 Patient Selection & Search
               </h3>
-              <div className="flex flex-col lg:flex-row gap-0 h-auto lg:h-[750px] mt-6 bg-gray-50/30 rounded-xl overflow-hidden border border-gray-100 relative">
+              <div className="flex flex-col lg:flex-row gap-0 h-auto lg:h-[750px] mt-6 bg-muted/30 rounded-xl overflow-hidden border border-border relative">
                 {/* Left Column: Search & List */}
                 <div
-                  className="flex flex-col h-[500px] lg:h-full bg-white transition-all duration-75 border-b lg:border-b-0 lg:border-r border-gray-200"
+                  className="flex flex-col h-[500px] lg:h-full bg-card transition-all duration-75 border-b lg:border-b-0 lg:border-r border-border"
                   style={{ width: window.innerWidth >= 1024 ? `${sidebarWidth}px` : '100%', minWidth: window.innerWidth >= 1024 ? '280px' : '100%' }}
                 >
                   {/* Search Area */}
-                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 space-y-3">
+                  <div className="p-4 border-b border-border bg-muted/50 space-y-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-3  h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-3  h-4 w-4 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="Search patients..."
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                        className="w-full pl-9 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 text-foreground"
                         value={patientSearchTerm}
                         onChange={(e) => {
                           setPatientSearchTerm(e.target.value);
@@ -692,44 +691,44 @@ const LabratoryTab = memo(() => {
                         }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500 font-medium px-1">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium px-1">
                       <span>{patients.length} Results</span>
-                      <span className="flex items-center text-blue-600"><Filter className="w-3 h-3 mr-1" /> Filter</span>
+                      <span className="flex items-center text-blue-600 cursor-pointer hover:text-blue-700 transition-colors"><Filter className="w-3 h-3 mr-1" /> Filter</span>
                     </div>
                   </div>
 
                   {/* Patient List */}
-                  <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2 bg-gray-50/30">
+                  <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2 bg-muted/10">
                     {patients.map((patient) => (
                       <div
                         key={patient.id}
                         onClick={() => setSelectedPatient(patient)}
                         className={`p-3 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-sm ${selectedPatient?.id === patient.id
-                          ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200 shadow-sm'
-                          : 'bg-white border-gray-100 hover:border-blue-200 hover:bg-white'
+                          ? 'bg-blue-500/10 border-blue-500/20 ring-1 ring-blue-500/20 shadow-sm'
+                          : 'bg-card border-border hover:border-blue-500/30 hover:bg-muted/50'
                           }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${selectedPatient?.id === patient.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${selectedPatient?.id === patient.id ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground'
                             }`}>
                             <User className="w-5 h-5" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex justify-between items-start">
-                              <h4 className={`text-sm font-bold truncate ${selectedPatient?.id === patient.id ? 'text-blue-900' : 'text-gray-900'}`}>{patient.first_name} {patient.last_name}</h4>
-                              {patient.status === 'urgent' && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5"></div>}
+                              <h4 className={`text-sm font-bold truncate ${selectedPatient?.id === patient.id ? 'text-blue-500' : 'text-foreground'}`}>{patient.first_name} {patient.last_name}</h4>
+                              {patient.status === 'urgent' && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>}
                             </div>
-                            <p className="text-xs text-gray-500 truncate">ID: {patient.unique_id}</p>
+                            <p className="text-xs text-muted-foreground truncate opacity-70">ID: {patient.unique_id}</p>
                           </div>
                         </div>
                       </div>
                     ))}
                     {patients.length === 0 && (
                       <div className="text-center py-8 px-4">
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <Search className="w-5 h-5 text-gray-400" />
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-2">
+                          <Search className="w-5 h-5 text-muted-foreground/30" />
                         </div>
-                        <p className="text-sm text-gray-500">No patients found</p>
+                        <p className="text-sm text-muted-foreground">No patients found</p>
                       </div>
                     )}
                   </div>
@@ -738,55 +737,50 @@ const LabratoryTab = memo(() => {
                 {/* Resize Handle */}
                 <div
                   onMouseDown={startResizing}
-                  className="hidden lg:flex w-1.5 hover:w-2 bg-transparent hover:bg-blue-400 group cursor-col-resize items-center justify-center transition-all duration-200 z-10 relative"
+                  className="hidden lg:flex w-1 bg-transparent hover:bg-blue-400/50 group cursor-col-resize items-center justify-center transition-all duration-200 z-10 relative"
                 >
-                  <div className="absolute inset-y-0 left-1/2 -ml-px w-px bg-gray-200 group-hover:bg-blue-300 transition-colors"></div>
-                  <div className="w-1 h-6 bg-gray-300 group-hover:bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-0.5">
-                    <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
-                    <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
-                    <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
-                  </div>
+                  <div className="absolute inset-y-0 left-1/2 -ml-px w-px bg-border group-hover:bg-blue-400/50 transition-colors"></div>
                 </div>
 
                 {/* Right Column: Details */}
-                <div className="flex-1 h-auto lg:h-full overflow-y-auto scrollbar-thin rounded-xl border border-gray-200 bg-gray-50/30 p-1 custom-scrollbar min-w-0 bg-white">
+                <div className="flex-1 h-auto lg:h-full overflow-y-auto scrollbar-thin rounded-xl border border-border bg-card p-1 custom-scrollbar min-w-0">
 
                   {selectedPatient && (
                     <>
                       {/* Enhanced Patient Overview */}
-                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-bl-full opacity-50 -mr-16 -mt-16 pointer-events-none"></div>
+                      <div className="bg-card rounded-2xl border border-border shadow-sm p-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 rounded-bl-full -mr-16 -mt-16 pointer-events-none"></div>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
                           <div className="flex items-center space-x-6">
-                            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                               <User className="w-10 h-10 text-white" />
                             </div>
                             <div>
                               <div className="flex items-center space-x-4 mb-2">
-                                <h3 className="text-2xl font-bold text-gray-900">{selectedPatient.name}</h3>
+                                <h3 className="text-2xl font-bold text-foreground">{selectedPatient.name}</h3>
                                 <span className={`text-xs px-3 py-1 rounded-full border font-semibold uppercase tracking-wide ${selectedPatient.statusColor}`}>
                                   {selectedPatient.status}
                                 </span>
                               </div>
-                              <p className="text-gray-500 mb-2 font-medium">Patient ID: <span className="text-gray-900">{selectedPatient.id}</span> • Age: <span className="text-gray-900">{selectedPatient.age}</span></p>
+                              <p className="text-muted-foreground mb-2 font-medium">Patient ID: <span className="text-foreground">{selectedPatient.id}</span> • Age: <span className="text-foreground">{selectedPatient.age}</span></p>
                               <div className="flex flex-wrap items-center gap-6 text-sm">
-                                <span className="flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-lg border border-green-100">
-                                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="flex items-center space-x-2 bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-500/20">
+                                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                                   <span className="font-medium">Active Patient</span>
                                 </span>
-                                <span className="text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">Last Visit: <span className="font-medium text-gray-900">{selectedPatient.lastVisit}</span></span>
-                                <span className="text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">Department: <span className="font-medium text-gray-900">Endocrinology</span></span>
+                                <span className="text-muted-foreground bg-muted/50 px-3 py-1 rounded-lg border border-border">Last Visit: <span className="font-medium text-foreground">{selectedPatient.lastVisit}</span></span>
+                                <span className="text-muted-foreground bg-muted/50 px-3 py-1 rounded-lg border border-border">Department: <span className="font-medium text-foreground">Endocrinology</span></span>
                               </div>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-3">
-                            <button className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-md shadow-blue-200 font-medium active:scale-95">
+                            <button className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-md shadow-blue-500/20 font-medium active:scale-95">
                               New Test Order
                             </button>
-                            <button className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-medium bg-white shadow-sm">
+                            <button className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all duration-300 font-medium bg-card shadow-sm">
                               Print Reports
                             </button>
-                            <button className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-medium bg-white shadow-sm">
+                            <button className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all duration-300 font-medium bg-card shadow-sm">
                               Export Data
                             </button>
                           </div>
@@ -798,26 +792,26 @@ const LabratoryTab = memo(() => {
 
 
                       {/* Enhanced Lab Reports Management */}
-                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                        <div className="border-b border-gray-100 bg-gray-50/50">
+                      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                        <div className="border-b border-border bg-muted/30">
                           <nav className="flex space-x-1 px-4 pt-2">
                             {[
-                              { id: 'new-reports', label: 'New Reports', count: 3, color: 'bg-red-500', bg: 'bg-red-100', text: 'text-red-600' },
-                              { id: 'processing', label: 'Processing', count: 2, color: 'bg-yellow-500', bg: 'bg-yellow-100', text: 'text-yellow-600' },
-                              { id: 'history', label: 'Report History', count: 15, color: 'bg-blue-500', bg: 'bg-blue-100', text: 'text-blue-600' },
-                              { id: 'prescriptions', label: 'Prescriptions', count: 8, color: 'bg-green-500', bg: 'bg-green-100', text: 'text-green-600' },
+                              { id: 'new-reports', label: 'New Reports', count: 3, color: 'bg-rose-500', bg: 'bg-rose-500/10', text: 'text-rose-600' },
+                              { id: 'processing', label: 'Processing', count: 2, color: 'bg-amber-500', bg: 'bg-amber-500/10', text: 'text-amber-600' },
+                              { id: 'history', label: 'Report History', count: 15, color: 'bg-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-600' },
+                              { id: 'prescriptions', label: 'Prescriptions', count: 8, color: 'bg-emerald-500', bg: 'bg-emerald-500/10', text: 'text-emerald-600' },
                               { id: 'trends', label: 'Trends & Analysis', count: null, color: 'bg-purple-500' }
                             ].map((tab, index) => (
                               <button
                                 key={tab.id}
                                 className={`flex items-center space-x-2 px-6 py-4 border-b-2 transition-all duration-300 font-medium ${index === 0
-                                  ? 'border-blue-600 text-blue-700 bg-white rounded-t-lg'
-                                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 rounded-t-lg'
+                                  ? 'border-blue-600 text-blue-600 bg-card rounded-t-lg'
+                                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted rounded-t-lg'
                                   }`}
                               >
                                 <span>{tab.label}</span>
                                 {tab.count && (
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${index === 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${index === 0 ? 'bg-blue-500/10 text-blue-600' : 'bg-muted text-muted-foreground'}`}>
                                     {tab.count}
                                   </span>
                                 )}
@@ -830,13 +824,13 @@ const LabratoryTab = memo(() => {
                           {/* Enhanced New Reports Section */}
                           <div className="space-y-6">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <h4 className="text-xl font-bold text-gray-900 flex items-center space-x-3">
+                              <h4 className="text-xl font-bold text-foreground flex items-center space-x-3">
                                 <span>New Reports</span>
-                                <span className="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded-full border border-red-100 font-medium">Requires Attention</span>
+                                <span className="text-xs bg-rose-500/10 text-rose-500 px-2.5 py-1 rounded-full border border-rose-500/20 font-medium">Requires Attention</span>
                               </h4>
                               <div className="flex space-x-3">
                                 <button className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">Mark All as Reviewed</button>
-                                <button className="text-sm border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors">Bulk Actions</button>
+                                <button className="text-sm border border-border px-4 py-2 rounded-lg hover:bg-muted text-foreground font-medium transition-colors bg-card">Bulk Actions</button>
                               </div>
                             </div>
 
@@ -881,26 +875,26 @@ const LabratoryTab = memo(() => {
                                 processingTime: '1h 15m'
                               }
                             ].map((report) => (
-                              <div key={report.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group bg-white">
+                              <div key={report.id} className="border border-border rounded-xl p-6 hover:shadow-lg hover:border-blue-500/30 transition-all duration-300 group bg-card">
                                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                                   <div className="flex items-center space-x-4">
-                                    <div className={`p-3 rounded-xl ${report.status === 'Urgent' ? 'bg-red-50 text-red-600' :
-                                      report.status === 'Processing' ? 'bg-yellow-50 text-yellow-600' : 'bg-green-50 text-green-600'
+                                    <div className={`p-3 rounded-xl ${report.status === 'Urgent' ? 'bg-rose-500/10 text-rose-500' :
+                                      report.status === 'Processing' ? 'bg-yellow-500/10 text-yellow-600' : 'bg-emerald-500/10 text-emerald-600'
                                       }`}>
                                       <FlaskConical className="w-6 h-6" />
                                     </div>
                                     <div>
                                       <div className="flex items-center space-x-3">
-                                        <h5 className="font-bold text-lg text-gray-900">{report.testName}</h5>
-                                        <span className="text-sm text-gray-400 font-mono">#{report.id}</span>
+                                        <h5 className="font-bold text-lg text-foreground">{report.testName}</h5>
+                                        <span className="text-sm text-muted-foreground font-mono opacity-70">#{report.id}</span>
                                       </div>
                                       <div className="flex items-center space-x-2 mt-1">
-                                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide ${report.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide border ${report.priority === 'High' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
                                           }`}>
                                           {report.priority} Priority
                                         </span>
                                         {report.abnormal.length > 0 && (
-                                          <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-red-100 text-red-700 flex items-center">
+                                          <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide bg-rose-500/10 text-rose-600 flex items-center">
                                             <AlertTriangle className="w-3 h-3 mr-1" /> Abnormal
                                           </span>
                                         )}
@@ -909,8 +903,8 @@ const LabratoryTab = memo(() => {
                                   </div>
                                   <div className="flex items-center space-x-3">
                                     <div className="text-right text-sm">
-                                      <p className="font-medium text-gray-900">{report.date} <span className="text-gray-400">at</span> {report.time}</p>
-                                      <p className="text-gray-500">Processing Time: {report.processingTime}</p>
+                                      <p className="font-medium text-foreground">{report.date} <span className="text-muted-foreground opacity-70">at</span> {report.time}</p>
+                                      <p className="text-muted-foreground">Processing Time: {report.processingTime}</p>
                                     </div>
                                     <span className={`text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wide shadow-sm ${report.status === 'Urgent' ? 'bg-red-500 text-white' :
                                       report.status === 'Processing' ? 'bg-yellow-500 text-white' :
@@ -923,45 +917,45 @@ const LabratoryTab = memo(() => {
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                   <div className="lg:col-span-2 space-y-4">
-                                    <div className="flex space-x-8 text-sm text-gray-600">
-                                      <div><span className="font-medium text-gray-900 block mb-0.5">Ordered by:</span> {report.doctor}</div>
-                                      <div><span className="font-medium text-gray-900 block mb-0.5">Laboratory:</span> {report.lab}</div>
+                                    <div className="flex space-x-8 text-sm text-muted-foreground">
+                                      <div><span className="font-medium text-foreground block mb-0.5">Ordered by:</span> {report.doctor}</div>
+                                      <div><span className="font-medium text-foreground block mb-0.5">Laboratory:</span> {report.lab}</div>
                                     </div>
 
                                     {/* Quick Results Preview */}
-                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                    <div className="bg-muted/30 rounded-xl p-4 border border-border">
                                       <div className="flex items-center justify-between mb-3">
-                                        <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Key Results</h6>
-                                        <button className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline">View Full Report</button>
+                                        <h6 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Key Results</h6>
+                                        <button className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline">View Full Report</button>
                                       </div>
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                                          <span className="text-gray-500 block mb-1">Glucose</span>
-                                          <span className={`font-bold text-sm ${report.testName.includes('Metabolic') ? 'text-red-600' : 'text-gray-900'}`}>
+                                        <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+                                          <span className="text-muted-foreground block mb-1">Glucose</span>
+                                          <span className={`font-bold text-sm ${report.testName.includes('Metabolic') ? 'text-red-600' : 'text-foreground'}`}>
                                             {report.testName.includes('Metabolic') ? '185 mg/dL ↑' : '95 mg/dL'}
                                           </span>
                                         </div>
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                                          <span className="text-gray-500 block mb-1">Cholesterol</span>
-                                          <span className="font-bold text-sm text-green-600">180 mg/dL ↓</span>
+                                        <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+                                          <span className="text-muted-foreground block mb-1">Cholesterol</span>
+                                          <span className="font-bold text-sm text-emerald-500">180 mg/dL ↓</span>
                                         </div>
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                                          <span className="text-gray-500 block mb-1">HDL</span>
-                                          <span className="font-bold text-sm text-gray-900">45 mg/dL</span>
+                                        <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+                                          <span className="text-muted-foreground block mb-1">HDL</span>
+                                          <span className="font-bold text-sm text-foreground">45 mg/dL</span>
                                         </div>
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                                          <span className="text-gray-500 block mb-1">LDL</span>
-                                          <span className="font-bold text-sm text-gray-900">120 mg/dL</span>
+                                        <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+                                          <span className="text-muted-foreground block mb-1">LDL</span>
+                                          <span className="font-bold text-sm text-foreground">120 mg/dL</span>
                                         </div>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="flex flex-col justify-between space-y-3 border-l border-gray-100 pl-6 border-transparent lg:border-gray-100">
-                                    <button className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all font-medium text-gray-700 bg-white shadow-sm">
+                                  <div className="flex flex-col justify-between space-y-3 border-l border-border pl-6 border-transparent lg:border-border">
+                                    <button className="w-full px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-all font-medium text-foreground bg-card shadow-sm">
                                       View Details
                                     </button>
-                                    <button className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all font-medium text-gray-700 bg-white shadow-sm">
+                                    <button className="w-full px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-all font-medium text-foreground bg-card shadow-sm">
                                       Compare Previous
                                     </button>
                                     {report.status !== 'Done' && (
@@ -980,12 +974,12 @@ const LabratoryTab = memo(() => {
                   )}
 
                   {!selectedPatient && (
-                    <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-16 text-center shadow-sm">
-                      <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <FlaskConical className="w-10 h-10 text-gray-400" />
+                    <div className="bg-card border-2 border-dashed border-border rounded-2xl p-16 text-center shadow-sm">
+                      <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                        <FlaskConical className="w-10 h-10 text-muted-foreground/40" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Select a Patient to Begin</h3>
-                      <p className="text-gray-500 mb-8 max-w-md mx-auto">Choose a patient from the priority list above to view their comprehensive lab reports, prescriptions, and clinical data.</p>
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Select a Patient to Begin</h3>
+                      <p className="text-muted-foreground mb-8 max-w-md mx-auto">Choose a patient from the priority list above to view their comprehensive lab reports, prescriptions, and clinical data.</p>
                       <div className="flex justify-center space-x-4">
                         <button
                           onClick={() => document.querySelector('input[placeholder*="Search by patient name"]')?.focus()}
@@ -996,7 +990,7 @@ const LabratoryTab = memo(() => {
                         </button>
                         <button
                           onClick={fetchRecentOrders}
-                          className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-medium bg-white shadow-sm"
+                          className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card shadow-sm"
                         >
                           <Filter className="w-5 h-5" />
                           <span>Recent Reports</span>
@@ -1009,34 +1003,34 @@ const LabratoryTab = memo(() => {
 
               {/* Simple New Test Order Modal */}
               {showNewOrderModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-card rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-border">
+                    <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+                      <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
                         <Plus className="w-5 h-5 text-blue-600" />
                       </div>
                       New Test Order
                     </h3>
                     <div className="space-y-5">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Patient ID</label>
+                        <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient ID</label>
                         <input
                           type="text"
                           placeholder="Enter patient ID"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium"
+                          className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Clinical Notes</label>
+                        <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Clinical Notes</label>
                         <textarea
                           placeholder="Enter clinical notes"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium min-h-[100px]"
+                          className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium min-h-[100px] text-foreground placeholder:text-muted-foreground/50"
                           rows={3}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
-                        <select className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium">
+                        <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Priority</label>
+                        <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
                           <option value="normal">Normal Priority</option>
                           <option value="high">High Priority</option>
                           <option value="urgent">Urgent Priority</option>
@@ -1049,13 +1043,13 @@ const LabratoryTab = memo(() => {
                           alert('Order creation functionality - to be implemented');
                           setShowNewOrderModal(false);
                         }}
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200 font-bold active:scale-95"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95"
                       >
                         Create Order
                       </button>
                       <button
                         onClick={() => setShowNewOrderModal(false)}
-                        className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-medium bg-white"
+                        className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
                       >
                         Cancel
                       </button>
@@ -1066,88 +1060,86 @@ const LabratoryTab = memo(() => {
 
               {/* Lab Report Viewing Modal */}
               {showReportModal && selectedReport && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-border">
                     {/* Modal Header */}
-                    <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div className="px-8 py-6 border-b border-border flex justify-between items-center bg-muted/30">
                       <div className="flex items-center space-x-4">
-                        <div className="bg-blue-100 p-3 rounded-xl">
+                        <div className="bg-blue-500/10 p-3 rounded-xl">
                           <FlaskConical className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Lab Report Details</h3>
-                          <p className="text-sm text-gray-500 font-medium">Order #{selectedReport.order.order_number}</p>
+                          <h3 className="text-xl font-bold text-foreground">Lab Report Details</h3>
+                          <p className="text-sm text-muted-foreground font-medium">Order #{selectedReport.order.order_number}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => setShowReportModal(false)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
                       >
                         <span className="sr-only">Close</span>
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-6 h-6" />
                       </button>
                     </div>
 
-                    <div className="overflow-y-auto p-8 bg-gray-50/30">
+                    <div className="overflow-y-auto p-8 bg-muted/30">
                       {/* Report Header Info */}
-                      <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm mb-6">
+                      <div className="bg-card rounded-xl border border-border p-6 shadow-sm mb-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Patient Information</h4>
+                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Patient Information</h4>
                             <div className="space-y-3">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Name</span>
-                                <span className="font-semibold text-gray-900">{selectedReport.order.patient_first_name} {selectedReport.order.patient_last_name}</span>
+                                <span className="text-muted-foreground">Name</span>
+                                <span className="font-semibold text-foreground">{selectedReport.order.patient_first_name} {selectedReport.order.patient_last_name}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">ID</span>
-                                <span className="font-mono text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-xs">{selectedReport.order.patient_unique_id}</span>
+                                <span className="text-muted-foreground">ID</span>
+                                <span className="font-mono text-foreground bg-muted px-2 py-0.5 rounded text-xs">{selectedReport.order.patient_unique_id}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Gender/DOB</span>
-                                <span className="font-medium text-gray-900">{selectedReport.order.patient_gender} • {selectedReport.order.patient_dob ? new Date(selectedReport.order.patient_dob).toLocaleDateString() : 'N/A'}</span>
+                                <span className="text-muted-foreground">Gender/DOB</span>
+                                <span className="font-medium text-foreground">{selectedReport.order.patient_gender} • {selectedReport.order.patient_dob ? new Date(selectedReport.order.patient_dob).toLocaleDateString() : 'N/A'}</span>
                               </div>
                             </div>
                           </div>
 
                           <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Order Details</h4>
+                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Order Details</h4>
                             <div className="space-y-3">
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-500">Date</span>
-                                <span className="font-medium text-gray-900">{new Date(selectedReport.order.order_date).toLocaleDateString()}</span>
+                                <span className="text-muted-foreground">Date</span>
+                                <span className="font-medium text-foreground">{new Date(selectedReport.order.order_date).toLocaleDateString()}</span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-500">Priority</span>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-                                  selectedReport.order.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                    'bg-blue-50 text-blue-600 border-blue-100'
+                                <span className="text-muted-foreground">Priority</span>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.priority === 'urgent' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                  selectedReport.order.priority === 'high' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                    'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                   }`}>
                                   {selectedReport.order.priority}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span className="text-gray-500">Status</span>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.status === 'completed' ? 'bg-green-50 text-green-600 border-green-100' :
-                                  'bg-blue-50 text-blue-600 border-blue-100'
+                                <span className="text-muted-foreground">Status</span>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                  'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                   }`}>
                                   {selectedReport.order.status.replace('_', ' ')}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Physician</span>
-                                <span className="font-medium text-gray-900">Dr. {selectedReport.order.doctor_first_name} {selectedReport.order.doctor_last_name}</span>
+                                <span className="text-muted-foreground">Physician</span>
+                                <span className="font-medium text-foreground">Dr. {selectedReport.order.doctor_first_name} {selectedReport.order.doctor_last_name}</span>
                               </div>
                             </div>
                           </div>
                         </div>
 
                         {selectedReport.order.clinical_notes && (
-                          <div className="mt-6 pt-6 border-t border-gray-100">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Clinical Notes</h4>
-                            <p className="text-gray-700 bg-gray-50 p-4 rounded-xl text-sm leading-relaxed border border-gray-100 italic">
+                          <div className="mt-6 pt-6 border-t border-border">
+                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Clinical Notes</h4>
+                            <p className="text-foreground bg-muted/30 p-4 rounded-xl text-sm leading-relaxed border border-border italic">
                               "{selectedReport.order.clinical_notes}"
                             </p>
                           </div>
@@ -1155,46 +1147,46 @@ const LabratoryTab = memo(() => {
                       </div>
 
                       {/* Test Results Table */}
-                      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                          <h4 className="font-bold text-gray-900">Test Results</h4>
-                          <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">{selectedReport.items.length} Tests</span>
+                      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden mb-6">
+                        <div className="px-6 py-4 border-b border-border bg-muted/30 flex justify-between items-center">
+                          <h4 className="font-bold text-foreground">Test Results</h4>
+                          <span className="text-xs font-medium text-muted-foreground bg-card px-2 py-1 rounded border border-border">{selectedReport.items.length} Tests</span>
                         </div>
                         <div className="overflow-x-auto">
                           <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-100">
+                            <thead className="bg-muted/50 border-b border-border">
                               <tr>
-                                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Test Name</th>
-                                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Result</th>
-                                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
-                                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference Range</th>
-                                <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Test Name</th>
+                                <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Result</th>
+                                <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit</th>
+                                <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference Range</th>
+                                <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-border/50">
                               {selectedReport.items.map((item, index) => (
-                                <tr key={index} className="hover:bg-gray-50/80 transition-colors">
+                                <tr key={index} className="hover:bg-muted/50 transition-colors">
                                   <td className="py-4 px-6">
-                                    <div className="font-medium text-gray-900">{item.test_name}</div>
-                                    <div className="text-xs text-gray-500">{item.category_name}</div>
+                                    <div className="font-medium text-foreground">{item.test_name}</div>
+                                    <div className="text-xs text-muted-foreground">{item.category_name}</div>
                                   </td>
                                   <td className="py-4 px-6">
                                     <div className="flex items-center space-x-2">
-                                      <span className={`font-bold ${item.abnormal_flag ? 'text-red-600' :
-                                        item.critical_flag ? 'text-red-800' : 'text-gray-900'
+                                      <span className={`font-bold ${item.abnormal_flag ? 'text-rose-500' :
+                                        item.critical_flag ? 'text-rose-800' : 'text-foreground'
                                         }`}>
                                         {item.result_text || item.result_value || 'Pending'}
                                       </span>
-                                      {item.abnormal_flag && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                                      {item.abnormal_flag && <AlertTriangle className="w-4 h-4 text-rose-500" />}
                                     </div>
                                   </td>
-                                  <td className="py-4 px-6 text-sm text-gray-500">{item.unit || '-'}</td>
-                                  <td className="py-4 px-6 text-sm text-gray-500">{item.reference_range || '-'}</td>
+                                  <td className="py-4 px-6 text-sm text-muted-foreground">{item.unit || '-'}</td>
+                                  <td className="py-4 px-6 text-sm text-muted-foreground">{item.reference_range || '-'}</td>
                                   <td className="py-4 px-6">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${item.result_status === 'normal' ? 'bg-green-50 text-green-700 border-green-100' :
-                                      item.result_status === 'abnormal' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
-                                        item.result_status === 'critical' ? 'bg-red-50 text-red-700 border-red-100' :
-                                          'bg-gray-50 text-gray-600 border-gray-200'
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${item.result_status === 'normal' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                      item.result_status === 'abnormal' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                        item.result_status === 'critical' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
+                                          'bg-muted text-muted-foreground border-border'
                                       }`}>
                                       {item.result_status || 'Pending'}
                                     </span>
@@ -1208,17 +1200,17 @@ const LabratoryTab = memo(() => {
                     </div>
 
                     {/* Modal Footer */}
-                    <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-4">
+                    <div className="px-8 py-6 border-t border-border bg-muted/30 flex justify-end space-x-4">
                       <button
                         onClick={() => alert('Print functionality - to be implemented')}
-                        className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-white hover:border-gray-300 transition-all font-medium shadow-sm flex items-center space-x-2"
+                        className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium shadow-sm flex items-center space-x-2 bg-card"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                         <span>Print Report</span>
                       </button>
                       <button
                         onClick={() => alert('Download PDF functionality - to be implemented')}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 font-medium flex items-center space-x-2 active:scale-95"
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-medium flex items-center space-x-2 active:scale-95"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         <span>Download PDF</span>
@@ -1230,41 +1222,41 @@ const LabratoryTab = memo(() => {
 
               {/* Advanced Search Modal */}
               {showSearchModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl transition-all">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-card rounded-2xl p-8 w-full max-w-lg shadow-2xl transition-all border border-border">
+                    <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+                      <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
                         <Filter className="w-5 h-5 text-blue-600" />
                       </div>
                       Advanced Search
                     </h3>
                     <div className="space-y-5">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Patient Name</label>
+                        <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient Name</label>
                         <div className="relative">
-                          <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                          <User className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
                           <input
                             type="text"
                             placeholder="Enter patient name"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium"
+                            className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Order Number</label>
+                        <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Order Number</label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                          <Search className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
                           <input
                             type="text"
                             placeholder="Enter order number"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium"
+                            className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
-                          <select className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium">
+                          <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Status</label>
+                          <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
@@ -1273,8 +1265,8 @@ const LabratoryTab = memo(() => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
-                          <select className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium">
+                          <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Priority</label>
+                          <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
                             <option value="">All Priorities</option>
                             <option value="normal">Normal</option>
                             <option value="high">High</option>
@@ -1284,17 +1276,17 @@ const LabratoryTab = memo(() => {
                       </div>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date From</label>
+                          <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date From</label>
                           <input
                             type="date"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium text-gray-600"
+                            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date To</label>
+                          <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date To</label>
                           <input
                             type="date"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium text-gray-600"
+                            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
                           />
                         </div>
                       </div>
@@ -1305,14 +1297,14 @@ const LabratoryTab = memo(() => {
                           alert('Advanced search functionality - to be implemented');
                           setShowSearchModal(false);
                         }}
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200 font-bold active:scale-95 flex items-center justify-center space-x-2"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95 flex items-center justify-center space-x-2"
                       >
                         <Search className="w-5 h-5" />
                         <span>Search Orders</span>
                       </button>
                       <button
                         onClick={() => setShowSearchModal(false)}
-                        className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-medium bg-white"
+                        className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
                       >
                         Cancel
                       </button>
@@ -1328,22 +1320,22 @@ const LabratoryTab = memo(() => {
                 className="fixed bottom-8 right-8 z-40 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center group"
                 aria-label="Open Clinical AI Assistant"
               >
-                <div className="absolute inset-0 bg-white rounded-full opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div className="absolute inset-0 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <Bot className="w-8 h-8" />
                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
                 </span>
               </button>
             )}
 
             {/* AI Chat Modal */}
             {showAIChatModal && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl w-full max-w-2xl h-[650px] shadow-2xl flex flex-col relative overflow-hidden ring-1 ring-white/10">
+              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                <div className="bg-gradient-to-br from-[#0f172a] to-[#1e1b4b] rounded-2xl w-full max-w-2xl h-[650px] shadow-2xl flex flex-col relative overflow-hidden ring-1 ring-white/10">
                   {/* Background Effects */}
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none"></div>
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none"></div>
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
 
                   {/* Modal Header */}
                   <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/10">
@@ -1380,8 +1372,8 @@ const LabratoryTab = memo(() => {
                           </div>
                         )}
                         <div className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm ${msg.sender === 'user'
-                          ? 'bg-white text-blue-900 rounded-br-none'
-                          : 'bg-white/10 backdrop-blur-md border border-white/10 text-gray-100 rounded-bl-none'
+                          ? 'bg-blue-600 text-white rounded-br-none'
+                          : 'bg-white/5 backdrop-blur-md border border-white/10 text-slate-100 rounded-bl-none'
                           }`}>
                           {msg.sender === 'ai' ? (
                             <div className="prose prose-invert prose-sm max-w-none">
