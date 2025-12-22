@@ -169,13 +169,13 @@ const BillingTab = memo(() => {
     const getStatusStyle = (status) => {
         switch (status?.toLowerCase()) {
             case 'paid':
-                return 'bg-green-100 text-green-800';
+                return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
             case 'overdue':
-                return 'bg-red-100 text-red-800';
+                return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-muted text-muted-foreground border-border';
         }
     };
 
@@ -195,11 +195,11 @@ const BillingTab = memo(() => {
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-600">{error}</p>
+                <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-rose-500 font-medium">{error}</p>
                     <button
                         onClick={fetchBillingData}
-                        className="mt-2 text-sm text-red-700 underline"
+                        className="mt-2 text-sm font-bold text-rose-500 underline underline-offset-4 hover:text-rose-600 transition-colors"
                     >
                         Retry
                     </button>
@@ -209,26 +209,26 @@ const BillingTab = memo(() => {
             {/* Summary Cards */}
             {summary && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-card border border-border rounded-lg p-4">
-                        <h4 className="font-medium text-muted-foreground mb-2">Total Records</h4>
-                        <p className="text-2xl font-bold text-foreground">{summary.total_records || 0}</p>
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Total Records</h4>
+                        <p className="text-3xl font-black text-foreground tracking-tight">{summary.total_records || 0}</p>
                     </div>
-                    <div className="bg-card border border-border rounded-lg p-4">
-                        <h4 className="font-medium text-muted-foreground mb-2">Total Paid</h4>
-                        <p className="text-2xl font-bold text-emerald-500">
-                            ${parseFloat(summary.total_paid || 0).toFixed(2)}
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Total Paid</h4>
+                        <p className="text-3xl font-black text-emerald-500 tracking-tight">
+                            ${parseFloat(summary.total_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
-                    <div className="bg-card border border-border rounded-lg p-4">
-                        <h4 className="font-medium text-muted-foreground mb-2">Pending</h4>
-                        <p className="text-2xl font-bold text-amber-500">
-                            ${parseFloat(summary.total_pending || 0).toFixed(2)}
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Pending</h4>
+                        <p className="text-3xl font-black text-amber-500 tracking-tight">
+                            ${parseFloat(summary.total_pending || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
-                    <div className="bg-card border border-border rounded-lg p-4">
-                        <h4 className="font-medium text-muted-foreground mb-2">Overdue</h4>
-                        <p className="text-2xl font-bold text-rose-500">
-                            ${parseFloat(summary.total_overdue || 0).toFixed(2)}
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Overdue</h4>
+                        <p className="text-3xl font-black text-rose-500 tracking-tight">
+                            ${parseFloat(summary.total_overdue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                 </div>
@@ -236,13 +236,16 @@ const BillingTab = memo(() => {
 
             {/* Search and Actions Bar */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                <div className="flex-1 max-w-md">
+                <div className="flex-1 max-w-md relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-indigo-500 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
                     <input
                         type="text"
-                        placeholder="Search by patient name, email, or description..."
+                        placeholder="Search records..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-2 bg-muted border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-muted border border-border rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-foreground transition-all placeholder:text-muted-foreground/40"
                     />
                 </div>
                 <button
@@ -251,26 +254,27 @@ const BillingTab = memo(() => {
                         setEditingBill(null);
                         setShowCreateForm(true);
                     }}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/10 active:scale-95"
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center space-x-2"
                 >
-                    Create New Bill
+                    <span className="text-lg leading-none">+</span>
+                    <span>Create New Bill</span>
                 </button>
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'all'
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'all'
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
                 >
-                    All
+                    All Records
                 </button>
                 <button
                     onClick={() => setFilter('pending')}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'pending'
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'pending'
                         ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
@@ -279,7 +283,7 @@ const BillingTab = memo(() => {
                 </button>
                 <button
                     onClick={() => setFilter('paid')}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'paid'
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'paid'
                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
@@ -288,7 +292,7 @@ const BillingTab = memo(() => {
                 </button>
                 <button
                     onClick={() => setFilter('overdue')}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === 'overdue'
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'overdue'
                         ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
@@ -298,10 +302,10 @@ const BillingTab = memo(() => {
             </div>
 
             {/* Billing Records */}
-            <div className="bg-card border border-border rounded-[2.5rem] p-8">
+            <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xl font-black text-foreground tracking-tight">
-                        Billing Records ({getFilteredRecords().length})
+                        Billing Records <span className="text-indigo-500 ml-2 opacity-50 text-sm">{getFilteredRecords().length}</span>
                     </h3>
                 </div>
 
@@ -320,8 +324,20 @@ const BillingTab = memo(() => {
                         <tbody>
                             {getFilteredRecords().length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-8 text-muted-foreground">
-                                        {searchTerm ? 'No billing records match your search' : 'No billing records found'}
+                                    <td colSpan="6" className="text-center py-20 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                            <div className="w-20 h-20 bg-muted/50 rounded-[2rem] flex items-center justify-center mb-4 transform rotate-3 shadow-inner">
+                                                <svg className="w-10 h-10 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            </div>
+                                            <div className="max-w-xs mx-auto">
+                                                <p className="font-black text-xl text-foreground tracking-tight mb-2">
+                                                    {searchTerm ? 'No matches found' : 'No records yet'}
+                                                </p>
+                                                <p className="text-sm font-medium leading-relaxed opacity-60">
+                                                    {searchTerm ? 'Try adjusting your filters or search keywords' : 'Get started by creating your first billing record using the button above'}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
@@ -347,7 +363,7 @@ const BillingTab = memo(() => {
                                             {formatDate(record.due_date)}
                                         </td>
                                         <td className="py-4 px-3">
-                                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${getStatusStyle(record.status).replace('bg-', 'bg-opacity-10 border-').replace('text-', 'text-')}`}>
+                                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${getStatusStyle(record.status)}`}>
                                                 {record.status}
                                             </span>
                                         </td>
@@ -470,16 +486,21 @@ const BillingTab = memo(() => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Status</label>
-                                <select
-                                    value={billForm.status}
-                                    onChange={(e) => handleFormChange('status', e.target.value)}
-                                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all appearance-none cursor-pointer"
-                                >
-                                    <option value="pending">Pending</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="overdue">Overdue</option>
-                                </select>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Status</label>
+                                <div className="relative">
+                                    <select
+                                        value={billForm.status}
+                                        onChange={(e) => handleFormChange('status', e.target.value)}
+                                        className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-foreground transition-all appearance-none cursor-pointer pr-10"
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="overdue">Overdue</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-muted-foreground">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex gap-3 pt-4">
