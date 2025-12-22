@@ -361,25 +361,25 @@ const EmailTab = () => {
   }, [emails, searchQuery]);
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+    <div className="h-full flex flex-col bg-card rounded-xl shadow-sm border border-border overflow-hidden relative">
       <Toaster />
 
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-200 p-4 px-6 flex items-center justify-between z-10">
+      <div className="bg-card border-b border-border p-4 px-6 flex items-center justify-between z-10 transition-colors duration-300">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Messages</h1>
-          <p className="text-sm text-gray-500">Manage your communications and updates</p>
+          <h1 className="text-2xl font-bold text-foreground">Messages</h1>
+          <p className="text-sm text-muted-foreground">Manage your communications and updates</p>
         </div>
         <div className="flex items-center space-x-4">
           {/* Search */}
           <div className="relative hidden md:block group">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-500 transition-colors w-4 h-4" />
             <input
               type="text"
               placeholder="Search emails..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-64 transition-all"
+              className="pl-10 pr-4 py-2 bg-muted border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-64 transition-all text-foreground"
             />
           </div>
 
@@ -390,7 +390,7 @@ const EmailTab = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Folders Sidebar */}
         <div
-          className="bg-gray-50 flex flex-col border-r border-gray-200"
+          className="bg-muted flex flex-col border-r border-border transition-colors duration-300"
           style={{ width: folderWidth, minWidth: 160 }}
         >
           <div className="p-4">
@@ -425,11 +425,11 @@ const EmailTab = () => {
                   title={folder.name}
                 >
                   <div className="flex items-center space-x-3 overflow-hidden">
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'fill-indigo-50 text-indigo-600' : ''}`} />
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'fill-indigo-500/10 text-indigo-500' : ''}`} />
                     <span className="font-medium truncate">{folder.name}</span>
                   </div>
                   {folder.count > 0 && (
-                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium flex-shrink-0 ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-200 text-gray-600'
+                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium flex-shrink-0 ${isActive ? 'bg-indigo-500 text-white' : 'bg-card text-muted-foreground border border-border'
                       }`}>
                       {folder.count}
                     </span>
@@ -455,12 +455,12 @@ const EmailTab = () => {
 
         {/* Email List */}
         <div
-          className={`bg-white border-r border-gray-200 flex flex-col ${selectedEmail ? 'hidden lg:flex' : 'flex'}`}
+          className={`bg-card border-r border-border flex flex-col transition-colors duration-300 ${selectedEmail ? 'hidden lg:flex' : 'flex'}`}
           style={{ width: listWidth, minWidth: 250 }}
         >
           {/* List Header */}
-          <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h3 className="font-semibold text-gray-800 capitalize">{selectedFolder.replace('_', ' ')}</h3>
+          <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
+            <h3 className="font-semibold text-foreground capitalize">{selectedFolder.replace('_', ' ')}</h3>
             {selectedFolder === 'trash' && filteredEmails.length > 0 && (
               <button
                 onClick={async (e) => {
@@ -479,7 +479,7 @@ const EmailTab = () => {
                     }
                   }
                 }}
-                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors border border-red-100"
+                className="text-xs px-3 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500/20 font-medium transition-colors border border-rose-500/20"
               >
                 Empty Trash
               </button>
@@ -492,11 +492,11 @@ const EmailTab = () => {
               <p className="text-gray-400 text-sm">Loading messages...</p>
             </div>
           ) : filteredEmails.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                <Mail className="w-8 h-8 text-gray-300" />
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Mail className="w-8 h-8 text-muted-foreground/30" />
               </div>
-              <p className="text-lg font-medium text-gray-600">No emails found</p>
+              <p className="text-lg font-medium text-foreground">No emails found</p>
               <p className="text-sm">Your {selectedFolder} is empty</p>
             </div>
           ) : (
@@ -511,9 +511,9 @@ const EmailTab = () => {
                   <div
                     key={email.id}
                     onClick={() => handleSelectEmail(email)}
-                    className={`group relative p-4 cursor-pointer transition-all border-b border-gray-100 hover:bg-gray-50 
-                    ${isSelected ? 'bg-indigo-50/60 border-l-4 border-l-indigo-600' : 'border-l-4 border-l-transparent'} 
-                    ${!email.is_read ? 'bg-white' : 'bg-white/50'}`}
+                    className={`group relative p-4 cursor-pointer transition-all border-b border-border hover:bg-muted/50 
+                    ${isSelected ? 'bg-indigo-500/10 border-l-4 border-l-indigo-600' : 'border-l-4 border-l-transparent'} 
+                    ${!email.is_read ? 'bg-card' : 'bg-card/50'}`}
                   >
                     <div className="flex items-start space-x-4">
                       {/* Avatar */}
@@ -525,36 +525,36 @@ const EmailTab = () => {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
-                          <h3 className={`text-sm truncate pr-2 ${!email.is_read ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
+                          <h3 className={`text-sm truncate pr-2 ${!email.is_read ? 'font-bold text-foreground' : 'font-medium text-muted-foreground'}`}>
                             {name}
                           </h3>
-                          <span className={`text-xs whitespace-nowrap flex-shrink-0 ${!email.is_read ? 'text-indigo-600 font-medium' : 'text-gray-400'}`}>
+                          <span className={`text-xs whitespace-nowrap flex-shrink-0 ${!email.is_read ? 'text-indigo-500 font-medium' : 'text-muted-foreground'}`}>
                             {formatDate(email.created_at)}
                           </span>
                         </div>
 
-                        <h4 className={`text-sm mt-0.5 truncate ${!email.is_read ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>
+                        <h4 className={`text-sm mt-0.5 truncate ${!email.is_read ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                           {email.subject || '(No Subject)'}
                         </h4>
 
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                           {email.body}
                         </p>
                       </div>
                     </div>
 
                     {/* Hover Actions */}
-                    <div className="absolute right-4 bottom-4 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100 p-1">
+                    <div className="absolute right-4 bottom-4 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm rounded-lg shadow-sm border border-border p-1">
                       <button
                         onClick={(e) => handleToggleStar(email.id, email.is_starred, e)}
-                        className={`p-1.5 rounded-md hover:bg-gray-100 transition-colors ${email.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                        className={`p-1.5 rounded-md hover:bg-muted transition-colors ${email.is_starred ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`}
                         title={email.is_starred ? "Unstar" : "Star"}
                       >
                         {email.is_starred ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={(e) => handleDelete(email.id, e)}
-                        className="p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -586,7 +586,7 @@ const EmailTab = () => {
         />
 
         {/* Email Preview */}
-        <div className={`flex-1 bg-white flex flex-col ${!selectedEmail ? 'hidden lg:flex' : 'flex absolute lg:static inset-0 z-20'}`}>
+        <div className={`flex-1 bg-card flex flex-col transition-colors duration-300 ${!selectedEmail ? 'hidden lg:flex' : 'flex absolute lg:static inset-0 z-20'}`}>
           {selectedEmail ? (
             <>
               {/* Preview Header - Mobile Back Button */}
@@ -601,22 +601,22 @@ const EmailTab = () => {
               </div>
 
               {/* Email Content Header */}
-              <div className="p-6 border-b border-gray-100 bg-white">
+              <div className="p-6 border-b border-border bg-card">
                 <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 leading-tight">
+                  <h2 className="text-2xl font-bold text-foreground leading-tight">
                     {selectedEmail.subject || '(No Subject)'}
                   </h2>
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={(e) => handleToggleStar(selectedEmail.id, selectedEmail.is_starred, e)}
-                      className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
+                      className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
                       title={selectedEmail.is_starred ? "Unstar" : "Star"}
                     >
                       <Star className={`w-5 h-5 ${selectedEmail.is_starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
                     </button>
                     <button
                       onClick={(e) => handleDelete(selectedEmail.id, e)}
-                      className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
+                      className="p-2 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 rounded-full transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -631,15 +631,15 @@ const EmailTab = () => {
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-900">{selectedEmail.sender_name}</span>
-                        <span className="text-gray-400 text-sm">&lt;{selectedEmail.sender_email}&gt;</span>
+                        <span className="font-semibold text-foreground">{selectedEmail.sender_name}</span>
+                        <span className="text-muted-foreground text-sm">&lt;{selectedEmail.sender_email}&gt;</span>
                       </div>
-                      <div className="text-sm text-gray-500 mt-0.5">
+                      <div className="text-sm text-muted-foreground mt-0.5">
                         To: {selectedEmail.recipient_name || 'Me'}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right text-sm text-gray-500">
+                  <div className="text-right text-sm text-muted-foreground">
                     <p>{new Date(selectedEmail.created_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     <p>{new Date(selectedEmail.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
@@ -647,14 +647,14 @@ const EmailTab = () => {
               </div>
 
               {/* Body */}
-              <div className="flex-1 p-8 overflow-y-auto bg-gray-50/30">
-                <div className="prose max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+              <div className="flex-1 p-8 overflow-y-auto bg-muted/20 transition-colors duration-300">
+                <div className="prose max-w-none text-foreground leading-relaxed whitespace-pre-wrap font-sans">
                   {selectedEmail.body}
                 </div>
 
                 {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center space-x-2">
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center space-x-2">
                       <Paperclip className="w-4 h-4" />
                       <span>{selectedEmail.attachments.length} Attachments</span>
                     </h4>
@@ -669,14 +669,14 @@ const EmailTab = () => {
                             href={fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer text-left group"
+                            className="flex items-center p-3 bg-card border border-border rounded-lg hover:shadow-md transition-shadow cursor-pointer text-left group"
                           >
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center mr-3 text-muted-foreground group-hover:bg-indigo-500/10 group-hover:text-indigo-500 transition-colors">
                               <FileText className="w-6 h-6" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-700 truncate group-hover:text-indigo-600 transition-colors">{fileName}</p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-sm font-medium text-foreground truncate group-hover:text-indigo-500 transition-colors">{fileName}</p>
+                              <p className="text-xs text-muted-foreground">
                                 {typeof att === 'object' && att.size ? `${Math.round(att.size / 1024)} KB` : 'Attachment'}
                               </p>
                             </div>
@@ -689,7 +689,7 @@ const EmailTab = () => {
               </div>
 
               {/* Reply/Action Bar */}
-              <div className="p-4 border-t border-gray-200 bg-white flex items-center space-x-3">
+              <div className="p-4 border-t border-border bg-card flex items-center space-x-3 transition-colors duration-300">
                 {selectedFolder === 'drafts' ? (
                   <button
                     onClick={() => {
@@ -713,14 +713,14 @@ const EmailTab = () => {
                   <>
                     <button
                       onClick={() => handleReply(selectedEmail)}
-                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center space-x-2"
+                      className="px-6 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted hover:border-border transition-colors flex items-center space-x-2"
                     >
                       <Reply className="w-4 h-4" />
                       <span>Reply</span>
                     </button>
                     <button
                       onClick={() => handleForward(selectedEmail)}
-                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center space-x-2"
+                      className="px-6 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted hover:border-border transition-colors flex items-center space-x-2"
                     >
                       <Forward className="w-4 h-4" />
                       <span>Forward</span>
@@ -730,25 +730,25 @@ const EmailTab = () => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/30 text-gray-400">
-              <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                <MailOpen className="w-10 h-10 text-gray-300" />
+            <div className="flex-1 flex flex-col items-center justify-center bg-muted/20 text-muted-foreground transition-colors duration-300">
+              <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                <MailOpen className="w-10 h-10 text-muted-foreground/30" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Select a conversation</h3>
-              <p className="text-gray-500 max-w-xs text-center">Choose an email from the list to view its contents or start a new message.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Select a conversation</h3>
+              <p className="text-muted-foreground max-w-xs text-center">Choose an email from the list to view its contents or start a new message.</p>
             </div>
           )}
         </div>
       </div>
 
       {isComposing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-800">New Message</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200 border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-foreground">New Message</h2>
               <button
                 onClick={() => setIsComposing(false)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                className="p-1 hover:bg-muted rounded-full transition-colors text-muted-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -759,7 +759,7 @@ const EmailTab = () => {
                 {/* To */}
                 {/* To */}
                 <div className="relative">
-                  <span className="absolute left-0 top-2.5 text-gray-500 font-medium text-sm">To:</span>
+                  <span className="absolute left-0 top-2.5 text-muted-foreground font-medium text-sm">To:</span>
                   <input
                     type="email"
                     value={composeForm.to}
@@ -770,12 +770,12 @@ const EmailTab = () => {
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder="Recipient"
-                    className="w-full pl-8 py-2 border-b border-gray-200 focus:border-indigo-500 focus:ring-0 text-gray-800 placeholder-gray-400 bg-transparent transition-colors"
+                    className="w-full pl-8 py-2 border-b border-border focus:border-indigo-500 focus:ring-0 text-foreground placeholder-muted-foreground/50 bg-transparent transition-colors"
                     autoComplete="off"
                   />
                   {/* Suggestions Dropdown */}
                   {showSuggestions && composeForm.to && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                       {recipients
                         .filter(r =>
                           r.email.toLowerCase().includes(composeForm.to.toLowerCase()) ||
@@ -784,15 +784,15 @@ const EmailTab = () => {
                         .map((r, i) => (
                           <div
                             key={i}
-                            className="px-4 py-2 hover:bg-indigo-50 cursor-pointer transition-colors flex flex-col border-b border-gray-50 last:border-0"
+                            className="px-4 py-2 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border last:border-0"
                             onClick={() => {
                               setComposeForm({ ...composeForm, to: r.email });
                               setShowSuggestions(false);
                             }}
                             onMouseDown={(e) => e.preventDefault()} // Prevent blur
                           >
-                            <span className="text-sm font-medium text-gray-900">{r.name}</span>
-                            <span className="text-xs text-gray-500">{r.email}</span>
+                            <span className="text-sm font-medium text-foreground">{r.name}</span>
+                            <span className="text-xs text-muted-foreground">{r.email}</span>
                           </div>
                         ))}
                     </div>
@@ -814,11 +814,11 @@ const EmailTab = () => {
                       onFocus={() => setShowSuggestionsCC(true)}
                       onBlur={() => setTimeout(() => setShowSuggestionsCC(false), 200)}
                       placeholder=""
-                      className="w-full pl-8 py-2 border-b border-gray-200 focus:border-indigo-500 focus:ring-0 text-gray-800 placeholder-gray-400 bg-transparent transition-colors"
+                      className="w-full pl-8 py-2 border-b border-border focus:border-indigo-500 focus:ring-0 text-foreground placeholder-muted-foreground/50 bg-transparent transition-colors"
                       autoComplete="off"
                     />
                     {showSuggestionsCC && composeForm.cc && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                         {recipients
                           .filter(r =>
                             r.email.toLowerCase().includes(composeForm.cc.toLowerCase()) ||
@@ -827,15 +827,15 @@ const EmailTab = () => {
                           .map((r, i) => (
                             <div
                               key={i}
-                              className="px-4 py-2 hover:bg-indigo-50 cursor-pointer transition-colors flex flex-col border-b border-gray-50 last:border-0"
+                              className="px-4 py-2 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border last:border-0"
                               onClick={() => {
                                 setComposeForm({ ...composeForm, cc: r.email });
                                 setShowSuggestionsCC(false);
                               }}
                               onMouseDown={(e) => e.preventDefault()}
                             >
-                              <span className="text-sm font-medium text-gray-900">{r.name}</span>
-                              <span className="text-xs text-gray-500">{r.email}</span>
+                              <span className="text-sm font-medium text-foreground">{r.name}</span>
+                              <span className="text-xs text-muted-foreground">{r.email}</span>
                             </div>
                           ))}
                       </div>
@@ -855,11 +855,11 @@ const EmailTab = () => {
                       onFocus={() => setShowSuggestionsBCC(true)}
                       onBlur={() => setTimeout(() => setShowSuggestionsBCC(false), 200)}
                       placeholder=""
-                      className="w-full pl-10 py-2 border-b border-gray-200 focus:border-indigo-500 focus:ring-0 text-gray-800 placeholder-gray-400 bg-transparent transition-colors"
+                      className="w-full pl-10 py-2 border-b border-border focus:border-indigo-500 focus:ring-0 text-foreground placeholder-muted-foreground/50 bg-transparent transition-colors"
                       autoComplete="off"
                     />
                     {showSuggestionsBCC && composeForm.bcc && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                         {recipients
                           .filter(r =>
                             r.email.toLowerCase().includes(composeForm.bcc.toLowerCase()) ||
@@ -868,15 +868,15 @@ const EmailTab = () => {
                           .map((r, i) => (
                             <div
                               key={i}
-                              className="px-4 py-2 hover:bg-indigo-50 cursor-pointer transition-colors flex flex-col border-b border-gray-50 last:border-0"
+                              className="px-4 py-2 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border last:border-0"
                               onClick={() => {
                                 setComposeForm({ ...composeForm, bcc: r.email });
                                 setShowSuggestionsBCC(false);
                               }}
                               onMouseDown={(e) => e.preventDefault()}
                             >
-                              <span className="text-sm font-medium text-gray-900">{r.name}</span>
-                              <span className="text-xs text-gray-500">{r.email}</span>
+                              <span className="text-sm font-medium text-foreground">{r.name}</span>
+                              <span className="text-xs text-muted-foreground">{r.email}</span>
                             </div>
                           ))}
                       </div>
@@ -890,7 +890,7 @@ const EmailTab = () => {
                   value={composeForm.subject}
                   onChange={(e) => setComposeForm({ ...composeForm, subject: e.target.value })}
                   placeholder="Subject"
-                  className="w-full px-0 py-2 border-b border-gray-200 focus:border-indigo-500 focus:ring-0 text-lg font-medium text-gray-800 placeholder-gray-400 bg-transparent"
+                  className="w-full px-0 py-2 border-b border-border focus:border-indigo-500 focus:ring-0 text-lg font-medium text-foreground placeholder-muted-foreground/50 bg-transparent"
                 />
 
                 {/* Body */}
@@ -898,23 +898,23 @@ const EmailTab = () => {
                   value={composeForm.body}
                   onChange={(e) => setComposeForm({ ...composeForm, body: e.target.value })}
                   placeholder="Write your message..."
-                  className="w-full h-48 py-4 resize-none focus:outline-none text-gray-700 leading-relaxed custom-scrollbar"
+                  className="w-full h-48 py-4 resize-none focus:outline-none text-foreground leading-relaxed custom-scrollbar bg-transparent placeholder-muted-foreground/50"
                 />
 
                 {/* Attachments List */}
                 {composeForm.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {composeForm.attachments.map((file, i) => (
-                      <div key={i} className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 text-sm animate-in fade-in slide-in-from-bottom-2">
-                        <FileText className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-700 truncate max-w-[150px]">{file.name}</span>
+                      <div key={i} className="flex items-center space-x-2 bg-muted px-3 py-1.5 rounded-lg border border-border text-sm animate-in fade-in slide-in-from-bottom-2">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-foreground truncate max-w-[150px]">{file.name}</span>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             removeAttachment(i);
                           }}
-                          className="text-gray-400 hover:text-red-500 p-0.5 rounded-full hover:bg-red-50 transition-colors"
+                          className="text-muted-foreground hover:text-rose-500 p-0.5 rounded-full hover:bg-rose-500/10 transition-colors"
                           title="Remove attachment"
                         >
                           <X className="w-4 h-4" />
@@ -926,7 +926,7 @@ const EmailTab = () => {
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex items-center justify-between">
+            <div className="p-4 border-t border-border bg-muted/50 rounded-b-xl flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
