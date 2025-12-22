@@ -18,11 +18,19 @@ async function seedDatabase() {
       RETURNING id, unique_id
     `;
 
+    let doctorId;
     if (doctors.length > 0) {
       console.log(`✓ Inserted ${doctors.length} doctors`);
-      
-      const doctorId = doctors[0].id;
+      doctorId = doctors[0].id;
+    } else {
+      const existingDoctors = await sql`SELECT id FROM doctors WHERE email = 'john.doe@careconnect.com'`;
+      if (existingDoctors.length > 0) {
+        doctorId = existingDoctors[0].id;
+        console.log('✓ Found existing doctor, proceeding with data expansion');
+      }
+    }
 
+    if (doctorId) {
       // Insert doctor settings
       await sql`
         INSERT INTO doctor_settings (doctor_id, default_appointment_duration, working_hours_start, working_hours_end, consultation_fee, accept_new_patients)
@@ -46,65 +54,65 @@ async function seedDatabase() {
           ('PAT-008', 'Lisa', 'Anderson', 'lisa.anderson@example.com', '+1-555-1008', '1978-09-03', 'Female', 'A+', '258 Spruce Ave, Denver, CO 80201', 'Thyroid disorder, osteoporosis', 'Iodine allergy', 'Mark Anderson', '+1-555-1108'),
           ('PAT-009', 'Kevin', 'Clark', 'kevin.clark@example.com', '+1-555-1009', '1991-01-20', 'Male', 'AB+', '369 Willow Dr, Boston, MA 02101', 'Sports injury history', 'No known allergies', 'Amy Clark', '+1-555-1109'),
           ('PAT-010', 'Amanda', 'Lewis', 'amanda.lewis@example.com', '+1-555-1010', '1987-04-11', 'Female', 'O+', '741 Redwood Blvd, San Francisco, CA 94101', 'Depression, anxiety disorder', 'Aspirin allergy', 'Brian Lewis', '+1-555-1110')
-        ON CONFLICT (email) DO NOTHING
+        ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
         RETURNING id, unique_id
       `;
-      console.log(`✓ Inserted ${patients.length} patients`);
+      console.log(`✓ Synchronized ${patients.length} patients`);
 
       if (patients.length > 0) {
         // Insert comprehensive sample appointments for testing
         const appointments = await sql`
-          INSERT INTO appointments (doctor_id, patient_id, appointment_date, appointment_time, status, appointment_type, notes)
+          INSERT INTO appointments (doctor_id, patient_id, appointment_date, appointment_time, status, appointment_type, notes, actual_start_time, actual_end_time)
           VALUES 
             -- Today's appointments
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE, '09:00', 'confirmed', 'consultation', 'Initial consultation for new patient'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE, '09:30', 'confirmed', 'follow-up', 'Diabetes follow-up - blood sugar check'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE, '10:00', 'pending', 'consultation', 'Routine consultation'),
-            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE, '10:30', 'confirmed', 'check-up', 'Annual physical examination'),
-            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE, '11:00', 'pending', 'consultation', 'New patient - complaint of chest pain'),
-            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE, '11:30', 'confirmed', 'consultation', 'Migraine consultation'),
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE, '14:00', 'confirmed', 'follow-up', 'Follow-up for previous treatment'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE, '14:30', 'cancelled', 'consultation', 'Patient cancelled due to emergency'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE, '15:00', 'completed', 'check-up', 'Completed routine check-up'),
-            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE, '15:30', 'confirmed', 'procedure', 'Back pain evaluation'),
-            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE, '16:00', 'confirmed', 'emergency', 'Emergency consultation - urgent care needed'),
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE, '09:00', 'confirmed', 'consultation', 'Initial consultation for new patient', NULL, NULL),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE, '09:30', 'confirmed', 'follow-up', 'Diabetes follow-up - blood sugar check', NULL, NULL),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE, '10:00', 'pending', 'consultation', 'Routine consultation', NULL, NULL),
+            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE, '10:30', 'confirmed', 'check-up', 'Annual physical examination', NULL, NULL),
+            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE, '11:00', 'pending', 'consultation', 'New patient - complaint of chest pain', NULL, NULL),
+            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE, '11:30', 'confirmed', 'consultation', 'Migraine consultation', NULL, NULL),
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE, '14:00', 'confirmed', 'follow-up', 'Follow-up for previous treatment', NULL, NULL),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE, '14:30', 'cancelled', 'consultation', 'Patient cancelled due to emergency', NULL, NULL),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE, '15:00', 'completed', 'check-up', 'Completed routine check-up', NULL, NULL),
+            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE, '15:30', 'confirmed', 'procedure', 'Back pain evaluation', NULL, NULL),
+            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE, '16:00', 'confirmed', 'emergency', 'Emergency consultation - urgent care needed', NULL, NULL),
             
             -- Tomorrow's appointments
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '09:00', 'confirmed', 'consultation', 'Follow-up consultation'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '09:30', 'confirmed', 'follow-up', 'Medication review'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '10:00', 'pending', 'check-up', 'Preventive health screening'),
-            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '11:00', 'confirmed', 'consultation', 'New symptoms evaluation'),
-            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '14:00', 'pending', 'procedure', 'Pre-procedure consultation'),
-            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '14:30', 'confirmed', 'consultation', 'Sports injury follow-up'),
-            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '15:00', 'pending', 'consultation', 'Mental health consultation'),
-            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '16:30', 'pending', 'emergency', 'Emergency slot - patient called in'),
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '09:00', 'confirmed', 'consultation', 'Follow-up consultation', NULL, NULL),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '09:30', 'confirmed', 'follow-up', 'Medication review', NULL, NULL),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '10:00', 'pending', 'check-up', 'Preventive health screening', NULL, NULL),
+            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '11:00', 'confirmed', 'consultation', 'New symptoms evaluation', NULL, NULL),
+            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '14:00', 'pending', 'procedure', 'Pre-procedure consultation', NULL, NULL),
+            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '14:30', 'confirmed', 'consultation', 'Sports injury follow-up', NULL, NULL),
+            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '15:00', 'pending', 'consultation', 'Mental health consultation', NULL, NULL),
+            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '1 day', '16:30', 'pending', 'emergency', 'Emergency slot - patient called in', NULL, NULL),
             
             -- Day after tomorrow
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '09:30', 'confirmed', 'follow-up', 'Treatment progress review'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '10:30', 'pending', 'consultation', 'Second opinion consultation'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '11:00', 'confirmed', 'check-up', 'Lab results discussion'),
-            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '14:00', 'confirmed', 'follow-up', 'Thyroid medication adjustment'),
-            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '15:00', 'pending', 'procedure', 'Physical therapy consultation'),
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '09:30', 'confirmed', 'follow-up', 'Treatment progress review', NULL, NULL),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '10:30', 'pending', 'consultation', 'Second opinion consultation', NULL, NULL),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '11:00', 'confirmed', 'check-up', 'Lab results discussion', NULL, NULL),
+            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '14:00', 'confirmed', 'follow-up', 'Thyroid medication adjustment', NULL, NULL),
+            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '2 days', '15:00', 'pending', 'procedure', 'Physical therapy consultation', NULL, NULL),
             
             -- Next week appointments
-            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '7 days', '09:00', 'confirmed', 'consultation', 'Weekly follow-up'),
-            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '7 days', '10:00', 'pending', 'procedure', 'Scheduled procedure'),
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '8 days', '09:30', 'confirmed', 'follow-up', 'Post-treatment follow-up'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '9 days', '14:00', 'pending', 'consultation', 'Consultation for new symptoms'),
-            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '10 days', '10:30', 'confirmed', 'follow-up', 'Arthritis management review'),
-            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '11 days', '11:00', 'pending', 'consultation', 'Therapy progress review'),
+            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '7 days', '09:00', 'confirmed', 'consultation', 'Weekly follow-up', NULL, NULL),
+            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '7 days', '10:00', 'pending', 'procedure', 'Scheduled procedure', NULL, NULL),
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE + INTERVAL '8 days', '09:30', 'confirmed', 'follow-up', 'Post-treatment follow-up', NULL, NULL),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '9 days', '14:00', 'pending', 'consultation', 'Consultation for new symptoms', NULL, NULL),
+            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '10 days', '10:30', 'confirmed', 'follow-up', 'Arthritis management review', NULL, NULL),
+            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE + INTERVAL '11 days', '11:00', 'pending', 'consultation', 'Therapy progress review', NULL, NULL),
             
             -- Past appointments for history
-            (${doctorId}, ${patients[0].id}, CURRENT_DATE - INTERVAL '1 day', '10:00', 'completed', 'consultation', 'Initial diagnosis completed'),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '2 days', '11:00', 'completed', 'follow-up', 'Follow-up completed successfully'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '3 days', '09:30', 'completed', 'check-up', 'Annual check-up completed'),
-            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '7 days', '14:30', 'completed', 'consultation', 'Treatment consultation completed'),
-            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '14 days', '10:30', 'cancelled', 'consultation', 'Patient no-show'),
-            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '5 days', '15:00', 'completed', 'consultation', 'Migraine treatment plan completed'),
-            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '10 days', '09:00', 'completed', 'procedure', 'Physical therapy evaluation completed'),
-            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '21 days', '11:30', 'completed', 'follow-up', 'Thyroid check-up completed'),
-            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '30 days', '14:00', 'completed', 'consultation', 'Initial sports injury assessment'),
-            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '60 days', '10:00', 'completed', 'consultation', 'Mental health initial consultation')
+            (${doctorId}, ${patients[0].id}, CURRENT_DATE - INTERVAL '1 day', '10:00', 'completed', 'consultation', 'Initial diagnosis completed', (CURRENT_DATE - INTERVAL '1 day' + INTERVAL '10 hours 12 minutes'), (CURRENT_DATE - INTERVAL '1 day' + INTERVAL '10 hours 45 minutes')),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '2 days', '11:00', 'completed', 'follow-up', 'Follow-up completed successfully', (CURRENT_DATE - INTERVAL '2 days' + INTERVAL '11 hours 05 minutes'), (CURRENT_DATE - INTERVAL '2 days' + INTERVAL '11 hours 35 minutes')),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '3 days', '09:30', 'completed', 'check-up', 'Annual check-up completed', (CURRENT_DATE - INTERVAL '3 days' + INTERVAL '09 hours 40 minutes'), (CURRENT_DATE - INTERVAL '3 days' + INTERVAL '10 hours 10 minutes')),
+            (${doctorId}, ${patients[3]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '7 days', '14:30', 'completed', 'consultation', 'Treatment consultation completed', (CURRENT_DATE - INTERVAL '7 days' + INTERVAL '14 hours 45 minutes'), (CURRENT_DATE - INTERVAL '7 days' + INTERVAL '15 hours 20 minutes')),
+            (${doctorId}, ${patients[4]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '14 days', '10:30', 'cancelled', 'consultation', 'Patient no-show', NULL, NULL),
+            (${doctorId}, ${patients[5]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '5 days', '15:00', 'completed', 'consultation', 'Migraine treatment plan completed', (CURRENT_DATE - INTERVAL '5 days' + INTERVAL '15 hours 10 minutes'), (CURRENT_DATE - INTERVAL '5 days' + INTERVAL '15 hours 35 minutes')),
+            (${doctorId}, ${patients[6]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '10 days', '09:00', 'completed', 'procedure', 'Physical therapy evaluation completed', (CURRENT_DATE - INTERVAL '10 days' + INTERVAL '09 hours 05 minutes'), (CURRENT_DATE - INTERVAL '10 days' + INTERVAL '09 hours 55 minutes')),
+            (${doctorId}, ${patients[7]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '21 days', '11:30', 'completed', 'follow-up', 'Thyroid check-up completed', (CURRENT_DATE - INTERVAL '21 days' + INTERVAL '11 hours 40 minutes'), (CURRENT_DATE - INTERVAL '21 days' + INTERVAL '12 hours 10 minutes')),
+            (${doctorId}, ${patients[8]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '30 days', '14:00', 'completed', 'consultation', 'Initial sports injury assessment', (CURRENT_DATE - INTERVAL '30 days' + INTERVAL '14 hours 15 minutes'), (CURRENT_DATE - INTERVAL '30 days' + INTERVAL '14 hours 50 minutes')),
+            (${doctorId}, ${patients[9]?.id || patients[0].id}, CURRENT_DATE - INTERVAL '60 days', '10:00', 'completed', 'consultation', 'Mental health initial consultation', (CURRENT_DATE - INTERVAL '60 days' + INTERVAL '10 hours 20 minutes'), (CURRENT_DATE - INTERVAL '60 days' + INTERVAL '11 hours 00 minutes'))
           RETURNING id
         `;
         console.log(`✓ Inserted ${appointments.length} appointments`);
@@ -120,13 +128,24 @@ async function seedDatabase() {
 
         // Insert sample billing records
         await sql`
-          INSERT INTO billing (doctor_id, patient_id, appointment_id, amount, description, status, due_date)
+          INSERT INTO billing (doctor_id, patient_id, appointment_id, amount, description, status, due_date, created_at)
           VALUES 
-            (${doctorId}, ${patients[0].id}, ${appointments[0].id}, 150.00, 'Initial Consultation', 'paid', CURRENT_DATE),
-            (${doctorId}, ${patients[1]?.id || patients[0].id}, ${appointments[1]?.id || appointments[0].id}, 100.00, 'Follow-up Visit', 'pending', CURRENT_DATE + INTERVAL '7 days'),
-            (${doctorId}, ${patients[2]?.id || patients[0].id}, ${appointments[2]?.id || appointments[0].id}, 120.00, 'Routine Check-up', 'pending', CURRENT_DATE + INTERVAL '14 days')
+            (${doctorId}, ${patients[0].id}, ${appointments[0].id}, 150.00, 'Initial Consultation', 'paid', CURRENT_DATE, CURRENT_DATE),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, ${appointments[1]?.id || appointments[0].id}, 100.00, 'Follow-up Visit', 'paid', CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE - INTERVAL '30 days'),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, ${appointments[2]?.id || appointments[0].id}, 120.00, 'Routine Check-up', 'paid', CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE - INTERVAL '60 days'),
+            (${doctorId}, ${patients[3]?.id || patients[0].id}, ${appointments[3]?.id || appointments[0].id}, 150.00, 'Specialist Consultation', 'pending', CURRENT_DATE + INTERVAL '7 days', CURRENT_DATE)
         `;
         console.log('✓ Inserted sample billing records');
+
+        // Insert sample patient feedback
+        await sql`
+          INSERT INTO patient_feedback (doctor_id, patient_id, appointment_id, rating, comment)
+          VALUES 
+            (${doctorId}, ${patients[0].id}, ${appointments[0].id}, 5, 'Excellent service, highly professional.'),
+            (${doctorId}, ${patients[1]?.id || patients[0].id}, ${appointments[1]?.id || appointments[0].id}, 4, 'Very helpful guidance on my diabetes management.'),
+            (${doctorId}, ${patients[2]?.id || patients[0].id}, ${appointments[2]?.id || appointments[0].id}, 5, 'Quick wait time and friendly staff.')
+        `;
+        console.log('✓ Inserted sample patient feedback');
       }
     } else {
       console.log('Doctors already exist in database');
