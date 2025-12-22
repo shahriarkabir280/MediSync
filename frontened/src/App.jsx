@@ -1,6 +1,8 @@
+
 import { Routes, Route } from "react-router-dom"
 import { lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import LoginForm from "./components/LoginForm";
 
 // Lazy load pages for better performance
@@ -45,27 +47,29 @@ const DoctorLogin = () => {
 
 function App() {
 
-  return(
-    <AuthProvider>
-      <div className="min-h-screen bg-base-200 transition-colors duration-300"> 
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-             {/*
-            <Route path="/" element={<PublicWebsite/>} />*/}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <DoctorDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/products/:id" element={<ProductPage/>} />
-            <Route path="*" element={<h1 className="text-3xl text-center mt-10">404 Not Found</h1>} />
-          </Routes>
-        </Suspense>
-      </div>
-    </AuthProvider>
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/*
+              <Route path="/" element={<PublicWebsite/>} />*/}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <DoctorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/products/:id" element={<ProductPage />} />
+              <Route path="*" element={<h1 className="text-3xl text-center mt-10">404 Not Found</h1>} />
+            </Routes>
+          </Suspense>
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   )
 
 }
