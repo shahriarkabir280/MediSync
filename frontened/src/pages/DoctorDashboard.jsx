@@ -1,12 +1,14 @@
- 
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, useEffect, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNotificationCount } from '../hooks/useNotificationCount';
 import {
   BookOpen, Settings, User, Bell, CreditCard, HelpCircle, LogOut,
   Globe, Calendar, Users, Mail, MessageCircle, BarChart3, FlaskConical,
-  ChevronLeft, ChevronRight, Menu, Search, Clock, ShieldCheck
+  ChevronLeft, ChevronRight, Menu, Search, Clock, ShieldCheck,
+  Sun, Moon
 } from 'lucide-react';
+
 
 // Lazy load tab components for better performance
 const BlogsTab = lazy(() => import('./DoctorDashboardTabs/BlogsTab'));
@@ -39,6 +41,7 @@ const TabLoader = () => (
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { unreadCount, refreshCount } = useNotificationCount();
 
@@ -100,7 +103,7 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="flex h-screen bg-background text-foreground selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300">
       {/* Left Sidebar */}
       <aside
         className={`${isCollapsed ? 'w-20' : 'w-72'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative z-50`}
@@ -212,42 +215,50 @@ const DoctorDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden dark:bg-gray-900 transition-colors duration-300">
         {/* Top Navbar */}
-        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-8 justify-between relative z-40 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+        <header className="h-24 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-8 justify-between relative z-40 shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-colors duration-300">
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h1 className="text-xl font-black text-gray-900 tracking-tight">
+                <h1 className="text-xl font-black text-gray-900 dark:text-gray-100 tracking-tight">
                   Welcome, Dr. {user?.name || 'Doctor'}
                 </h1>
               </div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 ml-4">
+              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1 ml-4">
                 {user?.specialization || 'Clinical Lead'} • {user?.email}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-8">
-            <div className="hidden lg:flex items-center gap-6 pr-8 border-r border-gray-100">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
+            <div className="hidden lg:flex items-center gap-6 pr-8 border-r border-gray-100 dark:border-gray-800">
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all border border-gray-100 dark:border-gray-700 active:scale-95"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <Clock className="w-4 h-4 text-indigo-500" />
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">Active Shift</span>
+                <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Active Shift</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">System Secured</span>
+                <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">System Secured</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end mr-2">
-                <span className="text-xs font-black text-gray-900 leading-none">{user?.name}</span>
+                <span className="text-xs font-black text-gray-900 dark:text-gray-100 leading-none">{user?.name}</span>
                 <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-1">Admin Access</span>
               </div>
-              <div className="relative group p-1 bg-gradient-to-tr from-indigo-500 to-indigo-400 rounded-2xl shadow-lg ring-4 ring-indigo-50">
-                <div className="h-11 w-11 rounded-xl overflow-hidden bg-white border-2 border-white">
+              <div className="relative group p-1 bg-gradient-to-tr from-indigo-500 to-indigo-400 dark:from-indigo-600 dark:to-indigo-500 rounded-2xl shadow-lg ring-4 ring-indigo-50 dark:ring-indigo-900/20">
+                <div className="h-11 w-11 rounded-xl overflow-hidden bg-white dark:bg-gray-800 border-2 border-white dark:border-gray-800">
                   {user?.profileImage ? (
                     <img
                       src={user.profileImage}
@@ -260,20 +271,20 @@ const DoctorDashboard = () => {
                     />
                   ) : null}
                   <div
-                    className="h-full w-full flex items-center justify-center text-indigo-600 text-lg font-black"
+                    className="h-full w-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-lg font-black"
                     style={{ display: user?.profileImage ? 'none' : 'flex' }}
                   >
                     {user?.name?.charAt(0) || 'D'}
                   </div>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-gray-800 rounded-full" />
               </div>
             </div>
           </div>
         </header>
 
         {/* Dynamic Canvas */}
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F8FAFC] custom-scrollbar">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F8FAFC] dark:from-gray-900 dark:to-gray-950 custom-scrollbar transition-colors duration-300">
           <div className="p-8 pb-20">
             {renderContent()}
           </div>
