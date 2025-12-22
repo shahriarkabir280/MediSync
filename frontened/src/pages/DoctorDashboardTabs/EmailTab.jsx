@@ -230,9 +230,25 @@ const EmailTab = () => {
         if (composeForm.cc) formData.append('cc', composeForm.cc);
         if (composeForm.bcc) formData.append('bcc', composeForm.bcc);
 
+        const newAttachments = [];
+        const existingAttachments = [];
+
         composeForm.attachments.forEach(file => {
+          if (file instanceof File) {
+            newAttachments.push(file);
+          } else {
+            existingAttachments.push(file);
+          }
+        });
+
+        newAttachments.forEach(file => {
           formData.append('attachments', file);
         });
+
+        if (existingAttachments.length > 0) {
+          formData.append('existing_attachments', JSON.stringify(existingAttachments));
+        }
+
         payload = formData;
       } else {
         payload = {
@@ -683,7 +699,7 @@ const EmailTab = () => {
                         bcc: selectedEmail.bcc || '',
                         subject: selectedEmail.subject || '',
                         body: selectedEmail.body || '',
-                        attachments: [] // Re-attaching files from URL is complex, user might need to re-upload for now or we handle it smarter later
+                        attachments: selectedEmail.attachments || []
                       });
                       setIsComposing(true);
                       // Ideally we'd track this is a draft to delete it after sending, but basic flow first
@@ -892,7 +908,15 @@ const EmailTab = () => {
                       <div key={i} className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 text-sm animate-in fade-in slide-in-from-bottom-2">
                         <FileText className="w-4 h-4 text-gray-500" />
                         <span className="text-gray-700 truncate max-w-[150px]">{file.name}</span>
-                        <button onClick={() => removeAttachment(i)} className="text-gray-400 hover:text-red-500">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeAttachment(i);
+                          }}
+                          className="text-gray-400 hover:text-red-500 p-0.5 rounded-full hover:bg-red-50 transition-colors"
+                          title="Remove attachment"
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </div>

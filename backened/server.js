@@ -56,7 +56,7 @@ app.use('/uploads', express.static(uploadsPath));
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'http://localhost:5174',
+    'http://localhost:5174', 
     'http://localhost:5175',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
@@ -168,13 +168,13 @@ async function initDB() {
       WHERE table_schema = 'public' 
       AND table_name IN ('doctors', 'patients', 'appointments', 'chats', 'messages', 'emails', 'calendar_events')
     `;
-
+    
     // If all core tables exist, skip initialization
     if (parseInt(tableCheck[0].count) >= 7) {
       dbInitialized = true;
       return;
     }
-
+    
     // Products table
     await sql`
       CREATE TABLE IF NOT EXISTS products (
@@ -458,10 +458,10 @@ initDB().then(async () => {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
   });
-
+  
   // Initialize WebSocket for real-time chat
   initializeWebSocket(server);
-
+  
 }).catch((error) => {
   console.error('Failed to initialize the database:', error);
   process.exit(1);
