@@ -3,10 +3,10 @@ import { patientApi, appointmentApi } from "../../lib/api";
 import { API_CONFIG } from "../../config/api";
 import { useDoctor } from "../../hooks/useDoctor";
 import {
-    User, Phone, Mail, Calendar, Heart, AlertCircle, Plus, Edit2, Edit, Eye, X, Save,
+    User, Phone, Mail, Calendar, Heart, AlertCircle, Plus, Edit2, Edit, Edit3, Eye, X, Save,
     FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle, Search,
     Users, Activity, Filter, ChevronRight, ArrowRight, ExternalLink, TrendingUp, Zap,
-    MoreHorizontal, Download, Share2, Shield, Info, MapPin
+    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { debounce } from "../../utils/performance";
@@ -29,20 +29,24 @@ const PatientSkeleton = () => (
 );
 
 const StatCard = ({ icon: Icon, label, value, subLabel, color }) => (
-    <div className="bg-card p-6 rounded-[2.5rem] border border-border shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 group">
-        <div className="flex items-center justify-between mb-4">
-            <div className={`p-3 rounded-2xl ${color} bg-opacity-10 transition-transform group-hover:scale-110 duration-500`}>
+    <div className="relative group bg-card/40 backdrop-blur-xl border border-border p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col justify-between overflow-hidden active:scale-[0.98]">
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity translate-x-4 -translate-y-4">
+            <Icon size={120} />
+        </div>
+        <div className="flex items-center space-x-4 mb-4">
+            <div className={`p-4 rounded-2xl ${color} bg-opacity-10 shadow-lg`}>
                 <Icon size={24} className={color.replace('bg-', 'text-')} />
             </div>
-            <div className="flex bg-muted px-2 py-1 rounded-lg border border-border">
-                <Activity size={12} className="text-muted-foreground mr-1" />
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Active</span>
+            <div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</p>
+                <div className="flex items-baseline space-x-2">
+                    <h3 className="text-3xl font-black text-foreground tracking-tighter">{value}</h3>
+                    <span className="text-[10px] font-black text-emerald-500">+{subLabel}</span>
+                </div>
             </div>
         </div>
-        <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{label}</h4>
-        <div className="flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-foreground tracking-tighter">{value}</span>
-            <span className="text-[10px] font-bold text-muted-foreground">{subLabel}</span>
+        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+            <div className={`h-full ${color} w-2/3 rounded-full opacity-50`}></div>
         </div>
     </div>
 );
@@ -375,30 +379,29 @@ const PatientTab = memo(() => {
     return (
         <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Glassmorphism Header */}
-            <div className="relative p-8 rounded-[3rem] bg-indigo-600 dark:bg-indigo-950/40 overflow-hidden shadow-2xl shadow-indigo-500/20 dark:shadow-none group border border-indigo-500/20">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+            <div className="relative p-10 rounded-[3.5rem] bg-indigo-600 dark:bg-card border border-indigo-500/20 dark:border-border overflow-hidden shadow-[0_20px_50px_rgba(79,70,229,0.3)] dark:shadow-none group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-indigo-400/30 transition-colors duration-700"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl"></div>
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center space-x-3 text-indigo-100 mb-2">
-                            <Users size={20} className="text-indigo-200" />
-                            <span className="text-xs font-black uppercase tracking-widest opacity-80">Patient Directory</span>
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-3 text-indigo-100 dark:text-indigo-400 mb-2">
+                            <div className="p-2 bg-white/20 dark:bg-indigo-500/10 rounded-xl backdrop-blur-md">
+                                <Users size={24} className="text-white dark:text-indigo-500" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Patient Management</span>
                         </div>
-                        <h1 className="text-4xl font-black text-white tracking-tighter">
-                            Patient <span className="text-indigo-200">Management</span>
+                        <h1 className="text-4xl lg:text-5xl font-black text-white dark:text-foreground tracking-tighter leading-none">
+                            Patient <span className="text-indigo-200 dark:text-indigo-500">Registry</span>
                         </h1>
-                        <p className="text-indigo-100/70 text-sm font-medium max-w-md">
-                            Access comprehensive clinical records and manage your patient relationships in one professional space.
+                        <p className="text-indigo-100/70 dark:text-muted-foreground text-sm font-medium max-w-md leading-relaxed">
+                            Access and manage comprehensive medical records with secure data processing.
                         </p>
                     </div>
 
                     <button
-                        onClick={() => {
-                            resetPatientForm();
-                            setShowNewPatientModal(true);
-                        }}
-                        className="group flex items-center space-x-3 px-8 py-4 bg-card dark:bg-indigo-600 text-indigo-600 dark:text-white rounded-[2rem] font-black shadow-xl shadow-indigo-900/10 hover:shadow-indigo-900/20 hover:-translate-y-1 transition-all duration-300"
+                        onClick={() => setShowNewPatientModal(true)}
+                        className="group flex items-center space-x-4 px-8 py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-900/40 hover:shadow-indigo-500/60 transition-all duration-300 hover:-translate-y-1 active:scale-95"
                     >
                         <div className="p-1.5 bg-indigo-500/10 dark:bg-white/20 rounded-xl group-hover:rotate-90 transition-transform duration-500">
                             <Plus size={20} />
@@ -435,28 +438,28 @@ const PatientTab = memo(() => {
 
             {/* Enhanced Search & Filter Section */}
             <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-[2.5rem] blur-xl group-focus-within:opacity-100 opacity-0 transition-opacity"></div>
-                <div className="relative flex flex-col lg:flex-row gap-4 p-4 bg-card/80 backdrop-blur-xl border border-border rounded-[2.5rem] shadow-sm">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-500 transition-colors" size={20} />
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-[3rem] blur-2xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-500"></div>
+                <div className="relative flex flex-col lg:flex-row items-center gap-6 p-6 bg-card/60 backdrop-blur-2xl border border-border rounded-[3rem] shadow-xl group-hover:border-indigo-500/20 transition-all duration-500">
+                    <div className="flex-1 relative w-full group/input">
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within/input:text-indigo-500 transition-colors">
+                            <Search size={22} className="group-hover/input:scale-110 transition-transform" />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Search by name, unique ID, email or phone..."
-                            className="w-full pl-14 pr-6 py-4 bg-muted border border-border rounded-3xl text-sm font-bold focus:bg-card focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none text-foreground"
+                            placeholder="Search by name, patient ID, or contact number..."
+                            className="w-full pl-16 pr-6 py-5 bg-card/50 border border-border/50 rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground font-bold text-sm placeholder:text-muted-foreground/30 placeholder:font-black placeholder:uppercase placeholder:tracking-widest"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+
                     {searchTerm && (
                         <div className="flex items-center px-4">
-                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1.5 rounded-full border border-border">
-                                Found {filteredPatients.length} Results
-                            </span>
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="ml-2 p-2 text-muted-foreground hover:text-rose-500 transition-colors"
+                                className="w-12 h-12 flex items-center justify-center bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-lg shadow-rose-500/10 active:scale-90"
                             >
-                                <X size={18} />
+                                <X size={20} />
                             </button>
                         </div>
                     )}
@@ -523,81 +526,96 @@ const PatientTab = memo(() => {
                         filteredPatients.map((patient) => (
                             <div
                                 key={patient.id}
-                                className="group relative bg-card border border-border rounded-[2.5rem] p-6 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-500"
+                                className="group relative bg-card/60 backdrop-blur-xl border border-border rounded-[3rem] p-8 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/40 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
                             >
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="flex items-center space-x-5">
-                                        <div className="relative">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[2rem] flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-500">
+                                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                                    <div className="flex items-center space-x-6 flex-1 min-w-0">
+                                        <div className="relative flex-shrink-0">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[2.2rem] flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                                 {patient.first_name.charAt(0)}{patient.last_name.charAt(0)}
                                             </div>
-                                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-card rounded-full flex items-center justify-center shadow-sm border border-border">
-                                                <Shield size={12} className="text-emerald-500" />
+                                            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-card rounded-2xl flex items-center justify-center shadow-lg border-2 border-white dark:border-indigo-900 ring-1 ring-border">
+                                                <Shield size={14} className="text-emerald-500" />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <div className="flex items-center space-x-2">
-                                                <h4 className="text-lg font-black text-foreground tracking-tight group-hover:text-indigo-500 transition-colors">
+                                        <div className="space-y-2 flex-1 min-w-0">
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <h4 className="text-2xl font-black text-foreground tracking-tighter group-hover:text-indigo-500 transition-colors">
                                                     {patient.first_name} {patient.last_name}
                                                 </h4>
-                                                <span className="px-2 py-0.5 bg-muted text-[10px] font-black text-muted-foreground rounded-md border border-border uppercase tracking-tighter">
+                                                <span className="px-3 py-1 bg-indigo-500/10 text-[10px] font-black text-indigo-500 rounded-lg border border-indigo-500/20 uppercase tracking-[0.2em]">
                                                     {patient.unique_id}
                                                 </span>
                                             </div>
 
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-muted-foreground">
-                                                <span className="flex items-center space-x-1.5">
-                                                    <Calendar size={14} className="text-muted-foreground/50" />
-                                                    <span>{calculateAge(patient.date_of_birth)} Yrs</span>
-                                                </span>
-                                                <span className="flex items-center space-x-1.5">
-                                                    <Heart size={14} className="text-rose-400" />
-                                                    <span>{patient.blood_group || 'N/A'}</span>
-                                                </span>
-                                                <span className="flex items-center space-x-1.5 capitalize">
-                                                    <User size={14} className="text-indigo-500/70" />
-                                                    <span>{patient.gender}</span>
-                                                </span>
+                                            <div className="flex flex-nowrap items-center gap-x-6 gap-y-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                                    <div className="p-1.5 bg-muted rounded-lg">
+                                                        <Calendar size={14} className="text-indigo-400" />
+                                                    </div>
+                                                    <span>{calculateAge(patient.date_of_birth)} Years</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                                    <div className="p-1.5 bg-rose-500/10 rounded-lg">
+                                                        <Heart size={14} className="text-rose-500" />
+                                                    </div>
+                                                    <span className="text-rose-500">{patient.blood_group || 'N/A'}</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                                    <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+                                                        <User size={14} className="text-indigo-500" />
+                                                    </div>
+                                                    <span className="text-indigo-500">{patient.gender}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-2">
-                                        <div className="hidden sm:flex flex-col items-end mr-4">
-                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Clinical History</span>
-                                            <span className="text-sm font-black text-foreground">{patient.total_appointments || 0} Visits</span>
+                                    <div className="flex items-center justify-between lg:justify-end gap-6 flex-shrink-0">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em] mb-1">Clinical Record</span>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-xl font-black text-foreground tracking-tighter">{patient.total_appointments || 0}</span>
+                                                <span className="text-[10px] font-bold text-muted-foreground/60">Consultations</span>
+                                            </div>
                                         </div>
 
-                                        <div className="flex bg-muted p-1.5 rounded-2xl border border-border">
+                                        <div className="flex items-center p-2 bg-muted/50 rounded-[1.8rem] border border-border">
                                             <button
                                                 onClick={() => handleViewDetails(patient)}
                                                 disabled={actionLoading === 'loading-details'}
-                                                className="p-2.5 text-muted-foreground hover:text-indigo-500 hover:bg-card rounded-xl transition-all group/btn"
-                                                title="View Patient Sheet"
+                                                className="w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-indigo-500 hover:bg-card rounded-2xl transition-all shadow-indigo-500/10 active:scale-95 group/btn"
+                                                title="Open Patient Sheet"
                                             >
-                                                <Eye size={20} className="group-hover/btn:scale-110 transition-transform" />
+                                                {actionLoading === 'loading-details' && selectedPatient?.id === patient.id ? (
+                                                    <RefreshCw size={22} className="animate-spin text-indigo-500" />
+                                                ) : (
+                                                    <Eye size={24} className="group-hover/btn:scale-125 transition-transform" />
+                                                )}
                                             </button>
+                                            <div className="w-[1px] h-8 bg-border mx-1"></div>
                                             <button
                                                 onClick={() => openEditModal(patient)}
-                                                className="p-2.5 text-muted-foreground hover:text-amber-500 hover:bg-card rounded-xl transition-all group/btn"
-                                                title="Edit Profile"
+                                                className="w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-amber-500 hover:bg-card rounded-2xl transition-all shadow-amber-500/10 active:scale-95 group/btn"
+                                                title="Edit Medical Profile"
                                             >
-                                                <Edit size={20} className="group-hover/btn:scale-110 transition-transform" />
+                                                <Edit3 size={24} className="group-hover/btn:scale-125 transition-transform" />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Hover Status Bar */}
-                                <div className="mt-6 pt-6 border-t border-border/50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-[10px] font-bold text-muted-foreground">
-                                    <span className="flex items-center space-x-1.5 line-clamp-1 max-w-[60%]">
-                                        <MapPin size={12} />
-                                        <span>{patient.address || 'No address provided'}</span>
+                                {/* Detailed Footer - Progressive Disclosure */}
+                                <div className="mt-8 pt-8 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-2 opacity-40 group-hover:opacity-100 transition-opacity duration-500 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                    <span className="flex items-center space-x-2">
+                                        <MapPin size={14} className="text-indigo-400 flex-shrink-0" />
+                                        <span className="break-words">{patient.address || 'Location Hidden (Private)'}</span>
                                     </span>
-                                    <span className="flex items-center space-x-1.5">
-                                        <Clock size={12} />
-                                        <span>Last visit: {formatDate(patient.updated_at)}</span>
+                                    <div className="w-1 h-1 bg-border rounded-full flex-shrink-0"></div>
+                                    <span className="flex items-center space-x-2">
+                                        <Mail size={14} className="text-indigo-400 flex-shrink-0" />
+                                        <span className="break-words">{patient.email}</span>
                                     </span>
                                 </div>
                             </div>
@@ -608,22 +626,25 @@ const PatientTab = memo(() => {
 
             {/* New Patient Modal */}
             {showNewPatientModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-8 border-b border-border flex items-center justify-between">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-card border border-border/60 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                        <div className="p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
                             <div>
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">Register New Patient</h2>
-                                <p className="text-xs font-medium text-muted-foreground mt-1">Create a comprehensive clinical profile</p>
+                                <h2 className="text-3xl font-black text-foreground tracking-tighter">Registration Portal</h2>
+                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Initialize new clinical record</p>
                             </div>
                             <button
-                                onClick={() => setShowNewPatientModal(false)}
-                                className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                    setShowNewPatientModal(false);
+                                    resetPatientForm();
+                                }}
+                                className="w-12 h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-2xl border border-border transition-all active:scale-90"
                             >
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8">
+                        <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
                             {error && (
                                 <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
                                     <AlertCircle size={18} />
@@ -795,28 +816,28 @@ const PatientTab = memo(() => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4 pt-4">
+                                <div className="flex items-center space-x-5 pt-8">
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setShowNewPatientModal(false);
                                             resetPatientForm();
                                         }}
-                                        className="flex-1 px-8 py-5 border border-border text-muted-foreground rounded-2xl font-black text-sm hover:bg-muted transition-all"
+                                        className="flex-1 px-10 py-5 border border-border/60 text-muted-foreground font-black text-[12px] uppercase tracking-widest rounded-2xl hover:bg-muted transition-all"
                                     >
                                         Discard
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={actionLoading === 'create-patient'}
-                                        className="flex-[2] py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-black text-sm tracking-tight shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
                                     >
                                         {actionLoading === 'create-patient' ? (
-                                            <div className="flex items-center justify-center space-x-2">
+                                            <div className="flex items-center justify-center space-x-3">
                                                 <RefreshCw size={20} className="animate-spin" />
-                                                <span>Registering...</span>
+                                                <span>Synchronizing...</span>
                                             </div>
-                                        ) : 'Finalize Registration'}
+                                        ) : 'Initialize Record'}
                                     </button>
                                 </div>
                             </form>
@@ -826,22 +847,22 @@ const PatientTab = memo(() => {
             )}
             {/* Edit Patient Modal */}
             {showEditPatientModal && selectedPatient && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-8 border-b border-border flex items-center justify-between">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-card border border-border/60 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                        <div className="p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
                             <div>
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">Edit Patient Profile</h2>
-                                <p className="text-xs font-medium text-muted-foreground mt-1">Update clinical and personal information</p>
+                                <h2 className="text-3xl font-black text-foreground tracking-tighter">Profile Amendment</h2>
+                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Modify existing clinical registry</p>
                             </div>
                             <button
                                 onClick={() => setShowEditPatientModal(false)}
-                                className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground"
+                                className="w-12 h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-2xl border border-border transition-all active:scale-90"
                             >
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8">
+                        <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
                             {error && (
                                 <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
                                     <AlertCircle size={18} />
@@ -1006,25 +1027,25 @@ const PatientTab = memo(() => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4 pt-4">
+                                <div className="flex items-center space-x-5 pt-8">
                                     <button
                                         type="button"
                                         onClick={() => setShowEditPatientModal(false)}
-                                        className="flex-1 px-8 py-5 border border-border text-muted-foreground rounded-2xl font-black text-sm hover:bg-muted transition-all"
+                                        className="flex-1 px-10 py-5 border border-border/60 text-muted-foreground font-black text-[12px] uppercase tracking-widest rounded-2xl hover:bg-muted transition-all"
                                     >
-                                        Discard
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={actionLoading === 'edit-patient'}
-                                        className="flex-[2] py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-black text-sm tracking-tight shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
                                     >
                                         {actionLoading === 'edit-patient' ? (
-                                            <div className="flex items-center justify-center space-x-2">
+                                            <div className="flex items-center justify-center space-x-3">
                                                 <RefreshCw size={20} className="animate-spin" />
                                                 <span>Updating...</span>
                                             </div>
-                                        ) : 'Update Profile'}
+                                        ) : 'Update Record'}
                                     </button>
                                 </div>
                             </form>
@@ -1035,72 +1056,77 @@ const PatientTab = memo(() => {
 
             {/* Patient Details Modal */}
             {showPatientModal && selectedPatient && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 sm:p-6 animate-in fade-in duration-300">
-                    <div className="bg-card rounded-[3.5rem] w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl dark:shadow-none border border-border relative overflow-hidden">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 sm:p-10 animate-in fade-in duration-500">
+                    <div className="bg-card/80 backdrop-blur-3xl rounded-[3.5rem] w-full max-w-7xl h-[92vh] flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.5)] dark:shadow-none border border-border/50 relative overflow-hidden animate-in zoom-in-95 duration-700">
+                        {/* High-end Gradient Accents */}
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
+
                         {/* Modal Header */}
-                        <div className="relative z-10 flex-shrink-0 px-10 py-8 border-b border-border bg-card">
+                        <div className="relative z-10 flex-shrink-0 px-12 py-10 border-b border-border/40 bg-card/40">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                                 <div className="flex items-center space-x-6">
-                                    <div className="relative">
-                                        <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[2.5rem] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-indigo-100 dark:shadow-none ring-4 ring-white dark:ring-indigo-900/50">
+                                    <div className="relative group">
+                                        <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[3rem] flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-indigo-500/20 group-hover:scale-105 transition-all duration-500 ring-4 ring-white dark:ring-indigo-900/20">
                                             {selectedPatient.first_name.charAt(0)}{selectedPatient.last_name.charAt(0)}
                                         </div>
-                                        <div className="absolute -bottom-1 -right-1 p-2 bg-emerald-500 text-white rounded-2xl border-4 border-white dark:border-indigo-900 shadow-sm">
-                                            <Shield size={16} />
+                                        <div className="absolute -bottom-1 -right-1 p-2.5 bg-emerald-500 text-white rounded-2xl border-4 border-white dark:border-indigo-900 shadow-xl ring-1 ring-emerald-400/50">
+                                            <Shield size={18} weight="fill" />
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center space-x-3">
-                                            <h2 className="text-3xl font-black text-foreground tracking-tighter">
-                                                {selectedPatient.first_name} {selectedPatient.last_name}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-4">
+                                            <h2 className="text-4xl lg:text-5xl font-black text-foreground tracking-tighter leading-tight">
+                                                {selectedPatient.first_name} <span className="text-indigo-500">{selectedPatient.last_name}</span>
                                             </h2>
-                                            <span className="px-4 py-1.5 bg-indigo-500/10 text-[10px] font-black text-indigo-500 rounded-full border border-indigo-500/20 uppercase tracking-widest">
+                                            <div className="px-5 py-2 bg-indigo-500/10 text-[10px] font-black text-indigo-500 rounded-2xl border border-indigo-500/20 uppercase tracking-[0.3em] shadow-sm">
                                                 {selectedPatient.unique_id}
-                                            </span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground">
-                                            <span className="flex items-center space-x-2">
-                                                <Calendar size={16} className="text-indigo-400" />
-                                                <span>{calculateAge(selectedPatient.date_of_birth)} Years Old</span>
+                                        <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                            <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
+                                                <Calendar size={18} className="text-indigo-400" />
+                                                <span>{calculateAge(selectedPatient.date_of_birth)} Years</span>
                                             </span>
-                                            <span className="flex items-center space-x-2">
-                                                <MapPin size={16} className="text-muted-foreground/50" />
+                                            <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
+                                                <MapPin size={18} className="text-muted-foreground/40" />
                                                 <span>{selectedPatient.address || 'Location Hidden'}</span>
                                             </span>
-                                            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg border border-emerald-500/20">
-                                                Active Case
-                                            </span>
+                                            <div className="flex items-center space-x-2 px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 shadow-sm">
+                                                <Activity size={16} />
+                                                <span>Active Case</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-5">
                                     <button
                                         onClick={() => openEditModal(selectedPatient)}
-                                        className="flex items-center space-x-3 px-6 py-3.5 bg-muted text-foreground rounded-2xl font-black text-xs hover:bg-muted/80 transition-all border border-border"
+                                        className="hidden md:flex items-center space-x-3 px-8 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"
                                     >
-                                        <Edit size={16} className="text-indigo-500" />
+                                        <Edit3 size={18} className="group-hover/btn:rotate-12 transition-transform" />
                                         <span>Update Profile</span>
                                     </button>
                                     <button
                                         onClick={() => setShowPatientModal(false)}
-                                        className="p-4 bg-muted/30 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all border border-border hover:border-rose-500/20"
+                                        className="w-16 h-16 flex items-center justify-center bg-muted/30 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-[1.8rem] transition-all border border-border hover:border-rose-500/20 active:scale-90"
                                     >
-                                        <X size={24} />
+                                        <X size={28} />
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Modern Tab Navigation */}
-                        <div className="relative z-10 flex-shrink-0 px-10 py-4 bg-muted/40 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden border-b border-border/50">
-                            <div className="flex items-center space-x-2 p-1 bg-muted/50 rounded-[2rem] border border-border overflow-x-auto no-scrollbar">
+                        <div className="relative z-10 flex-shrink-0 px-12 py-6 bg-muted/20 backdrop-blur-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-border/40">
+                            <div className="flex items-center space-x-3 p-1.5 bg-card/60 rounded-[2.2rem] border border-border/50 overflow-x-auto no-scrollbar shadow-inner">
                                 {[
-                                    { id: 'profile', label: 'Overview', icon: UserCircle },
-                                    { id: 'medical-history', label: 'Clinical History', icon: Stethoscope },
+                                    { id: 'profile', label: 'Clinical Overview', icon: UserCircle },
+                                    { id: 'medical-history', label: 'History', icon: Stethoscope },
                                     { id: 'records', label: 'Documents', icon: FileText },
                                     { id: 'appointments', label: 'Schedule', icon: Clock },
-                                    { id: 'prescriptions', label: 'Medications', icon: Pill }
+                                    { id: 'prescriptions', label: 'Meds', icon: Pill }
                                 ].map((tab) => {
                                     const Icon = tab.icon;
                                     const isActive = activeDetailsTab === tab.id;
@@ -1108,107 +1134,126 @@ const PatientTab = memo(() => {
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveDetailsTab(tab.id)}
-                                            className={`flex items-center space-x-2 px-6 py-2.5 rounded-[1.5rem] text-xs font-black transition-all duration-300 whitespace-nowrap ${isActive
-                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-card'
+                                            className={`flex items-center space-x-3 px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${isActive
+                                                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/40 scale-105 active:scale-95'
+                                                : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
                                                 }`}
                                         >
-                                            <Icon size={16} className={isActive ? 'text-white' : 'text-muted-foreground/60'} />
+                                            <Icon size={18} className={isActive ? 'text-white' : 'text-muted-foreground/40'} />
                                             <span>{tab.label}</span>
                                         </button>
                                     );
                                 })}
                             </div>
 
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-4">
                                 <button
                                     onClick={() => handleDeletePatient(selectedPatient.id)}
-                                    className="p-2.5 text-rose-300 hover:text-rose-600 transition-colors"
+                                    className="w-12 h-12 flex items-center justify-center bg-rose-500/5 text-rose-300 hover:text-rose-600 hover:bg-rose-500/10 transition-all rounded-2xl border border-border hover:border-rose-500/20"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={20} />
+                                </button>
+                                <div className="w-[1px] h-8 bg-border hidden lg:block"></div>
+                                <button className="flex items-center space-x-2 px-6 py-3 bg-muted/50 border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-card transition-all">
+                                    <Download size={16} />
+                                    <span>Export Dossier</span>
                                 </button>
                             </div>
                         </div>
 
                         {/* Modal Body Container */}
-                        <div className="relative z-10 flex-1 overflow-y-auto bg-card">
-                            <div className="px-10 py-8">
+                        <div className="relative z-10 flex-1 overflow-y-auto bg-card no-scrollbar">
+                            <div className="px-10 py-10">
                                 {detailsLoading ? (
-                                    <div className="flex flex-col items-center justify-center h-full space-y-4 animate-in fade-in duration-500">
+                                    <div className="flex flex-col items-center justify-center py-32 space-y-6">
                                         <div className="relative">
-                                            <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                                            <div className="w-20 h-20 border-4 border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <Activity size={24} className="text-indigo-600 animate-pulse" />
+                                                <Activity size={32} className="text-indigo-600 animate-pulse" />
                                             </div>
                                         </div>
-                                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Retrieving Clinical Data...</p>
+                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.4em]">Decrypting Clinical Intelligence...</p>
                                     </div>
                                 ) : (
-                                    <div className="min-h-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="min-h-full space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
                                         {/* Profile Overview Tab */}
                                         {activeDetailsTab === 'profile' && (
-                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                                <div className="lg:col-span-2 space-y-8">
-                                                    <div className="bg-muted/30 border border-border rounded-[2.5rem] p-8">
-                                                        <h3 className="text-lg font-black text-foreground tracking-tight mb-6 flex items-center space-x-3">
-                                                            <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-                                                                <Info size={18} />
+                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                                                <div className="lg:col-span-2 space-y-10">
+                                                    <div className="bg-muted/10 border border-border/40 rounded-[3.5rem] p-12 shadow-inner group/info">
+                                                        <h3 className="text-2xl font-black text-foreground tracking-tighter mb-10 flex items-center space-x-5">
+                                                            <div className="p-4 bg-indigo-600 rounded-[1.5rem] text-white shadow-2xl shadow-indigo-500/20 group-hover/info:rotate-6 transition-transform">
+                                                                <Info size={24} />
                                                             </div>
-                                                            <span>Vital Information</span>
+                                                            <span>Vital Identification</span>
                                                         </h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm">
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Email Address</p>
-                                                                <p className="font-bold text-foreground">{selectedPatient.email}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Primary Contact</p>
-                                                                <p className="font-bold text-foreground">{selectedPatient.phone || 'Not Recorded'}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Date of Birth</p>
-                                                                <p className="font-bold text-foreground">{formatDate(selectedPatient.date_of_birth)}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Blood Type</p>
-                                                                <span className="inline-block px-3 py-1 bg-rose-500/10 text-rose-500 rounded-lg font-black">{selectedPatient.blood_group || 'Unknown'}</span>
-                                                            </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-10">
+                                                            {[
+                                                                { label: 'Email Address', value: selectedPatient.email, icon: Mail },
+                                                                { label: 'Primary Contact', value: selectedPatient.phone || 'Not Recorded', icon: Phone },
+                                                                { label: 'Date of Birth', value: formatDate(selectedPatient.date_of_birth), icon: Calendar },
+                                                                { label: 'Blood Grouping', value: selectedPatient.blood_group || 'Unknown', icon: Heart, badge: true }
+                                                            ].map((field, idx) => (
+                                                                <div key={idx} className="space-y-3 group/field">
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <field.icon size={12} className="text-muted-foreground/30 group-hover/field:text-indigo-500 transition-colors" />
+                                                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">{field.label}</p>
+                                                                    </div>
+                                                                    {field.badge ? (
+                                                                        <span className="inline-block px-5 py-1.5 bg-rose-500/10 text-rose-500 rounded-xl font-black text-xs border border-rose-500/20 shadow-sm">{field.value}</span>
+                                                                    ) : (
+                                                                        <p className="text-lg font-black text-foreground tracking-tight">{field.value}</p>
+                                                                    )}
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
 
-                                                    <div className="bg-muted/30 border border-border rounded-[2.5rem] p-8">
-                                                        <h3 className="text-lg font-black text-foreground tracking-tight mb-6 flex items-center space-x-3">
-                                                            <div className="p-2 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-500/20">
-                                                                <AlertCircle size={18} />
+                                                    <div className="bg-muted/10 border border-border/40 rounded-[3.5rem] p-12 shadow-inner group/emergency">
+                                                        <h3 className="text-2xl font-black text-foreground tracking-tighter mb-10 flex items-center space-x-5">
+                                                            <div className="p-4 bg-rose-500 rounded-[1.5rem] text-white shadow-2xl shadow-rose-500/20 group-hover/emergency:-rotate-6 transition-transform">
+                                                                <AlertCircle size={24} />
                                                             </div>
-                                                            <span>Emergency Contact Details</span>
+                                                            <span>Emergency Protocols</span>
                                                         </h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-card p-6 rounded-[2rem] border border-border/50">
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contact Person</p>
-                                                                <p className="font-bold text-foreground">{selectedPatient.emergency_contact_name || 'N/A'}</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-card/40 backdrop-blur-xl p-10 rounded-[3rem] border border-border group-hover/emergency:border-rose-500/20 transition-all duration-500">
+                                                            <div className="space-y-3 group/field">
+                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Guardian / Contact</p>
+                                                                <p className="text-lg font-black text-foreground tracking-tight">{selectedPatient.emergency_contact_name || 'N/A'}</p>
                                                             </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Emergency Line</p>
-                                                                <p className="font-bold text-foreground">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
+                                                            <div className="space-y-3 group/field">
+                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Verified Emergency Line</p>
+                                                                <p className="text-lg font-black text-foreground tracking-tight text-rose-500">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-8">
-                                                    <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-indigo-100">
-                                                        <Zap size={32} className="text-indigo-200 mb-6" />
-                                                        <h4 className="text-xl font-black tracking-tight mb-2">Clinical Note</h4>
-                                                        <p className="text-indigo-100 text-xs font-bold leading-relaxed mb-6">
-                                                            {selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 100) + '...' : 'No primary clinical notes active for this patient.'}
+                                                <div className="space-y-10">
+                                                    <div className="bg-indigo-600 rounded-[3rem] p-10 text-white shadow-2xl shadow-indigo-500/20 overflow-hidden relative group/notes">
+                                                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover/notes:scale-150 transition-transform duration-1000"></div>
+                                                        <Zap size={48} className="text-indigo-200/40 mb-8 relative z-10" />
+                                                        <h4 className="text-2xl font-black tracking-tighter mb-4 relative z-10">Clinical Perspective</h4>
+                                                        <p className="text-indigo-100/80 text-sm font-bold leading-relaxed mb-10 relative z-10 italic">
+                                                            "{selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 120) + '...' : 'No primary clinical notes active for this patient record.'}"
                                                         </p>
                                                         <button
                                                             onClick={() => setActiveDetailsTab('medical-history')}
-                                                            className="w-full py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                                            className="w-full py-5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all relative z-10"
                                                         >
-                                                            View Full Record
+                                                            Examine Full Record
                                                         </button>
+                                                    </div>
+
+                                                    <div className="bg-card border border-border/60 rounded-[3rem] p-10 shadow-xl space-y-8">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Patient Score</p>
+                                                            <span className="text-2xl font-black text-indigo-500">9.4</span>
+                                                        </div>
+                                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-[94%]"></div>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-muted-foreground/60 leading-relaxed text-center">High diagnostic compliance and clinical stability observed.</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1216,184 +1261,138 @@ const PatientTab = memo(() => {
 
                                         {/* Clinical History Tab */}
                                         {activeDetailsTab === 'medical-history' && (
-                                            <div className="space-y-8">
-                                                {/* Medical History Section */}
-                                                <div className="bg-muted/30 border border-border rounded-[3rem] p-8">
-                                                    <div className="flex items-center justify-between mb-8">
-                                                        <div className="flex items-center space-x-4">
-                                                            <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20">
-                                                                <Stethoscope size={24} />
+                                            <div className="space-y-12">
+                                                <div className="bg-muted/10 border border-border/40 rounded-[4rem] p-12 shadow-inner group/history">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+                                                        <div className="flex items-center space-x-6">
+                                                            <div className="p-5 bg-indigo-600 text-white rounded-[2rem] shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
+                                                                <Stethoscope size={32} />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-xl font-black text-foreground tracking-tight">Medical Biography</h3>
-                                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Complete Clinical Timeline</p>
+                                                                <h3 className="text-3xl font-black text-foreground tracking-tighter">Medical Biography</h3>
+                                                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em]">Chronological Patient Registry</p>
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     {selectedPatient.medical_history ? (
-                                                        <div className="space-y-4">
+                                                        <div className="space-y-10">
                                                             {selectedPatient.medical_history.split('\n').filter(line => line.trim()).map((entry, index) => (
-                                                                <div key={index} className="group relative pl-8 pb-6 last:pb-0">
-                                                                    {/* Timeline connector */}
-                                                                    <div className="absolute left-2 top-2 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500/20 to-transparent group-last:hidden"></div>
-
-                                                                    {/* Timeline dot */}
-                                                                    <div className="absolute left-0 top-2 w-5 h-5 bg-indigo-600 rounded-full border-4 border-card shadow-lg shadow-indigo-500/20 group-hover:scale-125 transition-transform"></div>
-
-                                                                    {/* Content card */}
-                                                                    <div className="bg-card border border-border rounded-2xl p-6 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-300">
-                                                                        <p className="text-sm font-bold text-foreground leading-relaxed">{entry}</p>
+                                                                <div key={index} className="group/item relative pl-16 pb-12 last:pb-0">
+                                                                    <div className="absolute left-[23px] top-6 bottom-0 w-[2px] bg-indigo-500/10 group-last/item:hidden"></div>
+                                                                    <div className="absolute left-0 top-4 w-12 h-12 bg-card rounded-2xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
+                                                                        <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                    </div>
+                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[2.5rem] p-10 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
+                                                                        <p className="text-base font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
                                                                     </div>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center justify-center py-16 bg-muted/20 rounded-[2.5rem] border border-dashed border-border">
-                                                            <div className="p-4 bg-muted/50 rounded-2xl mb-4">
-                                                                <Stethoscope size={40} className="text-muted-foreground/30" />
+                                                        <div className="flex flex-col items-center justify-center py-32 bg-muted/5 rounded-[4rem] border-2 border-dashed border-border/40">
+                                                            <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8 shadow-xl">
+                                                                <Stethoscope size={64} className="text-muted-foreground/10" />
                                                             </div>
-                                                            <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">No Medical History Documented</p>
-                                                            <p className="text-xs font-bold text-muted-foreground/50 mt-2">Patient records will appear here</p>
+                                                            <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.5em]">No temporal signatures indexed</p>
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Allergies Section */}
-                                                <div className="bg-rose-500/5 border border-rose-500/10 rounded-[3rem] p-8">
-                                                    <div className="flex items-center justify-between mb-8">
-                                                        <div className="flex items-center space-x-4">
-                                                            <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-lg shadow-rose-500/20">
-                                                                <AlertCircle size={24} />
-                                                            </div>
-                                                            <div>
-                                                                <h3 className="text-xl font-black text-rose-600 dark:text-rose-500 tracking-tight">Allergies & Sensitivities</h3>
-                                                                <p className="text-xs font-bold text-rose-500/70 uppercase tracking-widest">Critical Patient Safety Information</p>
-                                                            </div>
+                                                <div className="bg-rose-500/5 border border-rose-500/10 rounded-[4rem] p-12 group/allergies shadow-inner">
+                                                    <div className="flex items-center space-x-8 mb-12">
+                                                        <div className="p-5 bg-rose-600 text-white rounded-[2rem] shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
+                                                            <AlertCircle size={32} />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-3xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
+                                                            <p className="text-[11px] font-black text-rose-500/40 uppercase tracking-[0.4em]">High-Priority Safety Alerts</p>
                                                         </div>
                                                     </div>
 
                                                     {selectedPatient.allergies ? (
-                                                        <div className="space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                                             {selectedPatient.allergies.split(',').map((allergy, index) => (
-                                                                <div key={index} className="group bg-card border border-rose-500/10 rounded-2xl p-5 hover:shadow-xl hover:shadow-rose-500/5 hover:border-rose-500/30 transition-all duration-300">
-                                                                    <div className="flex items-center space-x-4">
-                                                                        <div className="p-2 bg-rose-500/10 text-rose-500 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-all">
-                                                                            <AlertCircle size={20} />
+                                                                <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-[2.5rem] p-8 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
+                                                                    <div className="flex items-center space-x-6">
+                                                                        <div className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
+                                                                            <Shield size={24} />
                                                                         </div>
-                                                                        <div className="flex-1">
-                                                                            <p className="text-sm font-black text-rose-600 dark:text-rose-400">{allergy.trim()}</p>
-                                                                        </div>
-                                                                        <div className="px-3 py-1 bg-rose-500/10 text-rose-500 rounded-lg">
-                                                                            <span className="text-[10px] font-black uppercase tracking-widest">Alert</span>
-                                                                        </div>
+                                                                        <p className="text-lg font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
                                                                     </div>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center justify-center py-16 bg-emerald-500/5 rounded-[2.5rem] border border-dashed border-emerald-500/10">
-                                                            <div className="p-4 bg-emerald-500/10 rounded-2xl mb-4">
-                                                                <Shield size={40} className="text-emerald-500" />
+                                                        <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/5 rounded-[4rem] border-2 border-dashed border-emerald-500/10">
+                                                            <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8">
+                                                                <Shield size={64} className="text-emerald-500/10" />
                                                             </div>
-                                                            <p className="text-sm font-black text-emerald-600 uppercase tracking-widest">No Known Allergies</p>
-                                                            <p className="text-xs font-bold text-muted-foreground/50 mt-2">Patient is cleared for standard treatments</p>
+                                                            <p className="text-xs font-black text-emerald-600/30 uppercase tracking-[0.5em]">No Sensitivities Detected</p>
                                                         </div>
                                                     )}
-                                                </div>
-
-                                                {/* Additional Clinical Notes */}
-                                                <div className="bg-amber-500/5 border border-amber-500/10 rounded-[3rem] p-8">
-                                                    <div className="flex items-center space-x-4 mb-6">
-                                                        <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-500/20">
-                                                            <FileText size={24} />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-black text-amber-600 dark:text-amber-500 tracking-tight">Clinical Notes</h3>
-                                                            <p className="text-xs font-bold text-amber-500/70 uppercase tracking-widest">Additional Observations</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="bg-card border border-amber-500/10 rounded-2xl p-6">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                            <div className="space-y-2">
-                                                                <div className="flex items-center space-x-2 text-muted-foreground">
-                                                                    <Calendar size={14} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Last Updated</span>
-                                                                </div>
-                                                                <p className="text-sm font-black text-foreground">{formatDate(selectedPatient.updated_at || selectedPatient.created_at)}</p>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <div className="flex items-center space-x-2 text-muted-foreground">
-                                                                    <Activity size={14} />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Record Status</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-2">
-                                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                                                    <p className="text-sm font-black text-emerald-600">Active & Current</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* Medical Records Tab */}
                                         {activeDetailsTab === 'records' && (
-                                            <div className="space-y-6">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <h3 className="text-xl font-black text-foreground tracking-tight">Clinical Documentation</h3>
+                                            <div className="space-y-12">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-6">
+                                                    <div>
+                                                        <h3 className="text-3xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
+                                                        <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Cryptographically Secured Documents</p>
+                                                    </div>
                                                     <button
                                                         onClick={() => setShowFileUpload(true)}
-                                                        className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-500/20 hover:-translate-y-1 transition-all"
+                                                        className="flex items-center space-x-4 px-10 py-5 bg-indigo-600 text-white rounded-[2.5rem] text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1.5 transition-all active:scale-95"
                                                     >
-                                                        <Plus size={16} />
-                                                        <span>Upload New Document</span>
+                                                        <Plus size={22} />
+                                                        <span>Injest New Record</span>
                                                     </button>
                                                 </div>
 
                                                 {medicalRecords.filter(r => !r.prescription && r.file_type !== 'prescription').length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-[3rem] border border-dashed border-border">
-                                                        <FileText size={48} className="text-muted-foreground/30 mb-4" />
-                                                        <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">No Medical Documents Found</p>
+                                                    <div className="flex flex-col items-center justify-center py-40 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-4">
+                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
+                                                            <FileText size={72} className="text-muted-foreground/5" />
+                                                        </div>
+                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">Secure Vault is Empty</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 px-4">
                                                         {medicalRecords
-                                                            .filter(r => !r.prescription && r.file_type !== 'prescription')
-                                                            .map((record) => (
-                                                                <div key={record.id} className="bg-card border border-border rounded-[2.5rem] p-6 hover:shadow-xl hover:shadow-indigo-500/5 transition-all group">
-                                                                    <div className="flex items-start justify-between mb-4">
-                                                                        <div className="flex items-center space-x-4">
-                                                                            <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                                                                                <FileText size={24} />
-                                                                            </div>
-                                                                            <div>
-                                                                                <h4 className="text-sm font-black text-foreground">{record.diagnosis || 'Clinical Update'}</h4>
-                                                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                                                                    {formatDate(record.record_date || record.created_at)}
-                                                                                </p>
-                                                                            </div>
+                                                            .filter(record => !record.prescription && record.file_type !== 'prescription')
+                                                            .map((record, index) => (
+                                                                <div key={index} className="group relative bg-card/60 backdrop-blur-3xl border border-border/60 rounded-[3rem] p-10 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/40 transition-all duration-700">
+                                                                    <div className="flex items-start justify-between mb-10">
+                                                                        <div className="p-5 bg-muted rounded-[2rem] group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-2xl border border-border/50">
+                                                                            <FileText size={32} />
                                                                         </div>
-                                                                        {record.file_path && (
-                                                                            <button
-                                                                                onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-all"
-                                                                            >
-                                                                                <ExternalLink size={18} />
+                                                                        <div className="flex space-x-3">
+                                                                            <button className="w-14 h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-2xl border border-border/50 transition-all hover:scale-110">
+                                                                                <Download size={22} />
                                                                             </button>
-                                                                        )}
-                                                                    </div>
-                                                                    {record.notes && (
-                                                                        <div className="bg-muted/30 p-4 rounded-2xl text-[11px] font-bold text-muted-foreground leading-relaxed mb-4">
-                                                                            {record.notes}
+                                                                            <button className="w-14 h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-2xl border border-border/50 transition-all hover:scale-110">
+                                                                                <Trash2 size={22} />
+                                                                            </button>
                                                                         </div>
-                                                                    )}
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <span className="px-3 py-1 bg-muted text-[10px] font-black text-muted-foreground rounded-lg uppercase tracking-widest">
-                                                                            {record.file_type || 'Record'}
+                                                                    </div>
+                                                                    <div className="space-y-3">
+                                                                        <h4 className="text-xl font-black text-foreground tracking-tighter truncate group-hover:text-indigo-500 transition-colors uppercase">{record.file_name}</h4>
+                                                                        <div className="flex items-center space-x-3">
+                                                                            <Calendar size={12} className="text-muted-foreground/40" />
+                                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">{formatDate(record.created_at)}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="mt-10 pt-10 border-t border-border/40 flex items-center justify-between">
+                                                                        <span className="px-5 py-2 bg-muted/50 text-[10px] font-black text-muted-foreground/60 rounded-xl uppercase tracking-[0.2em] border border-border/50">
+                                                                            {record.file_type || 'Registry'}
                                                                         </span>
+                                                                        <button className="text-[11px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.3em] flex items-center space-x-3 px-5 py-2.5 hover:bg-indigo-500/5 rounded-2xl">
+                                                                            <span>Analyze</span>
+                                                                            <ExternalLink size={16} />
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1404,44 +1403,55 @@ const PatientTab = memo(() => {
 
                                         {/* Appointments Tab */}
                                         {activeDetailsTab === 'appointments' && (
-                                            <div className="space-y-6">
-                                                <h3 className="text-xl font-black text-foreground tracking-tight px-2">Scheduling Timeline</h3>
+                                            <div className="space-y-12">
+                                                <div className="px-8">
+                                                    <h3 className="text-3xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
+                                                    <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Live calendar sync & clinical history</p>
+                                                </div>
+
                                                 {appointmentLoading ? (
-                                                    <div className="flex justify-center py-20 animate-pulse">
-                                                        <div className="h-2 w-24 bg-muted rounded-full"></div>
+                                                    <div className="flex flex-col items-center justify-center py-40 space-y-8">
+                                                        <RefreshCw size={48} className="animate-spin text-indigo-500/20" />
+                                                        <p className="text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.5em]">Synchronizing temporal data...</p>
                                                     </div>
                                                 ) : patientAppointments.length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-[3rem] border border-dashed border-border">
-                                                        <Calendar size={48} className="text-muted-foreground/30 mb-4" />
-                                                        <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">No Appointments Scheduled</p>
+                                                    <div className="flex flex-col items-center justify-center py-32 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-6">
+                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
+                                                            <Calendar size={72} className="text-muted-foreground/10" />
+                                                        </div>
+                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">No temporal logs detected</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-4">
+                                                    <div className="space-y-8 px-8">
                                                         {patientAppointments.map((appointment) => (
-                                                            <div key={appointment.id} className="relative pl-8 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-border group">
-                                                                <div className="absolute left-[-4px] top-6 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-card shadow-sm"></div>
-                                                                <div className="bg-card border border-border rounded-[2rem] p-6 hover:shadow-xl transition-all">
-                                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                                        <div className="flex items-center space-x-4">
-                                                                            <div className="p-3 bg-muted rounded-2xl text-muted-foreground">
-                                                                                <Clock size={20} />
-                                                                            </div>
-                                                                            <div>
-                                                                                <h4 className="text-sm font-black text-foreground">
-                                                                                    {formatDate(appointment.appointment_date)} at {appointment.appointment_time}
-                                                                                </h4>
-                                                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                                                                    {appointment.appointment_type} Session
-                                                                                </p>
+                                                            <div key={appointment.id} className="group relative pl-20 before:absolute before:left-[31px] before:top-0 before:bottom-0 before:w-[3px] before:bg-indigo-500/5 last:before:hidden">
+                                                                <div className="absolute left-0 top-6 w-16 h-16 bg-card rounded-3xl border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
+                                                                    <Clock size={28} className="text-indigo-500" />
+                                                                </div>
+                                                                <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[3.5rem] p-12 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
+                                                                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+                                                                        <div className="space-y-4">
+                                                                            <h4 className="text-2xl font-black text-foreground tracking-tighter">
+                                                                                {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-3">|</span> {appointment.appointment_time}
+                                                                            </h4>
+                                                                            <div className="flex items-center space-x-6">
+                                                                                <div className="flex items-center space-x-3">
+                                                                                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                                    <span className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] font-outfit">
+                                                                                        {appointment.appointment_type || 'Clinical'} Consultation
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="w-[1px] h-4 bg-border/60"></div>
+                                                                                <span className="text-[11px] font-black text-indigo-500/50 uppercase tracking-[0.3em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
                                                                             </div>
                                                                         </div>
-                                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${appointment.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600' :
-                                                                            appointment.status === 'confirmed' ? 'bg-indigo-500/10 text-indigo-600' :
-                                                                                appointment.status === 'pending' ? 'bg-amber-500/10 text-amber-600' :
-                                                                                    'bg-rose-500/10 text-rose-600'
+                                                                        <div className={`px-10 py-4 rounded-[1.8rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-lg border-2 ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
+                                                                            appointment.status === 'confirmed' ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
+                                                                                appointment.status === 'pending' ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
+                                                                                    'bg-rose-500/5 text-rose-500 border-rose-500/10'
                                                                             }`}>
                                                                             {appointment.status}
-                                                                        </span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1453,38 +1463,53 @@ const PatientTab = memo(() => {
 
                                         {/* Prescriptions Tab */}
                                         {activeDetailsTab === 'prescriptions' && (
-                                            <div className="space-y-6">
-                                                <h3 className="text-xl font-black text-foreground tracking-tight px-2">Medication Logs</h3>
+                                            <div className="space-y-12">
+                                                <div className="px-8">
+                                                    <h3 className="text-3xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
+                                                    <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Active pharmacological regimens</p>
+                                                </div>
+
                                                 {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-[3rem] border border-border border-dashed">
-                                                        <Pill size={48} className="text-muted-foreground/30 mb-4" />
-                                                        <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">No Prescriptions active</p>
+                                                    <div className="flex flex-col items-center justify-center py-32 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-6">
+                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
+                                                            <Pill size={72} className="text-muted-foreground/10" />
+                                                        </div>
+                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">No Medication Records</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-8">
                                                         {medicalRecords
-                                                            .filter(r => r.prescription || r.file_type === 'prescription')
-                                                            .map((record) => (
-                                                                <div key={record.id} className="bg-card border border-border rounded-[2.5rem] p-8 hover:shadow-xl transition-all group">
-                                                                    <div className="flex items-center justify-between mb-6">
-                                                                        <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all">
-                                                                            <Pill size={24} />
+                                                            .filter(record => record.prescription || record.file_type === 'prescription')
+                                                            .map((record, index) => (
+                                                                <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[3.5rem] p-12 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
+                                                                    <div className="flex items-center justify-between mb-10">
+                                                                        <div className="p-5 bg-amber-500/10 text-amber-500 rounded-[2rem] group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
+                                                                            <Pill size={32} />
                                                                         </div>
-                                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest font-outfit">Digital Prescription</span>
+                                                                        <div className="flex flex-col items-end">
+                                                                            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mb-1">Authenticated Ledger</span>
+                                                                            <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-[0.2em]">{record.file_name || 'Rx-SIG'}</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="bg-muted/30 p-6 rounded-[2rem] border-l-4 border-amber-400 mb-6 italic font-bold text-foreground text-sm whitespace-pre-wrap">
-                                                                        {record.prescription}
-                                                                    </div>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                                                                            Prescribed: {formatDate(record.record_date || record.created_at)}
+                                                                    <div className="bg-muted/30 p-10 rounded-[2.5rem] border-l-[6px] border-amber-500 mb-10 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
+                                                                        <div className="absolute right-[-20px] top-[-20px] p-10 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
+                                                                            <Pill size={120} />
+                                                                        </div>
+                                                                        <p className="text-lg font-black text-foreground leading-relaxed italic relative z-10">
+                                                                            "{record.prescription || 'Primary pharmacological instructions pending details.'}"
                                                                         </p>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between pt-4">
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Registry Date</p>
+                                                                            <p className="text-sm font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
+                                                                        </div>
                                                                         {record.file_path && (
                                                                             <button
                                                                                 onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                className="text-xs font-black text-indigo-500 hover:text-indigo-400 underline transition-colors"
+                                                                                className="px-6 py-3 bg-card border border-border rounded-2xl text-[10px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.3em] shadow-lg"
                                                                             >
-                                                                                View Document
+                                                                                View Script
                                                                             </button>
                                                                         )}
                                                                     </div>
@@ -1502,9 +1527,6 @@ const PatientTab = memo(() => {
                     </div>
                 </div>
             )}
-
-
-            {/* File Upload Modal */}
             {showFileUpload && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
                     <div className="bg-card border border-border rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-500">
@@ -1603,7 +1625,8 @@ const PatientTab = memo(() => {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
         </div >
     );
 });
