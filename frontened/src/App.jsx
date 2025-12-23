@@ -11,6 +11,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const VerticalTabLayout = lazy(() => import("./pages/VerticleTab"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 
 // Loading component
 const PageLoader = () => (
@@ -53,8 +54,8 @@ function App() {
         <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/*
-              <Route path="/" element={<PublicWebsite/>} />*/}
+              <Route path="/doctor/:slug" element={<PublicWebsite />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
               <Route
                 path="/"
                 element={
