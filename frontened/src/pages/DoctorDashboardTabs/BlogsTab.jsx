@@ -130,6 +130,7 @@ const BlogsTab = memo(() => {
         excerpt: blogForm.excerpt,
         status: blogForm.status,
         category: blogForm.category,
+        featured_image: blogForm.image,
         tags: blogForm.tags.split(',').map(tag => tag.trim())
       };
 
@@ -177,6 +178,7 @@ const BlogsTab = memo(() => {
         excerpt: blogForm.excerpt,
         status: blogForm.status,
         category: blogForm.category,
+        featured_image: blogForm.image,
         tags: blogForm.tags.split(',').map(tag => tag.trim())
       };
 
@@ -323,6 +325,17 @@ const BlogsTab = memo(() => {
                     onChange={(e) => handleBlogFormChange('tags', e.target.value)}
                     className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
                     placeholder="health, medicine, tips..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Featured Image URL</label>
+                  <input
+                    type="text"
+                    value={blogForm.image}
+                    onChange={(e) => handleBlogFormChange('image', e.target.value)}
+                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                    placeholder="https://images.unsplash.com/..."
                   />
                 </div>
 
