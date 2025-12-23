@@ -390,10 +390,9 @@ export const getPublicProfile = async (req, res) => {
       SELECT 
         d.id,
         d.first_name || ' ' || d.last_name as full_name,
-        d.profile_photo_url,
+        d.profile_image_url as profile_photo_url,
         d.specialization,
-        d.served_total_patients,
-        d.years_experience,
+        d.years_of_experience as years_experience,
         d.email,
         d.phone,
         ws.*,
@@ -424,7 +423,9 @@ export const getPublicProfile = async (req, res) => {
           SELECT json_agg(json_build_object(
             'service_icon', service_icon,
             'service_name', service_name,
-            'service_description', service_description
+            'service_description', service_description,
+            'features', features,
+            'color_theme', color_theme
           ))
           FROM doctor_services WHERE doctor_id = d.id
         ) as services,
@@ -432,7 +433,8 @@ export const getPublicProfile = async (req, res) => {
         (
           SELECT json_agg(json_build_object(
             'chamber_location', chamber_location,
-            'available_time', available_time
+            'available_time', available_time,
+            'day', day
           ))
           FROM doctor_chambers WHERE doctor_id = d.id
         ) as chambers,
@@ -463,12 +465,40 @@ export const getPublicProfile = async (req, res) => {
         
         (
           SELECT json_agg(json_build_object(
-            'patient_name', patient_name,
-            'patient_feedback', patient_feedback,
-            'feedback_date', feedback_date
+            'name', patient_name,
+            'message', patient_feedback,
+            'date', feedback_date,
+            'rating', rating,
+            'location', location,
+            'avatar', avatar_url
           ) ORDER BY feedback_date DESC)
           FROM doctor_testimonials WHERE doctor_id = d.id
-        ) as testimonials
+        ) as testimonials,
+
+        (
+          SELECT json_agg(json_build_object(
+            'name', organization_name,
+            'logo', organization_logo
+          ))
+          FROM doctor_sponsors WHERE doctor_id = d.id
+        ) as affiliates,
+
+        (
+          SELECT json_agg(json_build_object(
+            'id', id,
+            'title', title,
+            'slug', slug,
+            'excerpt', excerpt,
+            'featured_image', featured_image,
+            'category', category,
+            'published_at', published_at,
+            'read_time', read_time,
+            'views', views
+          ) ORDER BY published_at DESC)
+          FROM blog_posts 
+          WHERE doctor_id = d.id AND status = 'published'
+          LIMIT 6
+        ) as blogs
         
       FROM doctors d
       JOIN website_settings ws ON d.id = ws.doctor_id
@@ -500,7 +530,7 @@ export const uploadProfileImage = async (req, res) => {
 
     await sql`
       UPDATE doctors 
-      SET profile_photo_url = ${imageUrl}, updated_at = CURRENT_TIMESTAMP
+      SET profile_image_url = ${imageUrl}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${doctorId}
     `;
 
@@ -1031,5 +1061,38 @@ export const getContact = async (req, res) => {
   } catch (error) {
     console.error('Error getting contact:', error);
     res.status(500).json({ error: 'Failed to get contact information' });
+  }
+};
+
+// Get a single blog post for public viewing
+export const getPublicBlogPost = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const blog = await sql`
+      SELECT 
+        bp.*,
+        d.first_name || ' ' || d.last_name as doctor_name,
+        d.specialization as doctor_specialization,
+        d.profile_image_url as doctor_image
+      FROM blog_posts bp
+      JOIN doctors d ON bp.doctor_id = d.id
+      JOIN website_settings ws ON d.id = ws.doctor_id
+      WHERE bp.slug = ${slug} 
+      AND bp.status = 'published'
+      AND ws.visibility = true
+    `;
+
+    if (blog.length === 0) {
+      return res.status(404).json({ error: 'Blog post not found or not visible' });
+    }
+
+    // Increment view count asynchronously
+    sql`UPDATE blog_posts SET views = views + 1 WHERE id = ${blog[0].id}`.catch(console.error);
+
+    res.json({ success: true, data: blog[0] });
+  } catch (error) {
+    console.error('Error fetching public blog post:', error);
+    res.status(500).json({ error: 'Failed to fetch blog post' });
   }
 };
