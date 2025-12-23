@@ -24,7 +24,8 @@ import {
   updateSocialMedia,
   updateContact,
   getContact,
-  getDashboardStats
+  getDashboardStats,
+  getPublicBlogPost
 } from '../controllers/websiteController.js';
 
 const router = express.Router();
@@ -48,6 +49,7 @@ router.post('/doctor/:doctorId/upload-image', uploadProfileImage);
 
 // Public Profile Routes
 router.get('/public/:urlSlug', getPublicProfile);
+router.get('/public/blog/:slug', getPublicBlogPost);
 
 // Website Settings
 router.get('/doctor/:doctorId/settings', getDoctorWebsiteSettings);
