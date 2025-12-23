@@ -38,49 +38,50 @@ export const API_URLS = {
     PROFILE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/profile/${doctorId}`),
     SETTINGS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/settings`),
     PUBLIC: (urlSlug) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/public/${urlSlug}`),
+    PUBLIC_BLOG: (slug) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/public/blog/${slug}`),
     UPLOAD_IMAGE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/upload-image`),
     STATS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/stats`),
-    
+
     // Education endpoints
     EDUCATION: {
       ADD: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/education`),
       UPDATE: (doctorId, educationId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/education/${educationId}`),
       DELETE: (doctorId, educationId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/education/${educationId}`)
     },
-    
+
     // Experience endpoints
     EXPERIENCE: {
       ADD: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/experience`),
       UPDATE: (doctorId, experienceId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/experience/${experienceId}`),
       DELETE: (doctorId, experienceId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/experience/${experienceId}`)
     },
-    
+
     // Services endpoints
     SERVICES: {
       ADD: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/services`),
       UPDATE: (doctorId, serviceId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/services/${serviceId}`),
       DELETE: (doctorId, serviceId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/services/${serviceId}`)
     },
-    
+
     // Chambers endpoints
     CHAMBERS: {
       ADD: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/chambers`),
       UPDATE: (doctorId, chamberId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/chambers/${chamberId}`),
       DELETE: (doctorId, chamberId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/chambers/${chamberId}`)
     },
-    
+
     // Testimonials endpoints
     TESTIMONIALS: {
       ADD: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/testimonials`),
       UPDATE: (doctorId, testimonialId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/testimonials/${testimonialId}`),
       DELETE: (doctorId, testimonialId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/testimonials/${testimonialId}`)
     },
-    
+
     // Social Media endpoints
     SOCIAL_MEDIA: {
       UPDATE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/social-media`)
     },
-    
+
     // Contact endpoints
     CONTACT: {
       GET: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.WEBSITE, `/doctor/${doctorId}/contact`),
