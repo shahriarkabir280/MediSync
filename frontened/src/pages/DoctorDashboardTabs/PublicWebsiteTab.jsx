@@ -1,1413 +1,886 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Edit3, Briefcase, Award, Upload, MapPin, User, Globe, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Save, Edit3, Briefcase, Award, Upload, MapPin, User, Globe, Facebook, Twitter, Instagram, Linkedin, Youtube,
+  Plus, Trash2, CheckCircle, AlertCircle, Phone, Mail, Link as LinkIcon, Building, GraduationCap, Stethoscope,
+  Clock, Shield, Sparkles, Languages, X, Search, ChevronDown, Star, Layout, Users, TrendingUp, Zap, Heart,
+  // Medical Icons
+  Activity, Thermometer, Pill, Syringe, Brain, Eye, Ear, Bone, Baby, UserPlus, Microscope,
+  FileText, Calendar, Cross, Smile, Droplet, UserCheck, Timer, Video, MessageSquare, Clipboard
+} from 'lucide-react';
 import { useDoctor, authenticatedFetch } from '../../hooks/useDoctor';
 import { useAuth } from '../../contexts/AuthContext';
-import { API_URLS, API_CONFIG, getImageUrl } from '../../config/api';
+import { API_URLS, getImageUrl } from '../../config/api';
+
+// --- Constants & Data ---
+
+const SUPPORTED_ICONS = {
+  'General': { Stethoscope, Activity, Thermometer, Pill, Syringe, Microscope, FileText, Clipboard },
+  'Cardiology': { Heart, Activity, Zap, Timer },
+  'Neurology': { Brain, Zap, Activity },
+  'Orthopedics': { Bone, UserCheck, Activity },
+  'Pediatrics': { Baby, Smile, UserPlus },
+  'Dental': { Smile, Cross },
+  'Ophthalmology': { Eye },
+  'ENT': { Ear },
+  'Emergency': { Cross, Zap, Timer },
+  'Telemedicine': { Video, Phone, MessageSquare, Calendar }
+};
+
+const COLOR_THEMES = [
+  { label: 'Red / Pink', value: 'from-red-500 to-pink-500', color: 'bg-red-500' },
+  { label: 'Blue / Cyan', value: 'from-blue-500 to-cyan-500', color: 'bg-blue-500' },
+  { label: 'Green / Emerald', value: 'from-green-500 to-emerald-500', color: 'bg-green-500' },
+  { label: 'Purple / Violet', value: 'from-purple-500 to-violet-500', color: 'bg-purple-500' },
+  { label: 'Orange / Yellow', value: 'from-orange-500 to-yellow-500', color: 'bg-orange-500' },
+  { label: 'Indigo / Blue', value: 'from-indigo-500 to-blue-500', color: 'bg-indigo-500' },
+];
+
+const TRANSLATIONS = {
+  en: {
+    pageTitle: "Public Website Configuration",
+    pageSubtitle: "Manage your professional online presence and patient-facing content",
+    saveChanges: "Publish Changes",
+    saving: "Publishing...",
+    basicInfo: "Basic Information",
+    basicInfoSub: "Primary details visible on your public profile",
+    heroSection: "Hero & Welcome",
+    heroSectionSub: "First impression banner and main headlines",
+    statsSection: "Key Statistics",
+    statsSectionSub: "Impact numbers shown on the website",
+    websiteConfig: "Website Configuration",
+    websiteConfigSub: "SEO, display settings, and branding",
+    education: "Education & Qualifications",
+    educationSub: "Academic background and certifications",
+    experience: "Clinical Experience",
+    experienceSub: "Professional history and hospital affiliations",
+    services: "Services & Specialties",
+    servicesSub: "Treatments and procedures you offer",
+    chambers: "Chamber Locations",
+    chambersSub: "Physical practice locations and visiting hours",
+    testimonials: "Patient Stories",
+    testimonialsSub: "Success stories and reviews",
+    affiliates: "Affiliations & Partners",
+    affiliatesSub: "Organizations you work with",
+    social: "Social Connections",
+    socialSub: "Professional network links",
+    addNew: "Add New",
+    noEntries: "No entries found",
+    uploadImage: "Profile Image",
+    uploadHint: "Recommended: 400x400px",
+    aiAssist: "AI Assist",
+    labels: {
+      fullName: "Full Name",
+      experience: "Clinical Experience (Years)",
+      profileUrl: "Profile Image URL",
+      pageTitle: "Page Title",
+      tagline: "Professional Tagline",
+      metaDesc: "Meta Description",
+      degree: "Degree / Certification",
+      institution: "Institution",
+      year: "Year",
+      details: "Details",
+      role: "Role",
+      organization: "Hospital / Organization",
+      startDate: "Start Date",
+      endDate: "End Date",
+      serviceName: "Service Name",
+      icon: "Icon",
+      description: "Description",
+      address: "Location Address",
+      visitingHours: "Visiting Hours",
+      platformUrl: "Profile URL",
+      heroPrefix: "Title Prefix (e.g., 'Your Heart,')",
+      heroHighlight: "Title Highlight (e.g., 'Our Expertise')",
+      heroTag: "Intro Tag",
+      heroDesc: "Welcome Text",
+      heroImage: "Hero Image URL",
+      patientCount: "Patients Treated",
+      successRate: "Success Rate",
+      consultFee: "Consultation Fee",
+      features: "Features (Comma separated)",
+      color: "Card Theme",
+      type: "Type / Category",
+      patientName: "Patient Name",
+      location: "Location",
+      rating: "Rating (1-5)",
+      message: "Testimonial Message",
+      affiliateName: "Organization Name",
+      affiliateLogo: "Logo / Initials"
+    }
+  },
+  bn: {
+    pageTitle: "পাবলিক ওয়েবসাইট কনফিগারেশন",
+    pageSubtitle: "আপনার পেশাদার অনলাইন উপস্থিতি এবং রোগীর বিষয়বস্তু পরিচালনা করুন",
+    saveChanges: "পরিবর্তন প্রকাশ করুন",
+    saving: "প্রকাশ করা হচ্ছে...",
+    basicInfo: "মৌলিক তথ্য",
+    basicInfoSub: "আপনার পাবলিক প্রোফাইলে দৃশ্যমান প্রাথমিক বিবরণ",
+    heroSection: "হিরো এবং স্বাগতম",
+    heroSectionSub: "প্রথম দর্শনের ব্যানার এবং প্রধান শিরোনাম",
+    statsSection: "মূল পরিসংখ্যান",
+    statsSectionSub: "ওয়েবসাইটে প্রদর্শিত প্রভাব সংখ্যা",
+    websiteConfig: "ওয়েবসাইট কনফিগারেশন",
+    websiteConfigSub: "এসইও, প্রদর্শন সেটিংস এবং ব্র্যান্ডিং",
+    education: "শিক্ষা এবং যোগ্যতা",
+    educationSub: "একাডেমিক পটভূমি এবং সার্টিফিকেশন",
+    experience: "ক্লিনিকাল অভিজ্ঞতা",
+    experienceSub: "পেশাগত ইতিহাস এবং হাসপাতালের সংযুক্তি",
+    services: "সেবা এবং বিশেষত্ব",
+    servicesSub: "আপনি যে চিকিৎসা এবং পদ্ধতিগুলি অফার করেন",
+    chambers: "চেম্বার অবস্থান",
+    chambersSub: "শারীরিক অনুশীলনের অবস্থান এবং দেখার সময়",
+    testimonials: "রোগীর গল্প",
+    testimonialsSub: "সাফল্যের গল্প এবং পর্যালোচনা",
+    affiliates: "অধিভুক্তি এবং অংশীদার",
+    affiliatesSub: "আপনি যাদের সাথে কাজ করেন এমন সংস্থা",
+    social: "সামাজিক সংযোগ",
+    socialSub: "পেশাদার নেটওয়ার্ক লিঙ্ক",
+    addNew: "নতুন যোগ করুন",
+    noEntries: "কোন এন্ট্রি পাওয়া যায়নি",
+    uploadImage: "প্রোফাইল ছবি",
+    uploadHint: "প্রস্তাবিত: ৪০০x৪০০ পিক্সেল",
+    aiAssist: "এআই সহায়তা",
+    labels: {
+      fullName: "পুরো নাম",
+      experience: "ক্লিনিকাল অভিজ্ঞতা (বছর)",
+      profileUrl: "প্রোফাইল ছবির ইউআরএল",
+      pageTitle: "পৃষ্ঠার শিরোনাম",
+      tagline: "পেশাদার ট্যাগলাইন",
+      metaDesc: "মেটা বিবরণ",
+      degree: "ডিগ্রি / সার্টিফিকেশন",
+      institution: "প্রতিষ্ঠান",
+      year: "বছর",
+      details: "বিবরণ",
+      role: "ভূমিকা",
+      organization: "হাসপাতাল / সংস্থা",
+      startDate: "শুরুর তারিখ",
+      endDate: "শেষ তারিখ",
+      serviceName: "সেবার নাম",
+      icon: "আইকন",
+      description: "বিবরণ",
+      address: "অবস্থান ঠিকানা",
+      visitingHours: "ভিজিটিং আওয়ারস",
+      platformUrl: "প্রোফাইল ইউআরএল",
+      heroPrefix: "শিরোনাম প্রিফিক্স",
+      heroHighlight: "শিরোনাম হাইলাইট",
+      heroTag: "ইন্ট্রো ট্যাগ",
+      heroDesc: "স্বাগতম টেক্সট",
+      heroImage: "হিরো ছবির ইউআরএল",
+      patientCount: "রোগী চিকিৎসা",
+      successRate: "সাফল্যের হার",
+      consultFee: "পরামর্শ ফি",
+      features: "বৈশিষ্ট্য (কমা দ্বারা পৃথক)",
+      color: "কার্ড থিম",
+      type: "ধরন / বিভাগ",
+      patientName: "রোগীর নাম",
+      location: "অবস্থান",
+      rating: "রেটিং (১-৫)",
+      message: "প্রশংসাপত্র বার্তা",
+      affiliateName: "সংস্থার নাম",
+      affiliateLogo: "লোগো / আদ্যক্ষর"
+    }
+  }
+};
+
+const AI_PROMPTS = {
+  bio: [
+    "Experienced specialist dedicated to providing comprehensive care with a focus on patient well-being.",
+    "Committed to excellence in medical practice, utilizing the latest advancements in technology and treatment protocols.",
+    "Passionate about preventive care and educating patients to lead healthier, more fulfilling lives."
+  ],
+  service: {
+    default: "Comprehensive diagnosis and treatment utilizing state-of-the-art medical protocols.",
+    cardio: "Advanced cardiac care including diagnostics, monitoring, and interventional procedures.",
+    dental: "Complete oral health services from routine cleanings to complex restorative surgeries.",
+    neuro: "Specialized care for disorders of the nervous system, brain, and spinal cord."
+  }
+};
+
+// --- Components ---
+
+const IconPicker = ({ selected, onSelect, onClose }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Flatten icons for searching
+  const allIcons = Object.entries(SUPPORTED_ICONS).flatMap(([category, icons]) =>
+    Object.entries(icons).map(([name, Icon]) => ({ category, name, Icon }))
+  );
+
+  const filteredIcons = allIcons.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="absolute top-12 left-0 z-50 w-72 bg-white dark:bg-card border border-border rounded-xl shadow-2xl p-4 animate-in fade-in zoom-in duration-200">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Icon</h4>
+        <button onClick={onClose} className="hover:bg-muted p-1 rounded-full"><X className="h-4 w-4" /></button>
+      </div>
+      <div className="relative mb-3">
+        <Search className="h-3 w-3 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search icons..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full pl-8 pr-3 py-2 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        />
+      </div>
+      <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+        {filteredIcons.map(({ name, Icon }) => (
+          <button
+            key={name}
+            onClick={() => onSelect(name)}
+            className={`p-2 rounded-lg flex items-center justify-center transition-all ${selected === name ? 'bg-indigo-500 text-white' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+            title={name}
+          >
+            <Icon className="h-5 w-5" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const PublicWebsiteTab = () => {
-  // Get authenticated doctor info and refresh function
   const { doctorId } = useDoctor();
   const { refreshUser } = useAuth();
-  
-  // For testing purposes, use doctorId=1 if not authenticated
   const actualDoctorId = doctorId || 1;
-  
-  console.log('Doctor ID from useDoctor:', doctorId);
-  console.log('Using Doctor ID:', actualDoctorId);
 
-  // State for website/profile data with seeded data
+  // State
+  const [lang, setLang] = useState('en');
+  const t = TRANSLATIONS[lang];
+  const [activeIconPicker, setActiveIconPicker] = useState(null);
+  const [expandedItems, setExpandedItems] = useState([]);
+
   const [formData, setFormData] = useState({
-    full_name: "Dr. John Doe",
-    profile_photo_url: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&w=400&h=400&fit=crop&crop=face",
+    full_name: "Dr. Jobayer Hasan",
+    profile_photo_url: "https://media.istockphoto.com/id/906716900/photo/confident-male-surgeon-in-scrubs.jpg?s=612x612&w=0&k=20&c=G03yZ-lkdN0pwMbv4Mv-P_WIPNMWhbL2sn3tlpJleMU=",
     active_status: true,
     years_experience: 15,
-    chamber: [
-      { 
-        available_time: "Mon-Fri: 9:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM", 
-        chamber_location: "Heart Care Medical Center, 123 Medical Plaza, New York, NY 10001" 
-      },
-      { 
-        available_time: "Wed-Thu: 7:00 PM - 9:00 PM", 
-        chamber_location: "Downtown Cardiology Clinic, 456 Health Ave, New York, NY 10002" 
-      }
-    ],
-    services: [
-      { service_icon: "🫀", service_name: "Cardiac Consultation", service_description: "Comprehensive heart health assessment and consultation for all cardiac conditions" },
-      { service_icon: "🩺", service_name: "Preventive Cardiology", service_description: "Heart disease prevention, lifestyle counseling, and risk factor management" },
-      { service_icon: "📊", service_name: "Cardiac Imaging", service_description: "Advanced cardiac imaging including echocardiograms and stress tests" },
-      { service_icon: "💊", service_name: "Medication Management", service_description: "Specialized cardiac medication therapy and monitoring" },
-      { service_icon: "🏥", service_name: "Emergency Cardiac Care", service_description: "24/7 emergency cardiac consultation and immediate intervention" },
-      { service_icon: "🔬", service_name: "Cardiac Catheterization", service_description: "Advanced interventional cardiology procedures and treatments" }
-    ],
-    education: [
-      { degree: "Doctor of Medicine (MD)", institution: "Harvard Medical School", passing_year: "2008", short_description: "Graduated Magna Cum Laude with focus on cardiovascular medicine" },
-      { degree: "Fellowship in Cardiology", institution: "Mayo Clinic", passing_year: "2012", short_description: "Specialized training in interventional cardiology and cardiac imaging" },
-      { degree: "Residency in Internal Medicine", institution: "Johns Hopkins Hospital", passing_year: "2011", short_description: "Comprehensive internal medicine training with cardiac focus" },
-      { degree: "Bachelor of Science in Biology", institution: "MIT", passing_year: "2004", short_description: "Pre-medical studies with honors in biological sciences" }
-    ],
-    experience: [
-      { designation: "Senior Cardiologist", organization: "Heart Care Medical Center", start_date: "2015-01-01", end_date: "", short_description: "Leading cardiac care team, performing complex interventional procedures, and managing cardiac emergencies" },
-      { designation: "Associate Cardiologist", organization: "Metropolitan Heart Institute", start_date: "2012-08-01", end_date: "2014-12-31", short_description: "Specialized in preventive cardiology and patient education programs" },
-      { designation: "Cardiology Fellow", organization: "Mayo Clinic", start_date: "2011-07-01", end_date: "2012-07-31", short_description: "Advanced training in cardiac catheterization and interventional procedures" }
-    ],
-    testimonials: { patient_name: "Sarah Johnson", patient_feedback: "Dr. John saved my life! His expertise and compassionate care during my heart attack was extraordinary. I'm forever grateful.", feedback_date: "2024-11-15" },
-    sponsors_company: { organization_logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=100&fit=crop", organization_name: "American Heart Association", organization_description: "Partnership in cardiac research and community heart health programs", start_date: "2020-01-01", end_date: "" },
-    contact: { 
-      phone: "+1-555-0101", 
-      whatsapp: "+1-555-0101", 
-      email: "john.doe@careconnect.com",
-      address: "",
-      office_phone: "",
-      website_url: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      fax: ""
+    chamber: [],
+    services: [],
+    education: [],
+    experience: [],
+    testimonials: [],
+    affiliates: [],
+    hero: {
+      title_prefix: "Your Heart,",
+      title_highlight: "Our Expertise",
+      intro_tag: "🏥 Expert Cardiac Care Since 2007",
+      description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge technology.",
+      image_url: "https://media.istockphoto.com/id/2201754823/photo/female-physician-explaining-medical-findings-to-older-woman-with-stomach-discomfort-listening.jpg?s=612x612&w=0&k=20&c=BZxNzQuqWTolKHBoQV0V8oOZpDl5PWKlCVe2DDc-ps0="
     },
-    social_media: [
-      { platform: "LinkedIn", profile_url: "https://linkedin.com/in/dr-john-doe-cardiology" },
-      { platform: "Twitter", profile_url: "https://twitter.com/DrJohnDoeHeart" },
-      { platform: "Facebook", profile_url: "https://facebook.com/DrJohnDoeCardiology" },
-      { platform: "Instagram", profile_url: "https://instagram.com/drjohndoe_cardio" },
-      { platform: "YouTube", profile_url: "https://youtube.com/c/DrJohnDoeCardiology" }
-    ],
+    stats: {
+      patients_count: "5000+",
+      success_rate: "98%",
+      consultation_fee: "৳1500"
+    },
+    sponsors_company: {},
+    contact: {
+      phone: "+880 1717-123456", whatsapp: "", email: "dr.rahman@careconnect.bd", address: "BTI Landmark, Gulshan-1", office_phone: "",
+      website_url: "", emergency_contact_name: "", emergency_contact_phone: "+880 1717-123456", fax: ""
+    },
+    social_media: [],
+    about: {
+      subtitle: "A distinguished cardiologist with over 15 years of experience",
+      bio: "Leading cardiovascular care excellence with advanced procedures and multidisciplinary team coordination.",
+      image_1: "https://images.unsplash.com/photo-1656428964836-78d54bf76231?w=600&auto=format&fit=crop",
+      image_2: "https://media.istockphoto.com/id/1185231735/photo/asian-scientist-use-microscope.webp?a=1&b=1&s=612x612&w=0&k=20"
+    },
     website: {
-      title: "Dr. John Doe - Cardiologist",
-      tagline: "Expert Heart Care You Can Trust", 
-      description: "Leading cardiologist with 15+ years of experience in comprehensive cardiac care. Specializing in preventive cardiology, interventional procedures, and heart disease management. Committed to providing personalized, compassionate care for every patient.",
-      theme_color: "#2563eb",
-      layout_style: "modern",
-      show_phone: true,
-      show_email: true,
-      show_address: true,
-      show_appointment: true,
-      show_social: true,
-      meta_keywords: "cardiology,heart,doctor,medical",
-      url_slug: "dr-john-doe", 
-      visibility: true
+      title: "Dr. Jobayer Hasan - Cardiology", tagline: "Consultant Cardiologist", description: "Expert cardiac care...", theme_color: "#2563eb",
+      layout_style: "modern", show_phone: true, show_email: true,
+      show_address: true, show_appointment: true, show_social: true,
+      meta_keywords: "cardiology, heart, health", url_slug: "dr-jobayer-hasan", visibility: true
     }
   });
 
-  // API state management
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  // Helper function to format date for HTML date input
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
-    } catch {
-      return '';
+  // AI Helper
+  const generateAIContent = (type, keywords = "") => {
+    if (type === 'bio') {
+      const randomIndex = Math.floor(Math.random() * AI_PROMPTS.bio.length);
+      return AI_PROMPTS.bio[randomIndex];
+    } else if (type === 'service') {
+      const lowerKey = keywords.toLowerCase();
+      if (lowerKey.includes('heart') || lowerKey.includes('cardio')) return AI_PROMPTS.service.cardio;
+      if (lowerKey.includes('tooth') || lowerKey.includes('dental')) return AI_PROMPTS.service.dental;
+      if (lowerKey.includes('brain') || lowerKey.includes('neuro')) return AI_PROMPTS.service.neuro;
+      return AI_PROMPTS.service.default;
     }
+    return "Generated professional content aimed at enhancing patient trust and clarity.";
   };
 
-  // Show notification
+  const handleAIGenerate = (field, context = "", setter) => {
+    showNotification("Generating content with AI...", "info");
+    setTimeout(() => {
+      const content = generateAIContent(field, context);
+      setter(content);
+      showNotification("Content generated!", "success");
+    }, 800);
+  };
+
+  useEffect(() => {
+    loadDoctorData();
+  }, [actualDoctorId]);
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Function to load doctor data from API
-  const loadDoctorData = async () => {
-    if (!actualDoctorId) {
-      console.log('❌ No doctorId available');
-      return;
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toISOString().split('T')[0];
+    } catch {
+      return '';
     }
-    
+  };
+
+  const loadDoctorData = async () => {
+    if (!actualDoctorId) return;
     setLoading(true);
     try {
-      console.log('🔄 Loading doctor data for ID:', actualDoctorId);
-      
-      // Fetch doctor profile data from API
       const response = await authenticatedFetch(API_URLS.WEBSITE.PROFILE(actualDoctorId));
-      
       if (response.ok) {
         const responseData = await response.json();
-        console.log('Loaded doctor data:', responseData);
-        
-        // Extract the actual data from the API response structure
         const apiData = responseData.data || responseData;
-        
-        console.log('Raw API Data:', {
-          first_name: apiData.first_name,
-          last_name: apiData.last_name,
-          title: apiData.title,
-          phone: apiData.phone,
-          years_of_experience: apiData.years_of_experience,
-          education_count: apiData.education?.length || 0
-        });
-        
-        // Transform API data to match form structure
-        const profileImageUrl = getImageUrl(apiData.profile_image_url);
-        console.log('🖼️  Profile image URL transformation:', {
-          original: apiData.profile_image_url,
-          transformed: profileImageUrl
-        });
-        
-        const transformedData = {
-          full_name: `${apiData.first_name || ''} ${apiData.last_name || ''}`.trim(),
-          profile_photo_url: profileImageUrl,
-          active_status: apiData.active_status !== undefined ? apiData.active_status : true,
-          years_experience: parseInt(apiData.years_of_experience) || 0,
-          
-          // Transform chamber data (API: chambers -> Frontend: chamber)
+
+        // Merge with default/existing structure to ensure new fields (Hero, Stats) exist if API doesn't return them yet
+        setFormData(prev => ({
+          ...prev,
+          full_name: `${apiData.first_name || ''} ${apiData.last_name || ''}`.trim() || prev.full_name,
+          profile_photo_url: getImageUrl(apiData.profile_image_url) || prev.profile_photo_url,
+          active_status: apiData.active_status ?? prev.active_status,
+          years_experience: parseInt(apiData.years_of_experience) || prev.years_experience,
           chamber: apiData.chambers || [],
-          
-          // Keep arrays as is but format dates
-          services: apiData.services || [],
-          education: (apiData.education || []).map(edu => ({
-            ...edu,
-            passing_year: edu.passing_year || ''
+          // Ensure arrays have correct structure
+          services: (apiData.services || []).map(s => ({ ...s, features: s.features || '', color_theme: s.color_theme || 'from-blue-500 to-cyan-500' })),
+          education: (apiData.education || []).map(edu => ({ ...edu, passing_year: edu.passing_year || '', type: edu.type || 'certification' })),
+          experience: (apiData.experience || []).map(exp => ({
+            ...exp,
+            start_date: formatDateForInput(exp.start_date),
+            end_date: formatDateForInput(exp.end_date),
+            type: exp.type || 'current'
           })),
-          experience: (apiData.experience || []).map(exp => {
-            const formatted = {
-              ...exp,
-              start_date: formatDateForInput(exp.start_date),
-              end_date: formatDateForInput(exp.end_date)
-            };
-            console.log('Experience date formatting:', {
-              original: { start: exp.start_date, end: exp.end_date },
-              formatted: { start: formatted.start_date, end: formatted.end_date }
-            });
-            return formatted;
-          }),
-          social_media: apiData.social_media || [],
-          
-          // Handle contact info - use dedicated contact object from API
-          contact: {
-            phone: apiData.contact?.phone || apiData.phone || "",
-            whatsapp: apiData.contact?.whatsapp || "",
-            email: apiData.contact?.email || apiData.email || "",
-            address: apiData.contact?.address || "",
-            office_phone: apiData.contact?.office_phone || "",
-            website_url: apiData.contact?.website_url || "",
-            emergency_contact_name: apiData.contact?.emergency_contact_name || "",
-            emergency_contact_phone: apiData.contact?.emergency_contact_phone || "",
-            fax: apiData.contact?.fax || ""
-          },
-          
-          // Transform testimonials and sponsors - take first item if array
-          testimonials: (() => {
-            const testimonialData = Array.isArray(apiData.testimonials) ? apiData.testimonials[0] || {} : {};
-            if (testimonialData.feedback_date) {
-              testimonialData.feedback_date = formatDateForInput(testimonialData.feedback_date);
-              console.log('Testimonial date formatting:', {
-                original: apiData.testimonials?.[0]?.feedback_date,
-                formatted: testimonialData.feedback_date
-              });
-            }
-            return testimonialData;
-          })(),
-          sponsors_company: Array.isArray(apiData.sponsors_company) ? apiData.sponsors_company[0] || {} : {},
-          
-          // Website settings - extract from root level fields
-          website: {
-            title: apiData.title || "",
-            tagline: apiData.tagline || "",
-            description: apiData.description || "",
-            theme_color: apiData.theme_color || "#2563eb",
-            layout_style: apiData.layout_style || "modern",
-            show_phone: apiData.show_phone !== undefined ? apiData.show_phone : true,
-            show_email: apiData.show_email !== undefined ? apiData.show_email : true,
-            show_address: apiData.show_address !== undefined ? apiData.show_address : true,
-            show_appointment: apiData.show_appointment !== undefined ? apiData.show_appointment : true,
-            show_social: apiData.show_social !== undefined ? apiData.show_social : true,
-            meta_keywords: apiData.meta_keywords || "",
-            url_slug: apiData.url_slug || "",
-            visibility: apiData.visibility !== undefined ? apiData.visibility : true
-          }
-        };
-        
-        console.log('Transformed data for form:', {
-          full_name: transformedData.full_name,
-          years_experience: transformedData.years_experience,
-          education_count: transformedData.education?.length || 0,
-          website_title: transformedData.website?.title
-        });
-        
-        // Set the form data with the transformed data
-        setFormData(transformedData);
-        console.log('✅ Form data set successfully');
-      } else {
-        console.error('Failed to load doctor data:', response.status);
-        // Keep the default seeded data if fetch fails
+          // Map backend fields to frontend state shape
+          testimonials: (apiData.testimonials || []).map(t => ({
+            id: t.id,
+            name: t.patient_name || '',
+            message: t.patient_feedback || '',
+            rating: t.rating || 5,
+            location: t.location || '',
+            avatar: t.avatar_url || ''
+          })),
+          affiliates: (apiData.affiliates || []).map(a => ({
+            id: a.id,
+            name: a.organization_name || '',
+            logo: a.organization_logo || ''
+          })),
+          social_media: (apiData.social_media || []).map(s => ({
+            id: s.id,
+            platform: s.platform || '',
+            profile_url: s.profile_url || ''
+          })),
+          // Custom objects might not exist on backend yet, so fallback to prev
+          hero: apiData.hero || prev.hero,
+          about: apiData.about || prev.about,
+          stats: apiData.stats || prev.stats,
+          contact: { ...prev.contact, ...apiData.contact },
+          website: { ...prev.website, ...apiData.website }
+        }));
       }
     } catch (error) {
-      console.error('Error loading doctor data:', error);
-      // Keep the default seeded data if fetch fails
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load data on component mount
-  useEffect(() => {
-    console.log('🚀 Component mounted, loading data...');
-    loadDoctorData();
-  }, [actualDoctorId]);
-
-  // Social media platform options
-  const socialPlatforms = [
-    'LinkedIn', 'Twitter', 'Facebook', 'Instagram', 'YouTube', 'TikTok'
-  ];
-
-  // Handle input changes
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleWebsiteChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      website: { ...prev.website, [field]: value }
-    }));
-  };
-
-  const handleArrayInputChange = (section, index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: prev[section].map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
-      )
-    }));
-  };
-
-  const addArrayItem = (section) => {
-    const newItem = {
-      chamber: { available_time: "", chamber_location: "" },
-      services: { service_icon: "", service_name: "", service_description: "" },
-      education: { degree: "", institution: "", passing_year: "", short_description: "" },
-      experience: { designation: "", organization: "", start_date: "", end_date: "", short_description: "" },
-      social_media: { platform: "", profile_url: "" }
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      [section]: [...prev[section], newItem[section]]
-    }));
-  };
-
-  // State for individual section loading
-  const [sectionLoading, setSectionLoading] = useState({});
-
-  // Individual section save functions with notifications
-  const saveEducationSection = async () => {
-    setSectionLoading(prev => ({ ...prev, education: true }));
-    try {
-      await saveEducation();
-      showNotification('Education section saved successfully!');
-      await loadDoctorData();
-    } catch (error) {
-      showNotification('Error saving education section: ' + error.message, 'error');
-    } finally {
-      setSectionLoading(prev => ({ ...prev, education: false }));
-    }
-  };
-
-  const saveExperienceSection = async () => {
-    setSectionLoading(prev => ({ ...prev, experience: true }));
-    try {
-      await saveExperience();
-      showNotification('Experience section saved successfully!');
-      await loadDoctorData();
-    } catch (error) {
-      showNotification('Error saving experience section: ' + error.message, 'error');
-    } finally {
-      setSectionLoading(prev => ({ ...prev, experience: false }));
-    }
-  };
-
-  const saveServicesSection = async () => {
-    setSectionLoading(prev => ({ ...prev, services: true }));
-    try {
-      await saveServices();
-      showNotification('Services section saved successfully!');
-      await loadDoctorData();
-    } catch (error) {
-      showNotification('Error saving services section: ' + error.message, 'error');
-    } finally {
-      setSectionLoading(prev => ({ ...prev, services: false }));
-    }
-  };
-
-  const saveChambersSection = async () => {
-    setSectionLoading(prev => ({ ...prev, chambers: true }));
-    try {
-      await saveChambers();
-      showNotification('Chambers section saved successfully!');
-      await loadDoctorData();
-    } catch (error) {
-      showNotification('Error saving chambers section: ' + error.message, 'error');
-    } finally {
-      setSectionLoading(prev => ({ ...prev, chambers: false }));
-    }
-  };
-
-  const saveSocialMediaSection = async () => {
-    setSectionLoading(prev => ({ ...prev, socialMedia: true }));
-    try {
-      await saveSocialMedia();
-      showNotification('Social media section saved successfully!');
-      await loadDoctorData();
-    } catch (error) {
-      showNotification('Error saving social media section: ' + error.message, 'error');
-    } finally {
-      setSectionLoading(prev => ({ ...prev, socialMedia: false }));
-    }
-  };
-
-  const saveEducation = async () => {
-    try {
-      for (const edu of formData.education) {
-        if (edu.id) {
-          // Update existing
-          await authenticatedFetch(API_URLS.WEBSITE.EDUCATION.UPDATE(actualDoctorId, edu.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(edu)
-          });
-        } else {
-          // Add new
-          await authenticatedFetch(API_URLS.WEBSITE.EDUCATION.ADD(actualDoctorId), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(edu)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error saving education:', error);
-      throw error;
-    }
-  };
-
-  const saveExperience = async () => {
-    try {
-      for (const exp of formData.experience) {
-        if (exp.id) {
-          await authenticatedFetch(API_URLS.WEBSITE.EXPERIENCE.UPDATE(actualDoctorId, exp.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(exp)
-          });
-        } else {
-          await authenticatedFetch(API_URLS.WEBSITE.EXPERIENCE.ADD(actualDoctorId), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(exp)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error saving experience:', error);
-      throw error;
-    }
-  };
-
-  const saveServices = async () => {
-    try {
-      for (const service of formData.services) {
-        if (service.id) {
-          await authenticatedFetch(API_URLS.WEBSITE.SERVICES.UPDATE(actualDoctorId, service.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(service)
-          });
-        } else {
-          await authenticatedFetch(API_URLS.WEBSITE.SERVICES.ADD(actualDoctorId), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(service)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error saving services:', error);
-      throw error;
-    }
-  };
-
-  const saveChambers = async () => {
-    try {
-      for (const chamber of formData.chamber) {
-        if (chamber.id) {
-          await authenticatedFetch(API_URLS.WEBSITE.CHAMBERS.UPDATE(actualDoctorId, chamber.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(chamber)
-          });
-        } else {
-          await authenticatedFetch(API_URLS.WEBSITE.CHAMBERS.ADD(actualDoctorId), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(chamber)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error saving chambers:', error);
-      throw error;
-    }
-  };
-
-  const saveSocialMedia = async () => {
-    try {
-      await authenticatedFetch(API_URLS.WEBSITE.SOCIAL_MEDIA.UPDATE(actualDoctorId), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData.social_media)
-      });
-    } catch (error) {
-      console.error('Error saving social media:', error);
-      throw error;
-    }
-  };
-
-  const saveContact = async () => {
-    try {
-      await authenticatedFetch(API_URLS.WEBSITE.CONTACT.UPDATE(actualDoctorId), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData.contact)
-      });
-    } catch (error) {
-      console.error('Error saving contact:', error);
-      throw error;
-    }
-  };
-
-  const removeArrayItem = async (section, index) => {
-    const item = formData[section][index];
-    
-    // If item has an ID, delete it from the database
-    if (item.id) {
-      try {
-        let deleteUrl;
-        switch (section) {
-          case 'education':
-            deleteUrl = API_URLS.WEBSITE.EDUCATION.DELETE(actualDoctorId, item.id);
-            break;
-          case 'experience':
-            deleteUrl = API_URLS.WEBSITE.EXPERIENCE.DELETE(actualDoctorId, item.id);
-            break;
-          case 'services':
-            deleteUrl = API_URLS.WEBSITE.SERVICES.DELETE(actualDoctorId, item.id);
-            break;
-          case 'chamber':
-            deleteUrl = API_URLS.WEBSITE.CHAMBERS.DELETE(actualDoctorId, item.id);
-            break;
-          case 'testimonials':
-            deleteUrl = API_URLS.WEBSITE.TESTIMONIALS.DELETE(actualDoctorId, item.id);
-            break;
-          default:
-            break;
-        }
-        
-        if (deleteUrl) {
-          const response = await authenticatedFetch(deleteUrl, {
-            method: 'DELETE'
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Delete failed');
-          }
-        }
-      } catch (error) {
-        console.error(`Error deleting ${section} item:`, error);
-        showNotification(`Error deleting ${section} item: ${error.message}`, 'error');
-        return; // Don't remove from UI if delete failed
-      }
-    }
-    
-    // Remove from local state
-    setFormData(prev => ({
-      ...prev,
-      [section]: prev[section].filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSave = async () => {
-    if (!actualDoctorId) {
-      showNotification('Doctor ID not found. Please refresh and try again.', 'error');
-      return;
-    }
-
+    if (!actualDoctorId) return;
     setSaveLoading(true);
     try {
-      console.log('Saving form data to database:', formData);
-      
-      // Save basic profile data
       const profileData = {
         full_name: formData.full_name,
         profile_photo_url: formData.profile_photo_url,
         active_status: formData.active_status,
         years_experience: formData.years_experience,
-        website: formData.website
+        website: formData.website,
+        hero: formData.hero, // Send new fields
+        about: formData.about,
+        stats: formData.stats,
+        testimonials: formData.testimonials, // Send arrays
+        affiliates: formData.affiliates
       };
 
-      const response = await authenticatedFetch(API_URLS.WEBSITE.PROFILE(actualDoctorId), {
+      await authenticatedFetch(API_URLS.WEBSITE.PROFILE(actualDoctorId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileData)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Profile save failed: ${response.status}`);
-      }
-
-      // Save individual sections
+      // Save sub-collections
       await Promise.all([
-        saveEducation(),
-        saveExperience(), 
-        saveServices(),
-        saveChambers(),
-        saveSocialMedia()
+        saveSection(formData.education, API_URLS.WEBSITE.EDUCATION),
+        saveSection(formData.experience, API_URLS.WEBSITE.EXPERIENCE),
+        saveSection(formData.services, API_URLS.WEBSITE.SERVICES),
+        saveSection(formData.chamber, API_URLS.WEBSITE.CHAMBERS),
+        authenticatedFetch(API_URLS.WEBSITE.SOCIAL_MEDIA.UPDATE(actualDoctorId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData.social_media)
+        }),
+        authenticatedFetch(API_URLS.WEBSITE.CONTACT.UPDATE(actualDoctorId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData.contact)
+        })
       ]);
-      
-      alert('All website data saved successfully to database!');
-      console.log('✅ All data saved successfully to database');
-      
-      // Refresh user context to update profile image in header
-      if (refreshUser) {
-        await refreshUser();
-        console.log('🔄 User context refreshed with updated profile image');
-      }
-      
-      // Refresh data to show updated values
-      await loadDoctorData();
 
+      showNotification('Website profile updated successfully!');
+      if (refreshUser) await refreshUser();
+      // Do not reload to avoid overwriting optimistic updates if backend lags
+      // await loadDoctorData(); 
     } catch (error) {
-      console.error('Save error:', error);
-      showNotification('Error saving data to database: ' + error.message, 'error');
+      showNotification('Error saving profile: ' + error.message, 'error');
     } finally {
       setSaveLoading(false);
     }
   };
 
+  const saveSection = async (items, endpoints) => {
+    for (const item of items) {
+      if (item.id) {
+        await authenticatedFetch(endpoints.UPDATE(actualDoctorId, item.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+      } else {
+        await authenticatedFetch(endpoints.ADD(actualDoctorId), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+      }
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNestedChange = (parent, field, value) => {
+    setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }));
+  };
+
+  const handleArrayInputChange = (section, index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: prev[section].map((item, i) => i === index ? { ...item, [field]: value } : item)
+    }));
+  };
+
+  const addArrayItem = (section) => {
+    const templates = {
+      chamber: { chamber_location: "", day: "Sunday", time_range: "09:00 AM - 05:00 PM" },
+      services: { service_icon: "Activity", service_name: "", service_description: "", features: "", color_theme: "from-blue-500 to-cyan-500" },
+      education: { degree: "", institution: "", passing_year: "", short_description: "", type: "certification" },
+      experience: { designation: "", organization: "", start_date: "", end_date: "", short_description: "", type: "current" },
+      testimonials: { name: "", message: "", rating: 5, location: "", avatar: "" },
+      affiliates: { name: "", logo: "PA" },
+      social_media: { platform: "LinkedIn", profile_url: "" }
+    };
+    setFormData(prev => ({ ...prev, [section]: [...prev[section], templates[section]] }));
+  };
+
+  const removeArrayItem = async (section, index) => {
+    const item = formData[section][index];
+    if (item.id) {
+      try {
+        const endpoints = {
+          education: API_URLS.WEBSITE.EDUCATION.DELETE,
+          experience: API_URLS.WEBSITE.EXPERIENCE.DELETE,
+          services: API_URLS.WEBSITE.SERVICES.DELETE,
+          chamber: API_URLS.WEBSITE.CHAMBERS.DELETE
+        };
+        // Only specific sections have endpoints for deletion, others might be saved as blob in profile
+        if (endpoints[section]) {
+          await authenticatedFetch(endpoints[section](actualDoctorId, item.id), { method: 'DELETE' });
+        }
+      } catch (error) {
+        showNotification(`Error deleting item: ${error.message}`, 'error');
+        return;
+      }
+    }
+    setFormData(prev => ({ ...prev, [section]: prev[section].filter((_, i) => i !== index) }));
+  };
+
+  const getDynamicIcon = (name) => {
+    const allIcons = Object.values(SUPPORTED_ICONS).reduce((acc, curr) => ({ ...acc, ...curr }), {});
+    const IconComponent = allIcons[name] || Activity;
+    return <IconComponent className="h-5 w-5" />;
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading website data...</p>
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Loading Public Profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
-      {/* Notification */}
+    <div className="space-y-10 pb-10">
+      {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
-          notification.type === 'error' 
-            ? 'bg-red-100 text-red-800 border border-red-300' 
-            : 'bg-green-100 text-green-800 border border-green-300'
-        }`}>
-          {notification.message}
+        <div className={`fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 backdrop-blur-xl animate-in slide-in-from-right-10 duration-300 ${notification.type === 'error' ? 'bg-red-500/10 border border-red-500/20 text-red-600' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
+          }`}>
+          {notification.type === 'error' ? <AlertCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
+          <span className="text-[11px] font-black uppercase tracking-widest">{notification.message}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Public Website</h1>
-          <p className="text-gray-600 mt-1">Manage your professional online presence</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-0 bg-background/80 backdrop-blur-xl z-40 py-4 -mx-6 px-6 border-b border-border/40 transition-all">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-500/10 rounded-2xl">
+            <Globe className="h-6 w-6 text-indigo-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-foreground tracking-tighter">{t.pageTitle}</h1>
+            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">{t.pageSubtitle}</p>
+          </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saveLoading}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-        >
-          <Save size={20} />
-          {saveLoading ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border">
+            <button onClick={() => setLang('en')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'en' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>EN</button>
+            <button onClick={() => setLang('bn')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'bn' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>BN</button>
+          </div>
+          <button onClick={handleSave} disabled={saveLoading} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3">
+            {saveLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save className="h-4 w-4" />} {t.saveChanges}
+          </button>
+        </div>
       </div>
 
-      {/* Basic Information */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <User size={20} />
-          Basic Information
-        </h2>
-        <div className="grid md:grid-cols-2 gap-6">
+      {/* Hero Section */}
+      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
+        {/* ... Hero Content ... */}
+        <div className="flex items-center gap-4 mb-10">
+          <div className="p-2 bg-blue-500/10 rounded-xl"><Layout className="h-5 w-5 text-blue-600" /></div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={formData.full_name}
-              onChange={(e) => handleInputChange('full_name', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Dr. John Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Years of Experience
-            </label>
-            <input
-              type="number"
-              value={formData.years_experience}
-              onChange={(e) => handleInputChange('years_experience', parseInt(e.target.value) || 0)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="15"
-            />
+            <h2 className="text-xl font-black text-foreground tracking-tight">{t.heroSection}</h2>
+            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{t.heroSectionSub}</p>
           </div>
         </div>
-
-        {/* Profile Picture Section */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Profile Picture
-          </label>
-          
-          {/* Current Profile Preview */}
-          {formData.profile_photo_url && (
-            <div className="mb-4 flex items-center gap-4">
-              <div className="relative">
-                <img
-                  src={formData.profile_photo_url}
-                  alt="Profile Preview"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
-                  onError={(e) => {
-                    console.error('🖼️ Image failed to load:', formData.profile_photo_url);
-                    e.target.style.display = 'none';
-                    e.target.nextElementSibling.style.display = 'flex';
-                  }}
-                  onLoad={() => {
-                    console.log('✅ Image loaded successfully:', formData.profile_photo_url);
-                  }}
-                />
-                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium" style={{ display: 'none' }}>
-                  {formData.full_name?.charAt(0) || 'D'}
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroTag}</label>
+              <input type="text" value={formData.hero.intro_tag} onChange={(e) => handleNestedChange('hero', 'intro_tag', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroPrefix}</label>
+                <input type="text" value={formData.hero.title_prefix} onChange={(e) => handleNestedChange('hero', 'title_prefix', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all" />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroHighlight}</label>
+                <input type="text" value={formData.hero.title_highlight} onChange={(e) => handleNestedChange('hero', 'title_highlight', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-bold text-blue-600 transition-all" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroDesc}</label>
+                <button onClick={() => handleAIGenerate('bio', 'welcome', (v) => handleNestedChange('hero', 'description', v))} className="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
+              </div>
+              <textarea value={formData.hero.description} onChange={(e) => handleNestedChange('hero', 'description', e.target.value)} rows={3} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all resize-none" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroImage}</label>
+            <div className="relative group rounded-2xl overflow-hidden border-4 border-muted aspect-video bg-muted/30">
+              <img src={formData.hero.image_url} className="w-full h-full object-cover" alt="Hero" />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-[80%]">
+                  <input type="text" value={formData.hero.image_url} onChange={(e) => handleNestedChange('hero', 'image_url', e.target.value)} className="w-full px-4 py-2 bg-white/90 rounded-lg text-xs" placeholder="Image URL" />
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => handleInputChange('profile_photo_url', '')}
-                className="px-3 py-1 text-sm text-red-600 hover:text-red-800 border border-red-300 rounded hover:bg-red-50"
-              >
-                Remove
-              </button>
             </div>
-          )}
+          </div>
+        </div>
+      </section>
 
-          {/* Upload Options */}
+      {/* About Section Configuration */}
+      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="p-2 bg-emerald-500/10 rounded-xl"><UserCheck className="h-5 w-5 text-emerald-600" /></div>
+          <div>
+            <h2 className="text-xl font-black text-foreground tracking-tight">About Me Configuration</h2>
+            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Professional bio and feature images</p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Profile Subtitle</label>
+              <input type="text" value={formData.about.subtitle} onChange={(e) => handleNestedChange('about', 'subtitle', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-medium" placeholder="E.g., A distinguished cardiologist..." />
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Professional Bio</label>
+                <button onClick={() => handleAIGenerate('bio', 'about', (v) => handleNestedChange('about', 'bio', v))} className="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
+              </div>
+              <textarea value={formData.about.bio} onChange={(e) => handleNestedChange('about', 'bio', e.target.value)} rows={4} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-medium transition-all resize-none" />
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Feature Image 1 (Technology)</label>
+              <div className="flex gap-2 items-center">
+                <img src={formData.about.image_1} className="w-12 h-12 rounded-lg object-cover bg-muted" alt="1" />
+                <input type="text" value={formData.about.image_1} onChange={(e) => handleNestedChange('about', 'image_1', e.target.value)} className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-xs" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Feature Image 2 (Research)</label>
+              <div className="flex gap-2 items-center">
+                <img src={formData.about.image_2} className="w-12 h-12 rounded-lg object-cover bg-muted" alt="2" />
+                <input type="text" value={formData.about.image_2} onChange={(e) => handleNestedChange('about', 'image_2', e.target.value)} className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-xs" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="p-2 bg-emerald-500/10 rounded-xl"><TrendingUp className="h-5 w-5 text-emerald-600" /></div>
+          <div>
+            <h2 className="text-xl font-black text-foreground tracking-tight">{t.statsSection}</h2>
+            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{t.statsSectionSub}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.experience}</label>
+            <input type="number" value={formData.years_experience} onChange={(e) => handleInputChange('years_experience', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.patientCount}</label>
+            <input type="text" value={formData.stats.patients_count} onChange={(e) => handleNestedChange('stats', 'patients_count', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.successRate}</label>
+            <input type="text" value={formData.stats.success_rate} onChange={(e) => handleNestedChange('stats', 'success_rate', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.consultFee}</label>
+            <input type="text" value={formData.stats.consultation_fee} onChange={(e) => handleNestedChange('stats', 'consultation_fee', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          </div>
+        </div>
+      </section>
+
+      {/* Basic Info & Website Config (Combined) */}
+      <div className="grid md:grid-cols-2 gap-8">
+        <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-xl">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-2 bg-indigo-500/10 rounded-xl"><User className="h-5 w-5 text-indigo-600" /></div>
+            <h2 className="text-xl font-black text-foreground tracking-tight">{t.basicInfo}</h2>
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.fullName}</label>
+              <input type="text" value={formData.full_name} onChange={(e) => handleInputChange('full_name', e.target.value)} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:border-indigo-500 outline-none font-bold" />
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.profileUrl}</label>
+              <input type="text" value={formData.profile_photo_url} onChange={(e) => handleInputChange('profile_photo_url', e.target.value)} className="w-full px-5 py-3 bg-muted/40 border border-border rounded-xl text-sm" />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-xl">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-2 bg-pink-500/10 rounded-xl"><Globe className="h-5 w-5 text-pink-600" /></div>
+            <h2 className="text-xl font-black text-foreground tracking-tight">{t.websiteConfig}</h2>
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.pageTitle}</label>
+              <input type="text" value={formData.website.title} onChange={(e) => handleNestedChange('website', 'title', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl outline-none font-medium" />
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.tagline}</label>
+              <input type="text" value={formData.website.tagline} onChange={(e) => handleNestedChange('website', 'tagline', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl outline-none font-medium" />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Complex Array Sections */}
+      {[
+        {
+          id: 'chamber', title: t.chambers, subtitle: t.chambersSub, icon: MapPin, color: 'red',
+          items: formData.chamber,
+          summaryKey: 'day',
+          fields: [
+            { name: 'day', label: 'Day (e.g. Sunday)', type: 'select', options: [{ label: 'Sunday', value: 'Sunday' }, { label: 'Monday', value: 'Monday' }, { label: 'Tuesday', value: 'Tuesday' }, { label: 'Wednesday', value: 'Wednesday' }, { label: 'Thursday', value: 'Thursday' }, { label: 'Friday', value: 'Friday' }, { label: 'Saturday', value: 'Saturday' }], col: 'span-2' },
+            { name: 'time_range', label: 'Time (e.g. 10AM - 5PM)', type: 'text', col: 'span-2' },
+            { name: 'chamber_location', label: t.labels.address, type: 'text', col: 'span-4' }
+          ]
+        },
+        {
+          id: 'services', title: t.services, subtitle: t.servicesSub, icon: Heart, color: 'blue',
+          items: formData.services,
+          summaryKey: 'service_name',
+          fields: [
+            { name: 'service_name', label: t.labels.serviceName, type: 'text', col: 'span-2' },
+            { name: 'service_icon', label: t.labels.icon, type: 'icon', col: 'span-1' },
+            { name: 'color_theme', label: t.labels.color, type: 'select', options: COLOR_THEMES, col: 'span-1' },
+            { name: 'service_description', label: t.labels.description, type: 'ai-text', col: 'span-4' },
+            { name: 'features', label: t.labels.features, type: 'text', col: 'span-4' }
+          ]
+        },
+        {
+          id: 'experience', title: t.experience, subtitle: t.experienceSub, icon: Briefcase, color: 'emerald',
+          items: formData.experience,
+          summaryKey: 'organization',
+          fields: [
+            { name: 'designation', label: t.labels.role, type: 'text', col: 'span-2' },
+            { name: 'organization', label: t.labels.organization, type: 'text', col: 'span-2' },
+            { name: 'start_date', label: t.labels.startDate, type: 'date', col: 'span-1' },
+            { name: 'end_date', label: t.labels.endDate, type: 'date', col: 'span-1' },
+            { name: 'type', label: t.labels.type, type: 'select', options: [{ label: 'Current', value: 'current' }, { label: 'Previous', value: 'previous' }, { label: 'Training', value: 'training' }, { label: 'Foundation', value: 'foundation' }], col: 'span-2' }
+          ]
+        },
+        {
+          id: 'education', title: t.education, subtitle: t.educationSub, icon: GraduationCap, color: 'purple',
+          items: formData.education,
+          summaryKey: 'institution',
+          fields: [
+            { name: 'degree', label: t.labels.degree, type: 'text', col: 'span-2' },
+            { name: 'institution', label: t.labels.institution, type: 'text', col: 'span-2' },
+            { name: 'passing_year', label: t.labels.year, type: 'text', col: 'span-1' },
+            { name: 'type', label: t.labels.type, type: 'select', options: [{ label: 'Certification', value: 'certification' }, { label: 'Fellowship', value: 'fellowship' }, { label: 'Postgraduate', value: 'postgraduate' }, { label: 'Undergraduate', value: 'undergraduate' }], col: 'span-1' },
+            { name: 'short_description', label: t.labels.details, type: 'text', col: 'span-4' }
+          ]
+        },
+        {
+          id: 'testimonials', title: t.testimonials, subtitle: t.testimonialsSub, icon: Star, color: 'orange',
+          items: formData.testimonials,
+          summaryKey: 'name',
+          fields: [
+            { name: 'name', label: t.labels.patientName, type: 'text', col: 'span-2' },
+            { name: 'location', label: t.labels.location, type: 'text', col: 'span-2' },
+            { name: 'message', label: t.labels.message, type: 'ai-text', col: 'span-3' },
+            { name: 'rating', label: t.labels.rating, type: 'number', col: 'span-1' }
+          ]
+        },
+        {
+          id: 'affiliates', title: t.affiliates, subtitle: t.affiliatesSub, icon: Users, color: 'cyan',
+          items: formData.affiliates,
+          summaryKey: 'name',
+          fields: [
+            { name: 'name', label: t.labels.affiliateName, type: 'text', col: 'span-2' },
+            { name: 'logo', label: t.labels.affiliateLogo, type: 'text', col: 'span-2' }
+          ]
+        },
+        {
+          id: 'social_media', title: t.social, subtitle: t.socialSub, icon: Globe, color: 'pink',
+          items: formData.social_media,
+          summaryKey: 'platform',
+          fields: [
+            { name: 'platform', label: 'Platform', type: 'select', options: [{ label: 'Facebook', value: 'Facebook' }, { label: 'Twitter', value: 'Twitter' }, { label: 'LinkedIn', value: 'LinkedIn' }, { label: 'Instagram', value: 'Instagram' }, { label: 'YouTube', value: 'YouTube' }], col: 'span-2' },
+            { name: 'profile_url', label: t.labels.platformUrl, type: 'text', col: 'span-2' }
+          ]
+        }
+      ].map((section) => (
+        <section key={section.id} className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className={`p-2 bg-${section.color}-500/10 rounded-xl`}><section.icon className={`h-5 w-5 text-${section.color}-600`} /></div>
+              <div>
+                <h2 className="text-xl font-black text-foreground tracking-tight">{section.title}</h2>
+                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{section.subtitle}</p>
+              </div>
+            </div>
+            <button onClick={() => addArrayItem(section.id)} className={`px-5 py-2.5 bg-${section.color}-500/10 text-${section.color}-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-${section.color}-500/20 transition-all flex items-center gap-2`}>
+              <Plus className="h-4 w-4" /> {t.addNew}
+            </button>
+          </div>
+
           <div className="space-y-4">
-            {/* File Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Upload Image (Max: 2MB, 400x400px recommended)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/jpg"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      console.log('📁 File selected:', {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        sizeMB: (file.size / (1024 * 1024)).toFixed(2)
-                      });
+            {section.items.length === 0 ? <div className="text-center py-10 opacity-50"><p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t.noEntries}</p></div> :
+              section.items.map((item, index) => (
+                <div key={index} className="bg-background/50 border border-border rounded-[1.5rem] overflow-hidden transition-all text-foreground">
+                  <div
+                    className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/30"
+                    onClick={() => {
+                      const key = `${section.id}-${index}`;
+                      setExpandedItems(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`h-2 w-2 rounded-full bg-${section.color}-500`}></div>
+                      <span className="font-bold text-sm">
+                        {item[section.summaryKey] || `${t.addNew} ${index + 1}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); removeArrayItem(section.id, index); }} className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-600 rounded-lg transition-all"><Trash2 className="h-4 w-4" /></button>
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedItems.includes(`${section.id}-${index}`) ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
 
-                      // Check file size (2MB limit)
-                      if (file.size > 2 * 1024 * 1024) {
-                        showNotification(`Image size is ${(file.size / (1024 * 1024)).toFixed(2)}MB. Must be less than 2MB`, 'error');
-                        e.target.value = '';
-                        return;
-                      }
-                      
-                      // Check file type
-                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-                      if (!allowedTypes.includes(file.type)) {
-                        showNotification(`File type ${file.type} not supported. Please use JPEG or PNG`, 'error');
-                        e.target.value = '';
-                        return;
-                      }
-                      
-                      // Convert to base64
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        const result = event.target.result;
-                        console.log('📷 Image converted to base64, length:', result.length);
-                        console.log('📷 Base64 preview:', result.substring(0, 100) + '...');
-                        handleInputChange('profile_photo_url', result);
-                        showNotification('Image uploaded successfully!', 'success');
-                      };
-                      reader.onerror = (error) => {
-                        console.error('❌ FileReader error:', error);
-                        showNotification('Failed to read image file', 'error');
-                        e.target.value = '';
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Supported formats: JPEG, PNG. Recommended size: 400x400px
-              </p>
-            </div>
+                  {expandedItems.includes(`${section.id}-${index}`) && (
+                    <div className="px-6 pb-6 pt-2 border-t border-border/50 animate-in slide-in-from-top-2">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {section.fields.map((field) => (
+                          <div key={field.name} className={`${field.col} space-y-2 relative`}>
+                            <div className="flex justify-between">
+                              <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">{field.label}</label>
+                              {field.type === 'ai-text' && <button onClick={() => handleAIGenerate('service', item.service_name || 'service', (v) => handleArrayInputChange(section.id, index, field.name, v))} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1 hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>}
+                            </div>
 
-            {/* URL Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Or Enter Image URL
-              </label>
-              <input
-                type="url"
-                value={formData.profile_photo_url?.startsWith('data:') ? '' : formData.profile_photo_url || ''}
-                onChange={(e) => handleInputChange('profile_photo_url', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://example.com/photo.jpg"
-              />
-            </div>
+                            {field.type === 'icon' ? (
+                              <div className="relative">
+                                <button onClick={() => setActiveIconPicker(activeIconPicker === `${section.id}-${index}` ? null : `${section.id}-${index}`)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 focus:border-${section.color}-500 outline-none text-sm font-medium transition-all flex items-center gap-2`}>
+                                  {getDynamicIcon(item[field.name])}
+                                  <span className="opacity-50 text-xs">{(item[field.name] || 'Select').substring(0, 10)}</span>
+                                  <ChevronDown className="h-3 w-3 ml-auto opacity-50" />
+                                </button>
+                                {activeIconPicker === `${section.id}-${index}` && <IconPicker selected={item[field.name]} onSelect={(n) => { handleArrayInputChange(section.id, index, field.name, n); setActiveIconPicker(null); }} onClose={() => setActiveIconPicker(null)} />}
+                              </div>
+                            ) : field.type === 'select' ? (
+                              <select value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 outline-none text-sm font-medium`}>
+                                {field.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                              </select>
+                            ) : (
+                              <input type={field.type === 'ai-text' ? 'text' : field.type} value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 focus:border-${section.color}-500 outline-none text-sm font-medium transition-all`} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            }
           </div>
-        </div>
-      </div>
-
-      {/* Website Settings */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Globe size={20} />
-          Website Settings
-        </h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Website Title
-            </label>
-            <input
-              type="text"
-              value={formData.website.title}
-              onChange={(e) => handleWebsiteChange('title', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Dr. John Doe - Cardiologist"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tagline
-            </label>
-            <input
-              type="text"
-              value={formData.website.tagline}
-              onChange={(e) => handleWebsiteChange('tagline', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Expert Heart Care You Can Trust"
-            />
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
-          <textarea
-            value={formData.website.description}
-            onChange={(e) => handleWebsiteChange('description', e.target.value)}
-            rows={4}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Brief description about your practice..."
-          />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Theme Color
-            </label>
-            <input
-              type="color"
-              value={formData.website.theme_color}
-              onChange={(e) => handleWebsiteChange('theme_color', e.target.value)}
-              className="w-full h-12 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              URL Slug
-            </label>
-            <input
-              type="text"
-              value={formData.website.url_slug}
-              onChange={(e) => handleWebsiteChange('url_slug', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="dr-john-doe"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Chamber Information */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <MapPin size={20} />
-          Chamber Information
-        </h2>
-        {formData.chamber.map((chamber, index) => (
-          <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg mb-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Chamber {index + 1}</h3>
-              {formData.chamber.length > 1 && (
-                <button
-                  onClick={() => removeArrayItem('chamber', index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Available Time
-              </label>
-              <input
-                type="text"
-                value={chamber.available_time}
-                onChange={(e) => handleArrayInputChange('chamber', index, 'available_time', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Mon-Fri: 9:00 AM - 6:00 PM"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Chamber Location
-              </label>
-              <textarea
-                value={chamber.chamber_location}
-                onChange={(e) => handleArrayInputChange('chamber', index, 'chamber_location', e.target.value)}
-                rows={2}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Full address of the chamber"
-              />
-            </div>
-          </div>
-        ))}
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => addArrayItem('chamber')}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Add Chamber
-          </button>
-          <button
-            onClick={saveChambersSection}
-            disabled={sectionLoading.chambers}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sectionLoading.chambers ? 'Saving...' : 'Save Chambers'}
-          </button>
-        </div>
-      </div>
-
-      {/* Services */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Briefcase size={20} />
-          Medical Services
-        </h2>
-        {formData.services.map((service, index) => (
-          <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg mb-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Service {index + 1}</h3>
-              {formData.services.length > 1 && (
-                <button
-                  onClick={() => removeArrayItem('services', index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Icon/Emoji
-                </label>
-                <input
-                  type="text"
-                  value={service.service_icon}
-                  onChange={(e) => handleArrayInputChange('services', index, 'service_icon', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="🫀"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Name
-                </label>
-                <input
-                  type="text"
-                  value={service.service_name}
-                  onChange={(e) => handleArrayInputChange('services', index, 'service_name', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Cardiac Consultation"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Service Description
-              </label>
-              <textarea
-                value={service.service_description}
-                onChange={(e) => handleArrayInputChange('services', index, 'service_description', e.target.value)}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Detailed description of the service..."
-              />
-            </div>
-          </div>
-        ))}
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => addArrayItem('services')}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Add Service
-          </button>
-          <button
-            onClick={saveServicesSection}
-            disabled={sectionLoading.services}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sectionLoading.services ? 'Saving...' : 'Save Services'}
-          </button>
-        </div>
-      </div>
-
-      {/* Education */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Award size={20} />
-          Educational Background
-        </h2>
-        {formData.education.map((edu, index) => (
-          <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg mb-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Education {index + 1}</h3>
-              {formData.education.length > 1 && (
-                <button
-                  onClick={() => removeArrayItem('education', index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Degree
-                </label>
-                <input
-                  type="text"
-                  value={edu.degree}
-                  onChange={(e) => handleArrayInputChange('education', index, 'degree', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Doctor of Medicine (MD)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Institution
-                </label>
-                <input
-                  type="text"
-                  value={edu.institution}
-                  onChange={(e) => handleArrayInputChange('education', index, 'institution', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Harvard Medical School"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Passing Year
-              </label>
-              <input
-                type="text"
-                value={edu.passing_year}
-                onChange={(e) => handleArrayInputChange('education', index, 'passing_year', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="2008"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={edu.short_description}
-                onChange={(e) => handleArrayInputChange('education', index, 'short_description', e.target.value)}
-                rows={2}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Brief description of achievements or focus..."
-              />
-            </div>
-          </div>
-        ))}
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => addArrayItem('education')}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Add Education
-          </button>
-          <button
-            onClick={saveEducationSection}
-            disabled={sectionLoading.education}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sectionLoading.education ? 'Saving...' : 'Save Education'}
-          </button>
-        </div>
-      </div>
-
-      {/* Professional Experience */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Briefcase size={20} />
-          Professional Experience
-        </h2>
-        {formData.experience.map((exp, index) => (
-          <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg mb-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Experience {index + 1}</h3>
-              {formData.experience.length > 1 && (
-                <button
-                  onClick={() => removeArrayItem('experience', index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Designation
-                </label>
-                <input
-                  type="text"
-                  value={exp.designation}
-                  onChange={(e) => handleArrayInputChange('experience', index, 'designation', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Senior Cardiologist"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Organization
-                </label>
-                <input
-                  type="text"
-                  value={exp.organization}
-                  onChange={(e) => handleArrayInputChange('experience', index, 'organization', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Heart Care Medical Center"
-                />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={exp.start_date}
-                  onChange={(e) => handleArrayInputChange('experience', index, 'start_date', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date (Leave empty for current)
-                </label>
-                <input
-                  type="date"
-                  value={exp.end_date}
-                  onChange={(e) => handleArrayInputChange('experience', index, 'end_date', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={exp.short_description}
-                onChange={(e) => handleArrayInputChange('experience', index, 'short_description', e.target.value)}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Description of role and responsibilities..."
-              />
-            </div>
-          </div>
-        ))}
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => addArrayItem('experience')}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Add Experience
-          </button>
-          <button
-            onClick={saveExperienceSection}
-            disabled={sectionLoading.experience}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sectionLoading.experience ? 'Saving...' : 'Save Experience'}
-          </button>
-        </div>
-      </div>
-
-      {/* Contact Information */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
-        <div className="grid md:grid-cols-3 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone
-            </label>
-            <input
-              type="tel"
-              value={formData.contact.phone}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                contact: { ...prev.contact, phone: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="+1-555-0101"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              WhatsApp
-            </label>
-            <input
-              type="tel"
-              value={formData.contact.whatsapp}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                contact: { ...prev.contact, whatsapp: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="+1-555-0101"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.contact.email}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                contact: { ...prev.contact, email: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="john.doe@careconnect.com"
-            />
-          </div>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Office Phone
-            </label>
-            <input
-              type="tel"
-              value={formData.contact.office_phone || ''}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                contact: { ...prev.contact, office_phone: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="+1-555-0102"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Website URL
-            </label>
-            <input
-              type="url"
-              value={formData.contact.website_url || ''}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                contact: { ...prev.contact, website_url: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="https://www.doctorwebsite.com"
-            />
-          </div>
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Address
-          </label>
-          <textarea
-            value={formData.contact.address || ''}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              contact: { ...prev.contact, address: e.target.value }
-            }))}
-            rows={3}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="123 Medical Avenue, Suite 400, Metropolitan Heart Center, New York, NY 10001"
-          />
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={async () => {
-              setSaveLoading(true);
-              try {
-                await saveContact();
-                showNotification('Contact information saved successfully!', 'success');
-              } catch (error) {
-                showNotification('Failed to save contact information', 'error');
-              } finally {
-                setSaveLoading(false);
-              }
-            }}
-            disabled={saveLoading}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saveLoading ? 'Saving...' : 'Save Contact Information'}
-          </button>
-        </div>
-      </div>
-
-      {/* Social Media */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4">Social Media</h2>
-        {formData.social_media.map((social, index) => (
-          <div key={index} className="flex gap-4 mb-4">
-            <select
-              value={social.platform}
-              onChange={(e) => handleArrayInputChange('social_media', index, 'platform', e.target.value)}
-              className="w-40 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Platform</option>
-              {socialPlatforms.map(platform => (
-                <option key={platform} value={platform}>{platform}</option>
-              ))}
-            </select>
-            <input
-              type="url"
-              value={social.profile_url}
-              onChange={(e) => handleArrayInputChange('social_media', index, 'profile_url', e.target.value)}
-              className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="https://linkedin.com/in/dr-john-doe"
-            />
-            {formData.social_media.length > 1 && (
-              <button
-                onClick={() => removeArrayItem('social_media', index)}
-                className="px-4 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        ))}
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => addArrayItem('social_media')}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Add Social Media
-          </button>
-          <button
-            onClick={saveSocialMediaSection}
-            disabled={sectionLoading.socialMedia}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sectionLoading.socialMedia ? 'Saving...' : 'Save Social Media'}
-          </button>
-        </div>
-      </div>
-
-      {/* Testimonials */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4">Patient Testimonial</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Patient Name
-            </label>
-            <input
-              type="text"
-              value={formData.testimonials.patient_name}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                testimonials: { ...prev.testimonials, patient_name: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Sarah Johnson"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Feedback
-            </label>
-            <textarea
-              value={formData.testimonials.patient_feedback}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                testimonials: { ...prev.testimonials, patient_feedback: e.target.value }
-              }))}
-              rows={4}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Patient testimonial text..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date
-            </label>
-            <input
-              type="date"
-              value={formData.testimonials.feedback_date}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                testimonials: { ...prev.testimonials, feedback_date: e.target.value }
-              }))}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saveLoading}
-          className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-        >
-          <Save size={20} />
-          {saveLoading ? 'Saving...' : 'Save All Changes'}
-        </button>
-      </div>
+        </section>
+      ))}
     </div>
   );
 };
