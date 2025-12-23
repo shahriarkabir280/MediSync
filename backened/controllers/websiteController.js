@@ -36,9 +36,9 @@ export const getDoctorProfile = async (req, res) => {
     const { doctorId } = req.params;
     console.log(`🏥 Loading public website data for Doctor ID: ${doctorId}`);
     console.log('📝 Note: This public website system is designed for ONE doctor per deployment');
-    
+
     const cacheKey = getCacheKey('profile', doctorId);
-    
+
     // Check cache first
     const cached = getFromCache(cacheKey);
     if (cached) {
@@ -61,7 +61,10 @@ export const getDoctorProfile = async (req, res) => {
         ws.show_social,
         ws.meta_keywords,
         ws.url_slug,
-        ws.visibility
+        ws.visibility,
+        ws.hero,
+        ws.about,
+        ws.stats
       FROM doctors d
       LEFT JOIN website_settings ws ON d.id = ws.doctor_id
       WHERE d.id = ${doctorId}
@@ -88,7 +91,7 @@ export const getDoctorProfile = async (req, res) => {
       chambers: chambers || [],
       social_media: socialMedia || []
     };
-    
+
     // Get testimonials separately for better performance
     const testimonials = await sql`
       SELECT * FROM doctor_testimonials 
@@ -106,7 +109,7 @@ export const getDoctorProfile = async (req, res) => {
     const result = {
       ...profileData,
       testimonials,
-      sponsors_company: sponsors
+      affiliates: sponsors // Map sponsors to affiliates for frontend
     };
 
     // Cache the result
@@ -124,18 +127,18 @@ export const updateDoctorProfile = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const profileData = req.body;
-    
+
     console.log('Updating doctor profile for ID:', doctorId);
     console.log('Profile data received:', JSON.stringify(profileData, null, 2));
 
     // Handle profile image - convert base64 to file if needed
     let profileImageUrl = profileData.profile_photo_url;
-    
+
     if (isBase64Image(profileImageUrl)) {
       console.log('🖼️  Converting base64 image to file...');
       console.log('📏 Base64 length:', profileImageUrl.length);
       console.log('📋 Base64 preview:', profileImageUrl.substring(0, 50) + '...');
-      
+
       try {
         // Get current image URL to delete old file
         const currentDoctor = await sql`SELECT profile_image_url FROM doctors WHERE id = ${doctorId}`;
@@ -143,7 +146,7 @@ export const updateDoctorProfile = async (req, res) => {
           console.log('🗑️  Deleting old image:', currentDoctor[0].profile_image_url);
           deleteOldImage(currentDoctor[0].profile_image_url);
         }
-        
+
         // Save new image and get file URL
         profileImageUrl = saveBase64Image(profileImageUrl, doctorId);
         console.log('✅ Image saved as:', profileImageUrl);
@@ -164,11 +167,11 @@ export const updateDoctorProfile = async (req, res) => {
         years_of_experience = ${profileData.years_experience || 0},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${doctorId}
-    `;      
+    `;
     // Update website settings
     if (profileData.website) {
       console.log('Updating website settings:', profileData.website);
-      
+
       // Prepare website data with defaults
       const websiteData = {
         title: profileData.website.title || '',
@@ -185,10 +188,10 @@ export const updateDoctorProfile = async (req, res) => {
         url_slug: profileData.website.url_slug || 'doctor',
         visibility: profileData.website.visibility !== undefined ? profileData.website.visibility : true
       };
-      
+
       // Check if website record exists for this doctor
       const existingWebsite = await sql`SELECT id FROM website_settings WHERE doctor_id = ${doctorId}`;
-      
+
       if (existingWebsite.length > 0) {
         // Update existing website record
         await sql`
@@ -205,7 +208,10 @@ export const updateDoctorProfile = async (req, res) => {
             show_social = ${websiteData.show_social},
             meta_keywords = ${websiteData.meta_keywords},
             url_slug = ${websiteData.url_slug},
-            visibility = ${websiteData.visibility}
+            visibility = ${websiteData.visibility},
+            hero = ${JSON.stringify(profileData.hero || {})},
+            about = ${JSON.stringify(profileData.about || {})},
+            stats = ${JSON.stringify(profileData.stats || {})}
           WHERE doctor_id = ${doctorId}
         `;
       } else {
@@ -214,110 +220,148 @@ export const updateDoctorProfile = async (req, res) => {
           INSERT INTO website_settings (
             doctor_id, title, tagline, description, theme_color, layout_style,
             show_phone, show_email, show_address, show_appointment, show_social,
-            meta_keywords, url_slug, visibility
+            meta_keywords, url_slug, visibility, hero, about, stats
           ) VALUES (
             ${doctorId}, ${websiteData.title}, ${websiteData.tagline},
             ${websiteData.description}, ${websiteData.theme_color}, ${websiteData.layout_style},
             ${websiteData.show_phone}, ${websiteData.show_email}, ${websiteData.show_address},
             ${websiteData.show_appointment}, ${websiteData.show_social}, ${websiteData.meta_keywords},
-            ${websiteData.url_slug}, ${websiteData.visibility}
+            ${websiteData.url_slug}, ${websiteData.visibility},
+            ${JSON.stringify(profileData.hero || {})}, 
+            ${JSON.stringify(profileData.about || {})}, 
+            ${JSON.stringify(profileData.stats || {})}
           )
         `;
       }
     }
 
-      // Batch update education
-      if (profileData.education && Array.isArray(profileData.education)) {
-        // Delete existing education
-        await sql`DELETE FROM doctor_education WHERE doctor_id = ${doctorId}`;
-        
-        // Insert new education records
-        for (const edu of profileData.education) {
-          if (edu.degree && edu.institution) {
-            await sql`
+    // Batch update education
+    if (profileData.education && Array.isArray(profileData.education)) {
+      // Delete existing education
+      await sql`DELETE FROM doctor_education WHERE doctor_id = ${doctorId}`;
+
+      // Insert new education records
+      for (const edu of profileData.education) {
+        if (edu.degree && edu.institution) {
+          await sql`
               INSERT INTO doctor_education (
-                doctor_id, degree, institution, passing_year, short_description
+                doctor_id, degree, institution, passing_year, short_description, type
               ) VALUES (
                 ${doctorId}, ${edu.degree}, ${edu.institution}, 
-                ${edu.passing_year}, ${edu.short_description}
+                ${edu.passing_year}, ${edu.short_description}, ${edu.type || 'certification'}
               )
             `;
-          }
         }
       }
+    }
 
-      // Batch update experience
-      if (profileData.experience && Array.isArray(profileData.experience)) {
-        await sql`DELETE FROM doctor_experience WHERE doctor_id = ${doctorId}`;
-        
-        for (const exp of profileData.experience) {
-          if (exp.designation && exp.organization) {
-            // Convert empty date strings to null
-            const startDate = exp.start_date && exp.start_date.trim() ? exp.start_date : null;
-            const endDate = exp.end_date && exp.end_date.trim() ? exp.end_date : null;
-            
-            await sql`
+    // Batch update experience
+    if (profileData.experience && Array.isArray(profileData.experience)) {
+      await sql`DELETE FROM doctor_experience WHERE doctor_id = ${doctorId}`;
+
+      for (const exp of profileData.experience) {
+        if (exp.designation && exp.organization) {
+          // Convert empty date strings to null
+          const startDate = exp.start_date && exp.start_date.trim() ? exp.start_date : null;
+          const endDate = exp.end_date && exp.end_date.trim() ? exp.end_date : null;
+
+          await sql`
               INSERT INTO doctor_experience (
-                doctor_id, designation, organization, start_date, end_date, short_description
+                doctor_id, designation, organization, start_date, end_date, short_description, type
               ) VALUES (
                 ${doctorId}, ${exp.designation}, ${exp.organization},
-                ${startDate}, ${endDate}, ${exp.short_description}
+                ${startDate}, ${endDate}, ${exp.short_description}, ${exp.type || 'current'}
               )
             `;
-          }
         }
       }
+    }
 
-      // Batch update services
-      if (profileData.services && Array.isArray(profileData.services)) {
-        await sql`DELETE FROM doctor_services WHERE doctor_id = ${doctorId}`;
-        
-        for (const service of profileData.services) {
-          if (service.service_name) {
-            await sql`
+    // Batch update services
+    if (profileData.services && Array.isArray(profileData.services)) {
+      await sql`DELETE FROM doctor_services WHERE doctor_id = ${doctorId}`;
+
+      for (const service of profileData.services) {
+        if (service.service_name) {
+          await sql`
               INSERT INTO doctor_services (
-                doctor_id, service_icon, service_name, service_description
+                doctor_id, service_icon, service_name, service_description, features, color_theme
               ) VALUES (
-                ${doctorId}, ${service.service_icon}, ${service.service_name}, ${service.service_description}
+                ${doctorId}, ${service.service_icon}, ${service.service_name}, 
+                ${service.service_description}, ${service.features}, ${service.color_theme || 'from-blue-500 to-cyan-500'}
               )
             `;
-          }
         }
       }
+    }
 
-      // Batch update chambers
-      if (profileData.chamber && Array.isArray(profileData.chamber)) {
-        await sql`DELETE FROM doctor_chambers WHERE doctor_id = ${doctorId}`;
-        
-        for (const chamber of profileData.chamber) {
-          if (chamber.chamber_location) {
-            await sql`
+    // Batch update chambers
+    if (profileData.chamber && Array.isArray(profileData.chamber)) {
+      await sql`DELETE FROM doctor_chambers WHERE doctor_id = ${doctorId}`;
+
+      for (const chamber of profileData.chamber) {
+        if (chamber.chamber_location) {
+          await sql`
               INSERT INTO doctor_chambers (
-                doctor_id, chamber_location, available_time
+                doctor_id, chamber_location, available_time, day
               ) VALUES (
-                ${doctorId}, ${chamber.chamber_location}, ${chamber.available_time}
+                ${doctorId}, ${chamber.chamber_location}, ${chamber.time_range || chamber.available_time}, ${chamber.day}
               )
             `;
-          }
         }
       }
+    }
 
-      // Batch update social media
-      if (profileData.social_media && Array.isArray(profileData.social_media)) {
-        await sql`DELETE FROM doctor_social_media WHERE doctor_id = ${doctorId}`;
-        
-        for (const social of profileData.social_media) {
-          if (social.platform && social.profile_url) {
-            await sql`
+    // Batch update social media
+    if (profileData.social_media && Array.isArray(profileData.social_media)) {
+      await sql`DELETE FROM doctor_social_media WHERE doctor_id = ${doctorId}`;
+
+      for (const social of profileData.social_media) {
+        if (social.platform && social.profile_url) {
+          await sql`
               INSERT INTO doctor_social_media (
                 doctor_id, platform, profile_url
               ) VALUES (
                 ${doctorId}, ${social.platform}, ${social.profile_url}
               )
             `;
-          }
         }
       }
+    }
+
+    // Batch update testimonials (New)
+    if (profileData.testimonials && Array.isArray(profileData.testimonials)) {
+      await sql`DELETE FROM doctor_testimonials WHERE doctor_id = ${doctorId}`;
+
+      for (const t of profileData.testimonials) {
+        if (t.name) {
+          await sql`
+              INSERT INTO doctor_testimonials (
+                doctor_id, patient_name, patient_feedback, rating, location, avatar_url
+              ) VALUES (
+                ${doctorId}, ${t.name}, ${t.message}, ${t.rating || 5}, ${t.location}, ${t.avatar}
+              )
+            `;
+        }
+      }
+    }
+
+    // Batch update projects/affiliates (mapped to sponsors)
+    if (profileData.affiliates && Array.isArray(profileData.affiliates)) {
+      await sql`DELETE FROM doctor_sponsors WHERE doctor_id = ${doctorId}`;
+
+      for (const aff of profileData.affiliates) {
+        if (aff.name) {
+          await sql`
+              INSERT INTO doctor_sponsors (
+                doctor_id, organization_name, organization_logo
+              ) VALUES (
+                ${doctorId}, ${aff.name}, ${aff.logo}
+              )
+            `;
+        }
+      }
+    }
 
     // Clear cache for this doctor
     clearCachePattern(doctorId);
@@ -334,7 +378,7 @@ export const getPublicProfile = async (req, res) => {
   try {
     const { urlSlug } = req.params;
     const cacheKey = getCacheKey('public', urlSlug);
-    
+
     // Check cache first
     const cached = getFromCache(cacheKey);
     if (cached) {
@@ -450,10 +494,10 @@ export const uploadProfileImage = async (req, res) => {
   try {
     const { doctorId } = req.params;
     // Implement actual file upload logic here (AWS S3, Cloudinary, etc.)
-    
+
     // For now, return mock URL
     const imageUrl = `https://example.com/profiles/${doctorId}/profile.jpg`;
-    
+
     await sql`
       UPDATE doctors 
       SET profile_photo_url = ${imageUrl}, updated_at = CURRENT_TIMESTAMP
@@ -474,7 +518,7 @@ export const uploadProfileImage = async (req, res) => {
 export const getDoctorWebsiteSettings = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    
+
     const settings = await sql`
       SELECT * FROM website_settings WHERE doctor_id = ${doctorId}
     `;
@@ -494,7 +538,7 @@ export const updateWebsiteSettings = async (req, res) => {
 
     // Check if website record exists
     const existing = await sql`SELECT id FROM website_settings WHERE doctor_id = ${doctorId}`;
-    
+
     if (existing.length > 0) {
       // Update existing record using the same pattern as the main profile update
       const websiteData = {
@@ -512,7 +556,7 @@ export const updateWebsiteSettings = async (req, res) => {
         url_slug: settings.url_slug || 'doctor',
         visibility: settings.visibility !== undefined ? settings.visibility : true
       };
-      
+
       await sql`
         UPDATE website_settings SET
           title = ${websiteData.title},
@@ -547,7 +591,7 @@ export const updateWebsiteSettings = async (req, res) => {
         url_slug: settings.url_slug || 'doctor',
         visibility: settings.visibility !== undefined ? settings.visibility : true
       };
-      
+
       await sql`
         INSERT INTO website_settings (
           doctor_id, title, tagline, description, theme_color, layout_style,
@@ -564,7 +608,7 @@ export const updateWebsiteSettings = async (req, res) => {
     }
 
     clearCachePattern(doctorId);
-    
+
     res.json({ success: true, message: 'Website settings updated successfully' });
   } catch (error) {
     console.error('Error updating website settings:', error);
@@ -577,7 +621,7 @@ export const getDashboardStats = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const cacheKey = getCacheKey('stats', doctorId);
-    
+
     const cached = getFromCache(cacheKey);
     if (cached) {
       return res.json({ success: true, data: cached });
@@ -594,7 +638,7 @@ export const getDashboardStats = async (req, res) => {
     `;
 
     setCache(cacheKey, stats[0]);
-    
+
     res.json({ success: true, data: stats[0] || {} });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
@@ -673,7 +717,7 @@ export const addExperience = async (req, res) => {
     const result = await sql`
       INSERT INTO doctor_experience (doctor_id, designation, organization, start_date, end_date, short_description)
       VALUES (${doctorId}, ${experience.designation}, ${experience.organization}, 
-              ${experience.start_date}, ${experience.end_date}, ${experience.short_description})
+              ${experience.start_date || null}, ${experience.end_date || null}, ${experience.short_description})
       RETURNING id
     `;
 
@@ -694,8 +738,8 @@ export const updateExperience = async (req, res) => {
       UPDATE doctor_experience 
       SET designation = ${experience.designation}, 
           organization = ${experience.organization},
-          start_date = ${experience.start_date},
-          end_date = ${experience.end_date},
+          start_date = ${experience.start_date || null},
+          end_date = ${experience.end_date || null},
           short_description = ${experience.short_description}
       WHERE id = ${experienceId} AND doctor_id = ${doctorId}
     `;
@@ -836,7 +880,7 @@ export const addTestimonial = async (req, res) => {
 
     const result = await sql`
       INSERT INTO doctor_testimonials (doctor_id, patient_name, patient_feedback, feedback_date)
-      VALUES (${doctorId}, ${testimonial.patient_name}, ${testimonial.patient_feedback}, ${testimonial.feedback_date})
+      VALUES (${doctorId}, ${testimonial.patient_name}, ${testimonial.patient_feedback}, ${testimonial.feedback_date || null})
       RETURNING id
     `;
 
@@ -857,7 +901,7 @@ export const updateTestimonial = async (req, res) => {
       UPDATE doctor_testimonials 
       SET patient_name = ${testimonial.patient_name}, 
           patient_feedback = ${testimonial.patient_feedback},
-          feedback_date = ${testimonial.feedback_date}
+          feedback_date = ${testimonial.feedback_date || null}
       WHERE id = ${testimonialId} AND doctor_id = ${doctorId}
     `;
 
@@ -945,8 +989,8 @@ export const updateContact = async (req, res) => {
     `;
 
     clearCachePattern(doctorId);
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Contact information updated successfully',
       contact: result[0]
     });
