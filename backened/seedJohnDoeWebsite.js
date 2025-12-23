@@ -11,71 +11,71 @@ const sampleWebsiteData = {
   served_total_patients: 2500,
   years_experience: 15,
   chamber: [
-    { 
-      available_time: "Mon-Fri: 9:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM", 
-      chamber_location: "Heart Care Medical Center, 123 Medical Plaza, New York, NY 10001" 
+    {
+      available_time: "Mon-Fri: 9:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM",
+      chamber_location: "Heart Care Medical Center, 123 Medical Plaza, New York, NY 10001"
     },
-    { 
-      available_time: "Wed-Thu: 7:00 PM - 9:00 PM", 
-      chamber_location: "Downtown Cardiology Clinic, 456 Health Ave, New York, NY 10002" 
+    {
+      available_time: "Wed-Thu: 7:00 PM - 9:00 PM",
+      chamber_location: "Downtown Cardiology Clinic, 456 Health Ave, New York, NY 10002"
     }
   ],
   services: [
-    { 
-      service_icon: "🫀", 
-      service_name: "Cardiac Consultation", 
-      service_description: "Comprehensive heart health assessment and consultation for all cardiac conditions" 
+    {
+      service_icon: "🫀",
+      service_name: "Cardiac Consultation",
+      service_description: "Comprehensive heart health assessment and consultation for all cardiac conditions"
     },
-    { 
-      service_icon: "🩺", 
-      service_name: "Preventive Cardiology", 
-      service_description: "Heart disease prevention, lifestyle counseling, and risk factor management" 
+    {
+      service_icon: "🩺",
+      service_name: "Preventive Cardiology",
+      service_description: "Heart disease prevention, lifestyle counseling, and risk factor management"
     },
-    { 
-      service_icon: "📊", 
-      service_name: "Cardiac Imaging", 
-      service_description: "Advanced cardiac imaging including echocardiograms and stress tests" 
+    {
+      service_icon: "📊",
+      service_name: "Cardiac Imaging",
+      service_description: "Advanced cardiac imaging including echocardiograms and stress tests"
     },
-    { 
-      service_icon: "💊", 
-      service_name: "Medication Management", 
-      service_description: "Specialized cardiac medication therapy and monitoring" 
+    {
+      service_icon: "💊",
+      service_name: "Medication Management",
+      service_description: "Specialized cardiac medication therapy and monitoring"
     },
-    { 
-      service_icon: "🏥", 
-      service_name: "Emergency Cardiac Care", 
-      service_description: "24/7 emergency cardiac consultation and immediate intervention" 
+    {
+      service_icon: "🏥",
+      service_name: "Emergency Cardiac Care",
+      service_description: "24/7 emergency cardiac consultation and immediate intervention"
     },
-    { 
-      service_icon: "🔬", 
-      service_name: "Cardiac Catheterization", 
-      service_description: "Advanced interventional cardiology procedures and treatments" 
+    {
+      service_icon: "🔬",
+      service_name: "Cardiac Catheterization",
+      service_description: "Advanced interventional cardiology procedures and treatments"
     }
   ],
   education: [
-    { 
-      degree: "Doctor of Medicine (MD)", 
-      institution: "Harvard Medical School", 
-      passing_year: "2008", 
-      short_description: "Graduated Magna Cum Laude with focus on cardiovascular medicine" 
+    {
+      degree: "Doctor of Medicine (MD)",
+      institution: "Harvard Medical School",
+      passing_year: "2008",
+      short_description: "Graduated Magna Cum Laude with focus on cardiovascular medicine"
     },
-    { 
-      degree: "Fellowship in Cardiology", 
-      institution: "Mayo Clinic", 
-      passing_year: "2012", 
-      short_description: "Specialized training in interventional cardiology and cardiac imaging" 
+    {
+      degree: "Fellowship in Cardiology",
+      institution: "Mayo Clinic",
+      passing_year: "2012",
+      short_description: "Specialized training in interventional cardiology and cardiac imaging"
     },
-    { 
-      degree: "Residency in Internal Medicine", 
-      institution: "Johns Hopkins Hospital", 
-      passing_year: "2011", 
-      short_description: "Comprehensive internal medicine training with cardiac focus" 
+    {
+      degree: "Residency in Internal Medicine",
+      institution: "Johns Hopkins Hospital",
+      passing_year: "2011",
+      short_description: "Comprehensive internal medicine training with cardiac focus"
     },
-    { 
-      degree: "Bachelor of Science in Biology", 
-      institution: "MIT", 
-      passing_year: "2004", 
-      short_description: "Pre-medical studies with honors in biological sciences" 
+    {
+      degree: "Bachelor of Science in Biology",
+      institution: "MIT",
+      passing_year: "2004",
+      short_description: "Pre-medical studies with honors in biological sciences"
     }
   ],
   experience: [
@@ -102,20 +102,20 @@ const sampleWebsiteData = {
     }
   ],
   testimonials: [
-    { 
-      patient_name: "Sarah Johnson", 
-      patient_feedback: "Dr. John saved my life! His expertise and compassionate care during my heart attack was extraordinary. I'm forever grateful.", 
-      feedback_date: "2024-11-15" 
+    {
+      patient_name: "Sarah Johnson",
+      patient_feedback: "Dr. John saved my life! His expertise and compassionate care during my heart attack was extraordinary. I'm forever grateful.",
+      feedback_date: "2024-11-15"
     },
-    { 
-      patient_name: "Michael Chen", 
-      patient_feedback: "The best cardiologist in the city. Dr. John explained everything clearly and helped me manage my heart condition perfectly.", 
-      feedback_date: "2024-10-28" 
+    {
+      patient_name: "Michael Chen",
+      patient_feedback: "The best cardiologist in the city. Dr. John explained everything clearly and helped me manage my heart condition perfectly.",
+      feedback_date: "2024-10-28"
     },
-    { 
-      patient_name: "Emily Davis", 
-      patient_feedback: "Professional, knowledgeable, and caring. Dr. John's preventive approach helped me avoid major cardiac issues.", 
-      feedback_date: "2024-09-12" 
+    {
+      patient_name: "Emily Davis",
+      patient_feedback: "Professional, knowledgeable, and caring. Dr. John's preventive approach helped me avoid major cardiac issues.",
+      feedback_date: "2024-09-12"
     }
   ],
   sponsors_company: [
@@ -134,10 +134,10 @@ const sampleWebsiteData = {
       end_date: null
     }
   ],
-  contact: { 
-    phone: "+1-555-0101", 
-    whatsapp: "+1-555-0101", 
-    email: "john.doe@careconnect.com" 
+  contact: {
+    phone: "+1-555-0101",
+    whatsapp: "+1-555-0101",
+    email: "john.doe@careconnect.com"
   },
   social_media: [
     { platform: "LinkedIn", profile_url: "https://linkedin.com/in/dr-john-doe-cardiology" },
@@ -205,7 +205,7 @@ const sampleWebsiteData = {
   ],
   specialties: [
     "Interventional Cardiology",
-    "Preventive Cardiology", 
+    "Preventive Cardiology",
     "Heart Failure Management",
     "Cardiac Imaging",
     "Coronary Artery Disease",
@@ -219,7 +219,7 @@ const sampleWebsiteData = {
   insurance_accepted: [
     "Blue Cross Blue Shield",
     "Aetna",
-    "Cigna", 
+    "Cigna",
     "UnitedHealthcare",
     "Medicare",
     "Medicaid",
@@ -256,8 +256,8 @@ async function seedJohnDoeWebsiteData() {
     await sql`DELETE FROM doctor_testimonials WHERE doctor_id = ${doctorId}`;
     await sql`DELETE FROM doctor_sponsors WHERE doctor_id = ${doctorId}`;
     await sql`DELETE FROM doctor_social_media WHERE doctor_id = ${doctorId}`;
-    await sql`DELETE FROM contact WHERE doctor_id = ${doctorId}`;
-    await sql`DELETE FROM website WHERE doctor_id = ${doctorId}`;
+    await sql`DELETE FROM doctor_contact WHERE doctor_id = ${doctorId}`;
+    await sql`DELETE FROM website_settings WHERE doctor_id = ${doctorId}`;
 
     // Insert chamber data
     for (const chamber of sampleWebsiteData.chamber) {
@@ -316,22 +316,55 @@ async function seedJohnDoeWebsiteData() {
     }
 
     // Insert contact data
+    await sql`DELETE FROM doctor_contact WHERE doctor_id = ${doctorId}`;
     await sql`
-      INSERT INTO contact (doctor_id, phone, whatsapp, email)
+      INSERT INTO doctor_contact (doctor_id, phone, whatsapp, email)
       VALUES (${doctorId}, ${sampleWebsiteData.contact.phone}, ${sampleWebsiteData.contact.whatsapp}, ${sampleWebsiteData.contact.email})
     `;
 
     // Insert website settings
+    // Insert website settings
+    const heroData = {
+      title_prefix: "Your Heart,",
+      title_highlight: "Our Expertise",
+      intro_tag: "🏥 Expert Cardiac Care Since 2007",
+      description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge technology.",
+      image_url: "https://media.istockphoto.com/id/2201754823/photo/female-physician-explaining-medical-findings-to-older-woman-with-stomach-discomfort-listening.jpg?s=612x612&w=0&k=20&c=BZxNzQuqWTolKHBoQV0V8oOZpDl5PWKlCVe2DDc-ps0="
+    };
+
+    const aboutData = {
+      subtitle: "A distinguished cardiologist with over 15 years of experience",
+      bio: "Leading cardiovascular care excellence with advanced procedures and multidisciplinary team coordination.",
+      image_1: "https://images.unsplash.com/photo-1656428964836-78d54bf76231?w=600&auto=format&fit=crop",
+      image_2: "https://media.istockphoto.com/id/1185231735/photo/asian-scientist-use-microscope.webp?a=1&b=1&s=612x612&w=0&k=20"
+    };
+
+    const statsData = {
+      patients_count: "5000+",
+      success_rate: "98%",
+      consultation_fee: "৳1500"
+    };
+
     await sql`
-      INSERT INTO website (doctor_id, title, tagline, description, theme_color, layout_style, 
-                          show_phone, show_email, show_address, show_appointment, show_social, 
-                          meta_keywords, url_slug, visibility)
+      INSERT INTO website_settings (
+        doctor_id, title, tagline, description, theme_color, layout_style, 
+        show_phone, show_email, show_address, show_appointment, show_social, 
+        meta_keywords, url_slug, visibility,
+        hero, about, stats
+      )
       VALUES (${doctorId}, ${sampleWebsiteData.website.title}, ${sampleWebsiteData.website.tagline}, 
               ${sampleWebsiteData.website.description}, ${sampleWebsiteData.website.theme_color}, 
               ${sampleWebsiteData.website.layout_style}, ${sampleWebsiteData.website.show_phone}, 
               ${sampleWebsiteData.website.show_email}, ${sampleWebsiteData.website.show_address}, 
               ${sampleWebsiteData.website.show_appointment}, true, 
-              'cardiology,heart,doctor,medical', 'dr-john-doe', true)
+              'cardiology,heart,doctor,medical', 'dr-jobayer-hasan', true,
+              ${JSON.stringify(heroData)}, ${JSON.stringify(aboutData)}, ${JSON.stringify(statsData)}
+      )
+      ON CONFLICT (doctor_id) DO UPDATE SET
+        title = EXCLUDED.title,
+        hero = EXCLUDED.hero,
+        about = EXCLUDED.about,
+        stats = EXCLUDED.stats 
     `;
 
     console.log('✅ Successfully seeded Dr. John Doe website data!');
@@ -343,7 +376,7 @@ async function seedJohnDoeWebsiteData() {
     console.log(`   - ${sampleWebsiteData.testimonials.length} patient testimonials`);
     console.log(`   - ${sampleWebsiteData.social_media.length} social media profiles`);
     console.log('🌐 Website ready for editing and customization!');
-    
+
   } catch (error) {
     console.error('❌ Error seeding website data:', error);
     throw error;
