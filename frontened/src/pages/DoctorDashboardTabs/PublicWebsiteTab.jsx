@@ -725,6 +725,13 @@ const PublicWebsiteTab = () => {
               <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.tagline}</label>
               <input type="text" value={formData.website.tagline} onChange={(e) => handleNestedChange('website', 'tagline', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl outline-none font-medium" />
             </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">URL Slug (e.g., dr-john-doe)</label>
+              <div className="flex items-center">
+                <span className="px-4 py-4 bg-muted/60 border border-r-0 border-border rounded-l-xl text-sm font-medium text-muted-foreground">/doctor/</span>
+                <input type="text" value={formData.website.url_slug} onChange={(e) => handleNestedChange('website', 'url_slug', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-r-xl outline-none font-bold text-indigo-600" />
+              </div>
+            </div>
           </div>
         </section>
       </div>
