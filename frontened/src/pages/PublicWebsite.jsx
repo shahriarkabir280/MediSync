@@ -1,255 +1,173 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Heart, 
-  Activity, 
-  Shield, 
-  Calendar, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Menu,
-  X,
-  TrendingUp,
-  Zap,
-  Users,
-  Award,
-  Send,
-  Clock,
-  Star,
-  ChevronDown,
-  ArrowRight,
-  CheckCircle,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Heart, Activity, Shield, Calendar, MapPin, Phone, Mail, Menu, X,
+  TrendingUp, Zap, Users, Award, Send, Clock, Star, ChevronDown,
+  ArrowRight, CheckCircle, Facebook, Twitter, Instagram, Youtube,
+  Stethoscope, Thermometer, Pill, Syringe, Brain, Eye, Ear, Bone,
+  Baby, UserPlus, Microscope, FileText, Cross, Smile, Droplet,
+  UserCheck, Timer, Video, MessageSquare, Clipboard, Globe, Linkedin,
+  GraduationCap, Briefcase, Building
 } from 'lucide-react';
+import { API_URLS, getImageUrl } from '../config/api';
+
+const SUPPORTED_ICONS = {
+  'General': { Stethoscope, Activity, Thermometer, Pill, Syringe, Microscope, FileText, Clipboard },
+  'Cardiology': { Heart, Activity, Zap, Timer },
+  'Neurology': { Brain, Zap, Activity },
+  'Orthopedics': { Bone, UserCheck, Activity },
+  'Pediatrics': { Baby, Smile, UserPlus },
+  'Dental': { Smile, Cross },
+  'Ophthalmology': { Eye },
+  'ENT': { Ear },
+  'Emergency': { Cross, Zap, Timer },
+  'Telemedicine': { Video, Phone, MessageSquare, Calendar }
+};
+
+const getIconComponent = (iconName) => {
+  if (!iconName) return Activity;
+
+  // Flatten icons map for lookup
+  for (const category in SUPPORTED_ICONS) {
+    const icons = SUPPORTED_ICONS[category];
+    if (icons[iconName]) {
+      return icons[iconName];
+    }
+  }
+  return Activity;
+};
+
+const TRANSLATIONS = {
+  en: {
+    nav: { home: 'Home', services: 'Services', appointment: 'Appointment', about: 'About', testimonials: 'Stories', contact: 'Contact' },
+    buttons: { login: 'Login', signup: 'Sign Up', book: 'Book Appointment', emergency: 'Emergency Call', readMore: 'Read More' },
+    labels: { available: 'Available for Consultation', experience: 'Years Experience', patients: 'Patients Treated', success: 'Success Rate', fee: 'Consultation Fee' },
+    sections: {
+      schedule: 'Consultation Schedule',
+      location: 'Chamber Location',
+      specialization: 'Our Specializations',
+      about: 'Professional Excellence',
+      meet: 'Meet',
+      testimonials: 'Patient Stories',
+      affiliates: 'Our Partners',
+      footer: 'All rights reserved.'
+    }
+  },
+  bn: {
+    nav: { home: 'হোম', services: 'সেবাসমূহ', appointment: 'অ্যাপয়েন্টমেন্ট', about: 'পরিচিতি', testimonials: 'গল্প', contact: 'যোগাযোগ' },
+    buttons: { login: 'লগইন', signup: 'নিবন্ধন', book: 'অ্যাপয়েন্টমেন্ট নিন', emergency: 'জরুরী কল', readMore: 'আরও পড়ুন' },
+    labels: { available: 'পরামর্শের জন্য উপলব্ধ', experience: 'বছরের অভিজ্ঞতা', patients: 'রোগী চিকিৎসা', success: 'সাফল্যের হার', fee: 'পরামর্শ ফি' },
+    sections: {
+      schedule: 'পরামর্শের সময়সূচী',
+      location: 'চেম্বার অবস্থান',
+      specialization: 'আমাদের বিশেষত্ব',
+      about: 'পেশাদার উৎকর্ষ',
+      meet: 'পরিচিত হোন',
+      testimonials: 'রোগীদের কথা',
+      affiliates: 'আমাদের পার্টনার',
+      footer: 'সর্বস্বত্ব সংরক্ষিত।'
+    }
+  }
+};
 
 const PublicWebsite = () => {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lang, setLang] = useState('en');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [feedback, setFeedback] = useState({ name: '', message: '' });
-  const [scrollY, setScrollY] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
+    const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const testimonials = [
-    {
-      name: "Sarah Ahmed",
-      message: "Dr. Jobayer Hasan's expertise in cardiology is exceptional. His compassionate care and thorough diagnosis saved my life. Highly recommend!",
-      rating: 5,
-      location: "Dhaka, Bangladesh",
-      avatar: "https://plus.unsplash.com/premium_photo-1678197937465-bdbc4ed95815?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fHBlcnNvbnxlbnwwfHwwfHx8MA%3D%3D"
-    },
-    {
-      name: "Mohammad Hassan",
-      message: "Outstanding service and professional staff. The doctor explained everything clearly and made me feel comfortable throughout the treatment.",
-      rating: 5,
-      location: "Chittagong, Bangladesh",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      name: "Fatima Khan",
-      message: "Best cardiologist in Dhaka! The consultation was detailed and the follow-up care was excellent. Thank you for your dedication.",
-      rating: 5,
-      location: "Sylhet, Bangladesh",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-    }
-  ];
-
-  const services = [
-    {
-      icon: <Heart className="w-8 h-8" />,
-      title: "Comprehensive Heart Check-Up",
-      description: "Advanced cardiac screening with state-of-the-art diagnostic technology to ensure optimal heart health and early detection.",
-      features: ["ECG Analysis", "Blood Tests", "Risk Assessment"],
-      color: "from-red-500 to-pink-500"
-    },
-    {
-      icon: <Activity className="w-8 h-8" />,
-      title: "Advanced Cardiac Monitoring",
-      description: "Continuous heart rhythm monitoring using cutting-edge technology for precise diagnosis and treatment planning.",
-      features: ["24/7 Monitoring", "Real-time Analysis", "Emergency Alerts"],
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: "Hypertension Management",
-      description: "Personalized blood pressure management plans with lifestyle guidance and medication optimization.",
-      features: ["Custom Treatment", "Lifestyle Coaching", "Regular Follow-ups"],
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Preventive Cardiology",
-      description: "Proactive heart disease prevention through evidence-based lifestyle modifications and risk factor management.",
-      features: ["Risk Screening", "Prevention Plans", "Health Education"],
-      color: "from-purple-500 to-violet-500"
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Interventional Cardiology",
-      description: "Minimally invasive cardiac procedures and treatments for complex heart conditions using advanced techniques.",
-      features: ["Catheterization", "Angioplasty", "Stent Placement"],
-      color: "from-orange-500 to-yellow-500"
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: "Family Cardiac Care",
-      description: "Comprehensive cardiovascular health programs designed for entire families with personalized care plans.",
-      features: ["Family Screening", "Genetic Testing", "Lifestyle Programs"],
-      color: "from-indigo-500 to-blue-500"
-    }
-  ];
-
-  const experience = [
-    {
-      title: "Senior Consultant Cardiologist",
-      duration: "Feb 2015–Present",
-      company: "National Heart Foundation, Dhaka",
-      description: "Leading cardiovascular care excellence with advanced procedures and multidisciplinary team coordination.",
-      type: "current"
-    },
-    {
-      title: "Associate Cardiologist",
-      duration: "June 2010– Jan 2015",
-      company: "Apollo Hospitals Dhaka",
-      description: "Specialized in non-invasive cardiology with focus on patient-centered chronic disease management.",
-      type: "previous"
-    },
-    {
-      title: "Cardiology Resident",
-      duration: "Jan 2007–Aug 2010",
-      company: "Bangabandhu Sheikh Mujib Medical University",
-      description: "Intensive training in cardiovascular diseases and interventional cardiology procedures.",
-      type: "training"
-    },
-    {
-      title: "Medical Intern",
-      duration: "Dec 2006- Dec 2007",
-      company: "Dhaka Medical College",
-      description: "Comprehensive clinical training across internal medicine, surgery, and emergency care departments.",
-      type: "foundation"
-    }
-  ];
-
-  const education = [
-    {
-      degree: "ASE Echocardiography Certification",
-      year: "2012",
-      institution: "American Society of Echocardiography",
-      description: "International certification in advanced cardiac ultrasound imaging and interpretation.",
-      type: "certification"
-    },
-    {
-      degree: "Fellowship in Interventional Cardiology",
-      year: "2011",
-      institution: "National Heart Foundation, Dhaka",
-      description: "Specialized training in catheter-based interventions and complex cardiac procedures.",
-      type: "fellowship"
-    },
-    {
-      degree: "Doctor of Medicine (Cardiology)",
-      year: "2008–2010",
-      institution: "Bangabandhu Sheikh Mujib Medical University",
-      description: "Advanced specialization in cardiovascular medicine with research excellence.",
-      type: "postgraduate"
-    },
-    {
-      degree: "Bachelor of Medicine & Surgery",
-      year: "2002–2007",
-      institution: "Dhaka Medical College",
-      description: "Medical degree with distinction in clinical excellence and academic achievement.",
-      type: "undergraduate"
-    }
-  ];
-
-  const affiliates = [
-    { name: "Square Pharmaceuticals", logo: "SQ" },
-    { name: "Beximco Pharma", logo: "BX" },
-    { name: "Research Institute", logo: "RI" },
-    { name: "Pharma Solutions", logo: "PS" },
-    { name: "Medical Institute", logo: "MI" }
-  ];
-
-  const blogPosts = [
-    {
-      title: "Heart Health in 2025: Latest Guidelines",
-      excerpt: "Discover the most recent recommendations for maintaining optimal cardiovascular health...",
-      image: "https://media.istockphoto.com/id/2161726310/photo/listening-to-patients-heartbeat.webp?a=1&b=1&s=612x612&w=0&k=20&c=c35kO1tzkkHfNHqt4rqv_YFfT8IYz8tZKLJnsxmBN0c=",
-      category: "Prevention",
-      readTime: "5 min read"
-    },
-    {
-      title: "Managing Hypertension Naturally",
-      excerpt: "Evidence-based lifestyle approaches to blood pressure management and prevention...",
-      image: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=250&fit=crop",
-      category: "Treatment",
-      readTime: "7 min read"
-    },
-    {
-      title: "Advanced Cardiac Diagnostics",
-      excerpt: "Understanding modern heart testing techniques and what they mean for your health...",
-      image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&h=250&fit=crop",
-      category: "Technology",
-      readTime: "6 min read"
-    }
-  ];
-
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [testimonials.length]);
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        // Fallback to 'dr-jobayer-hasan' if slug is missing for dev/testing
+        const targetSlug = slug || 'dr-jobayer-hasan';
+        const response = await fetch(API_URLS.WEBSITE.PUBLIC(targetSlug));
 
-  const handleAppointment = () => {
-    if (!isLoggedIn) {
-      setShowLogin(true);
-    } else {
-      alert("Redirecting to appointment booking...");
-    }
+        if (!response.ok) {
+          throw new Error('Profile not found');
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setData(result.data);
+        } else {
+          throw new Error('Failed to load profile');
+        }
+      } catch (err) {
+        console.error("Error fetching public profile:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [slug]);
+
+  // Determine Social Icon
+  const getSocialIcon = (platform) => {
+    const p = platform?.toLowerCase() || '';
+    if (p.includes('facebook')) return Facebook;
+    if (p.includes('twitter')) return Twitter;
+    if (p.includes('instagram')) return Instagram;
+    if (p.includes('youtube')) return Youtube;
+    if (p.includes('linkedin')) return Linkedin;
+    return Globe;
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setShowLogin(false);
-    alert("Login successful! Redirecting to appointment page...");
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading Profile...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleFeedback = (e) => {
-    e.preventDefault();
-    alert("Thank you for your valuable feedback!");
-    setFeedback({ name: '', message: '' });
-  };
+  if (error || !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center max-w-md px-4">
+          <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Profile Not Found</h2>
+          <p className="text-slate-600">The doctor profile you are looking for is currently unavailable.</p>
+        </div>
+      </div>
+    );
+  }
 
-  const Button = ({ children, onClick = () => {}, className = "", variant = "primary", size = "md", type = "button" }) => {
-    const baseClasses = "font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/20";
+  // --- Render Components ---
+
+  const Button = ({ children, onClick = () => { }, className = "", variant = "primary", size = "md", icon: Icon }) => {
+    const baseClasses = "font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/20 inline-flex items-center justify-center";
     const variants = {
-      primary: "bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 text-white shadow-xl hover:shadow-2xl",
-      secondary: "bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:via-emerald-800 hover:to-teal-800 text-white shadow-xl hover:shadow-2xl",
-      outline: "border-2 border-gradient-to-r from-blue-500 to-indigo-500 text-blue-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 bg-white shadow-lg hover:shadow-xl",
-      ghost: "text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+      primary: `bg-gradient-to-r ${data.theme_color === '#2563eb' ? 'from-blue-600 via-blue-700 to-indigo-700' : 'from-emerald-600 via-emerald-700 to-teal-700'} text-white shadow-xl hover:shadow-2xl`,
+      secondary: "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 shadow-md",
+      outline: "border-2 border-current bg-transparent hover:bg-slate-50/10",
+      ghost: "text-slate-700 hover:text-blue-600 hover:bg-blue-50"
     };
-    const sizes = {
-      sm: "px-4 py-2 text-sm",
-      md: "px-6 py-3 text-base",
-      lg: "px-8 py-4 text-lg"
-    };
+    const sizes = { sm: "px-4 py-2 text-sm", md: "px-6 py-3 text-base", lg: "px-8 py-4 text-lg" };
 
     return (
-      <button
-        type={type}
-        onClick={onClick}
-        className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-      >
+      <button onClick={onClick} className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}>
+        {Icon && <Icon className="w-5 h-5 mr-2" />}
         {children}
       </button>
     );
@@ -262,806 +180,610 @@ const PublicWebsite = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 relative overflow-hidden">
-      {/* Animated Background Elements */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 relative overflow-hidden font-sans text-slate-800">
+
+      {/* Background Blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Enhanced Navigation */}
-      <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${
-        scrollY > 50 
-          ? 'bg-white/95 backdrop-blur-xl shadow-2xl border-b border-blue-100/50' 
-          : 'bg-white/90 backdrop-blur-md shadow-lg'
-      }`}>
+      {/* --- Navigation --- */}
+      <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-xl shadow-lg py-3' : 'bg-transparent py-5'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-6">
+          <div className="flex justify-between items-center">
+            {/* Logo / Doctor Name */}
+            <div className="flex items-center space-x-4">
               <div className="relative group">
-                <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 rounded-full blur-lg opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
-                <div className="relative">
-                  <img 
-                    src="https://media.istockphoto.com/id/906716900/photo/confident-male-surgeon-in-scrubs.jpg?s=612x612&w=0&k=20&c=G03yZ-lkdN0pwMbv4Mv-P_WIPNMWhbL2sn3tlpJleMU="
-                    alt="Dr. Jobayer Hasan"
-                    className="w-14 h-14 rounded-full border-3 border-white shadow-xl object-cover"
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></div>
-                </div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
+                <img
+                  src={getImageUrl(data.profile_photo_url) || 'https://via.placeholder.com/150'}
+                  alt={data.full_name}
+                  className="relative w-12 h-12 rounded-full border-2 border-white object-cover"
+                  onError={(e) => e.target.src = 'https://via.placeholder.com/150'}
+                />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
-                  Dr. Jobayer Hasan
-                </h1>
-                <p className="text-sm text-slate-600 font-medium">Consultant Cardiologist</p>
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">{data.full_name}</h1>
+                <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">{data.website?.tagline || data.specialization || 'Doctor'}</p>
               </div>
-            </div>
-            
-            <div className="hidden lg:flex items-center space-x-8">
-              {['Home', 'Services', 'Appointment', 'Blog', 'About', 'Contact'].map((item, index) => (
-                <a 
-                  key={item} 
-                  href={`#${item.toLowerCase()}`} 
-                  className={`relative font-medium transition-all duration-300 hover:text-blue-600 ${
-                    index === 0 ? 'text-blue-600' : 'text-slate-700'
-                  } group`}
-                >
-                  {item}
-                  <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-emerald-600 transition-all duration-300 group-hover:w-full"></span>
-                </a>
-              ))}
-              {!isLoggedIn ? (
-                <div className="flex items-center space-x-4">
-                  <Button variant="ghost" onClick={() => setShowLogin(true)}>
-                    Login
-                  </Button>
-                  <Button onClick={() => {}}>
-                    Sign Up
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="ghost" onClick={() => setIsLoggedIn(false)}>Logout</Button>
-              )}
             </div>
 
-            <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </Button>
+            {/* Desktop Menu */}
+            <div className="hidden lg:flex items-center space-x-8">
+              {['home', 'about', 'services', 'appointment', 'contact'].map((item) => (
+                <a key={item} href={`#${item}`} className="text-sm font-semibold text-slate-600 hover:text-blue-600 uppercase tracking-wider transition-colors relative group">
+                  {t.nav[item]}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all group-hover:w-full"></span>
+                </a>
+              ))}
+
+              {/* Language Toggle */}
+              <div className="flex bg-slate-100 rounded-full p-1">
+                <button
+                  onClick={() => setLang('en')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${lang === 'en' ? 'bg-white shadow text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >EN</button>
+                <button
+                  onClick={() => setLang('bn')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${lang === 'bn' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >BN</button>
+              </div>
+
+              <Button size="sm" onClick={() => { }}>{t.buttons.book}</Button>
+            </div>
+
+            {/* Mobile Menu Toggle */}
+            <button className="lg:hidden p-2 text-slate-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X /> : <Menu />}
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Enhanced Mobile Menu */}
+      {/* --- Mobile Menu Overlay --- */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="fixed top-20 left-0 right-0 bg-white/95 backdrop-blur-xl shadow-2xl border-t border-blue-100">
-            <div className="px-6 py-6 space-y-6">
-              {['Home', 'Services', 'Appointment', 'Blog', 'About', 'Contact'].map((item, index) => (
-                <a 
-                  key={item}
-                  href={`#${item.toLowerCase()}`} 
-                  className={`block py-3 text-lg font-medium transition-colors duration-300 ${
-                    index === 0 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-700 hover:text-blue-600'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item}
-                </a>
-              ))}
-              <div className="pt-6 space-y-4 border-t border-slate-200">
-                <Button variant="outline" className="w-full" onClick={() => setShowLogin(true)}>
-                  Login
-                </Button>
-                <Button className="w-full">
-                  Sign Up
-                </Button>
+        <div className="fixed inset-0 z-40 bg-white pt-24 px-6 lg:hidden animate-in slide-in-from-top-10 fade-in">
+          <div className="flex flex-col space-y-6 text-center text-lg font-medium text-slate-700">
+            {['home', 'about', 'services', 'appointment', 'contact'].map((item) => (
+              <a key={item} href={`#${item}`} onClick={() => setIsMenuOpen(false)}>{t.nav[item]}</a>
+            ))}
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex justify-center space-x-4 mb-4">
+                <button onClick={() => setLang('en')} className={`text-sm font-bold ${lang === 'en' ? 'text-blue-600' : 'text-slate-400'}`}>ENG</button>
+                <span className="text-slate-200">|</span>
+                <button onClick={() => setLang('bn')} className={`text-sm font-bold ${lang === 'bn' ? 'text-emerald-600' : 'text-slate-400'}`}>BAN</button>
               </div>
+              <Button onClick={() => setIsMenuOpen(false)} className="w-full">{t.buttons.book}</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hero Section - Dramatically Enhanced */}
-      <section id="home" className="relative pt-32 pb-24 lg:pt-40 lg:pb-32">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8 text-center lg:text-left">
-              <div className="space-y-6">
-                <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 via-purple-50 to-emerald-100 border border-blue-200/50 rounded-full text-blue-700 text-sm font-semibold animate-pulse">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-ping"></div>
-                  🏥 Expert Cardiac Care Since 2007
-                </div>
-                <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-                  <span className="text-slate-900">Your Heart,</span>
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent animate-pulse">
-                    Our Expertise
-                  </span>
-                </h1>
-                <p className="text-xl lg:text-2xl text-slate-600 leading-relaxed max-w-2xl">
-                  Experience world-class cardiovascular care with 
-                  <span className="font-semibold text-blue-600"> advanced treatments</span>, 
-                  <span className="font-semibold text-emerald-600"> compassionate expertise</span>, and 
-                  <span className="font-semibold text-purple-600"> cutting-edge technology</span> for complete peace of mind.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <Button 
-                  onClick={handleAppointment}
-                  size="lg"
-                  className="group relative overflow-hidden"
-                >
-                  <Calendar className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
-                  Book Appointment
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="group"
-                  onClick={() => {}}
-                >
-                  <Phone className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform text-red-500" />
-                  Emergency Call
-                </Button>
-              </div>
+      {/* --- Hero Section --- */}
+      <section id="home" className="pt-32 pb-20 lg:pt-48 lg:pb-32 px-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-8 text-center lg:text-left">
+            <div className="inline-block px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold border border-blue-100 shadow-sm animate-fade-in-up">
+              {data.hero?.intro_tag || `👋 Welcome to ${data.website?.title || data.full_name}'s Profile`}
             </div>
-            
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
-              <Card className="relative bg-white/90 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden" hover={false}>
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img 
-                    src="https://media.istockphoto.com/id/2201754823/photo/female-physician-explaining-medical-findings-to-older-woman-with-stomach-discomfort-listening.jpg?s=612x612&w=0&k=20&c=BZxNzQuqWTolKHBoQV0V8oOZpDl5PWKlCVe2DDc-ps0="
-                    alt="Modern medical consultation"
-                    className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/30 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-semibold text-slate-700">Available for Consultation</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
 
-          {/* Enhanced Statistics */}
-          <div className="mt-24 grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { number: "5000+", label: "Patients Treated", icon: <Users className="w-6 h-6" />, color: "from-blue-500 to-cyan-500" },
-              { number: "15+", label: "Years Experience", icon: <Award className="w-6 h-6" />, color: "from-emerald-500 to-teal-500" },
-              { number: "98%", label: "Success Rate", icon: <TrendingUp className="w-6 h-6" />, color: "from-purple-500 to-violet-500" },
-              { number: "৳1500", label: "Consultation Fee", icon: <Heart className="w-6 h-6" />, color: "from-pink-500 to-rose-500" }
-            ].map((stat, index) => (
-              <Card key={index} className="text-center p-8 bg-white/80 backdrop-blur-sm border-0 shadow-xl group">
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r ${stat.color} text-white mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                  {stat.icon}
-                </div>
-                <div className="text-4xl font-bold text-slate-900 mb-3">{stat.number}</div>
-                <div className="text-slate-600 font-medium">{stat.label}</div>
-              </Card>
-            ))}
-          </div>
+            <h1 className="text-5xl lg:text-7xl font-bold leading-tight text-slate-900">
+              {data.hero?.title_prefix || "Your Health,"} <br />
+              <span className={`bg-gradient-to-r ${data.theme_color === '#2563eb' ? 'from-blue-600 to-indigo-600' : 'from-emerald-600 to-teal-600'} bg-clip-text text-transparent`}>
+                {data.hero?.title_highlight || "Our Priority"}
+              </span>
+            </h1>
 
-          {/* Enhanced Available Times */}
-          <Card className="mt-20 bg-gradient-to-br from-white via-blue-50/30 to-emerald-50/30 border-0 shadow-2xl" hover={false}>
-            <div className="p-8">
-              <div className="flex items-center mb-8">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-3xl font-bold text-slate-900">Consultation Schedule</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <Card className="p-6 bg-white/90 backdrop-blur-sm shadow-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <Calendar className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-xl text-slate-900">Sunday</div>
-                      <div className="text-slate-600 text-lg">3:30 PM - 9:00 PM</div>
-                      <div className="inline-flex items-center mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Available
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card className="p-6 bg-white/90 backdrop-blur-sm shadow-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <Calendar className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-xl text-slate-900">Friday</div>
-                      <div className="text-slate-600 text-lg">10:00 AM - 9:00 PM</div>
-                      <div className="inline-flex items-center mt-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Available
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-              
-              <Card className="p-6 bg-white/90 backdrop-blur-sm shadow-lg">
-                <div className="flex items-start space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <MapPin className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-xl text-slate-900 mb-3">Chamber Location</div>
-                    <div className="text-slate-600 text-lg leading-relaxed">
-                      BTI Landmark (Level-11)<br />
-                      Plot-16, Block-CWS(A)<br />
-                      Gulshan-1, Dhaka-1212, Bangladesh
-                    </div>
-                    <div className="inline-flex items-center mt-3 px-3 py-1 border border-slate-300 text-slate-600 rounded-full text-sm font-medium">
-                      Premium Location
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* Enhanced Services Section */}
-      <section id="services" className="py-24 bg-white relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-emerald-50/30"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-emerald-100 border border-blue-200/50 rounded-full text-blue-700 text-sm font-semibold mb-8">
-              🏥 Our Specializations
-            </div>
-            <h2 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-8">
-              Comprehensive <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">Cardiac Care</span>
-            </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed">
-              State-of-the-art cardiovascular services designed to keep you healthy, 
-              strong, and living life to the fullest with complete confidence.
+            <p className="text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              {data.hero?.description || data.website?.description || "Providing comprehensive medical care with a patient-first approach."}
             </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} className="group h-full bg-white/90 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 overflow-hidden">
-                <div className="p-8">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r ${service.color} text-white mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                    {service.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors mb-4">
-                    {service.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed mb-6">
-                    {service.description}
-                  </p>
-                  <div className="space-y-3">
-                    {service.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center text-sm text-slate-600">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className={`h-2 bg-gradient-to-r ${service.color} group-hover:h-3 transition-all duration-300`}></div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Enhanced About Section - Restructured */}
-      <section id="about" className="py-24 bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/5 to-indigo-400/5 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-emerald-400/5 to-teal-400/5 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-100 to-blue-100 border border-emerald-200/50 rounded-full text-emerald-700 text-sm font-semibold mb-8">
-              👨‍⚕️ Professional Excellence
-            </div>
-            <h2 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-8">
-              Meet <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">Dr. Jobayer Hasan</span>
-            </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto">
-              A distinguished cardiologist with over 15 years of experience in advanced cardiac care
-            </p>
-          </div>
-
-          {/* Upper Section - Professional Experience (Left) and Images (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20">
-            {/* Professional Experience - Upper Left */}
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl" hover={false}>
-              <div className="p-8">
-                <div className="flex items-center mb-8">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-                    <Award className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-slate-900">Professional Experience</h3>
-                </div>
-                
-                <div className="space-y-8">
-                  {experience.map((exp, index) => (
-                    <div key={index} className="relative pl-8 pb-8 last:pb-0">
-                      <div className={`absolute left-0 top-2 w-4 h-4 rounded-full border-2 border-white shadow-lg ${
-                        exp.type === 'current' ? 'bg-blue-600' :
-                        exp.type === 'previous' ? 'bg-emerald-600' :
-                        exp.type === 'training' ? 'bg-amber-600' : 'bg-slate-600'
-                      }`}></div>
-                      <div className="absolute left-2 top-6 w-0.5 bg-slate-200 h-full last:h-0"></div>
-                      
-                      <div className="space-y-3">
-                        <h4 className="text-xl font-bold text-slate-900">{exp.title}</h4>
-                        <div className="text-blue-600 font-semibold">{exp.duration}</div>
-                        <div className="text-slate-800 font-medium text-lg">{exp.company}</div>
-                        <p className="text-slate-600 leading-relaxed">{exp.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            {/* Professional Experience Images - Upper Right */}
-            <div className="space-y-6">
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl overflow-hidden" hover={false}>
-                <div className="aspect-[16/10] relative">
-                  <img 
-                    src="https://images.unsplash.com/photo-1656428964836-78d54bf76231?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YWR2YW5jZSUyMG1lZGljYWwlMjB0ZWNobm9sb2d5fGVufDB8fDB8fHww"
-                    alt="Medical technology and innovation"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-                      <div className="text-lg font-bold text-slate-900">Advanced Medical Technology</div>
-                      <div className="text-slate-600">State-of-the-art cardiac care facilities</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl overflow-hidden" hover={false}>
-                <div className="aspect-[16/10] relative">
-                  <img 
-                    src="https://media.istockphoto.com/id/1185231735/photo/asian-scientist-use-microscope.webp?a=1&b=1&s=612x612&w=0&k=20&c=KmI3VAlWH7pRC_asM6XL6LUyL01H5AvdG85kufIZFLQ="
-                    alt="Medical research and analysis"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-                      <div className="text-lg font-bold text-slate-900">Research Excellence</div>
-                      <div className="text-slate-600">Continuous medical advancement</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-
-                    {/* Lower Section - Education & Certifications (Right) and Images (Left) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {/* Education Images - Lower Left */}
-            <div className="space-y-6">
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl overflow-hidden" hover={false}>
-                <div className="aspect-[16/10] relative">
-                  <img 
-                    src="https://media.istockphoto.com/id/1998218826/photo/teacher-helping-a-medical-student-in-class.webp?a=1&b=1&s=612x612&w=0&k=20&c=ajSieyu70wIt1P7sZ5R_sQtVVKPJEFlbWduFIMiQN0Y="
-                    alt="Medical education and learning"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-                      <div className="text-lg font-bold text-slate-900">Medical Education</div>
-                      <div className="text-slate-600">Continuous learning and development</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl overflow-hidden" hover={false}>
-                <div className="aspect-[16/10] relative">
-                  <img 
-                    src="https://media.istockphoto.com/id/1440567501/photo/manager-giving-certificate.jpg?s=612x612&w=0&k=20&c=TYc93cpAZOKDSH6ACJINYAXssGzlKiiuppecpaPFwUs="
-                    alt="Medical certification and expertise"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-                      <div className="text-lg font-bold text-slate-900">Professional Certifications</div>
-                      <div className="text-slate-600">International standards of excellence</div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+              <Button size="lg" icon={Calendar}>{t.buttons.book}</Button>
+              <Button size="lg" variant="secondary" icon={Phone}>{t.buttons.emergency}</Button>
             </div>
 
-            {/* Education & Certifications - Lower Right */}
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl" hover={false}>
-              <div className="p-8">
-                <div className="flex items-center mb-8">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-                    <Shield className="w-6 h-6 text-white" />
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 border-t border-slate-200/60 w-full">
+              {[
+                { label: t.labels.patients, value: data.stats?.patients_count || data.served_total_patients || "2000+", icon: Users, color: "text-blue-600 bg-blue-50" },
+                { label: t.labels.experience, value: `${data.years_experience}+` || "5+", icon: Award, color: "text-emerald-600 bg-emerald-50" },
+                { label: t.labels.success, value: data.stats?.success_rate || "98%", icon: TrendingUp, color: "text-purple-600 bg-purple-50" },
+                { label: t.labels.fee, value: data.stats?.consultation_fee || "৳1000", icon: Activity, color: "text-amber-600 bg-amber-50" },
+              ].map((stat, idx) => (
+                <div key={idx} className="text-center group cursor-default">
+                  <div className={`w-10 h-10 mx-auto rounded-lg flex items-center justify-center mb-3 ${stat.color} transition-transform group-hover:scale-110`}>
+                    <stat.icon className="w-5 h-5" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900">Education & Certifications</h3>
+                  <div className="text-2xl font-bold text-slate-900">{stat.value}</div>
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1">{stat.label}</div>
                 </div>
-                
-                <div className="space-y-8">
-                  {education.map((edu, index) => (
-                    <div key={index} className="relative pl-8 pb-8 last:pb-0">
-                      <div className={`absolute left-0 top-2 w-4 h-4 rounded-full border-2 border-white shadow-lg ${
-                        edu.type === 'certification' ? 'bg-purple-600' :
-                        edu.type === 'fellowship' ? 'bg-emerald-600' :
-                        edu.type === 'postgraduate' ? 'bg-blue-600' : 'bg-slate-600'
-                      }`}></div>
-                      <div className="absolute left-2 top-6 w-0.5 bg-slate-200 h-full last:h-0"></div>
-                      
-                      <div className="space-y-3">
-                        <h4 className="text-xl font-bold text-slate-900">{edu.degree}</h4>
-                        <div className="text-emerald-600 font-semibold">{edu.year}</div>
-                        <div className="text-slate-800 font-medium text-lg">{edu.institution}</div>
-                        <p className="text-slate-600 leading-relaxed">{edu.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Enhanced Testimonials */}
-      <section className="py-24 bg-white relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-orange-50/30"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200/50 rounded-full text-amber-700 text-sm font-semibold mb-8">
-              ⭐ Patient Stories
-            </div>
-            <h2 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-8">
-              What Our <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Patients Say</span>
-            </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto">
-              Real testimonials from patients who have experienced our exceptional cardiac care
-            </p>
-          </div>
-
-          <div className="relative max-w-5xl mx-auto">
-            <Card className="bg-gradient-to-br from-white via-amber-50/30 to-orange-50/30 border-0 shadow-2xl overflow-hidden" hover={false}>
-              <div className="p-12 text-center">
-                <div className="flex justify-center mb-8">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-8 h-8 text-amber-400 fill-current mx-1 animate-pulse" style={{animationDelay: `${i * 0.1}s`}} />
-                  ))}
-                </div>
-                
-                <div className="mb-8">
-                  <img 
-                    src={testimonials[currentTestimonial].avatar}
-                    alt={testimonials[currentTestimonial].name}
-                    className="w-20 h-20 rounded-full border-4 border-white shadow-xl mx-auto mb-6"
-                  />
-                </div>
-                
-                <blockquote className="text-2xl lg:text-3xl text-slate-700 mb-8 leading-relaxed italic font-medium">
-                  "{testimonials[currentTestimonial].message}"
-                </blockquote>
-                
-                <div className="space-y-2">
-                  <h4 className="text-2xl font-bold text-slate-900">
-                    {testimonials[currentTestimonial].name}
-                  </h4>
-                  <p className="text-slate-600 font-medium text-lg">
-                    {testimonials[currentTestimonial].location}
-                  </p>
-                </div>
-              </div>
-            </Card>
-            
-            <div className="flex justify-center mt-8 space-x-4">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                    index === currentTestimonial 
-                      ? 'bg-amber-600 w-12 shadow-lg' 
-                      : 'bg-slate-300 hover:bg-amber-400'
-                  }`}
-                  onClick={() => setCurrentTestimonial(index)}
-                />
               ))}
             </div>
           </div>
+
+          {/* Hero Image */}
+          <div className="relative lg:h-[600px] flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-200/20 to-emerald-200/20 rounded-full blur-3xl animate-pulse"></div>
+            <Card className="relative w-full max-w-md bg-white p-3 rotate-3 hover:rotate-0 transition-transform duration-500 overflow-hidden" hover={false}>
+              <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-slate-100">
+                <img
+                  src={getImageUrl(data.hero?.image_url)}
+                  alt="Doctor"
+                  className="w-full h-full object-cover"
+                  onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800&auto=format&fit=crop'}
+                />
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur rounded-xl p-4 shadow-lg border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+                    <span className="font-semibold text-slate-700 text-sm">{t.labels.available}</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </section>
 
-      {/* Enhanced Affiliations */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h3 className="text-2xl font-bold text-slate-900 mb-4">Trusted Professional Affiliations</h3>
-            <p className="text-slate-600">Proud partnerships with leading healthcare organizations</p>
+      {/* --- About / Bio Section --- */}
+      <section id="about" className="py-24 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left Content */}
+            <div>
+              <span className="text-emerald-600 font-bold tracking-wider uppercase text-sm mb-2 block">{t.sections.meet} {data.full_name}</span>
+              <h2 className="text-4xl font-bold text-slate-900 mb-6">{data.about?.subtitle || "Dedicated to medical excellence"}</h2>
+              <div className="prose prose-lg text-slate-600 mb-8">
+                <p>{data.about?.bio || "Dr. Jobayer Hasan is a highly skilled specialist..."}</p>
+              </div>
+
+              {/* Experience Timeline Preview */}
+              {data.experience?.length > 0 && (
+                <div className="space-y-6 mt-8">
+                  {data.experience.slice(0, 2).map((exp, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-blue-600 mt-2"></div>
+                        <div className="w-0.5 h-full bg-slate-200 mt-1"></div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 text-lg">{exp.designation}</div>
+                        <div className="text-blue-600 font-medium">{exp.organization}</div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {exp.start_date ? new Date(exp.start_date).getFullYear() : ''} - {exp.end_date ? new Date(exp.end_date).getFullYear() : 'Present'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Images */}
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 pt-12">
+                  <img
+                    src={getImageUrl(data.about?.image_1) || 'https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=500&auto=format&fit=crop'}
+                    onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=500&auto=format&fit=crop'}
+                    className="rounded-2xl shadow-lg w-full h-64 object-cover hover:scale-[1.02] transition-transform duration-500"
+                    alt="About 1"
+                  />
+                  <div className="bg-blue-600 p-6 rounded-2xl text-white shadow-xl">
+                    <div className="text-4xl font-bold mb-1">{data.education?.length || 5}+</div>
+                    <div className="text-blue-100 text-sm font-medium">Certifications & Awards</div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-emerald-500 p-6 rounded-2xl text-white shadow-xl">
+                    <Award className="w-8 h-8 mb-3" />
+                    <div className="font-bold text-lg">Top Rated</div>
+                    <div className="text-emerald-100 text-xs">Patient Choice Award 2024</div>
+                  </div>
+                  <img
+                    src={getImageUrl(data.about?.image_2) || 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=500&auto=format&fit=crop'}
+                    onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=500&auto=format&fit=crop'}
+                    className="rounded-2xl shadow-lg w-full h-80 object-cover hover:scale-[1.02] transition-transform duration-500"
+                    alt="About 2"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-center items-center space-x-16 opacity-70">
-            {affiliates.map((affiliate, index) => (
-              <Card key={index} className="w-20 h-20 bg-white border-0 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
-                <div className="flex items-center justify-center h-full p-0">
-                  <span className="text-sm font-bold text-slate-600">{affiliate.logo}</span>
+        </div>
+      </section>
+
+      {/* --- Education Section --- */}
+      {data.education?.length > 0 && (
+        <section className="py-24 bg-slate-50">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-purple-600 font-bold tracking-wider uppercase text-sm mb-2 block">Academic Excellence</span>
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Education & <span className="text-purple-600">Qualifications</span></h2>
+              <p className="text-slate-600 text-lg">Comprehensive medical training from world-renowned institutions</p>
+            </div>
+
+            <div className="space-y-6">
+              {data.education.map((edu, idx) => (
+                <Card key={idx} className="p-8 hover:shadow-2xl transition-all duration-500">
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg">
+                        {edu.passing_year || '20XX'}
+                      </div>
+                      {idx < data.education.length - 1 && <div className="w-0.5 flex-grow bg-purple-200 mt-2"></div>}
+                    </div>
+                    <div className="flex-grow pb-8">
+                      <h3 className="text-2xl font-bold text-slate-900 mb-2">{edu.degree}</h3>
+                      <div className="text-purple-600 font-semibold mb-3 flex items-center">
+                        <GraduationCap className="w-5 h-5 mr-2" />
+                        {edu.institution}
+                      </div>
+                      {edu.short_description && (
+                        <p className="text-slate-600 leading-relaxed">{edu.short_description}</p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* --- Experience Section --- */}
+      {data.experience?.length > 0 && (
+        <section className="py-24 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-emerald-600 font-bold tracking-wider uppercase text-sm mb-2 block">Professional Journey</span>
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Clinical <span className="text-emerald-600">Experience</span></h2>
+              <p className="text-slate-600 text-lg">Proven track record of excellence in patient care and medical practice</p>
+            </div>
+
+            <div className="space-y-6">
+              {data.experience.map((exp, idx) => (
+                <Card key={idx} className="p-8 hover:shadow-2xl transition-all duration-500">
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <Briefcase className="w-6 h-6" />
+                      </div>
+                      {idx < data.experience.length - 1 && <div className="w-0.5 flex-grow bg-emerald-200 mt-2"></div>}
+                    </div>
+                    <div className="flex-grow pb-8">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-2xl font-bold text-slate-900">{exp.designation}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${exp.end_date ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {exp.end_date ? 'Previous' : 'Current'}
+                        </span>
+                      </div>
+                      <div className="text-emerald-600 font-semibold mb-2 flex items-center">
+                        <Building className="w-5 h-5 mr-2" />
+                        {exp.organization}
+                      </div>
+                      <div className="text-sm text-slate-500 mb-3 flex items-center">
+                        <Clock className="w-4 h-4 mr-2" />
+                        {exp.start_date ? new Date(exp.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Start'} - {exp.end_date ? new Date(exp.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
+                      </div>
+                      {exp.short_description && (
+                        <p className="text-slate-600 leading-relaxed">{exp.short_description}</p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* --- Services Section --- */}
+      {data.services?.length > 0 && (
+        <section id="services" className="py-24 bg-slate-50 relative">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-2 block">{t.sections.specialization}</span>
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Comprehensive <span className="text-blue-600">Care Services</span></h2>
+              <p className="text-slate-600 text-lg">Detailed attention to your health needs with state-of-the-art facilities.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {data.services.map((service, idx) => {
+                const Icon = getIconComponent(service.service_icon);
+                const theme = service.color_theme || 'from-blue-500 to-cyan-500';
+                // Extract default color for icon background from the gradient string (simplified)
+                const bgClass = theme.includes('red') ? 'bg-red-50 text-red-600' : theme.includes('emerald') ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600';
+
+                return (
+                  <Card key={idx} className="group hover:-translate-y-2 h-full flex flex-col p-8 bg-white border-slate-100">
+                    <div className={`w-14 h-14 rounded-2xl ${bgClass} flex items-center justify-center mb-6 transition-all group-hover:scale-110`}>
+                      <Icon className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">{service.service_name}</h3>
+                    <p className="text-slate-600 mb-6 flex-grow leading-relaxed">{service.service_description}</p>
+                    {service.features && (
+                      <ul className="space-y-2 pt-4 border-t border-slate-100">
+                        {service.features.split(',').slice(0, 3).map((feat, i) => (
+                          <li key={i} className="flex items-center text-sm text-slate-500">
+                            <CheckCircle className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" />
+                            {feat.trim()}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* --- Schedule & Location Section --- */}
+      {data.chambers?.length > 0 && (
+        <section id="appointment" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+              {/* Schedule Card */}
+              <div className="lg:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+
+                <div className="flex items-center mb-8 relative z-10">
+                  <Clock className="w-8 h-8 mr-4 text-blue-200" />
+                  <h2 className="text-2xl font-bold">{t.sections.schedule}</h2>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 relative z-10">
+                  {data.chambers.map((chamber, idx) => (
+                    <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/20 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-lg">{chamber.day || 'Daily'}</span>
+                        <span className="bg-emerald-500/20 text-emerald-100 text-xs px-2 py-1 rounded-full border border-emerald-500/30">Open</span>
+                      </div>
+                      <div className="text-blue-100 mb-1">{chamber.available_time}</div>
+                      <div className="text-xs text-indigo-200 flex items-center mt-2">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        {chamber.chamber_location}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location Card */}
+              <Card className="bg-slate-50 border-0 flex flex-col justify-center p-8 h-full">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-6">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">{t.sections.location}</h3>
+                <div className="prose text-slate-600 mb-6">
+                  <p>{data.contact?.address || "Address details currently unavailable."}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <a href={`tel:${data.contact?.phone}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
+                    <Phone className="w-4 h-4 mr-3 text-slate-400" />
+                    {data.contact?.phone}
+                  </a>
+                  <a href={`mailto:${data.contact?.email}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
+                    <Mail className="w-4 h-4 mr-3 text-slate-400" />
+                    {data.contact?.email}
+                  </a>
                 </div>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Enhanced Blog Section with Card Layout */}
-      <section id="blog" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-violet-100 to-purple-100 border border-violet-200/50 rounded-full text-violet-700 text-sm font-semibold mb-8">
-              📚 Health Insights
             </div>
-            <h2 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-8">
-              Latest <span className="bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Health Articles</span>
-            </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 max-w-4xl mx-auto leading-relaxed">
-              Stay informed with expert insights, health tips, and the latest advances in cardiac care
-            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {blogPosts.map((post, index) => (
-              <Card key={index} className="group bg-white/95 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 overflow-hidden">
-                <div className="aspect-[16/10] overflow-hidden relative">
-                  <img 
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="text-xs bg-white/90 backdrop-blur-sm text-violet-600 px-3 py-1 rounded-full font-semibold shadow-lg">
-                      {post.category}
-                    </span>
+        </section>
+      )}
+
+      {/* --- Blogs Section --- */}
+      {data.blogs?.length > 0 && (
+        <section className="py-24 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-2 block">Latest Insights</span>
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">
+                Recent <span className="text-blue-600">Blog Posts</span>
+              </h2>
+              <p className="text-slate-600 text-lg">Expert medical insights and health tips from our practice</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {data.blogs.slice(0, 6).map((blog) => (
+                <div
+                  key={blog.id}
+                  className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-500 cursor-pointer group"
+                  onClick={() => navigate(`/blog/${blog.slug}`)}
+                >
+                  {/* Featured Image */}
+                  <div className="relative h-48 bg-gradient-to-br from-blue-100 to-slate-100 overflow-hidden">
+                    {blog.featured_image ? (
+                      <img
+                        src={getImageUrl(blog.featured_image)}
+                        alt={blog.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&auto=format&fit=crop'}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FileText className="w-16 h-16 text-blue-300" />
+                      </div>
+                    )}
+                    {blog.category && (
+                      <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
+                          {blog.category}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute top-4 right-4">
-                    <span className="text-xs bg-black/70 text-white px-3 py-1 rounded-full font-medium">
-                      {post.readTime}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-8 space-y-6">
-                  <h3 className="text-2xl font-bold text-slate-900 group-hover:text-violet-600 transition-colors leading-tight">
-                    {post.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed text-lg">
-                    {post.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <Button variant="ghost" className="text-violet-600 hover:text-violet-700 font-semibold">
-                      Read More
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                    <div className="flex items-center space-x-2 text-slate-400">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">{post.readTime}</span>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      {blog.title}
+                    </h3>
+                    <p className="text-slate-600 text-sm mb-4 line-clamp-3">
+                      {blog.excerpt || 'Read more about this topic...'}
+                    </p>
+
+                    {/* Meta Info */}
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+                      <div className="flex items-center gap-4">
+                        {blog.published_at && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(blog.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
+                        {blog.read_time > 0 && (
+                          <span>{blog.read_time} min read</span>
+                        )}
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Enhanced Contact Section */}
-      <section id="contact" className="py-24 bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-emerald-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-100 to-blue-100 border border-green-200/50 rounded-full text-green-700 text-sm font-semibold mb-8">
-              💬 Get in Touch
+              ))}
             </div>
-            <h2 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-8">
-              We Value Your <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Feedback</span>
-            </h2>
-            <p className="text-xl lg:text-2xl text-slate-600 leading-relaxed">
-              Your thoughts help us improve our services. Share your experience and suggestions with us.
-            </p>
+
+            {/* View All Button */}
+            {data.blogs.length > 6 && (
+              <div className="text-center mt-12">
+                <button className="px-8 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl">
+                  View All Articles
+                </button>
+              </div>
+            )}
           </div>
+        </section>
+      )}
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-2xl" hover={false}>
-            <div className="p-10">
-              <form onSubmit={handleFeedback} className="space-y-8">
-                <div>
-                  <label className="block text-slate-700 text-lg font-semibold mb-4">Your Name</label>
-                  <input
-                    type="text"
-                    value={feedback.name}
-                    onChange={(e) => setFeedback({ ...feedback, name: e.target.value })}
-                    className="w-full px-6 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-slate-900 text-lg"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 text-lg font-semibold mb-4">Your Message</label>
-                  <textarea
-                    value={feedback.message}
-                    onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
-                    className="w-full px-6 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-slate-900 text-lg"
-                    rows={6}
-                    placeholder="Share your thoughts, suggestions, or questions..."
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full py-6 text-xl group"
-                >
-                  <Send className="w-6 h-6 mr-3 group-hover:translate-x-1 transition-transform" />
-                  Send Feedback
-                  <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </form>
-            </div>
-          </Card>
-        </div>
-      </section>
+      {/* --- Testimonials Section --- */}
+      {data.testimonials?.length > 0 && (
+        <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
+          <div className="max-w-5xl mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold text-slate-900 mb-12">{t.sections.testimonials}</h2>
 
-      {/* Enhanced Footer */}
-      <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-emerald-900/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                  Dr. Jobayer Hasan
-                </h3>
-                <p className="text-slate-300 leading-relaxed text-lg">
-                  Excellence in cardiovascular care with compassion, expertise, and cutting-edge technology.
+            <div className="relative bg-white rounded-3xl shadow-xl p-8 md:p-12">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-amber-500 text-white p-3 rounded-full shadow-lg">
+                <Star className="w-8 h-8 fill-current" />
+              </div>
+
+              <div className="mt-6 mb-8">
+                <p className="text-xl md:text-2xl text-slate-600 italic leading-relaxed">
+                  "{data.testimonials[currentTestimonial].message}"
                 </p>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Contact Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3 group">
-                  <Phone className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-slate-300 group-hover:text-white transition-colors">+880 1717-123456</span>
-                </div>
-                <div className="flex items-center space-x-3 group">
-                  <Mail className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-slate-300 group-hover:text-white transition-colors">dr.rahman@careconnect.bd</span>
-                </div>
-                <div className="flex items-start space-x-3 group">
-                  <MapPin className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-slate-300 group-hover:text-white transition-colors">BTI Landmark, Gulshan-1<br />Dhaka-1212, Bangladesh</span>
+
+              <div className="flex items-center justify-center gap-4">
+                <img
+                  src={getImageUrl(data.testimonials[currentTestimonial].avatar)}
+                  onError={(e) => e.target.src = 'https://ui-avatars.com/api/?name=' + data.testimonials[currentTestimonial].name}
+                  alt="Patient"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-slate-100"
+                />
+                <div className="text-left">
+                  <div className="font-bold text-slate-900">{data.testimonials[currentTestimonial].name}</div>
+                  <div className="text-slate-500 text-sm flex items-center">
+                    <MapPin className="w-3 h-3 mr-1" />
+                    {data.testimonials[currentTestimonial].location || 'Patient'}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Quick Links</h3>
-              <div className="space-y-3">
-                {['Home', 'Services', 'Appointment', 'About', 'Blog', 'Contact'].map((link) => (
-                  <a key={link} href={`#${link.toLowerCase()}`} className="block text-slate-300 hover:text-blue-400 transition-colors hover:translate-x-2 duration-300">
-                    {link}
-                  </a>
+              {/* Dots */}
+              <div className="flex justify-center mt-8 gap-2">
+                {data.testimonials.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentTestimonial(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentTestimonial ? 'bg-amber-500 w-6' : 'bg-slate-300'}`}
+                  />
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+      )}
 
-            <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Follow Us</h3>
-              <div className="flex space-x-4 mb-6">
-                <Facebook className="w-7 h-7 text-slate-300 hover:text-blue-400 cursor-pointer transition-colors" />
-                <Twitter className="w-7 h-7 text-slate-300 hover:text-blue-400 cursor-pointer transition-colors" />
-                <Instagram className="w-7 h-7 text-slate-300 hover:text-pink-400 cursor-pointer transition-colors" />
-                <Youtube className="w-7 h-7 text-slate-300 hover:text-red-400 cursor-pointer transition-colors" />
-              </div>
-              
-              <div>
-                <h4 className="text-xl font-bold mb-6 text-white">Newsletter</h4>
-                <p className="text-slate-300 mb-4">Stay updated with health tips and news</p>
-                <div className="flex mb-6">
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    className="flex-1 px-4 py-3 text-slate-900 rounded-l-xl focus:outline-none bg-white"
-                  />
-                  <button className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 px-6 py-3 rounded-r-xl transition-all group">
-                    <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+      {/* --- Affiliates Section --- */}
+      {data.affiliates?.length > 0 && (
+        <section className="py-12 border-t border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 text-center">
+            <p className="text-slate-400 font-semibold uppercase tracking-widest text-xs mb-8">{t.sections.affiliates}</p>
+            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10">
+              {data.affiliates.map((aff, i) => (
+                <div key={i} className="flex items-center gap-3 px-6 py-3 bg-white rounded-2xl border border-slate-100 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 group opacity-70 hover:opacity-100 relative">
+                  {aff.logo && (
+                    <img
+                      src={getImageUrl(aff.logo)}
+                      alt={aff.name}
+                      className="h-8 md:h-10 w-auto object-contain grayscale group-hover:grayscale-0 transition-all duration-300 logo-img"
+                      onError={(e) => {
+                        e.target.classList.add('hidden');
+                        const fallback = e.target.parentElement.querySelector('.logo-fallback');
+                        if (fallback) fallback.classList.replace('hidden', 'flex');
+                      }}
+                    />
+                  )}
+                  <div className={`logo-fallback ${aff.logo ? 'hidden group-hover:flex' : 'flex'} items-center gap-2 transition-all duration-300`}>
+                    <Shield className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                    <span className="font-bold text-slate-400 group-hover:text-slate-700 transition-colors text-sm whitespace-nowrap">{aff.name}</span>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
+        </section>
+      )}
 
-          <div className="border-t border-slate-700 mt-16 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-slate-400 text-center md:text-left">
-                © 2025 CareConnect. All rights reserved. | Privacy Policy | Terms of Service
-              </p>
-              <div className="flex items-center space-x-2 text-slate-400">
-                <Heart className="w-5 h-5 text-red-400 animate-pulse" />
-                <span>Made with care for better health</span>
+      {/* --- Footer --- */}
+      <footer className="bg-slate-900 text-slate-400 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div className="col-span-1 md:col-span-2">
+              <h2 className="text-white text-2xl font-bold mb-4">{data.full_name}</h2>
+              <p className="max-w-sm mb-6">{data.website?.description}</p>
+              <div className="flex gap-4">
+                {data.social_media?.map((social, i) => {
+                  const Icon = getSocialIcon(social.platform);
+                  return (
+                    <a key={i} href={social.profile_url} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors">
+                      <Icon className="w-5 h-5" />
+                    </a>
+                  )
+                })}
               </div>
             </div>
+            <div>
+              <h3 className="text-white font-bold mb-4">Quick Links</h3>
+              <ul className="space-y-2">
+                {['Home', 'Services', 'Appointment', 'About'].map(item => (
+                  <li key={item}><a href={`#${item.toLowerCase()}`} className="hover:text-white transition-colors">{item}</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-bold mb-4">Contact</h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start"><MapPin className="w-4 h-4 mr-2 mt-1 flex-shrink-0" /> {data.contact?.address}</li>
+                <li className="flex items-center"><Phone className="w-4 h-4 mr-2 flex-shrink-0" /> {data.contact?.phone}</li>
+                <li className="flex items-center"><Mail className="w-4 h-4 mr-2 flex-shrink-0" /> {data.contact?.email}</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-slate-800 pt-8 text-center text-sm">
+            &copy; {new Date().getFullYear()} {data.full_name}. {t.sections.footer} Powered by CareConnect.
           </div>
         </div>
       </footer>
 
-      {/* Enhanced Login Modal */}
-      {showLogin && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl" hover={false}>
-            <div className="p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-3xl font-bold text-slate-900">Welcome Back</h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowLogin(false)}>
-                  <X className="w-6 h-6" />
-                </Button>
-              </div>
-              <p className="text-slate-600 mb-8 text-lg">Sign in to book your appointment</p>
-              
-              <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
-                <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-3">Email Address</label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 text-sm font-semibold mb-3">Password</label>
-                  <input
-                    type="password"
-                    className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full py-4 text-lg"
-                >
-                  Sign In
-                </Button>
-                <p className="text-center text-sm text-slate-600">
-                  Don't have an account? <a href="#" className="text-blue-600 font-semibold hover:text-blue-700">Sign up here</a>
-                </p>
-              </form>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };
