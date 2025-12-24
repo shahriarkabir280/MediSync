@@ -6,9 +6,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import LoginForm from "./components/LoginForm";
 
 // Lazy load pages for better performance
-const ProductPage = lazy(() => import("./pages/ProductPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const VerticalTabLayout = lazy(() => import("./pages/VerticleTab"));
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
@@ -64,7 +61,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/products/:id" element={<ProductPage />} />
               <Route path="*" element={<h1 className="text-3xl text-center mt-10">404 Not Found</h1>} />
             </Routes>
           </Suspense>

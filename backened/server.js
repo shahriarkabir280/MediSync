@@ -34,11 +34,12 @@ import { createChatSchema } from './schemas/chatSchema.js';
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
 
-dotenv.config();// Load environment variables from .env file
-
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables from the backened folder
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Default to port 3000 if not specified in .env 
