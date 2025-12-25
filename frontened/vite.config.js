@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true,
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
@@ -16,11 +16,9 @@ export default defineConfig({
     }
   },
   preview: {
-    host: true,
+    host: '0.0.0.0',
     port: process.env.PORT || 5173,
-    strictPort: false,
-    cors: true,
-    allowedHosts: 'all'
+    strictPort: false
   },
   build: {
     // Enable code splitting for better performance
