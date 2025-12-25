@@ -17,11 +17,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: process.env.PORT || 5173,
     strictPort: false,
-    allowedHosts: [
-      '.railway.app',
-      'localhost',
-      '127.0.0.1'
-    ]
+    allowedHosts: 'all'
   },
   build: {
     // Enable code splitting for better performance
