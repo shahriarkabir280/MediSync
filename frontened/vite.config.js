@@ -19,7 +19,8 @@ export default defineConfig({
     host: true,
     port: process.env.PORT || 5173,
     strictPort: false,
-    cors: true
+    cors: true,
+    allowedHosts: 'all'
   },
   build: {
     // Enable code splitting for better performance
