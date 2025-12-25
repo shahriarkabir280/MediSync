@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve dist -p ${PORT:-5173} --no-port-switching --no-clipboard"
+    "start": "serve dist --single --listen ${PORT-5173}"
   },
   "dependencies": {
     "axios": "^1.9.0",
