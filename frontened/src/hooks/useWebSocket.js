@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const useWebSocket = (serverUrl = 'http://localhost:3001') => {
+const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001') => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Map());
