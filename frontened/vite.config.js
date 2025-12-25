@@ -13,6 +13,11 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    host: '0.0.0.0',
+    port: process.env.PORT || 5173,
+    strictPort: false
+  },
   build: {
     // Enable code splitting for better performance
     rollupOptions: {
