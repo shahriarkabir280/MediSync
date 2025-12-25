@@ -75,11 +75,13 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     // Check if origin is in allowed list or matches Railway pattern
-    if (allowedOrigins.includes(origin) || origin.includes('.railway.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    if (allowedOrigins.includes(origin) || (origin && origin.includes('.railway.app'))) {
+      return callback(null, true);
     }
+    
+    // Log rejected origins for debugging
+    console.log('CORS rejected origin:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
