@@ -326,8 +326,67 @@ const PublicWebsite = () => {
         </div>
       </section>
 
+      {/* --- Schedule & Location Section --- */}
+      {data.chambers?.length > 0 && (
+        <section id="appointment" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+              {/* Schedule Card */}
+              <div className="lg:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+
+                <div className="flex items-center mb-8 relative z-10">
+                  <Clock className="w-8 h-8 mr-4 text-blue-200" />
+                  <h2 className="text-2xl font-bold">{t.sections.schedule}</h2>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 relative z-10">
+                  {data.chambers.map((chamber, idx) => (
+                    <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/20 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-lg">{chamber.day || 'Daily'}</span>
+                        <span className="bg-emerald-500/20 text-emerald-100 text-xs px-2 py-1 rounded-full border border-emerald-500/30">Open</span>
+                      </div>
+                      <div className="text-blue-100 mb-1">{chamber.available_time}</div>
+                      <div className="text-xs text-indigo-200 flex items-center mt-2">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        {chamber.chamber_location}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location Card */}
+              <Card className="bg-slate-50 border-0 flex flex-col justify-center p-8 h-full">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-6">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">{t.sections.location}</h3>
+                <div className="prose text-slate-600 mb-6">
+                  <p>{data.contact?.address || "Address details currently unavailable."}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <a href={`tel:${data.contact?.phone}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
+                    <Phone className="w-4 h-4 mr-3 text-slate-400" />
+                    {data.contact?.phone}
+                  </a>
+                  <a href={`mailto:${data.contact?.email}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
+                    <Mail className="w-4 h-4 mr-3 text-slate-400" />
+                    {data.contact?.email}
+                  </a>
+                </div>
+              </Card>
+
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* --- About / Bio Section --- */}
-      <section id="about" className="py-24 bg-white overflow-hidden">
+      <section id="about" className="py-24 bg-slate-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
@@ -517,65 +576,6 @@ const PublicWebsite = () => {
                   </Card>
                 );
               })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* --- Schedule & Location Section --- */}
-      {data.chambers?.length > 0 && (
-        <section id="appointment" className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-              {/* Schedule Card */}
-              <div className="lg:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-
-                <div className="flex items-center mb-8 relative z-10">
-                  <Clock className="w-8 h-8 mr-4 text-blue-200" />
-                  <h2 className="text-2xl font-bold">{t.sections.schedule}</h2>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4 relative z-10">
-                  {data.chambers.map((chamber, idx) => (
-                    <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/20 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-bold text-lg">{chamber.day || 'Daily'}</span>
-                        <span className="bg-emerald-500/20 text-emerald-100 text-xs px-2 py-1 rounded-full border border-emerald-500/30">Open</span>
-                      </div>
-                      <div className="text-blue-100 mb-1">{chamber.available_time}</div>
-                      <div className="text-xs text-indigo-200 flex items-center mt-2">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {chamber.chamber_location}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Location Card */}
-              <Card className="bg-slate-50 border-0 flex flex-col justify-center p-8 h-full">
-                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-6">
-                  <MapPin className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4">{t.sections.location}</h3>
-                <div className="prose text-slate-600 mb-6">
-                  <p>{data.contact?.address || "Address details currently unavailable."}</p>
-                </div>
-
-                <div className="space-y-4">
-                  <a href={`tel:${data.contact?.phone}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
-                    <Phone className="w-4 h-4 mr-3 text-slate-400" />
-                    {data.contact?.phone}
-                  </a>
-                  <a href={`mailto:${data.contact?.email}`} className="flex items-center text-slate-700 hover:text-blue-600 transition-colors">
-                    <Mail className="w-4 h-4 mr-3 text-slate-400" />
-                    {data.contact?.email}
-                  </a>
-                </div>
-              </Card>
-
             </div>
           </div>
         </section>
