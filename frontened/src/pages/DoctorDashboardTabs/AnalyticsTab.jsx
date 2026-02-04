@@ -149,12 +149,12 @@ const AnalyticsTab = memo(() => {
 
     const maxValue = Math.max(...data.map(d => d.value)) || 10;
     const points = data.map((d, i) => {
-      const x = (i / (data.length - 1)) * 100;
+      const x = data.length > 1 ? (i / (data.length - 1)) * 100 : 50;
       const y = 100 - (d.value / maxValue) * 100;
       return `${x},${y}`;
     }).join(' ');
 
-    const areaPoints = `0,100 ${points} 100,100`;
+    const areaPoints = data.length > 1 ? `0,100 ${points} 100,100` : `0,100 50,${100 - (data[0].value / maxValue) * 100} 100,100`;
 
     return (
       <div className="bg-card rounded-3xl p-8 border border-border shadow-sm group h-full">

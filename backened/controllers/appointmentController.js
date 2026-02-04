@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 // Get all appointments for a doctor
 export const getAppointments = async (req, res) => {
@@ -6,45 +6,51 @@ export const getAppointments = async (req, res) => {
     const { doctorId } = req.params;
     const { status, date, limit = 50, offset = 0 } = req.query;
 
-    let query = sql`
-      SELECT 
-        a.id,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.appointment_type,
-        a.notes,
-        a.created_at,
-        p.id as patient_id,
-        p.unique_id as patient_unique_id,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.email as patient_email,
-        p.phone as patient_phone,
-        p.date_of_birth as patient_dob
-      FROM appointments a
-      JOIN patients p ON a.patient_id = p.id
-      WHERE a.doctor_id = ${doctorId}
-    `;
+    let query = supabase
+      .from('appointments')
+      .select(`
+        *,
+        patients (
+          id, unique_id, first_name, last_name, email, phone, date_of_birth
+        )
+      `, { count: 'exact' })
+      .eq('doctor_id', doctorId);
 
     // Add filters
     if (status) {
-      query = sql`${query} AND a.status = ${status}`;
+      query = query.eq('status', status);
     }
 
     if (date) {
-      query = sql`${query} AND DATE(a.appointment_date) = ${date}`;
+      // Date comparison might need strict format matching or range check if timestamp?
+      // Appointment date in schema is DATE, so string match YYYY-MM-DD works.
+      query = query.eq('appointment_date', date);
     }
 
-    query = sql`${query}
-      ORDER BY a.appointment_date DESC, a.appointment_time DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `;
+    const from = parseInt(offset);
+    const to = from + parseInt(limit) - 1;
 
-    const appointments = await query;
+    const { data: appointments, error, count } = await query
+      .order('appointment_date', { ascending: false })
+      .order('appointment_time', { ascending: false })
+      .range(from, to);
 
-    res.json({ success: true, data: appointments, count: appointments.length });
+    if (error) throw error;
+
+    // Flatten patient details
+    const flattenedAppointments = appointments.map(appt => ({
+      ...appt,
+      patient_id: appt.patients?.id,
+      patient_unique_id: appt.patients?.unique_id,
+      patient_first_name: appt.patients?.first_name,
+      patient_last_name: appt.patients?.last_name,
+      patient_email: appt.patients?.email,
+      patient_phone: appt.patients?.phone,
+      patient_dob: appt.patients?.date_of_birth,
+      patients: undefined
+    }));
+
+    res.json({ success: true, data: flattenedAppointments, count });
   } catch (error) {
     console.error('Error fetching appointments:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
@@ -55,29 +61,34 @@ export const getAppointments = async (req, res) => {
 export const getTodayAppointments = async (req, res) => {
   try {
     const { doctorId } = req.params;
+    const today = new Date().toISOString().split('T')[0];
 
-    const appointments = await sql`
-      SELECT 
-        a.id,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.appointment_type,
-        a.notes,
-        p.id as patient_id,
-        p.unique_id as patient_unique_id,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.email as patient_email,
-        p.phone as patient_phone
-      FROM appointments a
-      JOIN patients p ON a.patient_id = p.id
-      WHERE a.doctor_id = ${doctorId}
-      AND DATE(a.appointment_date) = CURRENT_DATE
-      ORDER BY a.appointment_time ASC
-    `;
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        patients (
+          id, unique_id, first_name, last_name, email, phone
+        )
+      `)
+      .eq('doctor_id', doctorId)
+      .eq('appointment_date', today)
+      .order('appointment_time', { ascending: true });
 
-    res.json({ success: true, data: appointments });
+    if (error) throw error;
+
+    const flattenedAppointments = appointments.map(appt => ({
+      ...appt,
+      patient_id: appt.patients?.id,
+      patient_unique_id: appt.patients?.unique_id,
+      patient_first_name: appt.patients?.first_name,
+      patient_last_name: appt.patients?.last_name,
+      patient_email: appt.patients?.email,
+      patient_phone: appt.patients?.phone,
+      patients: undefined
+    }));
+
+    res.json({ success: true, data: flattenedAppointments });
   } catch (error) {
     console.error('Error fetching today\'s appointments:', error);
     res.status(500).json({ error: 'Failed to fetch today\'s appointments' });
@@ -88,12 +99,12 @@ export const getTodayAppointments = async (req, res) => {
 export const createAppointment = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const { 
-      patient_id, 
-      appointment_date, 
-      appointment_time, 
-      appointment_type, 
-      notes 
+    const {
+      patient_id,
+      appointment_date,
+      appointment_time,
+      appointment_type,
+      notes
     } = req.body;
 
     // Validate required fields
@@ -102,44 +113,41 @@ export const createAppointment = async (req, res) => {
     }
 
     // Check if time slot is available
-    const existingAppointment = await sql`
-      SELECT id FROM appointments
-      WHERE doctor_id = ${doctorId}
-      AND appointment_date = ${appointment_date}
-      AND appointment_time = ${appointment_time}
-      AND status != 'cancelled'
-    `;
+    const { data: existing, error: checkError } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('doctor_id', doctorId)
+      .eq('appointment_date', appointment_date)
+      .eq('appointment_time', appointment_time)
+      .neq('status', 'cancelled')
+      .maybeSingle();
 
-    if (existingAppointment.length > 0) {
+    if (existing) {
       return res.status(409).json({ error: 'Time slot is already booked' });
     }
 
-    const result = await sql`
-      INSERT INTO appointments (
-        doctor_id,
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert({
+        doctor_id: doctorId,
         patient_id,
         appointment_date,
         appointment_time,
-        appointment_type,
-        notes,
-        status
-      )
-      VALUES (
-        ${doctorId},
-        ${patient_id},
-        ${appointment_date},
-        ${appointment_time},
-        ${appointment_type || 'consultation'},
-        ${notes || ''},
-        'pending'
-      )
-      RETURNING *
-    `;
+        appointment_type: appointment_type || 'consultation',
+        notes: notes || '',
+        status: 'pending',
+        created_at: new Date().toISOString(), // Optional if default exists
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'Appointment created successfully', 
-      data: result[0] 
+    if (error) throw error;
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment created successfully',
+      data
     });
   } catch (error) {
     console.error('Error creating appointment:', error);
@@ -151,35 +159,35 @@ export const createAppointment = async (req, res) => {
 export const updateAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const { 
-      appointment_date, 
-      appointment_time, 
-      status, 
-      appointment_type, 
-      notes 
-    } = req.body;
+    const body = req.body;
 
-    const result = await sql`
-      UPDATE appointments
-      SET
-        appointment_date = COALESCE(${appointment_date}, appointment_date),
-        appointment_time = COALESCE(${appointment_time}, appointment_time),
-        status = COALESCE(${status}, status),
-        appointment_type = COALESCE(${appointment_type}, appointment_type),
-        notes = COALESCE(${notes}, notes),
-        updated_at = NOW()
-      WHERE id = ${appointmentId}
-      RETURNING *
-    `;
+    // Explicitly pick allowed fields
+    const updates = {};
+    const allowed = ['appointment_date', 'appointment_time', 'status', 'appointment_type', 'notes'];
 
-    if (result.length === 0) {
+    allowed.forEach(field => {
+      if (body[field] !== undefined) updates[field] = body[field];
+    });
+
+    updates.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .update(updates)
+      .eq('id', appointmentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Appointment updated successfully', 
-      data: result[0] 
+    res.json({
+      success: true,
+      message: 'Appointment updated successfully',
+      data
     });
   } catch (error) {
     console.error('Error updating appointment:', error);
@@ -192,21 +200,23 @@ export const cancelAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
 
-    const result = await sql`
-      UPDATE appointments
-      SET status = 'cancelled', updated_at = NOW()
-      WHERE id = ${appointmentId}
-      RETURNING *
-    `;
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', appointmentId)
+      .select()
+      .single();
 
-    if (result.length === 0) {
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Appointment cancelled successfully', 
-      data: result[0] 
+    res.json({
+      success: true,
+      message: 'Appointment cancelled successfully',
+      data
     });
   } catch (error) {
     console.error('Error cancelling appointment:', error);
@@ -219,26 +229,41 @@ export const getAppointmentById = async (req, res) => {
   try {
     const { appointmentId } = req.params;
 
-    const result = await sql`
-      SELECT 
-        a.*,
-        p.unique_id as patient_unique_id,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.email as patient_email,
-        p.phone as patient_phone,
-        p.date_of_birth as patient_dob,
-        p.medical_history as patient_medical_history
-      FROM appointments a
-      JOIN patients p ON a.patient_id = p.id
-      WHERE a.id = ${appointmentId}
-    `;
+    const { data: appointment, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        patients (
+            unique_id, first_name, last_name, email, phone, date_of_birth, medical_history
+        )
+      `)
+      .eq('id', appointmentId)
+      .single();
 
-    if (result.length === 0) {
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+      throw error;
+    }
+
+    if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    res.json({ success: true, data: result[0] });
+    const flattened = {
+      ...appointment,
+      patient_unique_id: appointment.patients?.unique_id,
+      patient_first_name: appointment.patients?.first_name,
+      patient_last_name: appointment.patients?.last_name,
+      patient_email: appointment.patients?.email,
+      patient_phone: appointment.patients?.phone,
+      patient_dob: appointment.patients?.date_of_birth,
+      patient_medical_history: appointment.patients?.medical_history,
+      patients: undefined
+    };
+
+    res.json({ success: true, data: flattened });
   } catch (error) {
     console.error('Error fetching appointment:', error);
     res.status(500).json({ error: 'Failed to fetch appointment' });
@@ -250,25 +275,29 @@ export const getAppointmentsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    const appointments = await sql`
-      SELECT 
-        a.id,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.appointment_type,
-        a.notes,
-        a.created_at,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name,
-        d.unique_id as doctor_unique_id
-      FROM appointments a
-      JOIN doctors d ON a.doctor_id = d.id
-      WHERE a.patient_id = ${patientId}
-      ORDER BY a.appointment_date DESC, a.appointment_time DESC
-    `;
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        doctors (
+            unique_id, first_name, last_name
+        )
+      `)
+      .eq('patient_id', patientId)
+      .order('appointment_date', { ascending: false })
+      .order('appointment_time', { ascending: false });
 
-    res.json({ success: true, data: appointments });
+    if (error) throw error;
+
+    const flattened = appointments.map(appt => ({
+      ...appt,
+      doctor_first_name: appt.doctors?.first_name,
+      doctor_last_name: appt.doctors?.last_name,
+      doctor_unique_id: appt.doctors?.unique_id,
+      doctors: undefined
+    }));
+
+    res.json({ success: true, data: flattened });
   } catch (error) {
     console.error('Error fetching patient appointments:', error);
     res.status(500).json({ error: 'Failed to fetch patient appointments' });

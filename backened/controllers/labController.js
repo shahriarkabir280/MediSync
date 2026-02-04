@@ -1,41 +1,64 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 // Get lab dashboard statistics
 export const getLabStats = async (req, res) => {
   try {
-    // Get today's orders count
-    const [todayStats] = await sql`
-      SELECT 
-        COUNT(*) as total_today,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_today,
-        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as processing_today,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_today
-      FROM lab_orders 
-      WHERE DATE(order_date) = CURRENT_DATE
-    `;
+    const today = new Date().toISOString().split('T')[0];
 
-    // Get urgent orders count
-    const [urgentStats] = await sql`
-      SELECT COUNT(*) as urgent_count
-      FROM lab_orders 
-      WHERE priority IN ('urgent', 'high') AND status != 'completed'
-    `;
+    // Parallel requests for today's stats
+    const { data: todayOrders, error: todayError } = await supabase
+      .from('lab_orders')
+      .select('status')
+      .gte('order_date', `${today}T00:00:00`)
+      .lte('order_date', `${today}T23:59:59`);
 
-    // Get unreviewed results count (orders that are completed but not verified)
-    const [unreviewedStats] = await sql`
-      SELECT COUNT(DISTINCT lo.id) as unreviewed_count
-      FROM lab_orders lo
-      JOIN lab_order_items loi ON lo.id = loi.order_id
-      LEFT JOIN lab_results lr ON loi.id = lr.order_item_id
-      WHERE lo.status = 'completed' AND (lr.verified_by IS NULL OR lr.verified_by = '')
-    `;
+    if (todayError) throw todayError;
+
+    const todayStats = {
+      total_today: todayOrders.length,
+      pending_today: todayOrders.filter(o => o.status === 'pending').length,
+      processing_today: todayOrders.filter(o => o.status === 'in_progress').length,
+      completed_today: todayOrders.filter(o => o.status === 'completed').length
+    };
+
+    // Urgent stats
+    const { count: urgentCount, error: urgentError } = await supabase
+      .from('lab_orders')
+      .select('*', { count: 'exact', head: true })
+      .in('priority', ['urgent', 'high'])
+      .neq('status', 'completed');
+
+    if (urgentError) throw urgentError;
+
+    // Unreviewed results (Completed orders containing items with unverified results)
+    // Complex due to nesting. Strategy: Get items of completed orders, check results.
+    // Efficient approach:
+    // Select lab_results where order_item -> order -> status = 'completed' AND verified_by is null.
+    // But we need distinct ORDERS count.
+    const { data: unreviewedResults, error: unreviewedError } = await supabase
+      .from('lab_results')
+      .select(`
+            order_item_id,
+            lab_order_items!inner (
+                order_id,
+                lab_orders!inner (
+                    id, status
+                )
+            )
+        `)
+      .is('verified_by', null)
+      .eq('lab_order_items.lab_orders.status', 'completed');
+
+    if (unreviewedError) throw unreviewedError;
+
+    const unreviewedOrders = new Set(unreviewedResults.map(r => r.lab_order_items.order_id));
 
     res.json({
       success: true,
       data: {
         today: todayStats,
-        urgent: urgentStats,
-        unreviewed: unreviewedStats
+        urgent: { urgent_count: urgentCount || 0 },
+        unreviewed: { unreviewed_count: unreviewedOrders.size }
       }
     });
   } catch (error) {
@@ -48,28 +71,28 @@ export const getLabStats = async (req, res) => {
 export const getRecentLabOrders = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
-    
-    const orders = await sql`
-      SELECT 
-        lo.id,
-        lo.order_number,
-        lo.priority,
-        lo.status,
-        lo.order_date,
-        lo.clinical_notes,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.unique_id as patient_unique_id,
-        COUNT(loi.id) as test_count
-      FROM lab_orders lo
-      JOIN patients p ON lo.patient_id = p.id
-      LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-      GROUP BY lo.id, p.id
-      ORDER BY lo.order_date DESC
-      LIMIT ${limit}
-    `;
 
-    res.json({ success: true, data: orders });
+    const { data: orders, error } = await supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id),
+            lab_order_items (count)
+        `)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (error) throw error;
+
+    const formattedOrders = orders.map(o => ({
+      ...o,
+      patient_first_name: o.patient?.first_name,
+      patient_last_name: o.patient?.last_name,
+      patient_unique_id: o.patient?.unique_id,
+      test_count: o.lab_order_items?.[0]?.count || 0 // aggregate count from supabase
+    }));
+
+    res.json({ success: true, data: formattedOrders });
   } catch (error) {
     console.error('Error fetching recent lab orders:', error);
     res.status(500).json({ error: 'Failed to fetch recent lab orders' });
@@ -79,189 +102,89 @@ export const getRecentLabOrders = async (req, res) => {
 // Search lab orders with advanced filtering
 export const searchLabOrders = async (req, res) => {
   try {
-    const { 
-      search, 
-      status, 
-      priority, 
-      limit = 50 
+    const {
+      search,
+      status,
+      priority,
+      limit = 50
     } = req.query;
 
+    let query = supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients!inner (first_name, last_name, unique_id),
+            doctor:doctors (first_name, last_name),
+            lab_order_items (count)
+        `)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
+
     if (search) {
-      // Search by order number, patient name, or clinical notes
-      const orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          d.first_name as doctor_first_name,
-          d.last_name as doctor_last_name,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        JOIN doctors d ON lo.doctor_id = d.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE (
-          lo.order_number ILIKE ${`%${search}%`} OR
-          p.first_name ILIKE ${`%${search}%`} OR
-          p.last_name ILIKE ${`%${search}%`} OR
-          p.unique_id ILIKE ${`%${search}%`} OR
-          lo.clinical_notes ILIKE ${`%${search}%`}
-        )
-        GROUP BY lo.id, p.id, d.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
-      res.json({ success: true, data: orders });
-    } else {
-      // Return recent orders if no search term
-      const orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
-      res.json({ success: true, data: orders });
+      const term = `%${search}%`;
+      // Use OR logic for search: Order Number OR Patient Name
+      query = query.or(`order_number.ilike.${term},clinical_notes.ilike.${term},patient_id.in.(select id from patients where first_name ilike '${term}' or last_name ilike '${term}' or unique_id ilike '${term}')`);
     }
+
+    const { data: orders, error } = await query;
+
+    if (error) throw error;
+
+    const formattedOrders = orders.map(o => ({
+      ...o,
+      patient_first_name: o.patient?.first_name,
+      patient_last_name: o.patient?.last_name,
+      patient_unique_id: o.patient?.unique_id,
+      doctor_first_name: o.doctor?.first_name,
+      doctor_last_name: o.doctor?.last_name,
+      test_count: o.lab_order_items?.[0]?.count || 0
+    }));
+
+    res.json({ success: true, data: formattedOrders });
   } catch (error) {
     console.error('Error searching lab orders:', error);
     res.status(500).json({ error: 'Failed to search lab orders' });
   }
 };
 
-// Get filtered lab orders by status or priority
+// Get filtered lab orders by status or priority (legacy helper function, somewhat redundant with search but used by UI likely)
 export const getFilteredLabOrders = async (req, res) => {
   try {
-    const { filter_type, filter_value, limit = 20 } = req.query;
+    const { filter_type, limit = 20 } = req.query;
 
-    let orders;
+    let query = supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id),
+            lab_order_items (count)
+        `)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
 
     if (filter_type === 'urgent') {
-      orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE lo.priority IN ('urgent', 'high') AND lo.status != 'completed'
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
+      query = query.in('priority', ['urgent', 'high']).neq('status', 'completed');
     } else if (filter_type === 'pending') {
-      orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE lo.status = 'pending'
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
+      query = query.eq('status', 'pending');
     } else if (filter_type === 'completed') {
-      orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE lo.status = 'completed'
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
+      query = query.eq('status', 'completed');
     } else if (filter_type === 'today') {
-      orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE DATE(lo.order_date) = CURRENT_DATE
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
-    } else {
-      // Default to recent orders
-      orders = await sql`
-        SELECT 
-          lo.id,
-          lo.order_number,
-          lo.priority,
-          lo.status,
-          lo.order_date,
-          lo.clinical_notes,
-          p.first_name as patient_first_name,
-          p.last_name as patient_last_name,
-          p.unique_id as patient_unique_id,
-          COUNT(loi.id) as test_count
-        FROM lab_orders lo
-        JOIN patients p ON lo.patient_id = p.id
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        GROUP BY lo.id, p.id
-        ORDER BY lo.order_date DESC
-        LIMIT ${limit}
-      `;
+      const today = new Date().toISOString().split('T')[0];
+      query = query.gte('order_date', `${today}T00:00:00`).lte('order_date', `${today}T23:59:59`);
     }
 
-    res.json({ success: true, data: orders });
+    const { data: orders, error } = await query;
+    if (error) throw error;
+
+    const formattedOrders = orders.map(o => ({
+      ...o,
+      patient_first_name: o.patient?.first_name,
+      patient_last_name: o.patient?.last_name,
+      patient_unique_id: o.patient?.unique_id,
+      test_count: o.lab_order_items?.[0]?.count || 0
+    }));
+
+    res.json({ success: true, data: formattedOrders });
   } catch (error) {
     console.error('Error getting filtered lab orders:', error);
     res.status(500).json({ error: 'Failed to get filtered lab orders' });
@@ -274,63 +197,75 @@ export const getLabReport = async (req, res) => {
     const { orderId } = req.params;
 
     // Get order with patient and doctor details
-    const [order] = await sql`
-      SELECT 
-        lo.*,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.unique_id as patient_unique_id,
-        p.date_of_birth as patient_dob,
-        p.gender as patient_gender,
-        p.phone as patient_phone,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name,
-        d.specialization as doctor_specialization
-      FROM lab_orders lo
-      JOIN patients p ON lo.patient_id = p.id
-      JOIN doctors d ON lo.doctor_id = d.id
-      WHERE lo.id = ${orderId}
-    `;
+    const { data: order, error: orderError } = await supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id, date_of_birth, gender, phone),
+            doctor:doctors (first_name, last_name, specialization)
+        `)
+      .eq('id', orderId)
+      .single();
 
-    if (!order) {
+    if (orderError || !order) {
       return res.status(404).json({ error: 'Lab order not found' });
     }
 
-    // Get order items with test details and results
-    const orderItems = await sql`
-      SELECT 
-        loi.*,
-        lt.test_code,
-        lt.test_name,
-        lt.description as test_description,
-        lt.sample_type,
-        lt.turnaround_time_hours,
-        lc.name as category_name,
-        lr.id as result_id,
-        lr.result_value,
-        lr.result_text,
-        lr.reference_range,
-        lr.unit,
-        lr.status as result_status,
-        lr.abnormal_flag,
-        lr.critical_flag,
-        lr.result_date,
-        lr.verified_by,
-        lr.verified_at,
-        lr.notes as result_notes
-      FROM lab_order_items loi
-      JOIN lab_tests lt ON loi.test_id = lt.id
-      LEFT JOIN lab_test_categories lc ON lt.category_id = lc.id
-      LEFT JOIN lab_results lr ON loi.id = lr.order_item_id
-      WHERE loi.order_id = ${orderId}
-      ORDER BY lc.name, lt.test_name
-    `;
+    // Flatten for response
+    const flattenedOrder = {
+      ...order,
+      patient_first_name: order.patient?.first_name,
+      patient_last_name: order.patient?.last_name,
+      patient_unique_id: order.patient?.unique_id,
+      patient_dob: order.patient?.date_of_birth,
+      patient_gender: order.patient?.gender,
+      patient_phone: order.patient?.phone,
+      doctor_first_name: order.doctor?.first_name,
+      doctor_last_name: order.doctor?.last_name,
+      doctor_specialization: order.doctor?.specialization
+    };
+
+    // Get items with tests and results
+    // Relation chain: lab_order_items -> lab_tests, lab_order_items -> lab_results (1:1 usually)
+    const { data: items, error: itemsError } = await supabase
+      .from('lab_order_items')
+      .select(`
+            *,
+            lab_tests (test_code, test_name, description, sample_type, turnaround_time_hours, category_id, lab_test_categories(name)),
+            lab_results (*)
+        `)
+      .eq('order_id', orderId);
+
+    if (itemsError) throw itemsError;
+
+    const formattedItems = items.map(item => ({
+      ...item,
+      test_code: item.lab_tests?.test_code,
+      test_name: item.lab_tests?.test_name,
+      test_description: item.lab_tests?.description,
+      sample_type: item.lab_tests?.sample_type,
+      turnaround_time_hours: item.lab_tests?.turnaround_time_hours,
+      category_name: item.lab_tests?.lab_test_categories?.name,
+      result_id: item.lab_results?.[0]?.id, // Assuming array from join, or object if one-to-one
+      result_value: item.lab_results?.[0]?.result_value,
+      result_text: item.lab_results?.[0]?.result_text,
+      reference_range: item.lab_results?.[0]?.reference_range,
+      unit: item.lab_results?.[0]?.unit,
+      result_status: item.lab_results?.[0]?.status,
+      abnormal_flag: item.lab_results?.[0]?.abnormal_flag,
+      critical_flag: item.lab_results?.[0]?.critical_flag,
+      result_date: item.lab_results?.[0]?.result_date,
+      verified_by: item.lab_results?.[0]?.verified_by,
+      verified_at: item.lab_results?.[0]?.verified_at,
+      result_notes: item.lab_results?.[0]?.notes
+    })).sort((a, b) => (a.category_name || '').localeCompare(b.category_name || '') || (a.test_name || '').localeCompare(b.test_name || ''));
+
 
     res.json({
       success: true,
       data: {
-        order,
-        items: orderItems,
+        order: flattenedOrder,
+        items: formattedItems,
         generated_at: new Date().toISOString()
       }
     });
@@ -343,17 +278,22 @@ export const getLabReport = async (req, res) => {
 // Get all lab test categories
 export const getLabCategories = async (req, res) => {
   try {
-    const categories = await sql`
-      SELECT 
-        lc.*,
-        COUNT(lt.id) as test_count
-      FROM lab_test_categories lc
-      LEFT JOIN lab_tests lt ON lc.id = lt.category_id
-      GROUP BY lc.id, lc.name, lc.description, lc.created_at
-      ORDER BY lc.name
-    `;
+    const { data: categories, error } = await supabase
+      .from('lab_test_categories')
+      .select(`
+            *,
+            lab_tests (count)
+        `)
+      .order('name');
 
-    res.json({ success: true, data: categories });
+    if (error) throw error;
+
+    const formatted = categories.map(c => ({
+      ...c,
+      test_count: c.lab_tests?.[0]?.count || 0
+    }));
+
+    res.json({ success: true, data: formatted });
   } catch (error) {
     console.error('Error fetching lab categories:', error);
     res.status(500).json({ error: 'Failed to fetch lab categories' });
@@ -364,36 +304,29 @@ export const getLabCategories = async (req, res) => {
 export const getLabTests = async (req, res) => {
   try {
     const { category_id, search } = req.query;
-    
-    let query = `
-      SELECT 
-        lt.*,
-        lc.name as category_name
-      FROM lab_tests lt
-      LEFT JOIN lab_test_categories lc ON lt.category_id = lc.id
-    `;
 
-    const conditions = [];
-    const params = [];
-    
+    let query = supabase
+      .from('lab_tests')
+      .select('*, lab_test_categories(name)')
+      .order('test_name');
+
     if (category_id) {
-      conditions.push(`lt.category_id = $${params.length + 1}`);
-      params.push(category_id);
+      query = query.eq('category_id', category_id);
     }
-    
+
     if (search) {
-      conditions.push(`(lt.test_name ILIKE $${params.length + 1} OR lt.test_code ILIKE $${params.length + 1})`);
-      params.push(`%${search}%`);
+      query = query.or(`test_name.ilike.%${search}%,test_code.ilike.%${search}%`);
     }
 
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
-    }
+    const { data: tests, error } = await query;
+    if (error) throw error;
 
-    query += ` ORDER BY lc.name, lt.test_name`;
+    const formatted = tests.map(t => ({
+      ...t,
+      category_name: t.lab_test_categories?.name
+    }));
 
-    const tests = await sql.unsafe(query, params);
-    res.json({ success: true, data: tests });
+    res.json({ success: true, data: formatted });
   } catch (error) {
     console.error('Error fetching lab tests:', error);
     res.status(500).json({ error: 'Failed to fetch lab tests' });
@@ -420,37 +353,48 @@ export const createLabOrder = async (req, res) => {
     const orderNumber = `LAB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
     // Get test costs
-    const tests = await sql`
-      SELECT id, cost FROM lab_tests WHERE id = ANY(${test_ids})
-    `;
+    const { data: tests, error: testError } = await supabase
+      .from('lab_tests')
+      .select('id, cost')
+      .in('id', test_ids);
+
+    if (testError) throw testError;
 
     const totalCost = tests.reduce((sum, test) => sum + parseFloat(test.cost || 0), 0);
 
     // Create lab order
-    const [order] = await sql`
-      INSERT INTO lab_orders (
-        order_number, doctor_id, patient_id, priority, 
-        clinical_notes, total_cost, sample_collection_date, created_by
-      )
-      VALUES (
-        ${orderNumber}, ${doctor_id}, ${patient_id}, ${priority},
-        ${clinical_notes}, ${totalCost}, ${sample_collection_date}, ${doctor_id}
-      )
-      RETURNING *
-    `;
+    const { data: order, error: createError } = await supabase
+      .from('lab_orders')
+      .insert({
+        order_number: orderNumber,
+        doctor_id,
+        patient_id,
+        priority,
+        clinical_notes,
+        total_cost: totalCost,
+        sample_collection_date,
+        created_by: doctor_id
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
 
     // Create order items
-    const orderItems = await Promise.all(
-      test_ids.map(async (test_id) => {
-        const test = tests.find(t => t.id === parseInt(test_id));
-        const [item] = await sql`
-          INSERT INTO lab_order_items (order_id, test_id)
-          VALUES (${order.id}, ${test_id})
-          RETURNING *
-        `;
-        return item;
-      })
-    );
+    const orderItemsData = test_ids.map(test_id => ({
+      order_id: order.id,
+      test_id: parseInt(test_id)
+    }));
+
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('lab_order_items')
+      .insert(orderItemsData)
+      .select();
+
+    if (itemsError) {
+      console.error('Error creating items, should cleanup order', order.id);
+      throw itemsError;
+    }
 
     res.status(201).json({
       success: true,
@@ -469,43 +413,35 @@ export const getLabOrders = async (req, res) => {
     const { doctorId } = req.params;
     const { status, patient_id, limit = 50 } = req.query;
 
-    let query = `
-      SELECT 
-        lo.*,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.unique_id as patient_unique_id,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name,
-        COUNT(loi.id) as total_tests
-      FROM lab_orders lo
-      JOIN patients p ON lo.patient_id = p.id
-      JOIN doctors d ON lo.doctor_id = d.id
-      LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-      WHERE lo.doctor_id = $1
-    `;
+    let query = supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id),
+            doctor:doctors (first_name, last_name),
+            lab_order_items (count)
+        `)
+      .eq('doctor_id', doctorId)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
 
-    const params = [doctorId];
-    
-    if (status) {
-      query += ` AND lo.status = $${params.length + 1}`;
-      params.push(status);
-    }
-    
-    if (patient_id) {
-      query += ` AND lo.patient_id = $${params.length + 1}`;
-      params.push(patient_id);
-    }
+    if (status) query = query.eq('status', status);
+    if (patient_id) query = query.eq('patient_id', patient_id);
 
-    query += `
-      GROUP BY lo.id, p.id, d.id
-      ORDER BY lo.order_date DESC
-      LIMIT $${params.length + 1}
-    `;
-    params.push(limit);
+    const { data: orders, error } = await query;
+    if (error) throw error;
 
-    const orders = await sql.unsafe(query, params);
-    res.json({ success: true, data: orders });
+    const formatted = orders.map(o => ({
+      ...o,
+      patient_first_name: o.patient?.first_name,
+      patient_last_name: o.patient?.last_name,
+      patient_unique_id: o.patient?.unique_id,
+      doctor_first_name: o.doctor?.first_name,
+      doctor_last_name: o.doctor?.last_name,
+      total_tests: o.lab_order_items?.[0]?.count || 0
+    }));
+
+    res.json({ success: true, data: formatted });
   } catch (error) {
     console.error('Error fetching lab orders:', error);
     res.status(500).json({ error: 'Failed to fetch lab orders' });
@@ -518,71 +454,79 @@ export const getLabOrderDetails = async (req, res) => {
     const { orderId } = req.params;
 
     // Get order details
-    const [order] = await sql`
-      SELECT 
-        lo.*,
-        p.first_name as patient_first_name,
-        p.last_name as patient_last_name,
-        p.unique_id as patient_unique_id,
-        p.date_of_birth as patient_dob,
-        p.gender as patient_gender,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name
-      FROM lab_orders lo
-      JOIN patients p ON lo.patient_id = p.id
-      JOIN doctors d ON lo.doctor_id = d.id
-      WHERE lo.id = ${orderId}
-    `;
+    const { data: order, error: orderError } = await supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id, date_of_birth, gender),
+            doctor:doctors (first_name, last_name)
+        `)
+      .eq('id', orderId)
+      .single();
 
-    if (!order) {
-      return res.status(404).json({ error: 'Lab order not found' });
-    }
+    if (orderError || !order) return res.status(404).json({ error: 'Lab order not found' });
 
-    // Get order items with test details and results
-    const orderItems = await sql`
-      SELECT 
-        loi.*,
-        lt.test_code,
-        lt.test_name,
-        lt.normal_range_min,
-        lt.normal_range_max,
-        lt.unit,
-        lt.sample_type,
-        lc.name as category_name,
-        lr.id as result_id,
-        lr.result_value,
-        lr.result_text,
-        lr.reference_range,
-        lr.status as result_status,
-        lr.abnormal_flag,
-        lr.critical_flag,
-        lr.result_date,
-        lr.verified_by,
-        lr.verified_at,
-        lr.notes as result_notes,
-        lr.file_path as result_file_path,
-        lr.file_name as result_file_name
-      FROM lab_order_items loi
-      JOIN lab_tests lt ON loi.test_id = lt.id
-      LEFT JOIN lab_test_categories lc ON lt.category_id = lc.id
-      LEFT JOIN lab_results lr ON loi.id = lr.order_item_id
-      WHERE loi.order_id = ${orderId}
-      ORDER BY lc.name, lt.test_name
-    `;
+    // Flatten
+    const formattedOrder = {
+      ...order,
+      patient_first_name: order.patient?.first_name,
+      patient_last_name: order.patient?.last_name,
+      patient_unique_id: order.patient?.unique_id,
+      patient_dob: order.patient?.date_of_birth,
+      patient_gender: order.patient?.gender,
+      doctor_first_name: order.doctor?.first_name,
+      doctor_last_name: order.doctor?.last_name
+    };
 
-    // Get report files
-    const reportFiles = await sql`
-      SELECT * FROM lab_report_files 
-      WHERE order_id = ${orderId}
-      ORDER BY uploaded_at DESC
-    `;
+    // Get items with details
+    const { data: items, error: itemsError } = await supabase
+      .from('lab_order_items')
+      .select(`
+            *,
+            lab_tests (test_code, test_name, normal_range_min, normal_range_max, unit, sample_type, category_id, lab_test_categories(name)),
+            lab_results (*)
+        `)
+      .eq('order_id', orderId);
+
+    if (itemsError) throw itemsError;
+
+    const formattedItems = items.map(item => ({
+      ...item,
+      test_code: item.lab_tests?.test_code,
+      test_name: item.lab_tests?.test_name,
+      normal_range_min: item.lab_tests?.normal_range_min,
+      normal_range_max: item.lab_tests?.normal_range_max,
+      unit: item.lab_tests?.unit,
+      sample_type: item.lab_tests?.sample_type,
+      category_name: item.lab_tests?.lab_test_categories?.name,
+      result_id: item.lab_results?.[0]?.id,
+      result_value: item.lab_results?.[0]?.result_value,
+      result_text: item.lab_results?.[0]?.result_text,
+      reference_range: item.lab_results?.[0]?.reference_range,
+      result_status: item.lab_results?.[0]?.status,
+      abnormal_flag: item.lab_results?.[0]?.abnormal_flag,
+      critical_flag: item.lab_results?.[0]?.critical_flag,
+      result_date: item.lab_results?.[0]?.result_date,
+      verified_by: item.lab_results?.[0]?.verified_by,
+      verified_at: item.lab_results?.[0]?.verified_at,
+      result_notes: item.lab_results?.[0]?.notes,
+      result_file_path: item.lab_results?.[0]?.file_path,
+      result_file_name: item.lab_results?.[0]?.file_name
+    })).sort((a, b) => (a.category_name || '').localeCompare(b.category_name || '') || (a.test_name || '').localeCompare(b.test_name || ''));
+
+    // Report files
+    const { data: reportFiles } = await supabase
+      .from('lab_report_files')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('uploaded_at', { ascending: false });
 
     res.json({
       success: true,
       data: {
-        ...order,
-        items: orderItems,
-        reportFiles
+        ...formattedOrder,
+        items: formattedItems,
+        reportFiles: reportFiles || []
       }
     });
   } catch (error) {
@@ -597,20 +541,24 @@ export const updateLabOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status, sample_collection_date, sample_collection_notes } = req.body;
 
-    const [updatedOrder] = await sql`
-      UPDATE lab_orders 
-      SET 
-        status = ${status},
-        sample_collection_date = COALESCE(${sample_collection_date}, sample_collection_date),
-        sample_collection_notes = COALESCE(${sample_collection_notes}, sample_collection_notes),
-        report_date = CASE WHEN ${status} = 'completed' THEN CURRENT_TIMESTAMP ELSE report_date END,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${orderId}
-      RETURNING *
-    `;
+    const updates = {
+      status,
+      updated_at: new Date().toISOString()
+    };
 
-    if (!updatedOrder) {
-      return res.status(404).json({ error: 'Lab order not found' });
+    if (sample_collection_date) updates.sample_collection_date = sample_collection_date;
+    if (sample_collection_notes) updates.sample_collection_notes = sample_collection_notes;
+    if (status === 'completed') updates.report_date = new Date().toISOString();
+
+    const { data: updatedOrder, error } = await supabase
+      .from('lab_orders')
+      .update(updates)
+      .eq('id', orderId)
+      .select()
+      .single();
+
+    if (error || !updatedOrder) {
+      return res.status(404).json({ error: 'Lab order not found or update failed' });
     }
 
     res.json({
@@ -640,54 +588,47 @@ export const updateLabResult = async (req, res) => {
       notes
     } = req.body;
 
-    // Check if result exists
-    const [existingResult] = await sql`
-      SELECT id FROM lab_results WHERE order_item_id = ${orderItemId}
-    `;
-
+    // Check existence
+    const { data: existing } = await supabase.from('lab_results').select('id').eq('order_item_id', orderItemId).maybeSingle();
     let result;
-    if (existingResult) {
-      // Update existing result
-      [result] = await sql`
-        UPDATE lab_results 
-        SET 
-          result_value = COALESCE(${result_value}, result_value),
-          result_text = COALESCE(${result_text}, result_text),
-          reference_range = COALESCE(${reference_range}, reference_range),
-          unit = COALESCE(${unit}, unit),
-          status = ${status},
-          abnormal_flag = ${abnormal_flag},
-          critical_flag = ${critical_flag},
-          verified_by = COALESCE(${verified_by}, verified_by),
-          verified_at = CASE WHEN ${verified_by} IS NOT NULL THEN CURRENT_TIMESTAMP ELSE verified_at END,
-          notes = COALESCE(${notes}, notes),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE order_item_id = ${orderItemId}
-        RETURNING *
-      `;
+
+    const resultData = {
+      order_item_id: orderItemId,
+      result_value,
+      result_text,
+      reference_range,
+      unit,
+      status,
+      abnormal_flag,
+      critical_flag,
+      verified_by,
+      notes,
+      updated_at: new Date().toISOString()
+    };
+
+    if (verified_by) resultData.verified_at = new Date().toISOString();
+
+    if (existing) {
+      const { data: upd, error } = await supabase
+        .from('lab_results')
+        .update(resultData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      result = upd;
     } else {
-      // Create new result
-      [result] = await sql`
-        INSERT INTO lab_results (
-          order_item_id, result_value, result_text, reference_range,
-          unit, status, abnormal_flag, critical_flag, verified_by,
-          verified_at, notes
-        )
-        VALUES (
-          ${orderItemId}, ${result_value}, ${result_text}, ${reference_range},
-          ${unit}, ${status}, ${abnormal_flag}, ${critical_flag}, ${verified_by},
-          ${verified_by ? sql`CURRENT_TIMESTAMP` : null}, ${notes}
-        )
-        RETURNING *
-      `;
+      const { data: ins, error } = await supabase
+        .from('lab_results')
+        .insert(resultData)
+        .select()
+        .single();
+      if (error) throw error;
+      result = ins;
     }
 
-    // Update order item status
-    await sql`
-      UPDATE lab_order_items 
-      SET status = 'completed'
-      WHERE id = ${orderItemId}
-    `;
+    // Update item status
+    await supabase.from('lab_order_items').update({ status: 'completed' }).eq('id', orderItemId);
 
     res.json({
       success: true,
@@ -706,23 +647,31 @@ export const getPatientLabHistory = async (req, res) => {
     const { patientId } = req.params;
     const { limit = 20 } = req.query;
 
-    const orders = await sql`
-      SELECT 
-        lo.*,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name,
-        COUNT(loi.id) as total_tests,
-        COUNT(CASE WHEN loi.status = 'completed' THEN 1 END) as completed_tests
-      FROM lab_orders lo
-      JOIN doctors d ON lo.doctor_id = d.id
-      LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-      WHERE lo.patient_id = ${patientId}
-      GROUP BY lo.id, d.id
-      ORDER BY lo.order_date DESC
-      LIMIT ${limit}
-    `;
+    const { data: orders, error } = await supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            doctor:doctors (first_name, last_name),
+            lab_order_items (id, status)
+        `)
+      .eq('patient_id', patientId)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
 
-    res.json({ success: true, data: orders });
+    if (error) throw error;
+
+    const formatted = orders.map(o => {
+      const items = o.lab_order_items || [];
+      return {
+        ...o,
+        doctor_first_name: o.doctor?.first_name,
+        doctor_last_name: o.doctor?.last_name,
+        total_tests: items.length,
+        completed_tests: items.filter(i => i.status === 'completed').length
+      };
+    });
+
+    res.json({ success: true, data: formatted });
   } catch (error) {
     console.error('Error fetching patient lab history:', error);
     res.status(500).json({ error: 'Failed to fetch patient lab history' });
@@ -734,21 +683,17 @@ export const deleteLabOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // Check if order can be deleted (only pending orders)
-    const [order] = await sql`
-      SELECT status FROM lab_orders WHERE id = ${orderId}
-    `;
+    // Check status
+    const { data: order } = await supabase.from('lab_orders').select('status').eq('id', orderId).single();
 
-    if (!order) {
-      return res.status(404).json({ error: 'Lab order not found' });
-    }
+    if (!order) return res.status(404).json({ error: 'Lab order not found' });
 
     if (order.status !== 'pending') {
       return res.status(400).json({ error: 'Only pending orders can be deleted' });
     }
 
-    // Delete order (CASCADE will handle related records)
-    await sql`DELETE FROM lab_orders WHERE id = ${orderId}`;
+    const { error } = await supabase.from('lab_orders').delete().eq('id', orderId);
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -765,51 +710,22 @@ export const getLabPatients = async (req, res) => {
   try {
     const { search, limit = 20 } = req.query;
 
-    let patients;
-    
+    let query = supabase
+      .from('patients')
+      .select('id, unique_id, first_name, last_name, date_of_birth, gender, phone, email')
+      .order('last_name')
+      .limit(parseInt(limit));
+
     if (search) {
-      patients = await sql`
-        SELECT 
-          id,
-          unique_id,
-          first_name,
-          last_name,
-          date_of_birth,
-          gender,
-          phone,
-          email
-        FROM patients
-        WHERE 
-          first_name ILIKE ${`%${search}%`} OR
-          last_name ILIKE ${`%${search}%`} OR
-          unique_id ILIKE ${`%${search}%`} OR
-          phone ILIKE ${`%${search}%`}
-        ORDER BY last_name, first_name
-        LIMIT ${parseInt(limit)}
-      `;
-    } else {
-      patients = await sql`
-        SELECT 
-          id,
-          unique_id,
-          first_name,
-          last_name,
-          date_of_birth,
-          gender,
-          phone,
-          email
-        FROM patients
-        ORDER BY last_name, first_name
-        LIMIT ${parseInt(limit)}
-      `;
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,unique_id.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    res.json({
-      success: true,
-      data: patients
-    });
+    const { data: patients, error } = await query;
+    if (error) throw error;
+
+    res.json({ success: true, data: patients });
   } catch (error) {
-    console.error('Error fetching patients:', error);
-    res.status(500).json({ error: 'Failed to fetch patients' });
+    console.error('Error fetching lab patients:', error);
+    res.status(500).json({ error: 'Failed to fetch lab patients' });
   }
 };

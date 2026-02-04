@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { sql } from '../config/db.js';
+// import { sql } from '../config/db.js'; // Unused
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: {
         fileSize: 10 * 1024 * 1024, // 10MB limit
@@ -64,7 +64,7 @@ const upload = multer({
 router.get('/faq', async (req, res) => {
     try {
         const { category, search } = req.query;
-        
+
         // For now, return hardcoded FAQ data since we haven't created the tables yet
         const faqData = [
             {
@@ -122,22 +122,22 @@ router.get('/faq', async (req, res) => {
                 updated_at: new Date()
             }
         ];
-        
+
         let filteredData = faqData;
-        
+
         if (category) {
             filteredData = filteredData.filter(faq => faq.category === category);
         }
-        
+
         if (search) {
             const searchLower = search.toLowerCase();
-            filteredData = filteredData.filter(faq => 
+            filteredData = filteredData.filter(faq =>
                 faq.question.toLowerCase().includes(searchLower) ||
                 faq.answer.toLowerCase().includes(searchLower) ||
                 faq.category.toLowerCase().includes(searchLower)
             );
         }
-        
+
         res.json({
             success: true,
             data: filteredData,
@@ -145,9 +145,9 @@ router.get('/faq', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching FAQs:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch FAQs' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch FAQs'
         });
     }
 });
@@ -159,7 +159,7 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
         const { subject, category, priority, description } = req.body;
         const doctorId = req.user.doctorId;
         const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        
+
         // Validate required fields
         if (!subject || !description) {
             return res.status(400).json({
@@ -167,7 +167,7 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
                 error: 'Subject and description are required'
             });
         }
-        
+
         // For now, just return success without actually storing in database
         const ticket = {
             id: Date.now(),
@@ -181,9 +181,9 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
             created_at: new Date(),
             updated_at: new Date()
         };
-        
+
         // TODO: Send email notification to support team
-        
+
         res.json({
             success: true,
             message: 'Support ticket submitted successfully',
@@ -193,12 +193,12 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
                 status: ticket.status
             }
         });
-        
+
     } catch (error) {
         console.error('Error submitting support ticket:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to submit support ticket' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to submit support ticket'
         });
     }
 });
@@ -207,7 +207,7 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
 router.get('/support-tickets', authenticateToken, async (req, res) => {
     try {
         const doctorId = req.user.doctorId;
-        
+
         // Return sample data for now
         const sampleTickets = [
             {
@@ -237,18 +237,18 @@ router.get('/support-tickets', authenticateToken, async (req, res) => {
                 attachments: []
             }
         ];
-        
+
         res.json({
             success: true,
             data: sampleTickets,
             count: sampleTickets.length
         });
-        
+
     } catch (error) {
         console.error('Error fetching support tickets:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch support tickets' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch support tickets'
         });
     }
 });
@@ -258,7 +258,7 @@ router.get('/support-tickets/:ticketId', authenticateToken, async (req, res) => 
     try {
         const { ticketId } = req.params;
         const doctorId = req.user.doctorId;
-        
+
         // Return sample ticket data
         const sampleTicket = {
             id: parseInt(ticketId),
@@ -273,17 +273,17 @@ router.get('/support-tickets/:ticketId', authenticateToken, async (req, res) => 
             updated_at: new Date(),
             attachments: []
         };
-        
+
         res.json({
             success: true,
             data: sampleTicket
         });
-        
+
     } catch (error) {
         console.error('Error fetching support ticket:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch support ticket' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch support ticket'
         });
     }
 });
@@ -294,14 +294,14 @@ router.post('/support-tickets/:ticketId/responses', authenticateToken, async (re
         const { ticketId } = req.params;
         const { message } = req.body;
         const doctorId = req.user.doctorId;
-        
+
         if (!message) {
             return res.status(400).json({
                 success: false,
                 error: 'Message is required'
             });
         }
-        
+
         // Return success for now
         const response = {
             id: Date.now(),
@@ -311,18 +311,18 @@ router.post('/support-tickets/:ticketId/responses', authenticateToken, async (re
             message,
             created_at: new Date()
         };
-        
+
         res.json({
             success: true,
             message: 'Response added successfully',
             data: response
         });
-        
+
     } catch (error) {
         console.error('Error adding ticket response:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to add response' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add response'
         });
     }
 });
@@ -339,17 +339,17 @@ router.get('/documentation/categories', async (req, res) => {
             { category: 'API Integration', article_count: 3 },
             { category: 'Troubleshooting', article_count: 6 }
         ];
-        
+
         res.json({
             success: true,
             data: categories
         });
-        
+
     } catch (error) {
         console.error('Error fetching documentation categories:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch documentation categories' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch documentation categories'
         });
     }
 });
@@ -358,7 +358,7 @@ router.get('/documentation/categories', async (req, res) => {
 router.get('/documentation', async (req, res) => {
     try {
         const { category, search } = req.query;
-        
+
         const articles = [
             {
                 id: 1,
@@ -385,32 +385,32 @@ router.get('/documentation', async (req, res) => {
                 updated_at: new Date()
             }
         ];
-        
+
         let filteredArticles = articles;
-        
+
         if (category) {
             filteredArticles = filteredArticles.filter(article => article.category === category);
         }
-        
+
         if (search) {
             const searchLower = search.toLowerCase();
-            filteredArticles = filteredArticles.filter(article => 
+            filteredArticles = filteredArticles.filter(article =>
                 article.title.toLowerCase().includes(searchLower) ||
                 article.description.toLowerCase().includes(searchLower)
             );
         }
-        
+
         res.json({
             success: true,
             data: filteredArticles,
             count: filteredArticles.length
         });
-        
+
     } catch (error) {
         console.error('Error fetching documentation:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch documentation' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch documentation'
         });
     }
 });
@@ -419,7 +419,7 @@ router.get('/documentation', async (req, res) => {
 router.get('/documentation/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
-        
+
         const sampleArticle = {
             id: 1,
             title: 'Sample Documentation Article',
@@ -432,17 +432,17 @@ router.get('/documentation/:slug', async (req, res) => {
             created_at: new Date(),
             updated_at: new Date()
         };
-        
+
         res.json({
             success: true,
             data: sampleArticle
         });
-        
+
     } catch (error) {
         console.error('Error fetching documentation article:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to fetch documentation article' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch documentation article'
         });
     }
 });
@@ -452,14 +452,14 @@ router.post('/contact', authenticateToken, async (req, res) => {
     try {
         const { type, subject, message, email } = req.body;
         const doctorId = req.user.doctorId;
-        
+
         if (!subject || !message) {
             return res.status(400).json({
                 success: false,
                 error: 'Subject and message are required'
             });
         }
-        
+
         const contactMessage = {
             id: Date.now(),
             doctor_id: doctorId,
@@ -470,18 +470,18 @@ router.post('/contact', authenticateToken, async (req, res) => {
             created_at: new Date(),
             status: 'new'
         };
-        
+
         res.json({
             success: true,
             message: 'Message sent successfully',
             data: contactMessage
         });
-        
+
     } catch (error) {
         console.error('Error sending contact message:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to send message' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to send message'
         });
     }
 });

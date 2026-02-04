@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 import { getNextPatientId } from '../lib/uniqueIdGenerator.js';
 
 // Get all patients for a doctor
@@ -7,65 +7,50 @@ export const getPatients = async (req, res) => {
     const { doctorId } = req.params;
     const { search, limit = 50, offset = 0 } = req.query;
 
-    let query;
+    let query = supabase
+      .from('patients')
+      .select('*, appointments!inner(doctor_id)')
+      // Use !inner join to filter patients who have at least one appointment with this doctor
+      .eq('appointments.doctor_id', doctorId);
 
     if (search) {
       // Search by name or email
-      query = sql`
-        SELECT DISTINCT 
-          p.id,
-          p.unique_id,
-          p.first_name,
-          p.last_name,
-          p.email,
-          p.phone,
-          p.date_of_birth,
-          p.gender,
-          p.blood_group,
-          p.address,
-          p.created_at,
-          COUNT(a.id) as total_appointments
-        FROM patients p
-        JOIN appointments a ON p.id = a.patient_id
-        WHERE a.doctor_id = ${doctorId}
-        AND (
-          p.first_name ILIKE ${'%' + search + '%'} OR
-          p.last_name ILIKE ${'%' + search + '%'} OR
-          p.email ILIKE ${'%' + search + '%'}
-        )
-        GROUP BY p.id
-        ORDER BY p.first_name, p.last_name
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `;
-    } else {
-      query = sql`
-        SELECT DISTINCT 
-          p.id,
-          p.unique_id,
-          p.first_name,
-          p.last_name,
-          p.email,
-          p.phone,
-          p.date_of_birth,
-          p.gender,
-          p.blood_group,
-          p.address,
-          p.created_at,
-          COUNT(a.id) as total_appointments
-        FROM patients p
-        JOIN appointments a ON p.id = a.patient_id
-        WHERE a.doctor_id = ${doctorId}
-        GROUP BY p.id
-        ORDER BY p.first_name, p.last_name
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `;
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
-    const patients = await query;
+    // Pagination
+    const from = parseInt(offset);
+    const to = from + parseInt(limit) - 1;
 
-    res.json({ success: true, data: patients, count: patients.length });
+    const { data: patients, error, count } = await query
+      .range(from, to)
+      .order('first_name', { ascending: true })
+      .order('last_name', { ascending: true }); // Secondary sort
+
+    if (error) throw error;
+
+    // Supabase returns the joined 'appointments' field because of the select.
+    // We might want to remove it from the response if it's large, but here it's just helpful linkage.
+    // However, the original response didn't include it in 'data' structure explicitly as a list of appts, 
+    // but the SQL query had COUNT(a.id) as total_appointments.
+    // We can't easily get the per-patient appointment count in the same query without a view/RPC.
+    // For now, we'll return the patients. The frontend might not strictly rely on total_appointments count in the list.
+    // If it does, we'd need a separate step or RPC.
+
+    // Clean up response structure: remove the 'appointments' array if we just wanted it for filtering
+    const cleanedPatients = patients.map(p => {
+      const { appointments, ...rest } = p;
+      return {
+        ...rest,
+        // Approximate total appointments from the join results? 
+        // The !inner join might limit returned appointments to those matching filters? 
+        // In Supabase, embedded resources are filtered. So appointments array will contain matching appointments.
+        // So we CAN count them!
+        total_appointments: appointments ? appointments.length : 0
+      };
+    });
+
+    res.json({ success: true, data: cleanedPatients, count: cleanedPatients.length });
   } catch (error) {
     console.error('Error fetching patients:', error);
     res.status(500).json({ error: 'Failed to fetch patients' });
@@ -77,48 +62,59 @@ export const getPatientById = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    const patient = await sql`
-      SELECT *
-      FROM patients
-      WHERE id = ${patientId}
-    `;
+    // Fetch patient
+    const { data: patient, error: patientError } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('id', patientId)
+      .single();
 
-    if (patient.length === 0) {
+    if (patientError || !patient) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // Get patient's appointments
-    const appointments = await sql`
-      SELECT 
-        a.id,
-        a.appointment_date,
-        a.appointment_time,
-        a.status,
-        a.appointment_type,
-        a.notes,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name
-      FROM appointments a
-      JOIN doctors d ON a.doctor_id = d.id
-      WHERE a.patient_id = ${patientId}
-      ORDER BY a.appointment_date DESC
-      LIMIT 10
-    `;
+    // Parallel fetch for details
+    const [
+      { data: appointments, error: apptError },
+      { data: medicalRecords, error: medError }
+    ] = await Promise.all([
+      // Get patient's appointments with doctor details
+      supabase
+        .from('appointments')
+        .select(`
+          id, appointment_date, appointment_time, status, appointment_type, notes,
+          doctors ( first_name, last_name )
+        `)
+        .eq('patient_id', patientId)
+        .order('appointment_date', { ascending: false })
+        .limit(10),
 
-    // Get patient's medical records
-    const medicalRecords = await sql`
-      SELECT *
-      FROM medical_records
-      WHERE patient_id = ${patientId}
-      ORDER BY record_date DESC
-      LIMIT 10
-    `;
+      // Get patient's medical records
+      supabase
+        .from('medical_records')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('record_date', { ascending: false })
+        .limit(10)
+    ]);
+
+    if (apptError || medError) {
+      throw new Error('Error fetching patient details');
+    }
+
+    // Flatten doctor details for matching original response structure
+    const flattenedAppointments = appointments?.map(appt => ({
+      ...appt,
+      doctor_first_name: appt.doctors?.first_name,
+      doctor_last_name: appt.doctors?.last_name,
+      doctors: undefined // Remove nested object
+    }));
 
     res.json({
       success: true,
       data: {
-        ...patient[0],
-        appointments,
+        ...patient,
+        appointments: flattenedAppointments,
         medicalRecords
       }
     });
@@ -132,18 +128,8 @@ export const getPatientById = async (req, res) => {
 export const createPatient = async (req, res) => {
   try {
     const {
-      first_name,
-      last_name,
-      email,
-      phone,
-      date_of_birth,
-      gender,
-      blood_group,
-      address,
-      emergency_contact_name,
-      emergency_contact_phone,
-      medical_history,
-      allergies
+      first_name, last_name, email, phone, date_of_birth, gender, blood_group,
+      address, emergency_contact_name, emergency_contact_phone, medical_history, allergies
     } = req.body;
 
     // Validate required fields
@@ -152,55 +138,44 @@ export const createPatient = async (req, res) => {
     }
 
     // Check if patient with email already exists
-    const existingPatient = await sql`
-      SELECT id FROM patients WHERE email = ${email}
-    `;
+    const { data: existing, error: checkError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (existingPatient.length > 0) {
+    if (existing) {
       return res.status(409).json({ error: 'Patient with this email already exists' });
     }
 
     // Generate unique ID for new patient
     const uniqueId = await getNextPatientId();
 
-    const result = await sql`
-      INSERT INTO patients (
-        unique_id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        date_of_birth,
-        gender,
-        blood_group,
-        address,
-        emergency_contact_name,
-        emergency_contact_phone,
-        medical_history,
-        allergies
-      )
-      VALUES (
-        ${uniqueId},
-        ${first_name},
-        ${last_name},
-        ${email},
-        ${phone},
-        ${date_of_birth || null},
-        ${gender || null},
-        ${blood_group || null},
-        ${address || null},
-        ${emergency_contact_name || null},
-        ${emergency_contact_phone || null},
-        ${medical_history || null},
-        ${allergies || null}
-      )
-      RETURNING *
-    `;
+    const newPatient = {
+      unique_id: uniqueId,
+      first_name, last_name, email, phone,
+      date_of_birth: date_of_birth || null,
+      gender: gender || null,
+      blood_group: blood_group || null,
+      address: address || null,
+      emergency_contact_name: emergency_contact_name || null,
+      emergency_contact_phone: emergency_contact_phone || null,
+      medical_history: medical_history || null,
+      allergies: allergies || null
+    };
+
+    const { data, error } = await supabase
+      .from('patients')
+      .insert(newPatient)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       success: true,
       message: 'Patient created successfully',
-      data: result[0]
+      data
     });
   } catch (error) {
     console.error('Error creating patient:', error);
@@ -212,49 +187,40 @@ export const createPatient = async (req, res) => {
 export const updatePatient = async (req, res) => {
   try {
     const { patientId } = req.params;
-    const {
-      first_name,
-      last_name,
-      email,
-      phone,
-      date_of_birth,
-      gender,
-      blood_group,
-      address,
-      emergency_contact_name,
-      emergency_contact_phone,
-      medical_history,
-      allergies
-    } = req.body;
+    const body = req.body;
 
-    const result = await sql`
-      UPDATE patients
-      SET
-        first_name = COALESCE(${first_name}, first_name),
-        last_name = COALESCE(${last_name}, last_name),
-        email = COALESCE(${email}, email),
-        phone = COALESCE(${phone}, phone),
-        date_of_birth = COALESCE(${date_of_birth}, date_of_birth),
-        gender = COALESCE(${gender}, gender),
-        blood_group = COALESCE(${blood_group}, blood_group),
-        address = COALESCE(${address}, address),
-        emergency_contact_name = COALESCE(${emergency_contact_name}, emergency_contact_name),
-        emergency_contact_phone = COALESCE(${emergency_contact_phone}, emergency_contact_phone),
-        medical_history = COALESCE(${medical_history}, medical_history),
-        allergies = COALESCE(${allergies}, allergies),
-        updated_at = NOW()
-      WHERE id = ${patientId}
-      RETURNING *
-    `;
+    // Fields allowed to be updated
+    const allowedFields = [
+      'first_name', 'last_name', 'email', 'phone', 'date_of_birth',
+      'gender', 'blood_group', 'address', 'emergency_contact_name',
+      'emergency_contact_phone', 'medical_history', 'allergies'
+    ];
 
-    if (result.length === 0) {
+    const updates = {};
+    allowedFields.forEach(field => {
+      if (body[field] !== undefined) {
+        updates[field] = body[field];
+      }
+    });
+    updates.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('patients')
+      .update(updates)
+      .eq('id', patientId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
     res.json({
       success: true,
       message: 'Patient updated successfully',
-      data: result[0]
+      data
     });
   } catch (error) {
     console.error('Error updating patient:', error);
@@ -267,18 +233,26 @@ export const getPatientMedicalHistory = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    const records = await sql`
-      SELECT 
-        mr.*,
-        d.first_name as doctor_first_name,
-        d.last_name as doctor_last_name
-      FROM medical_records mr
-      JOIN doctors d ON mr.doctor_id = d.id
-      WHERE mr.patient_id = ${patientId}
-      ORDER BY mr.record_date DESC
-    `;
+    const { data: records, error } = await supabase
+      .from('medical_records')
+      .select(`
+        *,
+        doctors ( first_name, last_name )
+      `)
+      .eq('patient_id', patientId)
+      .order('record_date', { ascending: false });
 
-    res.json({ success: true, data: records });
+    if (error) throw error;
+
+    // Flatten doctor details
+    const flattenedRecords = records.map(record => ({
+      ...record,
+      doctor_first_name: record.doctors?.first_name,
+      doctor_last_name: record.doctors?.last_name,
+      doctors: undefined
+    }));
+
+    res.json({ success: true, data: flattenedRecords });
   } catch (error) {
     console.error('Error fetching medical history:', error);
     res.status(500).json({ error: 'Failed to fetch medical history' });
@@ -291,18 +265,24 @@ export const deletePatient = async (req, res) => {
     const { patientId } = req.params;
 
     // Check if patient exists
-    const patient = await sql`
-      SELECT id FROM patients WHERE id = ${patientId}
-    `;
+    const { data: existing, error: checkError } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('id', patientId)
+      .maybeSingle();
 
-    if (patient.length === 0) {
+    if (!existing) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // Delete patient (CASCADE will handle related records)
-    await sql`
-      DELETE FROM patients WHERE id = ${patientId}
-    `;
+    // Delete patient (CASCADE handles related records in DB if configured, 
+    // but Supabase client deletion also respects Foreign Key constraints)
+    const { error } = await supabase
+      .from('patients')
+      .delete()
+      .eq('id', patientId);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -331,32 +311,28 @@ export const addMedicalRecord = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const result = await sql`
-      INSERT INTO medical_records (
-        patient_id,
-        doctor_id,
-        diagnosis,
-        prescription,
-        notes,
-        lab_results,
-        record_date
-      )
-      VALUES (
-        ${patientId},
-        ${doctor_id},
-        ${diagnosis},
-        ${prescription || null},
-        ${notes || null},
-        ${lab_results || null},
-        ${record_date || 'NOW()'}
-      )
-      RETURNING *
-    `;
+    const newRecord = {
+      patient_id: patientId,
+      doctor_id,
+      diagnosis,
+      prescription: prescription || null,
+      notes: notes || null,
+      lab_results: lab_results || null,
+      record_date: record_date || new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('medical_records')
+      .insert(newRecord)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       success: true,
       message: 'Medical record added successfully',
-      data: result[0]
+      data
     });
   } catch (error) {
     console.error('Error adding medical record:', error);

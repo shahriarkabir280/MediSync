@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
@@ -24,8 +24,9 @@ router.post('/login', async (req, res) => {
 
     console.log('🔍 Looking for doctor with email:', email);
     // Find doctor by email
-    const doctors = await sql`
-      SELECT 
+    const { data: doctors, error } = await supabase
+      .from('doctors')
+      .select(`
         id,
         unique_id,
         first_name,
@@ -35,12 +36,16 @@ router.post('/login', async (req, res) => {
         specialization,
         profile_image_url,
         created_at
-      FROM doctors 
-      WHERE email = ${email}
-    `;
+      `)
+      .eq('email', email);
 
-    console.log('📊 Found doctors:', doctors.length);
-    if (doctors.length === 0) {
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+
+    console.log('📊 Found doctors:', doctors?.length || 0);
+    if (!doctors || doctors.length === 0) {
       console.log('❌ No doctor found with email:', email);
       return res.status(401).json({
         success: false,
@@ -53,7 +58,7 @@ router.post('/login', async (req, res) => {
 
     // Check password (for demo, we'll allow plain text password 'password123')
     let isValidPassword = false;
-    
+
     if (doctor.password_hash) {
       // Compare with hashed password
       isValidPassword = await bcrypt.compare(password, doctor.password_hash);
@@ -122,10 +127,11 @@ router.get('/verify', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    
+
     // Get fresh doctor data
-    const doctors = await sql`
-      SELECT 
+    const { data: doctors, error } = await supabase
+      .from('doctors')
+      .select(`
         id,
         unique_id,
         first_name,
@@ -133,11 +139,12 @@ router.get('/verify', async (req, res) => {
         email,
         specialization,
         profile_image_url
-      FROM doctors 
-      WHERE id = ${decoded.doctorId}
-    `;
+      `)
+      .eq('id', decoded.doctorId);
 
-    if (doctors.length === 0) {
+    if (error) throw error;
+
+    if (!doctors || doctors.length === 0) {
       return res.status(401).json({
         success: false,
         message: 'Doctor not found'
@@ -178,7 +185,7 @@ router.post('/logout', (req, res) => {
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
@@ -214,11 +221,14 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     }
 
     // Get current doctor data
-    const doctors = await sql`
-      SELECT password_hash FROM doctors WHERE id = ${doctorId}
-    `;
+    const { data: doctors, error } = await supabase
+      .from('doctors')
+      .select('password_hash')
+      .eq('id', doctorId);
 
-    if (doctors.length === 0) {
+    if (error) throw error;
+
+    if (!doctors || doctors.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Doctor not found'
@@ -226,7 +236,7 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     }
 
     const doctor = doctors[0];
-    
+
     // Verify current password
     let isValidPassword = false;
     if (doctor.password_hash) {
@@ -248,11 +258,15 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password in database
-    await sql`
-      UPDATE doctors 
-      SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${doctorId}
-    `;
+    const { error: updateError } = await supabase
+      .from('doctors')
+      .update({
+        password_hash: newPasswordHash,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', doctorId);
+
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
@@ -280,14 +294,16 @@ router.post('/enable-2fa', authenticateToken, async (req, res) => {
     }
 
     // Update doctor settings to enable 2FA
-    await sql`
-      UPDATE doctors 
-      SET 
-        two_factor_enabled = true,
-        backup_codes = ${JSON.stringify(backupCodes)},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${doctorId}
-    `;
+    const { error } = await supabase
+      .from('doctors')
+      .update({
+        two_factor_enabled: true,
+        backup_codes: backupCodes, // Supabase handles JSONB automatically or pass as array/object
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', doctorId);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -310,14 +326,16 @@ router.delete('/disable-2fa', authenticateToken, async (req, res) => {
     const doctorId = req.doctorId;
 
     // Update doctor settings to disable 2FA
-    await sql`
-      UPDATE doctors 
-      SET 
-        two_factor_enabled = false,
-        backup_codes = null,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${doctorId}
-    `;
+    const { error } = await supabase
+      .from('doctors')
+      .update({
+        two_factor_enabled: false,
+        backup_codes: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', doctorId);
+
+    if (error) throw error;
 
     res.json({
       success: true,

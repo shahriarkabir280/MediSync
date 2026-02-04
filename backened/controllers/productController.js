@@ -1,60 +1,69 @@
-import {sql} from '../config/db.js'; // Import the database connection
+import { supabase } from '../config/db.js'; // Import the database connection
 
-export const getProducts = async(req, res) => {
-      try {
-       const products = await sql`
-          SELECT * FROM products
-          ORDER BY created_at DESC
-        `;
-        console.log('Products fetched successfully',products);
+export const getProducts = async (req, res) => {
+    try {
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        console.log('Products fetched successfully', products);
         res.status(200).json({
             success: true,
             data: products
-        })
-      }catch (error) {
+        });
+    } catch (error) {
         console.error('Error fetching products:', error);
-        res.status(500).json({ success : fasle, message: 'Internal Server Error' });
-      }
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 };
 
 
-export const createProduct = async(req, res) => {
-       const { name, image_url, price } = req.body;
-       if (!name || !image_url || !price) {
+export const createProduct = async (req, res) => {
+    const { name, image_url, price } = req.body;
+    if (!name || !image_url || !price) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
-       }
+    }
 
-       try {
-             const newProduct = await sql`
-              INSERT INTO products (name, image_url, price)
-              VALUES (${name},${image_url},${price})
-              RETURNING *`;
-              //console.log('Product created successfully', newProduct);
-              res.status(201).json({success: true, data: newProduct[0]});
-       } catch (error) {
+    try {
+        const { data: newProduct, error } = await supabase
+            .from('products')
+            .insert({ name, image_url, price })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        //console.log('Product created successfully', newProduct);
+        res.status(201).json({ success: true, data: newProduct });
+    } catch (error) {
         console.error('Error creating product:', error);
         res.status(500).json({ error: 'Internal Server Error' });
-       }
+    }
 };
 
 
 
-export const getProduct = async(req, res) => {
+export const getProduct = async (req, res) => {
     const { id } = req.params;
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required' });
     }
 
     try {
-        const product = await sql`
-            SELECT * FROM products WHERE id = ${id}
-        `;
+        const { data: product, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-        if (product.length === 0) {
+        if (error || !product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        res.status(200).json({ success: true, data: product[0] });
+        res.status(200).json({ success: true, data: product });
     } catch (error) {
         console.error('Error fetching product:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -63,25 +72,28 @@ export const getProduct = async(req, res) => {
 
 
 
-export const updateProduct = async(req, res) => {
+export const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { name, image_url, price } = req.body;
-    if( !id || !name || !image_url || !price) {
+    if (!id || !name || !image_url || !price) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
     try {
-        const updatedProduct = await sql`
-            UPDATE products
-            SET name = ${name}, image_url = ${image_url}, price = ${price}
-            WHERE id = ${id}
-            RETURNING *
-        `;
-        if( updatedProduct.length === 0) {
+        const { data: updatedProduct, error } = await supabase
+            .from('products')
+            .update({ name, image_url, price })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        if (!updatedProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
-        res.status(200).json({ success: true, data: updatedProduct[0] });   
-    }catch (error) {
+        res.status(200).json({ success: true, data: updatedProduct });
+    } catch (error) {
         console.error('Error updating product:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
@@ -89,22 +101,27 @@ export const updateProduct = async(req, res) => {
 
 
 
-export const deleteProduct = async(req, res) => {
+export const deleteProduct = async (req, res) => {
     const { id } = req.params;
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required' });
     }
 
     try {
-        const deletedProduct = await sql`
-            DELETE FROM products WHERE id = ${id} RETURNING *
-        `;
+        const { data: deletedProduct, error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', id)
+            .select()
+            .single();
 
-        if (deletedProduct.length === 0) {
+        if (error) throw error;
+
+        if (!deletedProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        res.status(200).json({ success: true, data: deletedProduct[0] });
+        res.status(200).json({ success: true, data: deletedProduct });
     } catch (error) {
         console.error('Error deleting product:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });

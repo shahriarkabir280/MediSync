@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 // Helper function to create sample notifications for testing
 export const createSampleNotifications = async (doctorId) => {
@@ -47,7 +47,7 @@ export const createSampleNotifications = async (doctorId) => {
         actionable: true,
         data: { patientName: 'Emma Wilson' },
         read: true,
-        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) // 1 day ago
+        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
         type: 'system',
@@ -57,7 +57,7 @@ export const createSampleNotifications = async (doctorId) => {
         actionable: false,
         data: { maintenanceTime: '2:00 AM to 4:00 AM' },
         read: true,
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
         type: 'billing',
@@ -69,25 +69,20 @@ export const createSampleNotifications = async (doctorId) => {
       }
     ];
 
-    for (const notification of sampleNotifications) {
-      await sql`
-        INSERT INTO notifications (
-          doctor_id, type, title, message, data, priority, 
-          actionable, read, created_at
-        )
-        VALUES (
-          ${doctorId}, 
-          ${notification.type}, 
-          ${notification.title}, 
-          ${notification.message}, 
-          ${JSON.stringify(notification.data)}, 
-          ${notification.priority},
-          ${notification.actionable}, 
-          ${notification.read || false},
-          ${notification.created_at || new Date()}
-        )
-      `;
-    }
+    const notificationsToInsert = sampleNotifications.map(n => ({
+      doctor_id: doctorId,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      data: n.data,
+      priority: n.priority,
+      actionable: n.actionable,
+      read: n.read || false,
+      created_at: n.created_at || new Date().toISOString()
+    }));
+
+    const { error } = await supabase.from('notifications').insert(notificationsToInsert);
+    if (error) throw error;
 
     console.log(`✅ Created ${sampleNotifications.length} sample notifications`);
     return sampleNotifications.length;
@@ -102,9 +97,9 @@ export const createSampleNotifications = async (doctorId) => {
 export const createAppointmentNotification = async (doctorId, appointmentData) => {
   try {
     const { action, patientName, appointmentTime, appointmentDate } = appointmentData;
-    
+
     let title, message, priority;
-    
+
     switch (action) {
       case 'scheduled':
         title = 'New Appointment Scheduled';
@@ -132,18 +127,23 @@ export const createAppointmentNotification = async (doctorId, appointmentData) =
         priority = 'medium';
     }
 
-    const result = await sql`
-      INSERT INTO notifications (
-        doctor_id, type, title, message, data, priority, actionable
-      )
-      VALUES (
-        ${doctorId}, 'appointment', ${title}, ${message}, 
-        ${JSON.stringify(appointmentData)}, ${priority}, true
-      )
-      RETURNING *
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        doctor_id: doctorId,
+        type: 'appointment',
+        title,
+        message,
+        data: appointmentData,
+        priority,
+        actionable: true,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    return result[0];
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error creating appointment notification:', error);
     throw error;
@@ -154,9 +154,9 @@ export const createAppointmentNotification = async (doctorId, appointmentData) =
 export const createBillingNotification = async (doctorId, billingData) => {
   try {
     const { action, amount, patientName, invoiceId } = billingData;
-    
+
     let title, message, priority;
-    
+
     switch (action) {
       case 'payment_received':
         title = 'Payment Received';
@@ -184,18 +184,23 @@ export const createBillingNotification = async (doctorId, billingData) => {
         priority = 'medium';
     }
 
-    const result = await sql`
-      INSERT INTO notifications (
-        doctor_id, type, title, message, data, priority, actionable
-      )
-      VALUES (
-        ${doctorId}, 'billing', ${title}, ${message}, 
-        ${JSON.stringify(billingData)}, ${priority}, true
-      )
-      RETURNING *
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        doctor_id: doctorId,
+        type: 'billing',
+        title,
+        message,
+        data: billingData,
+        priority,
+        actionable: true,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    return result[0];
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error creating billing notification:', error);
     throw error;
@@ -206,9 +211,9 @@ export const createBillingNotification = async (doctorId, billingData) => {
 export const createPatientNotification = async (doctorId, patientData) => {
   try {
     const { action, patientName, patientId } = patientData;
-    
+
     let title, message, priority;
-    
+
     switch (action) {
       case 'registered':
         title = 'New Patient Registration';
@@ -231,18 +236,23 @@ export const createPatientNotification = async (doctorId, patientData) => {
         priority = 'medium';
     }
 
-    const result = await sql`
-      INSERT INTO notifications (
-        doctor_id, type, title, message, data, priority, actionable
-      )
-      VALUES (
-        ${doctorId}, 'patients', ${title}, ${message}, 
-        ${JSON.stringify(patientData)}, ${priority}, true
-      )
-      RETURNING *
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        doctor_id: doctorId,
+        type: 'patients',
+        title,
+        message,
+        data: patientData,
+        priority,
+        actionable: true,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    return result[0];
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error creating patient notification:', error);
     throw error;
@@ -253,20 +263,25 @@ export const createPatientNotification = async (doctorId, patientData) => {
 export const createSystemNotification = async (doctorId, systemData) => {
   try {
     const { type, title, message, priority = 'low', expiresAt } = systemData;
-    
-    const result = await sql`
-      INSERT INTO notifications (
-        doctor_id, type, title, message, data, priority, 
-        actionable, expires_at
-      )
-      VALUES (
-        ${doctorId}, 'system', ${title}, ${message}, 
-        ${JSON.stringify(systemData)}, ${priority}, false, ${expiresAt}
-      )
-      RETURNING *
-    `;
 
-    return result[0];
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        doctor_id: doctorId,
+        type: 'system',
+        title,
+        message,
+        data: systemData,
+        priority,
+        actionable: false,
+        expires_at: expiresAt,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error creating system notification:', error);
     throw error;
@@ -276,15 +291,20 @@ export const createSystemNotification = async (doctorId, systemData) => {
 // Clean up expired notifications
 export const cleanupExpiredNotifications = async () => {
   try {
-    const result = await sql`
-      DELETE FROM notifications 
-      WHERE expires_at IS NOT NULL 
-      AND expires_at < NOW()
-      AND created_at < NOW() - INTERVAL '7 days'
-    `;
+    // Delete where expires_at < NOW and created_at < 7 days ago
+    const now = new Date().toISOString();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    console.log(`🧹 Cleaned up ${result.length} expired notifications`);
-    return result.length;
+    const { count, error } = await supabase
+      .from('notifications')
+      .delete({ count: 'exact' })
+      .lt('expires_at', now)
+      .lt('created_at', sevenDaysAgo);
+
+    if (error) throw error;
+
+    console.log(`🧹 Cleaned up ${count} expired notifications`);
+    return count;
   } catch (error) {
     console.error('Error cleaning up expired notifications:', error);
     throw error;
@@ -294,17 +314,30 @@ export const cleanupExpiredNotifications = async () => {
 // Get notification counts for a doctor
 export const getNotificationCounts = async (doctorId) => {
   try {
-    const counts = await sql`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN read = false THEN 1 END) as unread,
-        COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority,
-        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as today
-      FROM notifications 
-      WHERE doctor_id = ${doctorId}
-    `;
+    // Supabase doesn't support complex aggregated Case logic in one query easily without RPC.
+    // We can run separate queries or fetch all minimal metadata.
+    // Fetching minimal metadata is fine if not thousands.
+    // Or just run 4 separate count queries.
 
-    return counts[0];
+    const { count: total, error: tErr } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    if (tErr) throw tErr;
+
+    const { count: unread, error: uErr } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId).eq('read', false);
+    if (uErr) throw uErr;
+
+    const { count: high, error: hErr } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId).eq('priority', 'high');
+    if (hErr) throw hErr;
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: today, error: dErr } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId).gte('created_at', twentyFourHoursAgo);
+    if (dErr) throw dErr;
+
+    return {
+      total,
+      unread,
+      high_priority: high,
+      today
+    };
   } catch (error) {
     console.error('Error getting notification counts:', error);
     throw error;

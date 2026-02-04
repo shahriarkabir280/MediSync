@@ -1,86 +1,76 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 // Get notifications for a doctor
 export const getNotifications = async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    const { 
-      page = 1, 
-      limit = 20, 
-      type, 
-      read, 
-      priority, 
-      search 
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      read,
+      priority,
+      search
     } = req.query;
 
     const offset = (page - 1) * limit;
-    
-    // Build dynamic where clause
-    let whereClause = sql`WHERE doctor_id = ${doctorId}`;
-    
+    const now = new Date().toISOString();
+
+    let query = supabase
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .eq('doctor_id', doctorId)
+      // Filter out expired notifications
+      .or(`expires_at.is.null,expires_at.gt.${now}`);
+
     if (type) {
-      whereClause = sql`${whereClause} AND type = ${type}`;
+      query = query.eq('type', type);
     }
-    
+
     if (read !== undefined) {
       const isRead = read === 'true';
-      whereClause = sql`${whereClause} AND read = ${isRead}`;
+      query = query.eq('read', isRead);
     }
-    
+
     if (priority) {
-      whereClause = sql`${whereClause} AND priority = ${priority}`;
+      query = query.eq('priority', priority);
     }
-    
+
     if (search) {
-      whereClause = sql`${whereClause} AND (title ILIKE ${'%' + search + '%'} OR message ILIKE ${'%' + search + '%'})`;
+      query = query.or(`title.ilike.%${search}%,message.ilike.%${search}%`);
     }
 
-    // Note: We'll filter expired notifications in the query instead of updating them
+    // Sort: Unread first, then by Created At (desc)
+    // Note: Custom sorting by priority (high/medium/low) is hard in simpler PostgREST/Supabase calls
+    // We'll stick to read status and recency.
+    const { data: notifications, error, count } = await query
+      .order('read', { ascending: true }) // false (unread) comes first? No, false < true. Yes.
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
 
-    // Get notifications with pagination (filtering out expired ones)
-    const notifications = await sql`
-      SELECT 
-        id, type, title, message, data, read, priority, 
-        actionable, action_url, expires_at, created_at, read_at,
-        CASE WHEN expires_at IS NOT NULL AND expires_at < NOW() THEN true ELSE false END as expired
-      FROM notifications 
-      ${whereClause}
-      AND (expires_at IS NULL OR expires_at > NOW())
-      ORDER BY 
-        CASE WHEN read = false THEN 0 ELSE 1 END,
-        CASE priority 
-          WHEN 'high' THEN 0 
-          WHEN 'medium' THEN 1 
-          WHEN 'low' THEN 2 
-        END,
-        created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    if (error) throw error;
 
-    // Get total count for pagination (excluding expired)
-    const countResult = await sql`
-      SELECT COUNT(*) as total 
-      FROM notifications 
-      ${whereClause}
-      AND (expires_at IS NULL OR expires_at > NOW())
-    `;
+    // Filter expired logic is handled in query, but "expired" field in response needs calculation
+    // JS calculation for 'expired' field
+    const notificationsWithStatus = notifications.map(n => ({
+      ...n,
+      expired: n.expires_at ? new Date(n.expires_at) < new Date() : false
+    }));
 
-    const total = parseInt(countResult[0].total);
+    const total = count || 0;
     const totalPages = Math.ceil(total / limit);
 
-    // Get unread count
-    const unreadResult = await sql`
-      SELECT COUNT(*) as unread 
-      FROM notifications 
-      WHERE doctor_id = ${doctorId} AND read = false
-    `;
-
-    const unreadCount = parseInt(unreadResult[0].unread);
+    // Get unread count separately
+    const { count: unreadCount } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('doctor_id', doctorId)
+      .eq('read', false);
 
     res.json({
       success: true,
       data: {
-        notifications,
+        notifications: notificationsWithStatus,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -89,15 +79,15 @@ export const getNotifications = async (req, res) => {
           hasNext: page < totalPages,
           hasPrev: page > 1
         },
-        unreadCount
+        unreadCount: unreadCount || 0
       }
     });
 
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch notifications' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notifications'
     });
   }
 };
@@ -108,14 +98,17 @@ export const markAsRead = async (req, res) => {
     const doctorId = req.doctorId;
     const { notificationId } = req.params;
 
-    const result = await sql`
-      UPDATE notifications 
-      SET read = true, read_at = NOW()
-      WHERE id = ${notificationId} AND doctor_id = ${doctorId}
-      RETURNING id, read, read_at
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true, read_at: new Date().toISOString() })
+      .eq('id', notificationId)
+      .eq('doctor_id', doctorId)
+      .select('id, read, read_at')
+      .single();
 
-    if (result.length === 0) {
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({
         success: false,
         message: 'Notification not found'
@@ -125,14 +118,14 @@ export const markAsRead = async (req, res) => {
     res.json({
       success: true,
       message: 'Notification marked as read',
-      data: result[0]
+      data
     });
 
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to mark notification as read' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark notification as read'
     });
   }
 };
@@ -143,14 +136,17 @@ export const markAsUnread = async (req, res) => {
     const doctorId = req.doctorId;
     const { notificationId } = req.params;
 
-    const result = await sql`
-      UPDATE notifications 
-      SET read = false, read_at = NULL
-      WHERE id = ${notificationId} AND doctor_id = ${doctorId}
-      RETURNING id, read
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: false, read_at: null })
+      .eq('id', notificationId)
+      .eq('doctor_id', doctorId)
+      .select('id, read')
+      .single();
 
-    if (result.length === 0) {
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({
         success: false,
         message: 'Notification not found'
@@ -160,14 +156,14 @@ export const markAsUnread = async (req, res) => {
     res.json({
       success: true,
       message: 'Notification marked as unread',
-      data: result[0]
+      data
     });
 
   } catch (error) {
     console.error('Error marking notification as unread:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to mark notification as unread' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark notification as unread'
     });
   }
 };
@@ -177,30 +173,30 @@ export const markAllAsRead = async (req, res) => {
   try {
     const doctorId = req.doctorId;
 
-    const result = await sql`
-      UPDATE notifications 
-      SET read = true, read_at = NOW()
-      WHERE doctor_id = ${doctorId} AND read = false
-      RETURNING count(*)
-    `;
+    // Update unread notifications
+    // Supabase update returns rows, count matches rows
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true, read_at: new Date().toISOString() })
+      .eq('doctor_id', doctorId)
+      .eq('read', false)
+      .select();
 
-    const updatedCount = await sql`
-      SELECT COUNT(*) as count 
-      FROM notifications 
-      WHERE doctor_id = ${doctorId} AND read = true AND read_at > NOW() - INTERVAL '1 second'
-    `;
+    if (error) throw error;
+
+    const updatedCount = data ? data.length : 0;
 
     res.json({
       success: true,
-      message: `${updatedCount[0].count} notifications marked as read`,
-      data: { updatedCount: parseInt(updatedCount[0].count) }
+      message: `${updatedCount} notifications marked as read`,
+      data: { updatedCount }
     });
 
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to mark all notifications as read' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark all notifications as read'
     });
   }
 };
@@ -211,13 +207,17 @@ export const deleteNotification = async (req, res) => {
     const doctorId = req.doctorId;
     const { notificationId } = req.params;
 
-    const result = await sql`
-      DELETE FROM notifications 
-      WHERE id = ${notificationId} AND doctor_id = ${doctorId}
-      RETURNING id
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+      .eq('doctor_id', doctorId)
+      .select('id')
+      .single();
 
-    if (result.length === 0) {
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({
         success: false,
         message: 'Notification not found'
@@ -231,9 +231,9 @@ export const deleteNotification = async (req, res) => {
 
   } catch (error) {
     console.error('Error deleting notification:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete notification' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notification'
     });
   }
 };
@@ -251,23 +251,26 @@ export const deleteMultiple = async (req, res) => {
       });
     }
 
-    const result = await sql`
-      DELETE FROM notifications 
-      WHERE id = ANY(${notificationIds}) AND doctor_id = ${doctorId}
-      RETURNING id
-    `;
+    const { data, error } = await supabase
+      .from('notifications')
+      .delete()
+      .in('id', notificationIds)
+      .eq('doctor_id', doctorId)
+      .select('id');
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      message: `${result.length} notifications deleted successfully`,
-      data: { deletedCount: result.length }
+      message: `${data.length} notifications deleted successfully`,
+      data: { deletedCount: data.length }
     });
 
   } catch (error) {
     console.error('Error deleting multiple notifications:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete notifications' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notifications'
     });
   }
 };
@@ -313,29 +316,34 @@ export const createNotification = async (req, res) => {
       });
     }
 
-    const result = await sql`
-      INSERT INTO notifications (
-        doctor_id, type, title, message, data, priority, 
-        actionable, action_url, expires_at
-      )
-      VALUES (
-        ${doctorId}, ${type}, ${title}, ${message}, ${JSON.stringify(data)}, 
-        ${priority}, ${actionable}, ${actionUrl}, ${expiresAt}
-      )
-      RETURNING *
-    `;
+    // Insert Notification
+    const { data: newNotification, error: insertError } = await supabase
+      .from('notifications')
+      .insert({
+        doctor_id: doctorId, type, title, message,
+        data: data ? data : null, // JSON handled automatically by library usually
+        priority, actionable,
+        action_url: actionUrl,
+        expires_at: expiresAt,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
 
     // Get doctor's notification settings to determine delivery methods
-    const settings = await sql`
-      SELECT notification_settings FROM doctor_settings 
-      WHERE doctor_id = ${doctorId}
-    `;
+    const { data: settingsData } = await supabase
+      .from('doctor_settings')
+      .select('notification_settings')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
 
     let deliveryMethods = [];
-    if (settings.length > 0 && settings[0].notification_settings) {
-      const notificationSettings = settings[0].notification_settings;
+    if (settingsData && settingsData.notification_settings) {
+      const notificationSettings = settingsData.notification_settings;
       const categorySettings = notificationSettings[type];
-      
+
       if (categorySettings && categorySettings.enabled) {
         if (categorySettings.email) deliveryMethods.push('email');
         if (categorySettings.push) deliveryMethods.push('push');
@@ -345,27 +353,33 @@ export const createNotification = async (req, res) => {
 
     // Create delivery logs for enabled methods
     if (deliveryMethods.length > 0) {
-      const doctorInfo = await sql`
-        SELECT email, phone FROM doctors WHERE id = ${doctorId}
-      `;
+      const { data: doctorInfo } = await supabase
+        .from('doctors')
+        .select('email, phone')
+        .eq('id', doctorId)
+        .single();
 
-      if (doctorInfo.length > 0) {
-        const doctor = doctorInfo[0];
-        
+      if (doctorInfo) {
+        const logsToInsert = [];
+
         for (const method of deliveryMethods) {
           let recipient = '';
-          if (method === 'email') recipient = doctor.email;
-          if (method === 'sms') recipient = doctor.phone || '';
+          if (method === 'email') recipient = doctorInfo.email;
+          if (method === 'sms') recipient = doctorInfo.phone || '';
           if (method === 'push') recipient = `doctor_${doctorId}`;
 
           if (recipient) {
-            await sql`
-              INSERT INTO notification_delivery_logs (
-                notification_id, delivery_method, recipient, status
-              )
-              VALUES (${result[0].id}, ${method}, ${recipient}, 'pending')
-            `;
+            logsToInsert.push({
+              notification_id: newNotification.id,
+              delivery_method: method,
+              recipient,
+              status: 'pending'
+            });
           }
+        }
+
+        if (logsToInsert.length > 0) {
+          await supabase.from('notification_delivery_logs').insert(logsToInsert);
         }
       }
     }
@@ -373,14 +387,14 @@ export const createNotification = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Notification created successfully',
-      data: result[0]
+      data: newNotification
     });
 
   } catch (error) {
     console.error('Error creating notification:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to create notification' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create notification'
     });
   }
 };
@@ -390,35 +404,57 @@ export const getNotificationStats = async (req, res) => {
   try {
     const doctorId = req.doctorId;
 
-    const stats = await sql`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN read = false THEN 1 END) as unread,
-        COUNT(CASE WHEN read = true THEN 1 END) as read,
-        COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority,
-        COUNT(CASE WHEN priority = 'medium' THEN 1 END) as medium_priority,
-        COUNT(CASE WHEN priority = 'low' THEN 1 END) as low_priority,
-        COUNT(CASE WHEN type = 'appointment' THEN 1 END) as appointments,
-        COUNT(CASE WHEN type = 'billing' THEN 1 END) as billing,
-        COUNT(CASE WHEN type = 'chat' THEN 1 END) as messages,
-        COUNT(CASE WHEN type = 'patients' THEN 1 END) as patients,
-        COUNT(CASE WHEN type = 'system' THEN 1 END) as system,
-        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as last_24h,
-        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as last_7_days
-      FROM notifications 
-      WHERE doctor_id = ${doctorId}
-    `;
+    // Instead of complex CASE SQL, we can fetch simplified lists or use built-in counts if low throughput
+    // But for stats, it's better to try to be efficient.
+    // We can run parallel count queries.
+
+    const now = new Date();
+    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: allNotifications, error } = await supabase
+      .from('notifications')
+      .select('read, priority, type, created_at')
+      .eq('doctor_id', doctorId);
+
+    if (error) throw error;
+
+    // Calculate stats in JS
+    const stats = {
+      total: 0, unread: 0, read: 0,
+      high_priority: 0, medium_priority: 0, low_priority: 0,
+      appointments: 0, billing: 0, messages: 0, patients: 0, system: 0,
+      last_24h: 0, last_7_days: 0
+    };
+
+    allNotifications?.forEach(n => {
+      stats.total++;
+      if (n.read) stats.read++; else stats.unread++;
+
+      if (n.priority === 'high') stats.high_priority++;
+      else if (n.priority === 'medium') stats.medium_priority++;
+      else if (n.priority === 'low') stats.low_priority++;
+
+      if (n.type === 'appointment') stats.appointments++;
+      else if (n.type === 'billing') stats.billing++;
+      else if (n.type === 'chat') stats.messages++;
+      else if (n.type === 'patients') stats.patients++;
+      else if (n.type === 'system') stats.system++;
+
+      if (n.created_at >= oneDayAgo) stats.last_24h++;
+      if (n.created_at >= sevenDaysAgo) stats.last_7_days++;
+    });
 
     res.json({
       success: true,
-      data: stats[0]
+      data: stats
     });
 
   } catch (error) {
     console.error('Error fetching notification stats:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch notification statistics' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notification statistics'
     });
   }
 };

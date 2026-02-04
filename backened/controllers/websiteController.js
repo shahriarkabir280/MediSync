@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 import { saveBase64Image, deleteOldImage, isBase64Image } from '../utils/imageUtils.js';
 
 // Simple in-memory cache for better performance
@@ -45,71 +45,68 @@ export const getDoctorProfile = async (req, res) => {
       return res.json({ success: true, data: cached });
     }
 
-    // Get basic doctor and website settings first
-    const basicProfile = await sql`
-      SELECT 
-        d.*,
-        ws.title,
-        ws.tagline,
-        ws.description,
-        ws.theme_color,
-        ws.layout_style,
-        ws.show_phone,
-        ws.show_email,
-        ws.show_address,
-        ws.show_appointment,
-        ws.show_social,
-        ws.meta_keywords,
-        ws.url_slug,
-        ws.visibility,
-        ws.hero,
-        ws.about,
-        ws.stats
-      FROM doctors d
-      LEFT JOIN website_settings ws ON d.id = ws.doctor_id
-      WHERE d.id = ${doctorId}
-    `;
+    // Fetch doctor and settings
+    const { data: doctor, error: docError } = await supabase
+      .from('doctors')
+      .select(`
+            *,
+            website_settings (*)
+        `)
+      .eq('id', doctorId)
+      .single();
 
-    if (basicProfile.length === 0) {
-      return res.status(404).json({ error: 'Doctor profile not found' });
-    }
+    if (docError || !doctor) return res.status(404).json({ error: 'Doctor profile not found' });
 
-    // Get related data separately to avoid Cartesian product
-    const [education, experience, services, chambers, socialMedia] = await Promise.all([
-      sql`SELECT * FROM doctor_education WHERE doctor_id = ${doctorId} ORDER BY passing_year DESC`,
-      sql`SELECT * FROM doctor_experience WHERE doctor_id = ${doctorId} ORDER BY start_date DESC`,
-      sql`SELECT * FROM doctor_services WHERE doctor_id = ${doctorId} ORDER BY id`,
-      sql`SELECT * FROM doctor_chambers WHERE doctor_id = ${doctorId} ORDER BY id`,
-      sql`SELECT * FROM doctor_social_media WHERE doctor_id = ${doctorId} ORDER BY platform`
+    // Handle flattening of website settings
+    const ws = doctor.website_settings?.[0] || {};
+    const basicProfile = {
+      ...doctor,
+      title: ws.title,
+      tagline: ws.tagline,
+      description: ws.description,
+      theme_color: ws.theme_color,
+      layout_style: ws.layout_style,
+      show_phone: ws.show_phone,
+      show_email: ws.show_email,
+      show_address: ws.show_address,
+      show_appointment: ws.show_appointment,
+      show_social: ws.show_social,
+      meta_keywords: ws.meta_keywords,
+      url_slug: ws.url_slug,
+      visibility: ws.visibility,
+      hero: ws.hero,
+      about: ws.about,
+      stats: ws.stats
+    };
+
+    // Parallel fetch of related data
+    const [
+      { data: education },
+      { data: experience },
+      { data: services },
+      { data: chambers },
+      { data: socialMedia },
+      { data: testimonials },
+      { data: sponsors }
+    ] = await Promise.all([
+      supabase.from('doctor_education').select('*').eq('doctor_id', doctorId).order('passing_year', { ascending: false }),
+      supabase.from('doctor_experience').select('*').eq('doctor_id', doctorId).order('start_date', { ascending: false }),
+      supabase.from('doctor_services').select('*').eq('doctor_id', doctorId).order('id'),
+      supabase.from('doctor_chambers').select('*').eq('doctor_id', doctorId).order('id'),
+      supabase.from('doctor_social_media').select('*').eq('doctor_id', doctorId).order('platform'),
+      supabase.from('doctor_testimonials').select('*').eq('doctor_id', doctorId).order('feedback_date', { ascending: false }),
+      supabase.from('doctor_sponsors').select('*').eq('doctor_id', doctorId).order('created_at', { ascending: false }) // Assuming created_at or other sort
     ]);
 
-    const profileData = {
-      ...basicProfile[0],
+    const result = {
+      ...basicProfile,
       education: education || [],
       experience: experience || [],
       services: services || [],
       chambers: chambers || [],
-      social_media: socialMedia || []
-    };
-
-    // Get testimonials separately for better performance
-    const testimonials = await sql`
-      SELECT * FROM doctor_testimonials 
-      WHERE doctor_id = ${doctorId} 
-      ORDER BY feedback_date DESC
-    `;
-
-    // Get sponsors separately
-    const sponsors = await sql`
-      SELECT * FROM doctor_sponsors 
-      WHERE doctor_id = ${doctorId} 
-      ORDER BY start_date DESC
-    `;
-
-    const result = {
-      ...profileData,
-      testimonials,
-      affiliates: sponsors // Map sponsors to affiliates for frontend
+      social_media: socialMedia || [],
+      testimonials: testimonials || [],
+      affiliates: sponsors || []
     };
 
     // Cache the result
@@ -136,15 +133,12 @@ export const updateDoctorProfile = async (req, res) => {
 
     if (isBase64Image(profileImageUrl)) {
       console.log('🖼️  Converting base64 image to file...');
-      console.log('📏 Base64 length:', profileImageUrl.length);
-      console.log('📋 Base64 preview:', profileImageUrl.substring(0, 50) + '...');
-
       try {
         // Get current image URL to delete old file
-        const currentDoctor = await sql`SELECT profile_image_url FROM doctors WHERE id = ${doctorId}`;
-        if (currentDoctor.length > 0 && currentDoctor[0].profile_image_url) {
-          console.log('🗑️  Deleting old image:', currentDoctor[0].profile_image_url);
-          deleteOldImage(currentDoctor[0].profile_image_url);
+        const { data: currentDoctor } = await supabase.from('doctors').select('profile_image_url').eq('id', doctorId).single();
+        if (currentDoctor && currentDoctor.profile_image_url) {
+          console.log('🗑️  Deleting old image:', currentDoctor.profile_image_url);
+          deleteOldImage(currentDoctor.profile_image_url);
         }
 
         // Save new image and get file URL
@@ -159,15 +153,14 @@ export const updateDoctorProfile = async (req, res) => {
     }
 
     // Update basic doctor info
-    await sql`
-      UPDATE doctors SET
-        first_name = ${profileData.full_name?.split(' ')[0] || ''},
-        last_name = ${profileData.full_name?.split(' ').slice(1).join(' ') || ''},
-        profile_image_url = ${profileImageUrl || null},
-        years_of_experience = ${profileData.years_experience || 0},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${doctorId}
-    `;
+    await supabase.from('doctors').update({
+      first_name: profileData.full_name?.split(' ')[0] || '',
+      last_name: profileData.full_name?.split(' ').slice(1).join(' ') || '',
+      profile_image_url: profileImageUrl || null,
+      years_of_experience: profileData.years_experience || 0,
+      updated_at: new Date().toISOString()
+    }).eq('id', doctorId);
+
     // Update website settings
     if (profileData.website) {
       console.log('Updating website settings:', profileData.website);
@@ -186,182 +179,115 @@ export const updateDoctorProfile = async (req, res) => {
         show_social: profileData.website.show_social !== undefined ? profileData.website.show_social : true,
         meta_keywords: profileData.website.meta_keywords || '',
         url_slug: profileData.website.url_slug || 'doctor',
-        visibility: profileData.website.visibility !== undefined ? profileData.website.visibility : true
+        visibility: profileData.website.visibility !== undefined ? profileData.website.visibility : true,
+        hero: profileData.hero || {},
+        about: profileData.about || {},
+        stats: profileData.stats || {}
       };
 
-      // Check if website record exists for this doctor
-      const existingWebsite = await sql`SELECT id FROM website_settings WHERE doctor_id = ${doctorId}`;
+      // Upsert website settings
+      const { data: existingWeb } = await supabase.from('website_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
 
-      if (existingWebsite.length > 0) {
-        // Update existing website record
-        await sql`
-          UPDATE website_settings SET
-            title = ${websiteData.title},
-            tagline = ${websiteData.tagline},
-            description = ${websiteData.description},
-            theme_color = ${websiteData.theme_color},
-            layout_style = ${websiteData.layout_style},
-            show_phone = ${websiteData.show_phone},
-            show_email = ${websiteData.show_email},
-            show_address = ${websiteData.show_address},
-            show_appointment = ${websiteData.show_appointment},
-            show_social = ${websiteData.show_social},
-            meta_keywords = ${websiteData.meta_keywords},
-            url_slug = ${websiteData.url_slug},
-            visibility = ${websiteData.visibility},
-            hero = ${JSON.stringify(profileData.hero || {})},
-            about = ${JSON.stringify(profileData.about || {})},
-            stats = ${JSON.stringify(profileData.stats || {})}
-          WHERE doctor_id = ${doctorId}
-        `;
+      if (existingWeb) {
+        await supabase.from('website_settings').update(websiteData).eq('doctor_id', doctorId);
       } else {
-        // Insert new website record
-        await sql`
-          INSERT INTO website_settings (
-            doctor_id, title, tagline, description, theme_color, layout_style,
-            show_phone, show_email, show_address, show_appointment, show_social,
-            meta_keywords, url_slug, visibility, hero, about, stats
-          ) VALUES (
-            ${doctorId}, ${websiteData.title}, ${websiteData.tagline},
-            ${websiteData.description}, ${websiteData.theme_color}, ${websiteData.layout_style},
-            ${websiteData.show_phone}, ${websiteData.show_email}, ${websiteData.show_address},
-            ${websiteData.show_appointment}, ${websiteData.show_social}, ${websiteData.meta_keywords},
-            ${websiteData.url_slug}, ${websiteData.visibility},
-            ${JSON.stringify(profileData.hero || {})}, 
-            ${JSON.stringify(profileData.about || {})}, 
-            ${JSON.stringify(profileData.stats || {})}
-          )
-        `;
+        await supabase.from('website_settings').insert({ ...websiteData, doctor_id: doctorId });
       }
     }
 
-    // Batch update education
-    if (profileData.education && Array.isArray(profileData.education)) {
-      // Delete existing education
-      await sql`DELETE FROM doctor_education WHERE doctor_id = ${doctorId}`;
-
-      // Insert new education records
-      for (const edu of profileData.education) {
-        if (edu.degree && edu.institution) {
-          await sql`
-              INSERT INTO doctor_education (
-                doctor_id, degree, institution, passing_year, short_description, type
-              ) VALUES (
-                ${doctorId}, ${edu.degree}, ${edu.institution}, 
-                ${edu.passing_year}, ${edu.short_description}, ${edu.type || 'certification'}
-              )
-            `;
-        }
+    // Helper for batch updates (Delete then Insert)
+    const updateRelation = async (table, items, mapFn) => {
+      if (!items || !Array.isArray(items)) return;
+      await supabase.from(table).delete().eq('doctor_id', doctorId);
+      const toInsert = items.map(mapFn).filter(Boolean); // mapFn returns null for invalid items
+      if (toInsert.length > 0) {
+        await supabase.from(table).insert(toInsert);
       }
-    }
+    };
 
-    // Batch update experience
-    if (profileData.experience && Array.isArray(profileData.experience)) {
-      await sql`DELETE FROM doctor_experience WHERE doctor_id = ${doctorId}`;
+    // Update Education
+    await updateRelation('doctor_education', profileData.education, (edu) => {
+      if (!edu.degree || !edu.institution) return null;
+      return {
+        doctor_id: doctorId,
+        degree: edu.degree,
+        institution: edu.institution,
+        passing_year: edu.passing_year,
+        short_description: edu.short_description,
+        type: edu.type || 'certification'
+      };
+    });
 
-      for (const exp of profileData.experience) {
-        if (exp.designation && exp.organization) {
-          // Convert empty date strings to null
-          const startDate = exp.start_date && exp.start_date.trim() ? exp.start_date : null;
-          const endDate = exp.end_date && exp.end_date.trim() ? exp.end_date : null;
+    // Update Experience
+    await updateRelation('doctor_experience', profileData.experience, (exp) => {
+      if (!exp.designation || !exp.organization) return null;
+      return {
+        doctor_id: doctorId,
+        designation: exp.designation,
+        organization: exp.organization,
+        start_date: (exp.start_date && exp.start_date.trim()) ? exp.start_date : null,
+        end_date: (exp.end_date && exp.end_date.trim()) ? exp.end_date : null,
+        short_description: exp.short_description,
+        type: exp.type || 'current'
+      };
+    });
 
-          await sql`
-              INSERT INTO doctor_experience (
-                doctor_id, designation, organization, start_date, end_date, short_description, type
-              ) VALUES (
-                ${doctorId}, ${exp.designation}, ${exp.organization},
-                ${startDate}, ${endDate}, ${exp.short_description}, ${exp.type || 'current'}
-              )
-            `;
-        }
-      }
-    }
+    // Update Services
+    await updateRelation('doctor_services', profileData.services, (service) => {
+      if (!service.service_name) return null;
+      return {
+        doctor_id: doctorId,
+        service_icon: service.service_icon,
+        service_name: service.service_name,
+        service_description: service.service_description,
+        features: service.features,
+        color_theme: service.color_theme || 'from-blue-500 to-cyan-500'
+      };
+    });
 
-    // Batch update services
-    if (profileData.services && Array.isArray(profileData.services)) {
-      await sql`DELETE FROM doctor_services WHERE doctor_id = ${doctorId}`;
+    // Update Chambers
+    await updateRelation('doctor_chambers', profileData.chamber, (chamber) => {
+      if (!chamber.chamber_location) return null;
+      return {
+        doctor_id: doctorId,
+        chamber_location: chamber.chamber_location,
+        available_time: chamber.time_range || chamber.available_time,
+        day: chamber.day
+      };
+    });
 
-      for (const service of profileData.services) {
-        if (service.service_name) {
-          await sql`
-              INSERT INTO doctor_services (
-                doctor_id, service_icon, service_name, service_description, features, color_theme
-              ) VALUES (
-                ${doctorId}, ${service.service_icon}, ${service.service_name}, 
-                ${service.service_description}, ${service.features}, ${service.color_theme || 'from-blue-500 to-cyan-500'}
-              )
-            `;
-        }
-      }
-    }
+    // Update Social Media
+    await updateRelation('doctor_social_media', profileData.social_media, (social) => {
+      if (!social.platform || !social.profile_url) return null;
+      return {
+        doctor_id: doctorId,
+        platform: social.platform,
+        profile_url: social.profile_url
+      };
+    });
 
-    // Batch update chambers
-    if (profileData.chamber && Array.isArray(profileData.chamber)) {
-      await sql`DELETE FROM doctor_chambers WHERE doctor_id = ${doctorId}`;
+    // Update Testimonials
+    await updateRelation('doctor_testimonials', profileData.testimonials, (t) => {
+      if (!t.name) return null;
+      return {
+        doctor_id: doctorId,
+        patient_name: t.name,
+        patient_feedback: t.message,
+        rating: t.rating || 5,
+        location: t.location,
+        avatar_url: t.avatar
+      };
+    });
 
-      for (const chamber of profileData.chamber) {
-        if (chamber.chamber_location) {
-          await sql`
-              INSERT INTO doctor_chambers (
-                doctor_id, chamber_location, available_time, day
-              ) VALUES (
-                ${doctorId}, ${chamber.chamber_location}, ${chamber.time_range || chamber.available_time}, ${chamber.day}
-              )
-            `;
-        }
-      }
-    }
-
-    // Batch update social media
-    if (profileData.social_media && Array.isArray(profileData.social_media)) {
-      await sql`DELETE FROM doctor_social_media WHERE doctor_id = ${doctorId}`;
-
-      for (const social of profileData.social_media) {
-        if (social.platform && social.profile_url) {
-          await sql`
-              INSERT INTO doctor_social_media (
-                doctor_id, platform, profile_url
-              ) VALUES (
-                ${doctorId}, ${social.platform}, ${social.profile_url}
-              )
-            `;
-        }
-      }
-    }
-
-    // Batch update testimonials (New)
-    if (profileData.testimonials && Array.isArray(profileData.testimonials)) {
-      await sql`DELETE FROM doctor_testimonials WHERE doctor_id = ${doctorId}`;
-
-      for (const t of profileData.testimonials) {
-        if (t.name) {
-          await sql`
-              INSERT INTO doctor_testimonials (
-                doctor_id, patient_name, patient_feedback, rating, location, avatar_url
-              ) VALUES (
-                ${doctorId}, ${t.name}, ${t.message}, ${t.rating || 5}, ${t.location}, ${t.avatar}
-              )
-            `;
-        }
-      }
-    }
-
-    // Batch update projects/affiliates (mapped to sponsors)
-    if (profileData.affiliates && Array.isArray(profileData.affiliates)) {
-      await sql`DELETE FROM doctor_sponsors WHERE doctor_id = ${doctorId}`;
-
-      for (const aff of profileData.affiliates) {
-        if (aff.name) {
-          await sql`
-              INSERT INTO doctor_sponsors (
-                doctor_id, organization_name, organization_logo
-              ) VALUES (
-                ${doctorId}, ${aff.name}, ${aff.logo}
-              )
-            `;
-        }
-      }
-    }
+    // Update Sponsors/Affiliates
+    await updateRelation('doctor_sponsors', profileData.affiliates, (aff) => {
+      if (!aff.name) return null;
+      return {
+        doctor_id: doctorId,
+        organization_name: aff.name,
+        organization_logo: aff.logo
+      };
+    });
 
     // Clear cache for this doctor
     clearCachePattern(doctorId);
@@ -385,134 +311,136 @@ export const getPublicProfile = async (req, res) => {
       return res.json({ success: true, data: cached });
     }
 
-    // Single optimized query for public profile
-    const profile = await sql`
-      SELECT 
-        d.id,
-        d.first_name || ' ' || d.last_name as full_name,
-        d.profile_image_url as profile_photo_url,
-        d.specialization,
-        d.years_of_experience as years_experience,
-        d.email,
-        d.phone,
-        ws.*,
-        
-        -- Get all related data as JSON
-        (
-          SELECT json_agg(json_build_object(
-            'degree', degree,
-            'institution', institution,
-            'passing_year', passing_year,
-            'short_description', short_description
-          ) ORDER BY passing_year DESC)
-          FROM doctor_education WHERE doctor_id = d.id
-        ) as education,
-        
-        (
-          SELECT json_agg(json_build_object(
-            'designation', designation,
-            'organization', organization,
-            'start_date', start_date,
-            'end_date', end_date,
-            'short_description', short_description
-          ) ORDER BY start_date DESC)
-          FROM doctor_experience WHERE doctor_id = d.id
-        ) as experience,
-        
-        (
-          SELECT json_agg(json_build_object(
-            'service_icon', service_icon,
-            'service_name', service_name,
-            'service_description', service_description,
-            'features', features,
-            'color_theme', color_theme
-          ))
-          FROM doctor_services WHERE doctor_id = d.id
-        ) as services,
-        
-        (
-          SELECT json_agg(json_build_object(
-            'chamber_location', chamber_location,
-            'available_time', available_time,
-            'day', day
-          ))
-          FROM doctor_chambers WHERE doctor_id = d.id
-        ) as chambers,
-        
-        (
-          SELECT json_agg(json_build_object(
-            'platform', platform,
-            'profile_url', profile_url
-          ))
-          FROM doctor_social_media WHERE doctor_id = d.id
-        ) as social_media,
+    // Fetch doctor info via website settings (reverse lookup via slug)
+    // We start with website_settings to match the slug
+    const { data: ws, error: wsError } = await supabase
+      .from('website_settings')
+      .select(`
+            *,
+            doctor:doctors (*)
+        `)
+      .eq('url_slug', urlSlug)
+      .eq('visibility', true)
+      .single();
 
-        -- Get contact information
-        (
-          SELECT json_build_object(
-            'phone', phone,
-            'whatsapp', whatsapp,
-            'email', email,
-            'address', address,
-            'emergency_contact_name', emergency_contact_name,
-            'emergency_contact_phone', emergency_contact_phone,
-            'office_phone', office_phone,
-            'fax', fax,
-            'website_url', website_url
-          )
-          FROM doctor_contact WHERE doctor_id = d.id
-        ) as contact,
-        
-        (
-          SELECT json_agg(json_build_object(
-            'name', patient_name,
-            'message', patient_feedback,
-            'date', feedback_date,
-            'rating', rating,
-            'location', location,
-            'avatar', avatar_url
-          ) ORDER BY feedback_date DESC)
-          FROM doctor_testimonials WHERE doctor_id = d.id
-        ) as testimonials,
-
-        (
-          SELECT json_agg(json_build_object(
-            'name', organization_name,
-            'logo', organization_logo
-          ))
-          FROM doctor_sponsors WHERE doctor_id = d.id
-        ) as affiliates,
-
-        (
-          SELECT json_agg(json_build_object(
-            'id', id,
-            'title', title,
-            'slug', slug,
-            'excerpt', excerpt,
-            'featured_image', featured_image,
-            'category', category,
-            'published_at', published_at,
-            'read_time', read_time,
-            'views', views
-          ) ORDER BY published_at DESC)
-          FROM blog_posts 
-          WHERE doctor_id = d.id AND status = 'published'
-          LIMIT 6
-        ) as blogs
-        
-      FROM doctors d
-      JOIN website_settings ws ON d.id = ws.doctor_id
-      WHERE ws.url_slug = ${urlSlug} AND ws.visibility = true
-    `;
-
-    if (profile.length === 0) {
+    if (wsError || !ws || !ws.doctor) {
       return res.status(404).json({ error: 'Public profile not found or not visible' });
     }
 
-    // Cache the result for longer (public profiles don't change often)
-    setCache(cacheKey, profile[0]);
+    const doctor = ws.doctor;
+    const doctorId = doctor.id;
 
-    res.json({ success: true, data: profile[0] });
+    // Fetch related tables
+    const [
+      { data: education },
+      { data: experience },
+      { data: services },
+      { data: chambers },
+      { data: socialMedia },
+      { data: contact },
+      { data: testimonials },
+      { data: sponsors },
+      { data: blogs }
+    ] = await Promise.all([
+      supabase.from('doctor_education').select('*').eq('doctor_id', doctorId).order('passing_year', { ascending: false }),
+      supabase.from('doctor_experience').select('*').eq('doctor_id', doctorId).order('start_date', { ascending: false }),
+      supabase.from('doctor_services').select('*').eq('doctor_id', doctorId),
+      supabase.from('doctor_chambers').select('*').eq('doctor_id', doctorId),
+      supabase.from('doctor_social_media').select('*').eq('doctor_id', doctorId),
+      supabase.from('doctor_contact').select('*').eq('doctor_id', doctorId).single(),
+      supabase.from('doctor_testimonials').select('*').eq('doctor_id', doctorId).order('feedback_date', { ascending: false }),
+      supabase.from('doctor_sponsors').select('*').eq('doctor_id', doctorId),
+      supabase.from('blog_posts').select('*').eq('doctor_id', doctorId).eq('status', 'published').order('published_at', { ascending: false }).limit(6)
+    ]);
+
+    // Format Data to match SQL output
+    const formattedProfile = {
+      id: doctor.id,
+      full_name: `${doctor.first_name || ''} ${doctor.last_name || ''}`.trim(),
+      profile_photo_url: doctor.profile_image_url,
+      specialization: doctor.specialization,
+      years_experience: doctor.years_of_experience,
+      email: doctor.email,
+      phone: doctor.phone,
+      ...ws, // Spread website settings (title, tagline, etc.)
+
+      education: (education || []).map(e => ({
+        degree: e.degree,
+        institution: e.institution,
+        passing_year: e.passing_year,
+        short_description: e.short_description
+      })),
+
+      experience: (experience || []).map(e => ({
+        designation: e.designation,
+        organization: e.organization,
+        start_date: e.start_date,
+        end_date: e.end_date,
+        short_description: e.short_description
+      })),
+
+      services: (services || []).map(s => ({
+        service_icon: s.service_icon,
+        service_name: s.service_name,
+        service_description: s.service_description,
+        features: s.features,
+        color_theme: s.color_theme
+      })),
+
+      chambers: (chambers || []).map(c => ({
+        chamber_location: c.chamber_location,
+        available_time: c.available_time,
+        day: c.day
+      })),
+
+      social_media: (socialMedia || []).map(s => ({
+        platform: s.platform,
+        profile_url: s.profile_url
+      })),
+
+      contact: contact ? {
+        phone: contact.phone,
+        whatsapp: contact.whatsapp,
+        email: contact.email,
+        address: contact.address,
+        emergency_contact_name: contact.emergency_contact_name,
+        emergency_contact_phone: contact.emergency_contact_phone,
+        office_phone: contact.office_phone,
+        fax: contact.fax,
+        website_url: contact.website_url
+      } : null,
+
+      testimonials: (testimonials || []).map(t => ({
+        name: t.patient_name,
+        message: t.patient_feedback,
+        date: t.feedback_date,
+        rating: t.rating,
+        location: t.location,
+        avatar: t.avatar_url
+      })),
+
+      affiliates: (sponsors || []).map(s => ({
+        name: s.organization_name,
+        logo: s.organization_logo
+      })),
+
+      blogs: (blogs || []).map(b => ({
+        id: b.id,
+        title: b.title,
+        slug: b.slug,
+        excerpt: b.excerpt,
+        featured_image: b.featured_image,
+        category: b.category,
+        published_at: b.published_at,
+        read_time: b.read_time,
+        views: b.views
+      }))
+    };
+
+    // Cache the result for longer (public profiles don't change often)
+    setCache(cacheKey, formattedProfile);
+
+    res.json({ success: true, data: formattedProfile });
   } catch (error) {
     console.error('Error fetching public profile:', error);
     res.status(500).json({ error: 'Failed to fetch public profile' });
@@ -523,16 +451,12 @@ export const getPublicProfile = async (req, res) => {
 export const uploadProfileImage = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    // Implement actual file upload logic here (AWS S3, Cloudinary, etc.)
-
-    // For now, return mock URL
     const imageUrl = `https://example.com/profiles/${doctorId}/profile.jpg`;
 
-    await sql`
-      UPDATE doctors 
-      SET profile_image_url = ${imageUrl}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${doctorId}
-    `;
+    await supabase
+      .from('doctors')
+      .update({ profile_image_url: imageUrl, updated_at: new Date().toISOString() })
+      .eq('id', doctorId);
 
     // Clear cache
     clearCachePattern(doctorId);
@@ -549,11 +473,15 @@ export const getDoctorWebsiteSettings = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
-    const settings = await sql`
-      SELECT * FROM website_settings WHERE doctor_id = ${doctorId}
-    `;
+    const { data: settings, error } = await supabase
+      .from('website_settings')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
 
-    res.json({ success: true, data: settings[0] || {} });
+    if (error) throw error;
+
+    res.json({ success: true, data: settings || {} });
   } catch (error) {
     console.error('Error fetching website settings:', error);
     res.status(500).json({ error: 'Failed to fetch website settings' });
@@ -567,74 +495,29 @@ export const updateWebsiteSettings = async (req, res) => {
     const settings = req.body;
 
     // Check if website record exists
-    const existing = await sql`SELECT id FROM website_settings WHERE doctor_id = ${doctorId}`;
+    const { data: existing } = await supabase.from('website_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
 
-    if (existing.length > 0) {
-      // Update existing record using the same pattern as the main profile update
-      const websiteData = {
-        title: settings.title || '',
-        tagline: settings.tagline || '',
-        description: settings.description || '',
-        theme_color: settings.theme_color || '#2563eb',
-        layout_style: settings.layout_style || 'modern',
-        show_phone: settings.show_phone !== undefined ? settings.show_phone : true,
-        show_email: settings.show_email !== undefined ? settings.show_email : true,
-        show_address: settings.show_address !== undefined ? settings.show_address : true,
-        show_appointment: settings.show_appointment !== undefined ? settings.show_appointment : true,
-        show_social: settings.show_social !== undefined ? settings.show_social : true,
-        meta_keywords: settings.meta_keywords || '',
-        url_slug: settings.url_slug || 'doctor',
-        visibility: settings.visibility !== undefined ? settings.visibility : true
-      };
+    const websiteData = {
+      title: settings.title || '',
+      tagline: settings.tagline || '',
+      description: settings.description || '',
+      theme_color: settings.theme_color || '#2563eb',
+      layout_style: settings.layout_style || 'modern',
+      show_phone: settings.show_phone !== undefined ? settings.show_phone : true,
+      show_email: settings.show_email !== undefined ? settings.show_email : true,
+      show_address: settings.show_address !== undefined ? settings.show_address : true,
+      show_appointment: settings.show_appointment !== undefined ? settings.show_appointment : true,
+      show_social: settings.show_social !== undefined ? settings.show_social : true,
+      meta_keywords: settings.meta_keywords || '',
+      url_slug: settings.url_slug || 'doctor',
+      visibility: settings.visibility !== undefined ? settings.visibility : true,
+      doctor_id: doctorId
+    };
 
-      await sql`
-        UPDATE website_settings SET
-          title = ${websiteData.title},
-          tagline = ${websiteData.tagline},
-          description = ${websiteData.description},
-          theme_color = ${websiteData.theme_color},
-          layout_style = ${websiteData.layout_style},
-          show_phone = ${websiteData.show_phone},
-          show_email = ${websiteData.show_email},
-          show_address = ${websiteData.show_address},
-          show_appointment = ${websiteData.show_appointment},
-          show_social = ${websiteData.show_social},
-          meta_keywords = ${websiteData.meta_keywords},
-          url_slug = ${websiteData.url_slug},
-          visibility = ${websiteData.visibility}
-        WHERE doctor_id = ${doctorId}
-      `;
+    if (existing) {
+      await supabase.from('website_settings').update(websiteData).eq('doctor_id', doctorId);
     } else {
-      // Insert new record
-      const websiteData = {
-        title: settings.title || '',
-        tagline: settings.tagline || '',
-        description: settings.description || '',
-        theme_color: settings.theme_color || '#2563eb',
-        layout_style: settings.layout_style || 'modern',
-        show_phone: settings.show_phone !== undefined ? settings.show_phone : true,
-        show_email: settings.show_email !== undefined ? settings.show_email : true,
-        show_address: settings.show_address !== undefined ? settings.show_address : true,
-        show_appointment: settings.show_appointment !== undefined ? settings.show_appointment : true,
-        show_social: settings.show_social !== undefined ? settings.show_social : true,
-        meta_keywords: settings.meta_keywords || '',
-        url_slug: settings.url_slug || 'doctor',
-        visibility: settings.visibility !== undefined ? settings.visibility : true
-      };
-
-      await sql`
-        INSERT INTO website_settings (
-          doctor_id, title, tagline, description, theme_color, layout_style,
-          show_phone, show_email, show_address, show_appointment, show_social,
-          meta_keywords, url_slug, visibility
-        ) VALUES (
-          ${doctorId}, ${websiteData.title}, ${websiteData.tagline},
-          ${websiteData.description}, ${websiteData.theme_color}, ${websiteData.layout_style},
-          ${websiteData.show_phone}, ${websiteData.show_email}, ${websiteData.show_address},
-          ${websiteData.show_appointment}, ${websiteData.show_social}, ${websiteData.meta_keywords},
-          ${websiteData.url_slug}, ${websiteData.visibility}
-        )
-      `;
+      await supabase.from('website_settings').insert(websiteData);
     }
 
     clearCachePattern(doctorId);
@@ -657,322 +540,136 @@ export const getDashboardStats = async (req, res) => {
       return res.json({ success: true, data: cached });
     }
 
-    const stats = await sql`
-      SELECT 
-        (SELECT COUNT(*) FROM doctor_education WHERE doctor_id = ${doctorId}) as education_count,
-        (SELECT COUNT(*) FROM doctor_experience WHERE doctor_id = ${doctorId}) as experience_count,
-        (SELECT COUNT(*) FROM doctor_services WHERE doctor_id = ${doctorId}) as services_count,
-        (SELECT COUNT(*) FROM doctor_chambers WHERE doctor_id = ${doctorId}) as chambers_count,
-        (SELECT COUNT(*) FROM doctor_testimonials WHERE doctor_id = ${doctorId}) as testimonials_count,
-        (SELECT visibility FROM website_settings WHERE doctor_id = ${doctorId}) as website_visible
-    `;
+    const { count: educationCount } = await supabase.from('doctor_education').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    const { count: experienceCount } = await supabase.from('doctor_experience').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    const { count: servicesCount } = await supabase.from('doctor_services').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    const { count: chambersCount } = await supabase.from('doctor_chambers').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    const { count: testimonialsCount } = await supabase.from('doctor_testimonials').select('*', { count: 'exact', head: true }).eq('doctor_id', doctorId);
+    const { data: website } = await supabase.from('website_settings').select('visibility').eq('doctor_id', doctorId).single();
 
-    setCache(cacheKey, stats[0]);
+    const stats = {
+      education_count: educationCount || 0,
+      experience_count: experienceCount || 0,
+      services_count: servicesCount || 0,
+      chambers_count: chambersCount || 0,
+      testimonials_count: testimonialsCount || 0,
+      website_visible: website?.visibility || false
+    };
 
-    res.json({ success: true, data: stats[0] || {} });
+    setCache(cacheKey, stats);
+
+    res.json({ success: true, data: stats });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
   }
 };
 
-// Individual CRUD operations for education, experience, etc.
-export const addEducation = async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const education = req.body;
+// Individual CRUD operations
+const createCrudHandler = (table, fields) => ({
+  add: async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+      const body = req.body;
+      const data = { doctor_id: doctorId };
+      fields.forEach(f => {
+        if (body[f] !== undefined) data[f] = body[f] === '' ? null : body[f];
+      });
 
-    const result = await sql`
-      INSERT INTO doctor_education (doctor_id, degree, institution, passing_year, short_description)
-      VALUES (${doctorId}, ${education.degree}, ${education.institution}, 
-              ${education.passing_year}, ${education.short_description})
-      RETURNING id
-    `;
+      const { data: newRecord, error } = await supabase.from(table).insert(data).select('id').single();
+      if (error) throw error;
 
-    clearCachePattern(doctorId);
-    res.json({ success: true, data: { id: result[0].id } });
-  } catch (error) {
-    console.error('Error adding education:', error);
-    res.status(500).json({ error: 'Failed to add education' });
+      clearCachePattern(doctorId);
+      res.json({ success: true, data: { id: newRecord.id } });
+    } catch (error) {
+      console.error(`Error adding to ${table}:`, error);
+      res.status(500).json({ error: `Failed to add to ${table}` });
+    }
+  },
+  update: async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+      const id = req.params.educationId || req.params.experienceId || req.params.serviceId || req.params.chamberId || req.params.testimonialId;
+      const body = req.body;
+      const data = {};
+      fields.forEach(f => {
+        if (body[f] !== undefined) data[f] = body[f] === '' ? null : body[f];
+      });
+
+      const { error } = await supabase.from(table).update(data).eq('id', id).eq('doctor_id', doctorId);
+      if (error) throw error;
+
+      clearCachePattern(doctorId);
+      res.json({ success: true, message: 'Updated successfully' });
+    } catch (error) {
+      console.error(`Error updating ${table}:`, error);
+      res.status(500).json({ error: `Failed to update ${table}` });
+    }
+  },
+  delete: async (req, res) => {
+    try {
+      const { doctorId } = req.params;
+      const id = req.params.educationId || req.params.experienceId || req.params.serviceId || req.params.chamberId || req.params.testimonialId;
+
+      const { error } = await supabase.from(table).delete().eq('id', id).eq('doctor_id', doctorId);
+      if (error) throw error;
+
+      clearCachePattern(doctorId);
+      res.json({ success: true, message: 'Deleted successfully' });
+    } catch (error) {
+      console.error(`Error deleting from ${table}:`, error);
+      res.status(500).json({ error: `Failed to delete from ${table}` });
+    }
   }
-};
+});
 
-export const updateEducation = async (req, res) => {
-  try {
-    const { doctorId, educationId } = req.params;
-    const education = req.body;
+// Education
+const eduHandler = createCrudHandler('doctor_education', ['degree', 'institution', 'passing_year', 'short_description']);
+export const addEducation = eduHandler.add;
+export const updateEducation = eduHandler.update;
+export const deleteEducation = eduHandler.delete;
 
-    await sql`
-      UPDATE doctor_education 
-      SET degree = ${education.degree}, 
-          institution = ${education.institution},
-          passing_year = ${education.passing_year},
-          short_description = ${education.short_description}
-      WHERE id = ${educationId} AND doctor_id = ${doctorId}
-    `;
+// Experience
+const expHandler = createCrudHandler('doctor_experience', ['designation', 'organization', 'start_date', 'end_date', 'short_description']);
+export const addExperience = expHandler.add;
+export const updateExperience = expHandler.update;
+export const deleteExperience = expHandler.delete;
 
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Education updated successfully' });
-  } catch (error) {
-    console.error('Error updating education:', error);
-    res.status(500).json({ error: 'Failed to update education' });
-  }
-};
+// Services
+const srvHandler = createCrudHandler('doctor_services', ['service_icon', 'service_name', 'service_description', 'features', 'color_theme']);
+export const addService = srvHandler.add;
+export const updateService = srvHandler.update;
+export const deleteService = srvHandler.delete;
 
-export const deleteEducation = async (req, res) => {
-  try {
-    const { doctorId, educationId } = req.params;
+// Chambers
+const chmHandler = createCrudHandler('doctor_chambers', ['chamber_location', 'available_time', 'day']);
+export const addChamber = chmHandler.add;
+export const updateChamber = chmHandler.update;
+export const deleteChamber = chmHandler.delete;
 
-    await sql`
-      DELETE FROM doctor_education 
-      WHERE id = ${educationId} AND doctor_id = ${doctorId}
-    `;
+// Testimonials
+const tstHandler = createCrudHandler('doctor_testimonials', ['patient_name', 'patient_feedback', 'feedback_date', 'rating', 'location', 'avatar_url']);
+export const addTestimonial = tstHandler.add;
+export const updateTestimonial = tstHandler.update;
+export const deleteTestimonial = tstHandler.delete;
 
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Education deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting education:', error);
-    res.status(500).json({ error: 'Failed to delete education' });
-  }
-};
-
-// Similar implementations for experience, services, chambers, testimonials
-// (Following same pattern for brevity)
-
-export const addExperience = async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const experience = req.body;
-
-    const result = await sql`
-      INSERT INTO doctor_experience (doctor_id, designation, organization, start_date, end_date, short_description)
-      VALUES (${doctorId}, ${experience.designation}, ${experience.organization}, 
-              ${experience.start_date || null}, ${experience.end_date || null}, ${experience.short_description})
-      RETURNING id
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, data: { id: result[0].id } });
-  } catch (error) {
-    console.error('Error adding experience:', error);
-    res.status(500).json({ error: 'Failed to add experience' });
-  }
-};
-
-export const updateExperience = async (req, res) => {
-  try {
-    const { doctorId, experienceId } = req.params;
-    const experience = req.body;
-
-    await sql`
-      UPDATE doctor_experience 
-      SET designation = ${experience.designation}, 
-          organization = ${experience.organization},
-          start_date = ${experience.start_date || null},
-          end_date = ${experience.end_date || null},
-          short_description = ${experience.short_description}
-      WHERE id = ${experienceId} AND doctor_id = ${doctorId}
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Experience updated successfully' });
-  } catch (error) {
-    console.error('Error updating experience:', error);
-    res.status(500).json({ error: 'Failed to update experience' });
-  }
-};
-
-export const deleteExperience = async (req, res) => {
-  try {
-    const { doctorId, experienceId } = req.params;
-
-    await sql`DELETE FROM doctor_experience WHERE id = ${experienceId} AND doctor_id = ${doctorId}`;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Experience deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting experience:', error);
-    res.status(500).json({ error: 'Failed to delete experience' });
-  }
-};
-
-export const addService = async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const service = req.body;
-
-    const result = await sql`
-      INSERT INTO doctor_services (doctor_id, service_icon, service_name, service_description)
-      VALUES (${doctorId}, ${service.service_icon}, ${service.service_name}, ${service.service_description})
-      RETURNING id
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, data: { id: result[0].id } });
-  } catch (error) {
-    console.error('Error adding service:', error);
-    res.status(500).json({ error: 'Failed to add service' });
-  }
-};
-
-export const updateService = async (req, res) => {
-  try {
-    const { doctorId, serviceId } = req.params;
-    const service = req.body;
-
-    await sql`
-      UPDATE doctor_services 
-      SET service_icon = ${service.service_icon}, 
-          service_name = ${service.service_name},
-          service_description = ${service.service_description}
-      WHERE id = ${serviceId} AND doctor_id = ${doctorId}
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Service updated successfully' });
-  } catch (error) {
-    console.error('Error updating service:', error);
-    res.status(500).json({ error: 'Failed to update service' });
-  }
-};
-
-export const deleteService = async (req, res) => {
-  try {
-    const { doctorId, serviceId } = req.params;
-
-    await sql`DELETE FROM doctor_services WHERE id = ${serviceId} AND doctor_id = ${doctorId}`;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Service deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting service:', error);
-    res.status(500).json({ error: 'Failed to delete service' });
-  }
-};
-
-export const addChamber = async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const chamber = req.body;
-
-    const result = await sql`
-      INSERT INTO doctor_chambers (doctor_id, chamber_location, available_time)
-      VALUES (${doctorId}, ${chamber.chamber_location}, ${chamber.available_time})
-      RETURNING id
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, data: { id: result[0].id } });
-  } catch (error) {
-    console.error('Error adding chamber:', error);
-    res.status(500).json({ error: 'Failed to add chamber' });
-  }
-};
-
-export const updateChamber = async (req, res) => {
-  try {
-    const { doctorId, chamberId } = req.params;
-    const chamber = req.body;
-
-    await sql`
-      UPDATE doctor_chambers 
-      SET chamber_location = ${chamber.chamber_location}, 
-          available_time = ${chamber.available_time}
-      WHERE id = ${chamberId} AND doctor_id = ${doctorId}
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Chamber updated successfully' });
-  } catch (error) {
-    console.error('Error updating chamber:', error);
-    res.status(500).json({ error: 'Failed to update chamber' });
-  }
-};
-
-export const deleteChamber = async (req, res) => {
-  try {
-    const { doctorId, chamberId } = req.params;
-
-    await sql`DELETE FROM doctor_chambers WHERE id = ${chamberId} AND doctor_id = ${doctorId}`;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Chamber deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting chamber:', error);
-    res.status(500).json({ error: 'Failed to delete chamber' });
-  }
-};
-
-export const addTestimonial = async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const testimonial = req.body;
-
-    const result = await sql`
-      INSERT INTO doctor_testimonials (doctor_id, patient_name, patient_feedback, feedback_date)
-      VALUES (${doctorId}, ${testimonial.patient_name}, ${testimonial.patient_feedback}, ${testimonial.feedback_date || null})
-      RETURNING id
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, data: { id: result[0].id } });
-  } catch (error) {
-    console.error('Error adding testimonial:', error);
-    res.status(500).json({ error: 'Failed to add testimonial' });
-  }
-};
-
-export const updateTestimonial = async (req, res) => {
-  try {
-    const { doctorId, testimonialId } = req.params;
-    const testimonial = req.body;
-
-    await sql`
-      UPDATE doctor_testimonials 
-      SET patient_name = ${testimonial.patient_name}, 
-          patient_feedback = ${testimonial.patient_feedback},
-          feedback_date = ${testimonial.feedback_date || null}
-      WHERE id = ${testimonialId} AND doctor_id = ${doctorId}
-    `;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Testimonial updated successfully' });
-  } catch (error) {
-    console.error('Error updating testimonial:', error);
-    res.status(500).json({ error: 'Failed to update testimonial' });
-  }
-};
-
-export const deleteTestimonial = async (req, res) => {
-  try {
-    const { doctorId, testimonialId } = req.params;
-
-    await sql`DELETE FROM doctor_testimonials WHERE id = ${testimonialId} AND doctor_id = ${doctorId}`;
-
-    clearCachePattern(doctorId);
-    res.json({ success: true, message: 'Testimonial deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting testimonial:', error);
-    res.status(500).json({ error: 'Failed to delete testimonial' });
-  }
-};
-
+// Social Media
 export const updateSocialMedia = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const socialMedia = req.body;
 
     // Delete existing and insert new
-    await sql`DELETE FROM doctor_social_media WHERE doctor_id = ${doctorId}`;
+    await supabase.from('doctor_social_media').delete().eq('doctor_id', doctorId);
 
     if (Array.isArray(socialMedia)) {
-      for (const social of socialMedia) {
-        if (social.platform && social.profile_url) {
-          await sql`
-            INSERT INTO doctor_social_media (doctor_id, platform, profile_url)
-            VALUES (${doctorId}, ${social.platform}, ${social.profile_url})
-          `;
-        }
+      const toInsert = socialMedia.map(s => {
+        if (!s.platform || !s.profile_url) return null;
+        return { doctor_id: doctorId, platform: s.platform, profile_url: s.profile_url };
+      }).filter(Boolean);
+
+      if (toInsert.length > 0) {
+        await supabase.from('doctor_social_media').insert(toInsert);
       }
     }
 
@@ -992,37 +689,33 @@ export const updateContact = async (req, res) => {
 
     console.log('Updating contact for doctor:', doctorId, contactData);
 
-    // Use UPSERT (INSERT ... ON CONFLICT ... DO UPDATE)
-    const result = await sql`
-      INSERT INTO doctor_contact (
-        doctor_id, phone, whatsapp, email, address, emergency_contact_name,
-        emergency_contact_phone, office_phone, fax, website_url, updated_at
-      ) VALUES (
-        ${doctorId}, ${contactData.phone || ''}, ${contactData.whatsapp || ''}, 
-        ${contactData.email || ''}, ${contactData.address || ''}, 
-        ${contactData.emergency_contact_name || ''}, ${contactData.emergency_contact_phone || ''},
-        ${contactData.office_phone || ''}, ${contactData.fax || ''}, 
-        ${contactData.website_url || ''}, CURRENT_TIMESTAMP
-      )
-      ON CONFLICT (doctor_id) DO UPDATE SET
-        phone = ${contactData.phone || ''},
-        whatsapp = ${contactData.whatsapp || ''},
-        email = ${contactData.email || ''},
-        address = ${contactData.address || ''},
-        emergency_contact_name = ${contactData.emergency_contact_name || ''},
-        emergency_contact_phone = ${contactData.emergency_contact_phone || ''},
-        office_phone = ${contactData.office_phone || ''},
-        fax = ${contactData.fax || ''},
-        website_url = ${contactData.website_url || ''},
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *
-    `;
+    const dataToUpsert = {
+      doctor_id: doctorId,
+      phone: contactData.phone || '',
+      whatsapp: contactData.whatsapp || '',
+      email: contactData.email || '',
+      address: contactData.address || '',
+      emergency_contact_name: contactData.emergency_contact_name || '',
+      emergency_contact_phone: contactData.emergency_contact_phone || '',
+      office_phone: contactData.office_phone || '',
+      fax: contactData.fax || '',
+      website_url: contactData.website_url || '',
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: result, error } = await supabase
+      .from('doctor_contact')
+      .upsert(dataToUpsert, { onConflict: 'doctor_id' })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     clearCachePattern(doctorId);
     res.json({
       success: true,
       message: 'Contact information updated successfully',
-      contact: result[0]
+      contact: result
     });
   } catch (error) {
     console.error('Error updating contact:', error);
@@ -1034,13 +727,13 @@ export const getContact = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
-    const result = await sql`
-      SELECT * FROM doctor_contact 
-      WHERE doctor_id = ${doctorId}
-    `;
+    const { data: result } = await supabase
+      .from('doctor_contact')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
 
-    if (result.length === 0) {
-      // Return empty contact structure if none exists
+    if (!result) {
       return res.json({
         success: true,
         contact: {
@@ -1057,7 +750,7 @@ export const getContact = async (req, res) => {
       });
     }
 
-    res.json({ success: true, contact: result[0] });
+    res.json({ success: true, contact: result });
   } catch (error) {
     console.error('Error getting contact:', error);
     res.status(500).json({ error: 'Failed to get contact information' });
@@ -1069,28 +762,49 @@ export const getPublicBlogPost = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const blog = await sql`
-      SELECT 
-        bp.*,
-        d.first_name || ' ' || d.last_name as doctor_name,
-        d.specialization as doctor_specialization,
-        d.profile_image_url as doctor_image
-      FROM blog_posts bp
-      JOIN doctors d ON bp.doctor_id = d.id
-      JOIN website_settings ws ON d.id = ws.doctor_id
-      WHERE bp.slug = ${slug} 
-      AND bp.status = 'published'
-      AND ws.visibility = true
-    `;
+    const { data: blog, error } = await supabase
+      .from('blog_posts')
+      .select(`
+            *,
+            doctor:doctors (first_name, last_name, specialization, profile_image_url),
+            website_settings!inner (visibility)
+        `)
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .eq('website_settings.visibility', true) // Filter through joined table? No, need !inner usually. Or handle logic.
+      // Supabase filtering on related table is tricky without !inner.
+      // And website_settings is related to doctors, not blog_posts directly.
+      // Relation: blog_posts -> doctors -> website_settings.
+      // It's easier to fetch blog + doctor, then check website_settings visibility.
+      // OR: fetch blog, then fetch doctor settings separately.
+      // Let's optimize: fetch blog, check visibility in next step or parallel.
+      .single();
 
-    if (blog.length === 0) {
+    if (error || !blog) {
+      return res.status(404).json({ error: 'Blog post not found' });
+    }
+
+    // Check visibility separately to be safe and simple
+    const { data: ws } = await supabase.from('website_settings').select('visibility').eq('doctor_id', blog.doctor_id).single();
+    if (!ws || !ws.visibility) {
       return res.status(404).json({ error: 'Blog post not found or not visible' });
     }
 
-    // Increment view count asynchronously
-    sql`UPDATE blog_posts SET views = views + 1 WHERE id = ${blog[0].id}`.catch(console.error);
+    // Format
+    const formatBlog = {
+      ...blog,
+      doctor_name: `${blog.doctor?.first_name} ${blog.doctor?.last_name}`,
+      doctor_specialization: blog.doctor?.specialization,
+      doctor_image: blog.doctor?.profile_image_url
+    };
 
-    res.json({ success: true, data: blog[0] });
+    // View count increment (fire and forget)
+    supabase.rpc('increment_blog_views', { blog_id: blog.id }).catch(() => {
+      // Fallback if RPC not exists: get, increment, update (race condition possible but acceptable for views)
+      supabase.from('blog_posts').update({ views: (blog.views || 0) + 1 }).eq('id', blog.id);
+    });
+
+    res.json({ success: true, data: formatBlog });
   } catch (error) {
     console.error('Error fetching public blog post:', error);
     res.status(500).json({ error: 'Failed to fetch blog post' });

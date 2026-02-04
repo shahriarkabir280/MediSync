@@ -7,7 +7,7 @@ import {
   markAsPaid,
   getBillingSummary
 } from '../controllers/billingController.js';
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'careconnect_jwt_secret_2024';
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
@@ -42,27 +42,27 @@ router.patch('/:billingId/mark-paid', markAsPaid);
 router.get('/settings', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    
-    const settings = await sql`
-      SELECT billing_settings FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
 
-    const billingSettings = settings.length > 0 && settings[0].billing_settings 
-      ? settings[0].billing_settings 
-      : {
-          defaultPaymentMethod: '',
-          autoPayEnabled: false,
-          invoiceEmail: '',
-          taxId: '',
-          billingAddress: {
-            street: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            country: 'US'
-          },
-          paymentMethods: []
-        };
+    const { data: settings } = await supabase
+      .from('doctor_settings')
+      .select('billing_settings')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
+
+    const billingSettings = settings?.billing_settings || {
+      defaultPaymentMethod: '',
+      autoPayEnabled: false,
+      invoiceEmail: '',
+      taxId: '',
+      billingAddress: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'US'
+      },
+      paymentMethods: []
+    };
 
     res.json(billingSettings);
   } catch (error) {
@@ -77,14 +77,23 @@ router.put('/settings', authenticateToken, async (req, res) => {
     const billingSettings = req.body;
 
     // Upsert billing settings
-    await sql`
-      INSERT INTO doctor_settings (doctor_id, billing_settings, updated_at)
-      VALUES (${doctorId}, ${JSON.stringify(billingSettings)}, CURRENT_TIMESTAMP)
-      ON CONFLICT (doctor_id) 
-      DO UPDATE SET 
-        billing_settings = ${JSON.stringify(billingSettings)},
-        updated_at = CURRENT_TIMESTAMP
-    `;
+    // Check if exists
+    const { data: existing } = await supabase.from('doctor_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('doctor_settings')
+        .update({ billing_settings: billingSettings, updated_at: new Date().toISOString() })
+        .eq('doctor_id', doctorId);
+    } else {
+      await supabase
+        .from('doctor_settings')
+        .insert({
+          doctor_id: doctorId,
+          billing_settings: billingSettings,
+          updated_at: new Date().toISOString()
+        });
+    }
 
     res.json({
       success: true,
@@ -100,15 +109,14 @@ router.put('/settings', authenticateToken, async (req, res) => {
 router.get('/payment-methods', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    
-    // In a real implementation, this would integrate with a payment processor like Stripe
-    const paymentMethods = await sql`
-      SELECT payment_methods FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
 
-    const methods = paymentMethods.length > 0 && paymentMethods[0].payment_methods 
-      ? paymentMethods[0].payment_methods 
-      : [];
+    const { data: settings } = await supabase
+      .from('doctor_settings')
+      .select('payment_methods')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
+
+    const methods = settings?.payment_methods || [];
 
     res.json(methods);
   } catch (error) {
@@ -133,13 +141,13 @@ router.post('/payment-methods', authenticateToken, async (req, res) => {
     };
 
     // Get current payment methods
-    const currentSettings = await sql`
-      SELECT payment_methods FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
+    const { data: settings } = await supabase
+      .from('doctor_settings')
+      .select('payment_methods')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
 
-    let paymentMethods = currentSettings.length > 0 && currentSettings[0].payment_methods 
-      ? currentSettings[0].payment_methods 
-      : [];
+    let paymentMethods = settings?.payment_methods || [];
 
     // If this is the default, make others non-default
     if (newMethod.isDefault) {
@@ -149,14 +157,22 @@ router.post('/payment-methods', authenticateToken, async (req, res) => {
     paymentMethods.push(newMethod);
 
     // Update in database
-    await sql`
-      INSERT INTO doctor_settings (doctor_id, payment_methods, updated_at)
-      VALUES (${doctorId}, ${JSON.stringify(paymentMethods)}, CURRENT_TIMESTAMP)
-      ON CONFLICT (doctor_id) 
-      DO UPDATE SET 
-        payment_methods = ${JSON.stringify(paymentMethods)},
-        updated_at = CURRENT_TIMESTAMP
-    `;
+    const { data: existing } = await supabase.from('doctor_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('doctor_settings')
+        .update({ payment_methods: paymentMethods, updated_at: new Date().toISOString() })
+        .eq('doctor_id', doctorId);
+    } else {
+      await supabase
+        .from('doctor_settings')
+        .insert({
+          doctor_id: doctorId,
+          payment_methods: paymentMethods,
+          updated_at: new Date().toISOString()
+        });
+    }
 
     res.json({
       success: true,
@@ -175,23 +191,24 @@ router.delete('/payment-methods/:methodId', authenticateToken, async (req, res) 
     const { methodId } = req.params;
 
     // Get current payment methods
-    const currentSettings = await sql`
-      SELECT payment_methods FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
+    const { data: settings } = await supabase
+      .from('doctor_settings')
+      .select('payment_methods')
+      .eq('doctor_id', doctorId)
+      .maybeSingle();
 
-    let paymentMethods = currentSettings.length > 0 && currentSettings[0].payment_methods 
-      ? currentSettings[0].payment_methods 
-      : [];
+    let paymentMethods = settings?.payment_methods || [];
 
     // Remove the specified method
     paymentMethods = paymentMethods.filter(method => method.id !== methodId);
 
     // Update in database
-    await sql`
-      UPDATE doctor_settings 
-      SET payment_methods = ${JSON.stringify(paymentMethods)}, updated_at = CURRENT_TIMESTAMP
-      WHERE doctor_id = ${doctorId}
-    `;
+    if (settings) {
+      await supabase
+        .from('doctor_settings')
+        .update({ payment_methods: paymentMethods, updated_at: new Date().toISOString() })
+        .eq('doctor_id', doctorId);
+    }
 
     res.json({
       success: true,

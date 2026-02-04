@@ -1,9 +1,10 @@
 import { Server } from 'socket.io';
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 /**
  * Modern WebSocket Server for Real-time Chat
  * Handles: Real-time messages, typing indicators, online status, read receipts
+ * Refactored to use Supabase SDK
  */
 
 // Store online users: { socketId: {userId, userType, userName} }
@@ -27,34 +28,32 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('user_online', (data) => {
       const { userId, userType, userName } = data;
-      
+
       if (!userId || !userType) {
         console.error('❌ Invalid user_online data:', data);
         return;
       }
 
       const userKey = `${userId}_${userType}`;
-      
+
       // Store socket info
       onlineUsers.set(socket.id, { userId, userType, userName, status: 'active' });
-      
+
       // Add socket to user's socket set
       if (!userSockets.has(userKey)) {
         userSockets.set(userKey, new Set());
       }
       userSockets.get(userKey).add(socket.id);
 
-      console.log(`✅ ${userName} (${userKey}) is online - Socket: ${socket.id}`);
-      console.log(`📊 Total sockets for ${userKey}:`, userSockets.get(userKey).size);
-      console.log(`📊 All online users:`, Array.from(userSockets.keys()));
+      // console.log(`✅ ${userName} (${userKey}) is online - Socket: ${socket.id}`);
 
       // Send current online users list to the newly connected user
+      // Optimization: constructing this list can be heavy if many users. 
       const onlineUsersList = Array.from(userSockets.keys()).map(key => {
         const [uid, utype] = key.split('_');
         return { userId: uid, userType: utype, isOnline: true };
       });
       socket.emit('online_users_list', onlineUsersList);
-      console.log(`📤 Sent online users list to ${userName}:`, onlineUsersList.length, 'users');
 
       // Broadcast online status to relevant chats
       broadcastOnlineStatus(io, userId, userType, true);
@@ -65,7 +64,7 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('join_chat', (chatId) => {
       socket.join(`chat_${chatId}`);
-      console.log(`👥 Socket ${socket.id} joined chat ${chatId}`);
+      // console.log(`👥 Socket ${socket.id} joined chat ${chatId}`);
     });
 
     /**
@@ -73,7 +72,7 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('leave_chat', (chatId) => {
       socket.leave(`chat_${chatId}`);
-      console.log(`👋 Socket ${socket.id} left chat ${chatId}`);
+      // console.log(`👋 Socket ${socket.id} left chat ${chatId}`);
     });
 
     /**
@@ -81,7 +80,7 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('send_message', async (data) => {
       const { chatId, message } = data;
-      
+
       // Broadcast to all participants in the chat room except sender
       socket.to(`chat_${chatId}`).emit('new_message', {
         chatId,
@@ -92,25 +91,30 @@ export function initializeWebSocket(httpServer) {
 
       // Send delivery notifications to online participants
       try {
-        const participants = await sql`
-          SELECT user_id, user_type FROM chat_participants
-          WHERE chat_id = ${chatId}
-            AND NOT (user_id = ${message.sender_id} AND user_type = ${message.sender_type})
-        `;
+        const { data: participants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
 
-        for (const participant of participants) {
+        if (!participants) return;
+
+        // Filter out sender
+        const recipients = participants.filter(p => !(p.user_id == message.sender_id && p.user_type == message.sender_type));
+
+        for (const participant of recipients) {
           const userKey = `${participant.user_id}_${participant.user_type}`;
           const socketIds = userSockets.get(userKey);
-          
+
           if (socketIds && socketIds.size > 0) {
             // User is online - mark as delivered
-            await sql`
-              UPDATE message_status
-              SET status = 'delivered', delivered_at = NOW()
-              WHERE message_id = ${message.id}
-                AND user_id = ${participant.user_id}
-                AND user_type = ${participant.user_type}
-            `;
+            // We can do this asynchronously without awaiting if we trust eventual consistency?
+            // But good to await so we know it saved before emitting 'delivered'.
+            await supabase
+              .from('message_status')
+              .update({ status: 'delivered', delivered_at: new Date().toISOString() })
+              .eq('message_id', message.id)
+              .eq('user_id', participant.user_id)
+              .eq('user_type', participant.user_type);
 
             // Emit delivery receipt
             socketIds.forEach(sid => {
@@ -133,25 +137,33 @@ export function initializeWebSocket(httpServer) {
       const { chatId, messageIds, userId, userType } = data;
 
       try {
-        await sql`
-          UPDATE message_status
-          SET status = 'read', read_at = NOW()
-          WHERE message_id = ANY(${messageIds})
-            AND user_id = ${userId}
-            AND user_type = ${userType}
-        `;
+        // Update DB
+        await supabase
+          .from('message_status')
+          .update({ status: 'read', read_at: new Date().toISOString() })
+          .in('message_id', messageIds)
+          .eq('user_id', userId)
+          .eq('user_type', userType);
 
         // Notify message senders about read status
-        const messages = await sql`
-          SELECT DISTINCT sender_id, sender_type FROM messages
-          WHERE id = ANY(${messageIds})
-            AND NOT (sender_id = ${userId} AND sender_type = ${userType})
-        `;
+        const { data: messages } = await supabase
+          .from('messages')
+          .select('sender_id, sender_type')
+          .in('id', messageIds);
 
-        messages.forEach(msg => {
-          const senderKey = `${msg.sender_id}_${msg.sender_type}`;
+        if (!messages) return;
+
+        // Dedup senders
+        const senders = new Set();
+        messages.forEach(m => {
+          if (!(m.sender_id == userId && m.sender_type == userType)) {
+            senders.add(`${m.sender_id}_${m.sender_type}`);
+          }
+        });
+
+        senders.forEach(senderKey => {
           const socketIds = userSockets.get(senderKey);
-          
+
           if (socketIds) {
             socketIds.forEach(sid => {
               io.to(sid).emit('messages_read', {
@@ -163,7 +175,6 @@ export function initializeWebSocket(httpServer) {
           }
         });
 
-        console.log(`✅ Marked ${messageIds.length} messages as read in chat ${chatId}`);
       } catch (error) {
         console.error('Error marking messages as read:', error);
       }
@@ -176,13 +187,20 @@ export function initializeWebSocket(httpServer) {
       const { chatId, userId, userType, userName } = data;
 
       try {
-        // Store in database with expiry
-        await sql`
-          INSERT INTO typing_indicators (chat_id, user_id, user_type, user_name, is_typing, started_at, expires_at)
-          VALUES (${chatId}, ${userId}, ${userType}, ${userName}, TRUE, NOW(), NOW() + INTERVAL '10 seconds')
-          ON CONFLICT (chat_id, user_id, user_type)
-          DO UPDATE SET is_typing = TRUE, started_at = NOW(), expires_at = NOW() + INTERVAL '10 seconds'
-        `;
+        // Upsert typing indicator
+        const expiresAt = new Date(Date.now() + 10000).toISOString();
+
+        await supabase
+          .from('typing_indicators')
+          .upsert({
+            chat_id: chatId,
+            user_id: userId,
+            user_type: userType,
+            user_name: userName,
+            is_typing: true,
+            started_at: new Date().toISOString(),
+            expires_at: expiresAt
+          }, { onConflict: 'chat_id, user_id, user_type' });
 
         // Broadcast to other participants in the chat
         socket.to(`chat_${chatId}`).emit('user_typing', {
@@ -191,8 +209,6 @@ export function initializeWebSocket(httpServer) {
           userType,
           userName
         });
-
-        console.log(`⌨️  ${userName} is typing in chat ${chatId}`);
       } catch (error) {
         console.error('Error handling typing start:', error);
       }
@@ -205,22 +221,20 @@ export function initializeWebSocket(httpServer) {
       const { chatId, userId, userType } = data;
 
       try {
-        await sql`
-          DELETE FROM typing_indicators
-          WHERE chat_id = ${chatId}
-            AND user_id = ${userId}
-            AND user_type = ${userType}
-        `;
+        await supabase
+          .from('typing_indicators')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('user_id', userId)
+          .eq('user_type', userType);
 
         socket.to(`chat_${chatId}`).emit('user_stopped_typing', {
           chatId,
           userId,
           userType
         });
-
-        console.log(`⌨️  User stopped typing in chat ${chatId}`);
       } catch (error) {
-        console.error('Error handling typing stop:', error);
+        // console.error('Error handling typing stop:', error);
       }
     });
 
@@ -236,8 +250,6 @@ export function initializeWebSocket(httpServer) {
         userType,
         reaction
       });
-
-      console.log(`😊 Reaction added to message ${messageId}`);
     });
 
     /**
@@ -246,12 +258,11 @@ export function initializeWebSocket(httpServer) {
     socket.on('user_active', (data) => {
       const { userId, userType } = data;
       const user = onlineUsers.get(socket.id);
-      
+
       if (user) {
         user.status = 'active';
         user.lastActivity = new Date();
         broadcastActivityStatus(io, userId, userType, 'active');
-        console.log(`✅ User ${userId} is now active`);
       }
     });
 
@@ -261,11 +272,10 @@ export function initializeWebSocket(httpServer) {
     socket.on('user_away', (data) => {
       const { userId, userType } = data;
       const user = onlineUsers.get(socket.id);
-      
+
       if (user) {
         user.status = 'away';
         broadcastActivityStatus(io, userId, userType, 'away');
-        console.log(`💤 User ${userId} is now away`);
       }
     });
 
@@ -274,11 +284,10 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('call_user', (data) => {
       const { to, toType, from, fromType, fromName, callType, offer } = data;
-      console.log(`📞 Call from ${fromName} to ${to}_${toType}`);
-      
+
       const userKey = `${to}_${toType}`;
       const socketIds = userSockets.get(userKey);
-      
+
       if (socketIds && socketIds.size > 0) {
         socketIds.forEach(sid => {
           io.to(sid).emit('incoming_call', {
@@ -289,7 +298,6 @@ export function initializeWebSocket(httpServer) {
             offer
           });
         });
-        console.log(`📞 Incoming call notification sent to ${to}`);
       } else {
         socket.emit('call_failed', { reason: 'User offline' });
       }
@@ -297,11 +305,10 @@ export function initializeWebSocket(httpServer) {
 
     socket.on('accept_call', (data) => {
       const { to, toType, answer } = data;
-      console.log(`✅ Call accepted by user, sending to ${to}_${toType}`);
-      
+
       const userKey = `${to}_${toType}`;
       const socketIds = userSockets.get(userKey);
-      
+
       if (socketIds && socketIds.size > 0) {
         socketIds.forEach(sid => {
           io.to(sid).emit('call_accepted', { answer });
@@ -311,11 +318,10 @@ export function initializeWebSocket(httpServer) {
 
     socket.on('reject_call', (data) => {
       const { to, toType } = data;
-      console.log(`❌ Call rejected, notifying ${to}_${toType}`);
-      
+
       const userKey = `${to}_${toType}`;
       const socketIds = userSockets.get(userKey);
-      
+
       if (socketIds && socketIds.size > 0) {
         socketIds.forEach(sid => {
           io.to(sid).emit('call_rejected');
@@ -325,11 +331,10 @@ export function initializeWebSocket(httpServer) {
 
     socket.on('end_call', (data) => {
       const { to, toType } = data;
-      console.log(`📞 Call ended, notifying ${to}_${toType}`);
-      
+
       const userKey = `${to}_${toType}`;
       const socketIds = userSockets.get(userKey);
-      
+
       if (socketIds && socketIds.size > 0) {
         socketIds.forEach(sid => {
           io.to(sid).emit('call_ended');
@@ -339,10 +344,10 @@ export function initializeWebSocket(httpServer) {
 
     socket.on('ice_candidate', (data) => {
       const { to, toType, candidate } = data;
-      
+
       const userKey = `${to}_${toType}`;
       const socketIds = userSockets.get(userKey);
-      
+
       if (socketIds && socketIds.size > 0) {
         socketIds.forEach(sid => {
           io.to(sid).emit('ice_candidate', { candidate });
@@ -355,22 +360,21 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('disconnect', () => {
       const user = onlineUsers.get(socket.id);
-      
+
       if (user) {
         const userKey = `${user.userId}_${user.userType}`;
         const socketIds = userSockets.get(userKey);
-        
+
         if (socketIds) {
           socketIds.delete(socket.id);
-          
+
           // If user has no more sockets, they're offline
           if (socketIds.size === 0) {
             userSockets.delete(userKey);
             broadcastOnlineStatus(io, user.userId, user.userType, false);
-            console.log(`👋 ${user.userName} went offline`);
           }
         }
-        
+
         onlineUsers.delete(socket.id);
       }
 
@@ -381,15 +385,15 @@ export function initializeWebSocket(httpServer) {
   // Clean up expired typing indicators every 30 seconds
   setInterval(async () => {
     try {
-      await sql`
-        DELETE FROM typing_indicators
-        WHERE expires_at < NOW()
-      `;
+      await supabase
+        .from('typing_indicators')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
     } catch (error) {
-      console.error('Error cleaning typing indicators:', error);
+      //   console.error('Error cleaning typing indicators:', error);
     }
   }, 30000);
-  
+
   return io;
 }
 
@@ -398,20 +402,17 @@ export function initializeWebSocket(httpServer) {
  */
 async function broadcastOnlineStatus(io, userId, userType, isOnline) {
   try {
-    const userKey = `${userId}_${userType}`;
-    console.log(`📡 Broadcasting ${isOnline ? 'ONLINE' : 'OFFLINE'} status for ${userKey}`);
-    
     // Find all chats this user is in
-    const chats = await sql`
-      SELECT DISTINCT chat_id FROM chat_participants
-      WHERE user_id = ${userId} AND user_type = ${userType}
-    `;
+    const { data: chats } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', userId)
+      .eq('user_type', userType);
 
-    console.log(`📡 Found ${chats.length} chats to broadcast to`);
+    if (!chats) return;
 
     // Broadcast to each chat
     chats.forEach(chat => {
-      console.log(`📡 Broadcasting to chat_${chat.chat_id}`);
       io.to(`chat_${chat.chat_id}`).emit('user_status_changed', {
         userId,
         userType,
@@ -419,16 +420,15 @@ async function broadcastOnlineStatus(io, userId, userType, isOnline) {
         timestamp: new Date()
       });
     });
-    
-    // Also broadcast globally to all connected clients
+
+    // Also broadcast globally to all connected clients (legacy/dashboard behavior)
     io.emit('user_status_changed', {
       userId,
       userType,
       isOnline,
       timestamp: new Date()
     });
-    
-    console.log(`📡 Broadcast complete for ${userKey}`);
+
   } catch (error) {
     console.error('Error broadcasting online status:', error);
   }
@@ -440,10 +440,13 @@ async function broadcastOnlineStatus(io, userId, userType, isOnline) {
 async function broadcastActivityStatus(io, userId, userType, status) {
   try {
     // Find all chats this user is in
-    const chats = await sql`
-      SELECT DISTINCT chat_id FROM chat_participants
-      WHERE user_id = ${userId} AND user_type = ${userType}
-    `;
+    const { data: chats } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', userId)
+      .eq('user_type', userType);
+
+    if (!chats) return;
 
     // Broadcast to each chat
     chats.forEach(chat => {

@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 /**
  * Generate unique ID for doctors
@@ -6,12 +6,17 @@ import { sql } from '../config/db.js';
  */
 export const generateDoctorUniqueId = async () => {
   try {
-    const result = await sql`
-      SELECT COUNT(*) as count FROM doctors
-    `;
-    const count = parseInt(result[0].count) + 1;
-    return `DOC-${String(count).padStart(3, '0')}`;
+    const { count, error } = await supabase
+      .from('doctors')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    // Fallback to 0 if null
+    const nextCount = (count || 0) + 1;
+    return `DOC-${String(nextCount).padStart(3, '0')}`;
   } catch (error) {
+    console.error('Error generating doctor unique ID:', error);
     throw new Error('Failed to generate doctor unique ID');
   }
 };
@@ -22,12 +27,16 @@ export const generateDoctorUniqueId = async () => {
  */
 export const generatePatientUniqueId = async () => {
   try {
-    const result = await sql`
-      SELECT COUNT(*) as count FROM patients
-    `;
-    const count = parseInt(result[0].count) + 1;
-    return `PAT-${String(count).padStart(3, '0')}`;
+    const { count, error } = await supabase
+      .from('patients')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    const nextCount = (count || 0) + 1;
+    return `PAT-${String(nextCount).padStart(3, '0')}`;
   } catch (error) {
+    console.error('Error generating patient unique ID:', error);
     throw new Error('Failed to generate patient unique ID');
   }
 };
@@ -38,22 +47,26 @@ export const generatePatientUniqueId = async () => {
  */
 export const getNextDoctorId = async () => {
   try {
-    const result = await sql`
-      SELECT unique_id 
-      FROM doctors 
-      WHERE unique_id IS NOT NULL 
-      ORDER BY unique_id DESC 
-      LIMIT 1
-    `;
-    
-    if (result.length === 0) {
+    const { data, error } = await supabase
+      .from('doctors')
+      .select('unique_id')
+      .not('unique_id', 'is', null)
+      .order('unique_id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
       return 'DOC-001';
     }
-    
-    const lastId = result[0].unique_id;
+
+    const lastId = data.unique_id;
+    // Extract number part: DOC-001 -> 001
     const lastNumber = parseInt(lastId.split('-')[1]);
     return `DOC-${String(lastNumber + 1).padStart(3, '0')}`;
   } catch (error) {
+    console.error('Error getting next doctor ID:', error);
     throw new Error('Failed to get next doctor ID');
   }
 };
@@ -64,22 +77,25 @@ export const getNextDoctorId = async () => {
  */
 export const getNextPatientId = async () => {
   try {
-    const result = await sql`
-      SELECT unique_id 
-      FROM patients 
-      WHERE unique_id IS NOT NULL 
-      ORDER BY unique_id DESC 
-      LIMIT 1
-    `;
-    
-    if (result.length === 0) {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('unique_id')
+      .not('unique_id', 'is', null)
+      .order('unique_id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
       return 'PAT-001';
     }
-    
-    const lastId = result[0].unique_id;
+
+    const lastId = data.unique_id;
     const lastNumber = parseInt(lastId.split('-')[1]);
     return `PAT-${String(lastNumber + 1).padStart(3, '0')}`;
   } catch (error) {
+    console.error('Error getting next patient ID:', error);
     throw new Error('Failed to get next patient ID');
   }
 };
@@ -105,13 +121,16 @@ export const validateUniqueIdFormat = (id, type) => {
 export const checkUniqueIdExists = async (id, type) => {
   try {
     const table = type === 'doctor' ? 'doctors' : 'patients';
-    const result = await sql`
-      SELECT COUNT(*) as count 
-      FROM ${sql(table)} 
-      WHERE unique_id = ${id}
-    `;
-    return parseInt(result[0].count) > 0;
+    const { count, error } = await supabase
+      .from(table)
+      .select('*', { count: 'exact', head: true })
+      .eq('unique_id', id);
+
+    if (error) throw error;
+
+    return count > 0;
   } catch (error) {
+    console.error(`Error checking ${type} unique ID existence:`, error);
     throw new Error(`Failed to check ${type} unique ID existence`);
   }
 };

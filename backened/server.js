@@ -1,6 +1,4 @@
-// Fix DNS resolution for Neon database
-import dns from 'dns';
-dns.setDefaultResultOrder('ipv4first');
+
 
 //const express = require('express');
 import express from 'express';
@@ -11,7 +9,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { sql } from './config/db.js'; // Import the database connection
+// import { sql } from './config/db.js'; // REMOVED: Using Supabase SDK
 import productRoutes from './routes/productRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
@@ -29,7 +27,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import { initializeWebSocket } from './lib/websocketServer.js';
-import { createChatSchema } from './schemas/chatSchema.js';
+// import { createChatSchema } from './schemas/chatSchema.js'; // REMOVED: Managed via schema.sql
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
 
 // import { aj } from './lib/arcjet.js'; // Import Arcjet middleware - DISABLED FOR DEVELOPMENT
@@ -56,7 +54,7 @@ app.use('/uploads', express.static(uploadsPath));
 // Configure CORS to allow frontend requests
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:5174', 
+  'http://localhost:5174',
   'http://localhost:5175',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
@@ -73,12 +71,12 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // Check if origin is in allowed list or matches Railway pattern
     if (allowedOrigins.includes(origin) || (origin && origin.includes('.railway.app'))) {
       return callback(null, true);
     }
-    
+
     // Log rejected origins for debugging
     console.log('CORS rejected origin:', origin);
     callback(new Error('Not allowed by CORS'));
@@ -171,318 +169,10 @@ app.use('/api/auth', authRoutes);
 // Help & Support routes
 app.use('/api/help', helpRoutes);
 
-// Cache for database initialization status
-let dbInitialized = false;
-
-// Database initialization
-async function initDB() {
-  try {
-    // Return immediately if already initialized this session
-    if (dbInitialized) {
-      return;
-    }
-
-    // Quick check if main tables already exist
-    const tableCheck = await sql`
-      SELECT COUNT(*) as count FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      AND table_name IN ('doctors', 'patients', 'appointments', 'chats', 'messages', 'emails', 'calendar_events')
-    `;
-    
-    // If all core tables exist, skip initialization
-    if (parseInt(tableCheck[0].count) >= 7) {
-      dbInitialized = true;
-      return;
-    }
-    
-    // Products table
-    await sql`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        image_url VARCHAR(255) NOT NULL,
-        price DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Doctors table
-    await sql`
-      CREATE TABLE IF NOT EXISTS doctors (
-        id SERIAL PRIMARY KEY,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255),
-        phone VARCHAR(20),
-        specialization VARCHAR(100),
-        license_number VARCHAR(50),
-        years_of_experience INTEGER,
-        bio TEXT,
-        profile_image_url VARCHAR(500),
-        two_factor_enabled BOOLEAN DEFAULT false,
-        backup_codes JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Doctor settings table
-    await sql`
-      CREATE TABLE IF NOT EXISTS doctor_settings (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        default_appointment_duration INTEGER DEFAULT 30,
-        working_hours_start TIME DEFAULT '09:00',
-        working_hours_end TIME DEFAULT '17:00',
-        consultation_fee DECIMAL(10, 2) DEFAULT 0,
-        accept_new_patients BOOLEAN DEFAULT true,
-        notification_settings JSONB,
-        billing_settings JSONB,
-        payment_methods JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(doctor_id)
-      )`;
-
-    // Patients table
-    await sql`
-      CREATE TABLE IF NOT EXISTS patients (
-        id SERIAL PRIMARY KEY,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        phone VARCHAR(20),
-        date_of_birth DATE,
-        gender VARCHAR(20),
-        blood_group VARCHAR(5),
-        address TEXT,
-        emergency_contact_name VARCHAR(100),
-        emergency_contact_phone VARCHAR(20),
-        medical_history TEXT,
-        allergies TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Appointments table
-    await sql`
-      CREATE TABLE IF NOT EXISTS appointments (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
-        appointment_date DATE NOT NULL,
-        appointment_time TIME NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        appointment_type VARCHAR(50) DEFAULT 'consultation',
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Medical records table
-    await sql`
-      CREATE TABLE IF NOT EXISTS medical_records (
-        id SERIAL PRIMARY KEY,
-        patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        diagnosis TEXT,
-        prescription TEXT,
-        notes TEXT,
-        lab_results TEXT,
-        file_name VARCHAR(255),
-        file_path VARCHAR(500),
-        file_type VARCHAR(50),
-        file_size INTEGER,
-        original_name VARCHAR(255),
-        record_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Billing table
-    await sql`
-      CREATE TABLE IF NOT EXISTS billing (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        patient_id INTEGER REFERENCES patients(id) ON DELETE CASCADE,
-        appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
-        amount DECIMAL(10, 2) NOT NULL,
-        description TEXT,
-        status VARCHAR(20) DEFAULT 'pending',
-        due_date DATE,
-        payment_date TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Notifications table
-    await sql`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,
-        title VARCHAR(255) NOT NULL,
-        message TEXT NOT NULL,
-        data JSONB,
-        read BOOLEAN DEFAULT false,
-        priority VARCHAR(20) DEFAULT 'medium',
-        actionable BOOLEAN DEFAULT false,
-        action_url VARCHAR(500),
-        expires_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        read_at TIMESTAMP
-      )`;
-
-    // Notification delivery logs table
-    await sql`
-      CREATE TABLE IF NOT EXISTS notification_delivery_logs (
-        id SERIAL PRIMARY KEY,
-        notification_id INTEGER REFERENCES notifications(id) ON DELETE CASCADE,
-        delivery_method VARCHAR(20) NOT NULL,
-        recipient VARCHAR(255) NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        delivered_at TIMESTAMP,
-        error_message TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Blog posts table
-    await sql`
-      CREATE TABLE IF NOT EXISTS blog_posts (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        title VARCHAR(500) NOT NULL,
-        slug VARCHAR(600) UNIQUE NOT NULL,
-        content TEXT NOT NULL,
-        excerpt TEXT,
-        featured_image VARCHAR(500),
-        category VARCHAR(100),
-        tags JSONB DEFAULT '[]',
-        status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
-        published_at TIMESTAMP,
-        views INTEGER DEFAULT 0,
-        read_time INTEGER DEFAULT 0,
-        meta_title VARCHAR(600),
-        meta_description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Blog categories table
-    await sql`
-      CREATE TABLE IF NOT EXISTS blog_categories (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) UNIQUE NOT NULL,
-        slug VARCHAR(120) UNIQUE NOT NULL,
-        description TEXT,
-        color VARCHAR(7) DEFAULT '#3B82F6',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-
-    // Blog comments table
-    await sql`
-      CREATE TABLE IF NOT EXISTS blog_comments (
-        id SERIAL PRIMARY KEY,
-        blog_post_id INTEGER REFERENCES blog_posts(id) ON DELETE CASCADE,
-        author_name VARCHAR(100) NOT NULL,
-        author_email VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-    // Emails table
-    await sql`
-      CREATE TABLE IF NOT EXISTS emails (
-        id SERIAL PRIMARY KEY,
-        sender_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        sender_email VARCHAR(255) NOT NULL,
-        sender_name VARCHAR(255) NOT NULL,
-        recipient_id INTEGER,
-        recipient_email VARCHAR(255) NOT NULL,
-        recipient_name VARCHAR(255),
-        subject VARCHAR(500) NOT NULL,
-        body TEXT,
-        cc TEXT,
-        bcc TEXT,
-        attachments JSONB DEFAULT '[]',
-        is_read BOOLEAN DEFAULT false,
-        is_starred BOOLEAN DEFAULT false,
-        is_draft BOOLEAN DEFAULT false,
-        folder VARCHAR(50) DEFAULT 'inbox',
-        reply_to_id INTEGER REFERENCES emails(id) ON DELETE SET NULL,
-        deleted_by_sender BOOLEAN DEFAULT false,
-        deleted_by_recipient BOOLEAN DEFAULT false,
-        read_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-    // Calendar events table
-    await sql`
-      CREATE TABLE IF NOT EXISTS calendar_events (
-        id SERIAL PRIMARY KEY,
-        doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
-        title VARCHAR(500) NOT NULL,
-        start_time TIMESTAMP NOT NULL,
-        end_time TIMESTAMP NOT NULL,
-        type VARCHAR(100),
-        color VARCHAR(50) DEFAULT 'blue',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`;
-    // Create indexes in parallel for better performance
-    await Promise.all([
-      sql`CREATE INDEX IF NOT EXISTS idx_appointments_doctor_id ON appointments(doctor_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON appointments(patient_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_medical_records_patient_id ON medical_records(patient_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_billing_doctor_id ON billing(doctor_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_billing_status ON billing(status)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_notifications_doctor_id ON notifications(doctor_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_notification_id ON notification_delivery_logs(notification_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_doctor_id ON blog_posts(doctor_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(blog_post_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_sender_id ON emails(sender_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_recipient_id ON emails(recipient_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_folder ON emails(folder)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_is_read ON emails(is_read)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_emails_created_at ON emails(created_at DESC)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_doctor_id ON calendar_events(doctor_id)`,
-      sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time)`
-    ]);
-
-    // Mark as initialized
-    dbInitialized = true;
-
-    // Initialize website-related tables - DISABLED to prevent auto-adding data
-    // console.log('Initializing website tables...');
-    // await initWebsiteTables();
-
-  } catch (error) {
-    console.error('❌ Database initialization error:', error.message);
-  }
-}
-
 // Start server
-initDB().then(async () => {
-  // Initialize chat schema silently
-  try {
-    await createChatSchema();
-  } catch (error) {
-    console.error('❌ Chat schema error:', error.message);
-  }
-
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
-  });
-  
-  // Initialize WebSocket for real-time chat
-  initializeWebSocket(server);
-  
-}).catch((error) => {
-  console.error('Failed to initialize the database:', error);
-  process.exit(1);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
 });
+
+// Initialize WebSocket for real-time chat
+initializeWebSocket(server);

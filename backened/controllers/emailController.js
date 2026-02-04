@@ -1,4 +1,4 @@
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 import nodemailer from 'nodemailer';
 
 // Configure email transporter (you'll need to set these in .env)
@@ -17,96 +17,77 @@ const createTransporter = () => {
 // Get all emails for a doctor with filters
 export const getEmails = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1; // Default to doctor ID 1 for testing
+    const doctorId = req.user?.id;
     const { folder = 'inbox', search = '', page = 1, limit = 20, unread_only = false } = req.query;
 
-    const offset = (page - 1) * limit;
+    if (!doctorId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    let query = sql`
-      SELECT 
-        e.*,
-        CASE 
-          WHEN e.sender_id = ${doctorId} THEN e.recipient_email
-          ELSE e.sender_email
-        END as display_email,
-        CASE 
-          WHEN e.sender_id = ${doctorId} THEN e.recipient_name
-          ELSE e.sender_name
-        END as display_name
-      FROM emails e
-      WHERE (
-        (e.sender_id = ${doctorId} AND e.purged_by_sender = false) 
-        OR 
-        (e.recipient_id = ${doctorId} AND e.purged_by_recipient = false)
-      )
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    `;
+    let query = supabase
+      .from('emails')
+      .select('*', { count: 'exact' });
 
     // Filter by folder
     if (folder === 'inbox') {
-      query = sql`${query} AND e.recipient_id = ${doctorId} AND e.deleted_by_recipient = false AND e.folder = 'inbox'`;
+      query = query
+        .eq('recipient_id', doctorId)
+        .eq('deleted_by_recipient', false)
+        .eq('folder', 'inbox');
     } else if (folder === 'sent') {
-      query = sql`${query} AND e.sender_id = ${doctorId} AND e.deleted_by_sender = false AND e.is_draft = false`;
+      query = query
+        .eq('sender_id', doctorId)
+        .eq('deleted_by_sender', false)
+        .eq('is_draft', false);
     } else if (folder === 'drafts') {
-      query = sql`${query} AND e.sender_id = ${doctorId} AND e.is_draft = true AND e.deleted_by_sender = false`;
+      query = query
+        .eq('sender_id', doctorId)
+        .eq('is_draft', true)
+        .eq('deleted_by_sender', false);
     } else if (folder === 'starred') {
-      query = sql`${query} AND e.recipient_id = ${doctorId} AND e.is_starred = true AND e.deleted_by_recipient = false`;
+      query = query
+        .eq('recipient_id', doctorId)
+        .eq('is_starred', true)
+        .eq('deleted_by_recipient', false);
     } else if (folder === 'trash') {
-      query = sql`${query} AND ((e.sender_id = ${doctorId} AND e.deleted_by_sender = true) OR (e.recipient_id = ${doctorId} AND e.deleted_by_recipient = true))`;
+      // (sender_id = ID AND deleted_by_sender = true) OR (recipient_id = ID AND deleted_by_recipient = true)
+      query = query.or(`and(sender_id.eq.${doctorId},deleted_by_sender.eq.true),and(recipient_id.eq.${doctorId},deleted_by_recipient.eq.true)`);
     }
 
     // Filter by unread
     if (unread_only === 'true') {
-      query = sql`${query} AND e.is_read = false`;
+      query = query.eq('is_read', false);
     }
 
     // Search filter
     if (search) {
-      query = sql`${query} AND (
-        e.subject ILIKE ${`%${search}%`} OR 
-        e.body ILIKE ${`%${search}%`} OR 
-        e.sender_email ILIKE ${`%${search}%`} OR
-        e.recipient_email ILIKE ${`%${search}%`}
-      )`;
+      query = query.or(`subject.ilike.%${search}%,body.ilike.%${search}%,sender_email.ilike.%${search}%,recipient_email.ilike.%${search}%`);
     }
 
-    query = sql`${query} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+    const { data: emails, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
 
-    const emails = await query;
+    if (error) throw error;
 
-    // Get total count
-    let countQuery = sql`
-      SELECT COUNT(*) as total
-      FROM emails e
-      WHERE (e.sender_id = ${doctorId} OR e.recipient_id = ${doctorId})
-    `;
-
-    if (folder === 'inbox') {
-      countQuery = sql`${countQuery} AND e.recipient_id = ${doctorId} AND e.deleted_by_recipient = false AND e.folder = 'inbox'`;
-    } else if (folder === 'sent') {
-      countQuery = sql`${countQuery} AND e.sender_id = ${doctorId} AND e.deleted_by_sender = false AND e.is_draft = false`;
-    } else if (folder === 'drafts') {
-      countQuery = sql`${countQuery} AND e.sender_id = ${doctorId} AND e.is_draft = true AND e.deleted_by_sender = false`;
-    }
-
-    if (search) {
-      countQuery = sql`${countQuery} AND (
-        e.subject ILIKE ${`%${search}%`} OR 
-        e.body ILIKE ${`%${search}%`}
-      )`;
-    }
-
-    const [{ total }] = await countQuery;
+    // Process display names
+    const processedEmails = emails.map(email => ({
+      ...email,
+      display_email: email.sender_id === doctorId ? email.recipient_email : email.sender_email,
+      display_name: email.sender_id === doctorId ? email.recipient_name : email.sender_name
+    }));
 
     res.json({
       success: true,
       data: {
-        emails,
+        emails: processedEmails,
         pagination: {
-          total: parseInt(total),
+          total: count || 0,
           page: parseInt(page),
           limit: parseInt(limit),
-          totalPages: Math.ceil(total / limit)
+          totalPages: Math.ceil((count || 0) / parseInt(limit))
         }
       }
     });
@@ -119,26 +100,30 @@ export const getEmails = async (req, res) => {
 // Get single email
 export const getEmail = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
     const { id } = req.params;
 
-    const [email] = await sql`
-      SELECT * FROM emails 
-      WHERE id = ${id} 
-      AND (sender_id = ${doctorId} OR recipient_id = ${doctorId})
-    `;
+    if (!doctorId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    if (!email) {
+    const { data: email, error } = await supabase
+      .from('emails')
+      .select('*')
+      .eq('id', id)
+      .or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`)
+      .single();
+
+    if (error || !email) {
       return res.status(404).json({ success: false, message: 'Email not found' });
     }
 
     // Mark as read if recipient is viewing
     if (email.recipient_id === doctorId && !email.is_read) {
-      await sql`
-        UPDATE emails 
-        SET is_read = true, read_at = NOW() 
-        WHERE id = ${id}
-      `;
+      await supabase
+        .from('emails')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', id);
       email.is_read = true;
     }
 
@@ -152,7 +137,7 @@ export const getEmail = async (req, res) => {
 // Send email
 export const sendEmail = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
     const {
       recipient_email,
       recipient_name,
@@ -164,143 +149,9 @@ export const sendEmail = async (req, res) => {
       reply_to_id
     } = req.body;
 
-    // Handle attachments from Multer
-    let attachments = [];
-    if (req.files && Array.isArray(req.files)) {
-      attachments = req.files.map(file => ({
-        name: file.originalname,
-        url: `/uploads/${file.filename}`, // Assuming static serve setup
-        size: file.size,
-        type: file.mimetype
-      }));
-    } else if (req.body.attachments) {
-      // Fallback if sent as JSON (less common with files)
-      try {
-        attachments = typeof req.body.attachments === 'string'
-          ? JSON.parse(req.body.attachments)
-          : req.body.attachments;
-      } catch (e) {
-        attachments = [];
-      }
+    if (!doctorId) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    // Merge existing attachments (from drafts)
-    if (req.body.existing_attachments) {
-      try {
-        const existing = typeof req.body.existing_attachments === 'string'
-          ? JSON.parse(req.body.existing_attachments)
-          : req.body.existing_attachments;
-        if (Array.isArray(existing)) {
-          attachments = [...attachments, ...existing];
-        }
-      } catch (e) {
-        console.error('Error parsing existing attachments', e);
-      }
-    }
-
-    if (!recipient_email || !subject) {
-      return res.status(400).json({
-        success: false,
-        message: 'Recipient email and subject are required'
-      });
-    }
-
-    // Get sender info from database
-    const [doctor] = await sql`
-      SELECT id, email, first_name, last_name 
-      FROM doctors 
-      WHERE id = ${doctorId}
-    `;
-
-    if (!doctor) {
-      return res.status(404).json({ success: false, message: 'Doctor not found' });
-    }
-
-    // Try to find the recipient in doctors or patients tables if ID is missing
-    let finalRecipientId = recipient_id;
-    if (!finalRecipientId) {
-      // Check doctors
-      const [recipientDoctor] = await sql`SELECT id FROM doctors WHERE email = ${recipient_email}`;
-      if (recipientDoctor) {
-        finalRecipientId = recipientDoctor.id;
-      } else {
-        // Check patients
-        const [recipientPatient] = await sql`SELECT id FROM patients WHERE email = ${recipient_email}`;
-        if (recipientPatient) {
-          finalRecipientId = recipientPatient.id;
-        }
-      }
-    }
-
-    // Insert into database
-    const [email] = await sql`
-      INSERT INTO emails (
-        sender_id, sender_email, sender_name,
-        recipient_id, recipient_email, recipient_name,
-        subject, body, cc, bcc,
-        reply_to_id, attachments,
-        is_draft, folder
-      ) VALUES (
-        ${doctorId},
-        ${doctor.email},
-        ${doctor.first_name + ' ' + doctor.last_name},
-        ${finalRecipientId || null},
-        ${recipient_email},
-        ${recipient_name || recipient_email},
-        ${subject},
-        ${body},
-        ${cc || null},
-        ${bcc || null},
-        ${reply_to_id || null},
-        ${JSON.stringify(attachments)},
-        false,
-        'inbox'
-      )
-      RETURNING *
-    `;
-
-    // Send actual email via SMTP (optional - can be disabled for internal system)
-    if (process.env.SMTP_ENABLED === 'true') {
-      try {
-        const transporter = createTransporter();
-        await transporter.sendMail({
-          from: `"${doctor.first_name} ${doctor.last_name}" <${doctor.email}>`,
-          to: recipient_email,
-          cc: cc,
-          bcc: bcc,
-          subject: subject,
-          html: body,
-          attachments: attachments.map(att => ({
-            filename: att.name,
-            path: att.url
-          }))
-        });
-      } catch (smtpError) {
-        console.error('SMTP Error:', smtpError);
-        // Email saved in database but SMTP failed
-      }
-    }
-
-    res.json({ success: true, data: email, message: 'Email sent successfully' });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({ success: false, message: 'Failed to send email', error: error.message });
-  }
-};
-
-// Save draft
-export const saveDraft = async (req, res) => {
-  try {
-    const doctorId = req.user?.id || 1;
-    const {
-      id,
-      recipient_email,
-      recipient_name,
-      subject,
-      body,
-      cc,
-      bcc
-    } = req.body;
 
     // Handle attachments
     let attachments = [];
@@ -335,78 +186,177 @@ export const saveDraft = async (req, res) => {
       }
     }
 
-    // Get sender info from database
-    const [doctor] = await sql`
-      SELECT id, email, first_name, last_name 
-      FROM doctors 
-      WHERE id = ${doctorId}
-    `;
+    if (!recipient_email || !subject) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipient email and subject are required'
+      });
+    }
+
+    // Get sender info
+    const { data: doctor } = await supabase
+      .from('doctors')
+      .select('id, email, first_name, last_name')
+      .eq('id', doctorId)
+      .single();
 
     if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
 
-    // Try to find the recipient in doctors or patients tables
-    let finalRecipientId = null;
-    if (recipient_email) {
-      // Check doctors
-      const [recipientDoctor] = await sql`SELECT id FROM doctors WHERE email = ${recipient_email}`;
+    // Resolve recipient ID
+    let finalRecipientId = recipient_id;
+    if (!finalRecipientId) {
+      const { data: recipientDoctor } = await supabase.from('doctors').select('id').eq('email', recipient_email).maybeSingle();
       if (recipientDoctor) {
         finalRecipientId = recipientDoctor.id;
       } else {
-        // Check patients
-        const [recipientPatient] = await sql`SELECT id FROM patients WHERE email = ${recipient_email}`;
+        const { data: recipientPatient } = await supabase.from('patients').select('id').eq('email', recipient_email).maybeSingle();
         if (recipientPatient) {
           finalRecipientId = recipientPatient.id;
         }
       }
     }
 
-    if (id) {
-      // Update existing draft
-      const [email] = await sql`
-        UPDATE emails 
-        SET 
-          recipient_email = ${recipient_email},
-          recipient_name = ${recipient_name || recipient_email},
-          recipient_id = ${finalRecipientId || null},
-          subject = ${subject},
-          body = ${body},
-          cc = ${cc || null},
-          bcc = ${bcc || null},
-          attachments = ${JSON.stringify(attachments)},
-          updated_at = NOW()
-        WHERE id = ${id} AND sender_id = ${doctorId} AND is_draft = true
-        RETURNING *
-      `;
+    // Insert into database
+    const { data: email, error } = await supabase
+      .from('emails')
+      .insert({
+        sender_id: doctorId,
+        sender_email: doctor.email,
+        sender_name: `${doctor.first_name} ${doctor.last_name}`,
+        recipient_id: finalRecipientId || null,
+        recipient_email,
+        recipient_name: recipient_name || recipient_email,
+        subject,
+        body,
+        cc: cc || null,
+        bcc: bcc || null,
+        reply_to_id: reply_to_id || null,
+        attachments,
+        is_draft: false,
+        folder: 'inbox'
+      })
+      .select()
+      .single();
 
+    if (error) throw error;
+
+    // Send via SMTP
+    if (process.env.SMTP_ENABLED === 'true') {
+      try {
+        const transporter = createTransporter();
+        await transporter.sendMail({
+          from: `"${doctor.first_name} ${doctor.last_name}" <${doctor.email}>`,
+          to: recipient_email,
+          cc,
+          bcc,
+          subject,
+          html: body,
+          attachments: attachments.map(att => ({
+            filename: att.name,
+            path: att.url
+          }))
+        });
+      } catch (smtpError) {
+        console.error('SMTP Error:', smtpError);
+      }
+    }
+
+    res.json({ success: true, data: email, message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ success: false, message: 'Failed to send email', error: error.message });
+  }
+};
+
+// Save draft
+export const saveDraft = async (req, res) => {
+  try {
+    const doctorId = req.user?.id;
+    const {
+      id,
+      recipient_email,
+      recipient_name,
+      subject,
+      body,
+      cc,
+      bcc
+    } = req.body;
+
+    if (!doctorId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let attachments = [];
+    if (req.files && Array.isArray(req.files)) {
+      attachments = req.files.map(file => ({
+        name: file.originalname,
+        url: `/uploads/${file.filename}`,
+        size: file.size,
+        type: file.mimetype
+      }));
+    } else if (req.body.attachments) {
+      try {
+        attachments = typeof req.body.attachments === 'string' ? JSON.parse(req.body.attachments) : req.body.attachments;
+      } catch (e) {
+        attachments = [];
+      }
+    }
+
+    if (req.body.existing_attachments) {
+      try {
+        const existing = typeof req.body.existing_attachments === 'string' ? JSON.parse(req.body.existing_attachments) : req.body.existing_attachments;
+        if (Array.isArray(existing)) attachments = [...attachments, ...existing];
+      } catch (e) {
+        console.error('Error parsing existing attachments', e);
+      }
+    }
+
+    const { data: doctor } = await supabase.from('doctors').select('id, email, first_name, last_name').eq('id', doctorId).single();
+    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
+
+    let finalRecipientId = null;
+    if (recipient_email) {
+      const { data: recipientDoctor } = await supabase.from('doctors').select('id').eq('email', recipient_email).maybeSingle();
+      if (recipientDoctor) finalRecipientId = recipientDoctor.id;
+      else {
+        const { data: recipientPatient } = await supabase.from('patients').select('id').eq('email', recipient_email).maybeSingle();
+        if (recipientPatient) finalRecipientId = recipientPatient.id;
+      }
+    }
+
+    if (id) {
+      const { data: email, error } = await supabase.from('emails').update({
+        recipient_email,
+        recipient_name: recipient_name || recipient_email,
+        recipient_id: finalRecipientId || null,
+        subject,
+        body,
+        cc: cc || null,
+        bcc: bcc || null,
+        attachments,
+        updated_at: new Date().toISOString()
+      }).eq('id', id).eq('sender_id', doctorId).eq('is_draft', true).select().single();
+      if (error) throw error;
       return res.json({ success: true, data: email, message: 'Draft updated' });
     } else {
-      // Create new draft
-      const [email] = await sql`
-        INSERT INTO emails (
-          sender_id, sender_email, sender_name,
-          recipient_email, recipient_name, recipient_id,
-          subject, body, cc, bcc,
-          attachments, is_draft, folder
-        ) VALUES (
-          ${doctorId},
-          ${doctor.email},
-          ${doctor.first_name + ' ' + doctor.last_name},
-          ${recipient_email},
-          ${recipient_name || recipient_email},
-          ${finalRecipientId || null},
-          ${subject},
-          ${body},
-          ${cc || null},
-          ${bcc || null},
-          ${JSON.stringify(attachments)},
-          true,
-          'drafts'
-        )
-        RETURNING *
-      `;
-
+      const { data: email, error } = await supabase.from('emails').insert({
+        sender_id: doctorId,
+        sender_email: doctor.email,
+        sender_name: `${doctor.first_name} ${doctor.last_name}`,
+        recipient_email,
+        recipient_name: recipient_name || recipient_email,
+        recipient_id: finalRecipientId || null,
+        subject,
+        body,
+        cc: cc || null,
+        bcc: bcc || null,
+        attachments,
+        is_draft: true,
+        folder: 'drafts'
+      }).select().single();
+      if (error) throw error;
       return res.json({ success: true, data: email, message: 'Draft saved' });
     }
   } catch (error) {
@@ -415,44 +365,24 @@ export const saveDraft = async (req, res) => {
   }
 };
 
-// Delete email (move to trash or permanent delete)
+// Delete email
 export const deleteEmail = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
     const { id } = req.params;
     const { permanent = false } = req.query;
 
-    const [email] = await sql`
-      SELECT * FROM emails 
-      WHERE id = ${id} 
-      AND (sender_id = ${doctorId} OR recipient_id = ${doctorId})
-    `;
+    if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    if (!email) {
-      return res.status(404).json({ success: false, message: 'Email not found' });
-    }
+    const { data: email, error } = await supabase.from('emails').select('*').eq('id', id).or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`).single();
+    if (error || !email) return res.status(404).json({ success: false, message: 'Email not found' });
 
     if (permanent === 'true') {
-      // Permanent delete
-      await sql`DELETE FROM emails WHERE id = ${id}`;
+      await supabase.from('emails').delete().eq('id', id);
       return res.json({ success: true, message: 'Email permanently deleted' });
     } else {
-      // Move to trash
-      if (email.sender_id === doctorId) {
-        await sql`
-          UPDATE emails 
-          SET deleted_by_sender = true
-          WHERE id = ${id}
-        `;
-      }
-      if (email.recipient_id === doctorId) {
-        await sql`
-          UPDATE emails 
-          SET deleted_by_recipient = true, folder = 'trash'
-          WHERE id = ${id}
-        `;
-      }
-
+      if (email.sender_id === doctorId) await supabase.from('emails').update({ deleted_by_sender: true }).eq('id', id);
+      if (email.recipient_id === doctorId) await supabase.from('emails').update({ deleted_by_recipient: true, folder: 'trash' }).eq('id', id);
       return res.json({ success: true, message: 'Email moved to trash' });
     }
   } catch (error) {
@@ -464,16 +394,13 @@ export const deleteEmail = async (req, res) => {
 // Mark as read/unread
 export const markAsRead = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
     const { id } = req.params;
     const { is_read } = req.body;
+    if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    await sql`
-      UPDATE emails 
-      SET is_read = ${is_read}, read_at = ${is_read ? sql`NOW()` : null}
-      WHERE id = ${id} AND recipient_id = ${doctorId}
-    `;
-
+    const { error } = await supabase.from('emails').update({ is_read, read_at: is_read ? new Date().toISOString() : null }).eq('id', id).eq('recipient_id', doctorId);
+    if (error) throw error;
     res.json({ success: true, message: `Email marked as ${is_read ? 'read' : 'unread'}` });
   } catch (error) {
     console.error('Error marking email:', error);
@@ -481,19 +408,16 @@ export const markAsRead = async (req, res) => {
   }
 };
 
-// Star/unstar email
+// Star/unstar
 export const toggleStar = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
     const { id } = req.params;
     const { is_starred } = req.body;
+    if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    await sql`
-      UPDATE emails 
-      SET is_starred = ${is_starred}
-      WHERE id = ${id} AND recipient_id = ${doctorId}
-    `;
-
+    const { error } = await supabase.from('emails').update({ is_starred }).eq('id', id).eq('recipient_id', doctorId);
+    if (error) throw error;
     res.json({ success: true, message: `Email ${is_starred ? 'starred' : 'unstarred'}` });
   } catch (error) {
     console.error('Error starring email:', error);
@@ -501,62 +425,64 @@ export const toggleStar = async (req, res) => {
   }
 };
 
-// Get email statistics
+// Get stats
 export const getStats = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
+    if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const stats = await sql`
-      SELECT 
-        COUNT(*) FILTER (WHERE recipient_id = ${doctorId} AND folder = 'inbox' AND deleted_by_recipient = false) as inbox_count,
-        COUNT(*) FILTER (WHERE recipient_id = ${doctorId} AND is_read = false AND deleted_by_recipient = false) as unread_count,
-        COUNT(*) FILTER (WHERE sender_id = ${doctorId} AND deleted_by_sender = false AND is_draft = false) as sent_count,
-        COUNT(*) FILTER (WHERE sender_id = ${doctorId} AND is_draft = true AND deleted_by_sender = false) as drafts_count,
-        COUNT(*) FILTER (WHERE recipient_id = ${doctorId} AND is_starred = true AND deleted_by_recipient = false) as starred_count,
-        COUNT(*) FILTER (WHERE (sender_id = ${doctorId} AND deleted_by_sender = true) OR (recipient_id = ${doctorId} AND deleted_by_recipient = true)) as trash_count
-      FROM emails
-      WHERE sender_id = ${doctorId} OR recipient_id = ${doctorId}
-    `;
+    const [
+      { count: inboxCount },
+      { count: unreadCount },
+      { count: sentCount },
+      { count: draftsCount },
+      { count: starredCount },
+      { count: trashCountSender },
+      { count: trashCountRecipient }
+    ] = await Promise.all([
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('folder', 'inbox').eq('deleted_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_read', false).eq('deleted_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('deleted_by_sender', false).eq('is_draft', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('is_draft', true).eq('deleted_by_sender', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_starred', true).eq('deleted_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('deleted_by_sender', true),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('deleted_by_recipient', true),
+    ]);
 
-    res.json({ success: true, data: stats[0] });
+    res.json({
+      success: true, data: {
+        inbox_count: inboxCount || 0,
+        unread_count: unreadCount || 0,
+        sent_count: sentCount || 0,
+        drafts_count: draftsCount || 0,
+        starred_count: starredCount || 0,
+        trash_count: (trashCountSender || 0) + (trashCountRecipient || 0)
+      }
+    });
   } catch (error) {
     console.error('Error fetching email stats:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch stats', error: error.message });
   }
 };
 
-// Get all patients/doctors for email recipients
+// Get recipients
 export const getRecipients = async (req, res) => {
   try {
     const { search = '' } = req.query;
+    let patientQuery = supabase.from('patients').select('id, first_name, last_name, email').not('email', 'is', null).limit(20);
+    let doctorQuery = supabase.from('doctors').select('id, first_name, last_name, email').not('email', 'is', null).limit(20);
 
-    // Get patients
-    const patients = await sql`
-      SELECT 
-        id, 
-        first_name || ' ' || last_name as name,
-        email,
-        'patient' as type
-      FROM patients
-      WHERE email IS NOT NULL
-      ${search ? sql`AND (first_name || ' ' || last_name ILIKE ${`%${search}%`} OR email ILIKE ${`%${search}%`})` : sql``}
-      LIMIT 20
-    `;
+    if (search) {
+      patientQuery = patientQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+      doctorQuery = doctorQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
 
-    // Get doctors  
-    const doctors = await sql`
-      SELECT 
-        id,
-        first_name || ' ' || last_name as name,
-        email,
-        'doctor' as type
-      FROM doctors
-      WHERE email IS NOT NULL
-      ${search ? sql`AND (first_name || ' ' || last_name ILIKE ${`%${search}%`} OR email ILIKE ${`%${search}%`})` : sql``}
-      LIMIT 20
-    `;
+    const [{ data: patients }, { data: doctors }] = await Promise.all([patientQuery, doctorQuery]);
 
-    const recipients = [...patients, ...doctors];
+    const recipients = [
+      ...(patients || []).map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}`, email: p.email, type: 'patient' })),
+      ...(doctors || []).map(d => ({ id: d.id, name: `${d.first_name} ${d.last_name}`, email: d.email, type: 'doctor' }))
+    ];
 
     res.json({ success: true, data: recipients });
   } catch (error) {
@@ -568,36 +494,16 @@ export const getRecipients = async (req, res) => {
 // Empty trash
 export const emptyTrash = async (req, res) => {
   try {
-    const doctorId = req.user?.id || 1;
+    const doctorId = req.user?.id;
+    if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    // "Empty Trash" means hiding items currently in trash from my view
-    // Items are in trash if deleted_by_X is true. 
-    // We want to set purged_by_X = true for those items.
+    await Promise.all([
+      supabase.from('emails').update({ purged_by_sender: true }).eq('sender_id', doctorId).eq('deleted_by_sender', true),
+      supabase.from('emails').update({ purged_by_recipient: true }).eq('recipient_id', doctorId).eq('deleted_by_recipient', true),
+      supabase.from('emails').delete().eq('sender_id', doctorId).eq('is_draft', true).eq('folder', 'drafts')
+    ]);
 
-    // Update sender's trash
-    await sql`
-      UPDATE emails 
-      SET purged_by_sender = true
-      WHERE sender_id = ${doctorId} AND deleted_by_sender = true
-    `;
-
-    // Update recipient's trash
-    await sql`
-      UPDATE emails 
-      SET purged_by_recipient = true
-      WHERE recipient_id = ${doctorId} AND deleted_by_recipient = true
-    `;
-
-    // Also permanently delete drafts
-    await sql`DELETE FROM emails WHERE sender_id = ${doctorId} AND is_draft = true AND folder = 'drafts'`;
-
-    // Cleanup: If both purged, we can actually DELETE the row to save space (optional, but good practice)
-    await sql`
-      DELETE FROM emails
-      WHERE 
-        purged_by_sender = true AND purged_by_recipient = true
-    `;
-
+    await supabase.from('emails').delete().eq('purged_by_sender', true).eq('purged_by_recipient', true);
     res.json({ success: true, message: 'Trash emptied' });
   } catch (error) {
     console.error('Error emptying trash:', error);

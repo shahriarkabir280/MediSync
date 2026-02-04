@@ -20,20 +20,20 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
-  
+
   // Blog Posts
   getBlogPosts,
   getBlogPost,
   createBlogPost,
   updateBlogPost,
   deleteBlogPost,
-  
+
   // Statistics
   getBlogStats,
-  
+
   // File Upload
   uploadFeaturedImage
-} from '../controllers/blogController_simple.js';
+} from '../controllers/blogController.js';
 
 const router = express.Router();
 
@@ -60,7 +60,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -97,11 +97,11 @@ router.use((error, req, res, next) => {
       return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
     }
   }
-  
+
   if (error.message === 'Only image files are allowed!') {
     return res.status(400).json({ error: 'Only image files are allowed!' });
   }
-  
+
   res.status(500).json({ error: 'File upload failed' });
 });
 

@@ -7,7 +7,7 @@ import {
   updateDoctorSettings,
   getDoctorSettings
 } from '../controllers/doctorController.js';
-import { sql } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'careconnect_jwt_secret_2024';
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
@@ -46,14 +46,13 @@ router.put('/:doctorId/settings', updateDoctorSettings);
 router.get('/settings', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    
-    const result = await sql`
-      SELECT *
-      FROM doctor_settings
-      WHERE doctor_id = ${doctorId}
-    `;
 
-    if (result.length === 0) {
+    const { data: result, error } = await supabase
+      .from('doctor_settings')
+      .select('*')
+      .eq('doctor_id', doctorId);
+
+    if (!result || result.length === 0) {
       // Return default settings if none exist
       return res.json({
         success: true,
@@ -78,7 +77,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 router.put('/settings', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    const { 
+    const {
       default_appointment_duration,
       working_hours_start,
       working_hours_end,
@@ -86,48 +85,48 @@ router.put('/settings', authenticateToken, async (req, res) => {
       accept_new_patients
     } = req.body;
 
-    const result = await sql`
-      UPDATE doctor_settings 
-      SET 
-        default_appointment_duration = COALESCE(${default_appointment_duration}, default_appointment_duration),
-        working_hours_start = COALESCE(${working_hours_start}, working_hours_start),
-        working_hours_end = COALESCE(${working_hours_end}, working_hours_end),
-        consultation_fee = COALESCE(${consultation_fee}, consultation_fee),
-        accept_new_patients = COALESCE(${accept_new_patients}, accept_new_patients),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE doctor_id = ${doctorId}
-      RETURNING *
-    `;
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+    if (default_appointment_duration !== undefined) updateData.default_appointment_duration = default_appointment_duration;
+    if (working_hours_start !== undefined) updateData.working_hours_start = working_hours_start;
+    if (working_hours_end !== undefined) updateData.working_hours_end = working_hours_end;
+    if (consultation_fee !== undefined) updateData.consultation_fee = consultation_fee;
+    if (accept_new_patients !== undefined) updateData.accept_new_patients = accept_new_patients;
 
-    if (result.length === 0) {
-      // Create settings if they don't exist
-      const newSettings = await sql`
-        INSERT INTO doctor_settings (
-          doctor_id, 
-          default_appointment_duration, 
-          working_hours_start, 
-          working_hours_end,
-          consultation_fee,
-          accept_new_patients,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          ${doctorId}, 
-          ${default_appointment_duration || 30}, 
-          ${working_hours_start || '09:00'}, 
-          ${working_hours_end || '17:00'},
-          ${consultation_fee || 0},
-          ${accept_new_patients !== undefined ? accept_new_patients : true},
-          CURRENT_TIMESTAMP,
-          CURRENT_TIMESTAMP
-        )
-        RETURNING *
-      `;
-      return res.json({ success: true, message: 'Settings created successfully', data: newSettings[0] });
+    // Check existence
+    const { data: existing } = await supabase.from('doctor_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
+
+    let resultData;
+
+    if (existing) {
+      const { data: upd } = await supabase
+        .from('doctor_settings')
+        .update(updateData)
+        .eq('doctor_id', doctorId)
+        .select()
+        .single();
+      resultData = upd;
+    } else {
+      const insertData = {
+        doctor_id: doctorId,
+        default_appointment_duration: default_appointment_duration || 30,
+        working_hours_start: working_hours_start || '09:00',
+        working_hours_end: working_hours_end || '17:00',
+        consultation_fee: consultation_fee || 0,
+        accept_new_patients: accept_new_patients !== undefined ? accept_new_patients : true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      const { data: ins } = await supabase
+        .from('doctor_settings')
+        .insert(insertData)
+        .select()
+        .single();
+      resultData = ins;
     }
 
-    res.json({ success: true, message: 'Settings updated successfully', data: result[0] });
+    res.json({ success: true, message: 'Settings updated successfully', data: resultData });
   } catch (error) {
     console.error('Error updating doctor settings:', error);
     res.status(500).json({ success: false, message: 'Failed to update settings' });
@@ -138,61 +137,28 @@ router.put('/settings', authenticateToken, async (req, res) => {
 router.get('/settings/notifications', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    
-    const settings = await sql`
-      SELECT notification_settings FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
 
-    const notificationSettings = settings.length > 0 && settings[0].notification_settings 
-      ? settings[0].notification_settings 
-      : {
-          globalMute: false,
-          appointments: {
-            enabled: true,
-            email: true,
-            push: true,
-            sms: false
-          },
-          billing: {
-            enabled: true,
-            email: true,
-            push: true,
-            sms: false
-          },
-          chat: {
-            enabled: true,
-            email: false,
-            push: true,
-            sms: false
-          },
-          patients: {
-            enabled: true,
-            email: true,
-            push: true,
-            sms: false
-          },
-          system: {
-            enabled: true,
-            email: true,
-            push: false,
-            sms: false
-          },
-          frequency: 'immediate',
-          quietHours: {
-            enabled: false,
-            startTime: '22:00',
-            endTime: '07:00'
-          },
-          // Legacy support for existing clients
-          emailNotifications: true,
-          appointmentReminders: true,
-          newPatientAlerts: true,
-          billingAlerts: true,
-          marketingEmails: false,
-          smsNotifications: true,
-          pushNotifications: true,
-          weeklyReports: true
-        };
+    const { data: settings } = await supabase.from('doctor_settings').select('notification_settings').eq('doctor_id', doctorId).maybeSingle();
+
+    const notificationSettings = settings?.notification_settings || {
+      globalMute: false,
+      appointments: { enabled: true, email: true, push: true, sms: false },
+      billing: { enabled: true, email: true, push: true, sms: false },
+      chat: { enabled: true, email: false, push: true, sms: false },
+      patients: { enabled: true, email: true, push: true, sms: false },
+      system: { enabled: true, email: true, push: false, sms: false },
+      frequency: 'immediate',
+      quietHours: { enabled: false, startTime: '22:00', endTime: '07:00' },
+      // Legacy support for existing clients
+      emailNotifications: true,
+      appointmentReminders: true,
+      newPatientAlerts: true,
+      billingAlerts: true,
+      marketingEmails: false,
+      smsNotifications: true,
+      pushNotifications: true,
+      weeklyReports: true
+    };
 
     res.json(notificationSettings);
   } catch (error) {
@@ -206,9 +172,8 @@ router.put('/settings/notifications', authenticateToken, async (req, res) => {
     const doctorId = req.doctorId;
     let notificationSettings = req.body;
 
-    // Validate and migrate notification settings if needed
+    // Validate and migrate notification settings if needed (logic preserved from original)
     if (!notificationSettings.appointments) {
-      // Legacy settings migration
       notificationSettings = {
         globalMute: notificationSettings.globalMute || false,
         appointments: {
@@ -247,7 +212,6 @@ router.put('/settings/notifications', authenticateToken, async (req, res) => {
           startTime: '22:00',
           endTime: '07:00'
         },
-        // Preserve legacy fields for backward compatibility
         ...notificationSettings
       };
     }
@@ -270,14 +234,22 @@ router.put('/settings/notifications', authenticateToken, async (req, res) => {
     }
 
     // Upsert notification settings
-    await sql`
-      INSERT INTO doctor_settings (doctor_id, notification_settings, updated_at)
-      VALUES (${doctorId}, ${JSON.stringify(notificationSettings)}, CURRENT_TIMESTAMP)
-      ON CONFLICT (doctor_id) 
-      DO UPDATE SET 
-        notification_settings = ${JSON.stringify(notificationSettings)},
-        updated_at = CURRENT_TIMESTAMP
-    `;
+    const { data: existing } = await supabase.from('doctor_settings').select('id').eq('doctor_id', doctorId).maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('doctor_settings')
+        .update({ notification_settings: notificationSettings, updated_at: new Date().toISOString() })
+        .eq('doctor_id', doctorId);
+    } else {
+      await supabase
+        .from('doctor_settings')
+        .insert({
+          doctor_id: doctorId,
+          notification_settings: notificationSettings,
+          updated_at: new Date().toISOString()
+        });
+    }
 
     res.json({
       success: true,
@@ -294,16 +266,11 @@ router.put('/settings/notifications', authenticateToken, async (req, res) => {
 router.get('/settings/notification-preferences', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    
-    const settings = await sql`
-      SELECT notification_settings FROM doctor_settings WHERE doctor_id = ${doctorId}
-    `;
 
-    const notificationSettings = settings.length > 0 && settings[0].notification_settings 
-      ? settings[0].notification_settings 
-      : {};
+    const { data: settings } = await supabase.from('doctor_settings').select('notification_settings').eq('doctor_id', doctorId).maybeSingle();
 
-    // Format for frontend consumption
+    const notificationSettings = settings?.notification_settings || {};
+
     const preferences = {
       categories: {
         appointments: notificationSettings.appointments || { enabled: true, email: true, push: true, sms: false },
@@ -319,19 +286,19 @@ router.get('/settings/notification-preferences', authenticateToken, async (req, 
       },
       summary: {
         totalEnabled: Object.values(notificationSettings.appointments || {}).filter(v => v === true).length +
-                     Object.values(notificationSettings.billing || {}).filter(v => v === true).length +
-                     Object.values(notificationSettings.chat || {}).filter(v => v === true).length +
-                     Object.values(notificationSettings.patients || {}).filter(v => v === true).length +
-                     Object.values(notificationSettings.system || {}).filter(v => v === true).length,
-        emailEnabled: [notificationSettings.appointments?.email, notificationSettings.billing?.email, 
-                      notificationSettings.chat?.email, notificationSettings.patients?.email, 
-                      notificationSettings.system?.email].filter(Boolean).length,
-        pushEnabled: [notificationSettings.appointments?.push, notificationSettings.billing?.push, 
-                     notificationSettings.chat?.push, notificationSettings.patients?.push, 
-                     notificationSettings.system?.push].filter(Boolean).length,
-        smsEnabled: [notificationSettings.appointments?.sms, notificationSettings.billing?.sms, 
-                    notificationSettings.chat?.sms, notificationSettings.patients?.sms, 
-                    notificationSettings.system?.sms].filter(Boolean).length
+          Object.values(notificationSettings.billing || {}).filter(v => v === true).length +
+          Object.values(notificationSettings.chat || {}).filter(v => v === true).length +
+          Object.values(notificationSettings.patients || {}).filter(v => v === true).length +
+          Object.values(notificationSettings.system || {}).filter(v => v === true).length,
+        emailEnabled: [notificationSettings.appointments?.email, notificationSettings.billing?.email,
+        notificationSettings.chat?.email, notificationSettings.patients?.email,
+        notificationSettings.system?.email].filter(Boolean).length,
+        pushEnabled: [notificationSettings.appointments?.push, notificationSettings.billing?.push,
+        notificationSettings.chat?.push, notificationSettings.patients?.push,
+        notificationSettings.system?.push].filter(Boolean).length,
+        smsEnabled: [notificationSettings.appointments?.sms, notificationSettings.billing?.sms,
+        notificationSettings.chat?.sms, notificationSettings.patients?.sms,
+        notificationSettings.system?.sms].filter(Boolean).length
       }
     };
 
@@ -346,20 +313,17 @@ router.get('/settings/notification-preferences', authenticateToken, async (req, 
 router.post('/settings/test-notification', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
-    const { type, method } = req.body; // type: 'appointments', 'billing', etc. method: 'email', 'push', 'sms'
+    const { type, method } = req.body;
 
-    // Get doctor info for personalization
-    const doctor = await sql`
-      SELECT first_name, last_name, email FROM doctors WHERE id = ${doctorId}
-    `;
+    const { data: doctor } = await supabase.from('doctors').select('first_name, last_name, email').eq('id', doctorId).maybeSingle();
 
-    if (doctor.length === 0) {
+    if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
 
     const testMessages = {
       appointments: {
-        email: `Test: Appointment reminder for Dr. ${doctor[0].first_name} ${doctor[0].last_name}`,
+        email: `Test: Appointment reminder for Dr. ${doctor.first_name} ${doctor.last_name}`,
         push: 'Test: You have an upcoming appointment in 30 minutes',
         sms: 'Test: Appointment reminder - Patient John Doe at 2:00 PM today'
       },
@@ -387,8 +351,6 @@ router.post('/settings/test-notification', authenticateToken, async (req, res) =
 
     const message = testMessages[type]?.[method] || 'Test notification';
 
-    // In a real implementation, you would send actual notifications here
-    // For now, we'll just simulate it
     console.log(`Sending test ${method} notification to doctor ${doctorId}: ${message}`);
 
     res.json({
@@ -412,8 +374,9 @@ router.delete('/delete-account', authenticateToken, async (req, res) => {
   try {
     const doctorId = req.doctorId;
 
-    // Delete all related data (cascade deletes should handle most of this)
-    await sql`DELETE FROM doctors WHERE id = ${doctorId}`;
+    // Delete related data (CASCADE handles most, but manual cleanup often safer or required if no cascade)
+    // Assuming Supabase foreign keys are set to CASCADE.
+    await supabase.from('doctors').delete().eq('id', doctorId);
 
     res.json({
       success: true,
