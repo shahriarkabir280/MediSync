@@ -106,7 +106,7 @@ const DoctorDashboard = () => {
     <div className="flex h-screen bg-background text-foreground selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300">
       {/* Left Sidebar */}
       <aside
-        className={`${isCollapsed ? 'w-20' : 'w-72'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative z-50`}
+        className={`${isCollapsed ? 'w-20' : 'w-72'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[transition-timing-function:cubic-bezier(0.23,1,0.32,1)] relative z-50`}
       >
         {/* Sidebar Header */}
         <div className={`h-24 flex items-center justify-between ${isCollapsed ? 'px-0 justify-center' : 'px-8'} border-b border-gray-800/50`}>
@@ -304,7 +304,7 @@ const DoctorDashboard = () => {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
       `}</style>
-    </div>
+    </div >
   );
 };
 
