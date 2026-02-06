@@ -161,16 +161,16 @@ const AnalyticsTab = memo(() => {
     const areaPoints = data.length > 1 ? `0,100 ${points} 100,100` : `0,100 50,${100 - (data[0].value / maxValue) * 100} 100,100`;
 
     return (
-      <div className="bg-card rounded-3xl p-8 border border-border shadow-sm group h-full">
-        <div className="flex items-start justify-between mb-8">
+      <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-sm group h-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h3 className="font-bold text-foreground flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-500" />
-              {title}
+            <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
+              <TrendingUp className="w-4 h-4 text-indigo-500 shrink-0" />
+              <span className="truncate">{title}</span>
             </h3>
-            {tagline && <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-6">{tagline}</p>}
+            {tagline && <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-6">{tagline}</p>}
           </div>
-          <span className="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-2 py-1 rounded-lg uppercase tracking-widest">Live Performance</span>
+          <span className="text-[9px] sm:text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-2 py-1 rounded-lg uppercase tracking-widest shrink-0">Live Performance</span>
         </div>
         <div className="relative h-32 w-full mb-4">
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
@@ -253,7 +253,7 @@ const AnalyticsTab = memo(() => {
 
   return (
     <div className="min-h-screen bg-transparent pb-24 transition-colors duration-300">
-      <div className="bg-card/80 dark:bg-card/50 backdrop-blur-xl sticky top-0 z-30 border-b border-border shadow-sm p-6 transition-colors duration-300">
+      <div className="bg-card/80 dark:bg-card/50 backdrop-blur-xl sticky top-0 z-30 border-b border-border shadow-sm p-4 sm:p-6 transition-colors duration-300">
         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -268,21 +268,20 @@ const AnalyticsTab = memo(() => {
                 <button
                   key={range}
                   onClick={() => setActiveTimeRange(range)}
-                  className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 min-w-[95px] ${activeTimeRange === range
+                  className={`px-3 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 min-w-[70px] sm:min-w-[95px] ${activeTimeRange === range
                     ? 'bg-card text-indigo-500 shadow-xl shadow-black/5 dark:shadow-indigo-500/10 scale-105 z-10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-card/50'}`}
                 >
-                  {range}ly
+                  {range === 'week' ? 'Weekly' : range === 'month' ? 'Monthly' : 'Yearly'}
                 </button>
               ))}
             </div>
-            <button onClick={fetchAnalytics} className="p-3 bg-card border border-border rounded-xl hover:bg-muted text-foreground transition-all shadow-sm"><RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
         </div>
       </div>
 
-      <div className="p-8 max-w-[1600px] mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
           <MetricCard title="Total Patients" value={patientAnalytics?.totalPatients || 0} subtext="Lifetime base" icon={Users} trend={patientAnalytics?.trend} colorClass="blue" />
           <MetricCard title="Loyal Revisit" value={appointmentAnalytics?.recurringPatients || 0} subtext="Recurring base" icon={RefreshCw} colorClass="emerald" />
           <MetricCard title="Active visits" value={appointmentAnalytics?.appointmentsByStatus?.reduce((a, c) => a + Number(c.count), 0) || 0} subtext={`Period: ${activeTimeRange}`} icon={Calendar} trend={appointmentAnalytics?.visitTrend} colorClass="indigo" />
@@ -306,8 +305,8 @@ const AnalyticsTab = memo(() => {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <div className="bg-card rounded-3xl p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
-            <div className="mb-8">
+          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
+            <div className="mb-6 sm:mb-8">
               <h3 className="text-xl font-black text-foreground flex items-center gap-3">
                 <Activity className="w-6 h-6 text-indigo-500" />
                 Practice Mix
@@ -337,8 +336,8 @@ const AnalyticsTab = memo(() => {
             </div>
           </div>
 
-          <div className="bg-card rounded-3xl p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
-            <div className="mb-8">
+          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
+            <div className="mb-6 sm:mb-8">
               <h3 className="text-xl font-black text-foreground flex items-center gap-3">
                 <Users className="w-6 h-6 text-purple-500" />
                 Age Categories
@@ -385,7 +384,7 @@ const AnalyticsTab = memo(() => {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-card rounded-[2rem] p-8 border border-border shadow-xl flex flex-col justify-center">
+            <div className="bg-card rounded-[2rem] p-6 sm:p-8 border border-border shadow-xl flex flex-col justify-center">
               <div className="mb-6">
                 <h3 className="text-xs font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
                   <Activity className="w-4 h-4 text-rose-500" />
@@ -411,7 +410,7 @@ const AnalyticsTab = memo(() => {
               </div>
             </div>
 
-            <div className="bg-card rounded-[2rem] p-8 border border-border shadow-xl flex flex-col">
+            <div className="bg-card rounded-[2rem] p-6 sm:p-8 border border-border shadow-xl flex flex-col">
               <div className="mb-6">
                 <h3 className="text-xs font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
                   <PieChart className="w-4 h-4 text-emerald-500" />
@@ -448,7 +447,7 @@ const AnalyticsTab = memo(() => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-[2rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-[2rem] p-6 sm:p-10 text-white shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform blur-2xl"></div>
             <div className="mb-10">
               <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-300">
@@ -459,7 +458,7 @@ const AnalyticsTab = memo(() => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 relative z-10">
               <div className="space-y-2 border-l-2 border-blue-500/30 pl-6">
                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-300/60">Avg Consultation</p>
-                <p className="text-5xl font-black tracking-tighter">
+                <p className="text-3xl sm:text-5xl font-black tracking-tighter">
                   {appointmentAnalytics?.efficiency?.avgConsultation || '0'}
                   <span className="text-sm font-bold text-blue-400/50 ml-2">min</span>
                 </p>
@@ -467,7 +466,7 @@ const AnalyticsTab = memo(() => {
               </div>
               <div className="space-y-2 border-l-2 border-blue-500/30 pl-6">
                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-300/60">Wait Time Index</p>
-                <p className="text-5xl font-black tracking-tighter text-emerald-400">
+                <p className="text-3xl sm:text-5xl font-black tracking-tighter text-emerald-400">
                   {appointmentAnalytics?.efficiency?.avgWaitTime || '0'}
                   <span className="text-sm font-bold text-emerald-400/30 ml-2">min</span>
                 </p>
@@ -485,15 +484,15 @@ const AnalyticsTab = memo(() => {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="bg-card rounded-[2.5rem] p-10 border border-border shadow-xl lg:col-span-3 text-left">
-            <div className="mb-10">
+          <div className="bg-card rounded-[2.5rem] p-6 sm:p-10 border border-border shadow-xl lg:col-span-3 text-left">
+            <div className="mb-6 sm:mb-10">
               <h3 className="text-xl font-black text-foreground flex items-center gap-3">
                 <div className="p-3 bg-purple-500/10 rounded-2xl"><Calendar className="w-6 h-6 text-purple-500" /></div>
                 Weekly Demand Profile
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-16">Patient load mapped across days</p>
             </div>
-            <div className="flex items-end justify-between h-56 gap-4">
+            <div className="flex items-end justify-between h-56 gap-1 sm:gap-4">
               {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
                 const dayData = appointmentAnalytics?.appointmentsByDay?.find(d => d.day.trim() === day);
                 const count = Number(dayData?.count || 0);
@@ -512,22 +511,22 @@ const AnalyticsTab = memo(() => {
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{day.substring(0, 3)}</span>
+                    <span className="text-[8px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest">{day.substring(0, 3)}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="bg-card rounded-[2.5rem] p-10 border border-border shadow-xl relative lg:col-span-2">
-            <div className="mb-10">
+          <div className="bg-card rounded-[2.5rem] p-6 sm:p-10 border border-border shadow-xl relative lg:col-span-2">
+            <div className="mb-6 sm:mb-10">
               <h3 className="text-xl font-black text-foreground flex items-center gap-3">
                 <div className="p-3 bg-blue-500/10 rounded-2xl"><Clock className="w-6 h-6 text-blue-500" /></div>
                 Traffic Matrix
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-16">Hourly arrival density heat</p>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-4">
               {appointmentAnalytics?.peakHours?.map((hour, idx) => (
                 <div key={idx} className="flex flex-col items-center gap-4 group">
                   <div className="w-full h-32 bg-muted/30 rounded-[2rem] flex flex-col justify-end p-1 transition-all group-hover:bg-blue-500/10 border border-transparent group-hover:border-blue-500/20">
@@ -544,7 +543,7 @@ const AnalyticsTab = memo(() => {
         </section>
 
         {revenueAnalytics && (
-          <section className="bg-[#0f172a] rounded-[4rem] p-16 text-white relative overflow-hidden shadow-2xl">
+          <section className="bg-[#0f172a] rounded-[3rem] sm:rounded-[4rem] p-8 sm:p-12 md:p-16 text-white relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full -mr-64 -mt-64"></div>
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
               <div className="space-y-8">
@@ -552,17 +551,17 @@ const AnalyticsTab = memo(() => {
                   <TakaIcon className="text-sm text-blue-400" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Financial Summary</span>
                 </div>
-                <h2 className="text-6xl font-black tracking-tight leading-none">Revenue <br /><span className="text-blue-500">Analytics.</span></h2>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-none">Revenue <br /><span className="text-blue-500">Analytics.</span></h2>
                 <p className="text-blue-300/60 text-sm font-bold tracking-widest uppercase">Lifetime earnings & cycle performance overview</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 font-black uppercase tracking-widest">
-                <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 font-black uppercase tracking-widest">
+                <div className="bg-white/5 p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
                   <p className="text-blue-400 text-[10px] mb-4">Total Earn</p>
-                  <p className="text-5xl tracking-tighter">৳{revenueAnalytics.totalRevenue?.toLocaleString()}</p>
+                  <p className="text-3xl sm:text-5xl tracking-tighter">৳{revenueAnalytics.totalRevenue?.toLocaleString()}</p>
                 </div>
-                <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
+                <div className="bg-white/5 p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
                   <p className="text-emerald-400 text-[10px] mb-4">Cycle</p>
-                  <p className="text-5xl tracking-tighter text-emerald-400">৳{revenueAnalytics.revenueThisMonth?.toLocaleString()}</p>
+                  <p className="text-3xl sm:text-5xl tracking-tighter text-emerald-400">৳{revenueAnalytics.revenueThisMonth?.toLocaleString()}</p>
                 </div>
               </div>
             </div>
