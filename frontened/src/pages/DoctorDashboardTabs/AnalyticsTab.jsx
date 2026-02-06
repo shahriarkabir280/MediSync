@@ -43,24 +43,24 @@ const AnalyticsTab = memo(() => {
 
   // Metric Card Component
   const MetricCard = ({ title, value, subtext, icon: Icon, trend, colorClass }) => (
-    <div className="bg-card rounded-3xl p-6 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
-      <div className={`absolute top-0 right-0 w-32 h-32 opacity-10 dark:opacity-5 rounded-bl-full -mr-8 -mt-8 bg-${colorClass}-500 transition-transform group-hover:scale-110`}></div>
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <h4 className="font-semibold text-muted-foreground mb-1 text-xs uppercase tracking-wider">{title}</h4>
-          <p className="text-3xl font-bold text-foreground mb-2 truncate">{value}</p>
-          <div className="flex items-center gap-2">
+    <div className="bg-card rounded-3xl p-5 sm:p-6 lg:p-7 border border-border shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+      <div className={`absolute top-0 right-0 w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 opacity-10 dark:opacity-5 rounded-bl-full -mr-8 -mt-8 bg-${colorClass}-500 transition-transform group-hover:scale-110`}></div>
+      <div className="flex items-start justify-between relative z-10 gap-4">
+        <div className="min-w-0 flex-1">
+          <h4 className="font-semibold text-muted-foreground mb-1.5 text-[10px] sm:text-xs uppercase tracking-wider leading-tight">{title}</h4>
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">{value}</p>
+          <div className="flex items-center gap-2 overflow-hidden flex-wrap">
             {trend && (
-              <span className={`flex items-center text-[10px] font-black px-2 py-0.5 rounded-full ${trend > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                {trend > 0 ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+              <span className={`flex items-center text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${trend > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                {trend > 0 ? <ArrowUpRight className="w-2.5 h-2.5 mr-0.5" /> : <TrendingDown className="w-2.5 h-2.5 mr-0.5" />}
                 {Math.abs(trend)}%
               </span>
             )}
             <span className="text-[10px] text-muted-foreground font-bold uppercase truncate">{subtext}</span>
           </div>
         </div>
-        <div className={`p-4 bg-${colorClass}-500/10 rounded-2xl transition-colors group-hover:bg-${colorClass}-500/20`}>
-          <Icon className={`w-6 h-6 text-${colorClass}-500`} />
+        <div className={`p-4 bg-${colorClass}-500/10 rounded-[1.25rem] sm:rounded-2xl transition-colors group-hover:bg-${colorClass}-500/20 shrink-0`}>
+          <Icon className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-${colorClass}-500`} />
         </div>
       </div>
     </div>
@@ -79,16 +79,16 @@ const AnalyticsTab = memo(() => {
     };
 
     return (
-      <div className="bg-card rounded-3xl p-8 border border-border shadow-sm h-full flex flex-col">
-        <div className="mb-8">
-          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-indigo-500" />
-            {title}
+      <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-sm h-full flex flex-col h-full flex flex-col overflow-hidden">
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+            <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 shrink-0" />
+            <span className="truncate">{title}</span>
           </h3>
-          {tagline && <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-7">{tagline}</p>}
+          {tagline && <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-1 sm:ml-7 truncate">{tagline}</p>}
         </div>
-        <div className="flex flex-col md:flex-row items-center gap-8 flex-1">
-          <div className="relative w-40 h-40 shrink-0">
+        <div className="flex flex-col items-center gap-6 sm:gap-8 flex-1 w-full">
+          <div className="relative w-32 h-32 sm:w-40 sm:h-40 shrink-0">
             <svg viewBox="-1 -1 2 2" className="transform -rotate-90 w-full h-full">
               {total === 0 ? (
                 <circle cx="0" cy="0" r="1" fill="currentColor" className="text-muted/20" />
@@ -120,19 +120,19 @@ const AnalyticsTab = memo(() => {
               <span className="text-[10px] uppercase text-muted-foreground font-black tracking-widest">{total === 0 ? 'Empty' : 'Total'}</span>
             </div>
           </div>
-          <div className="flex-1 space-y-2 w-full">
+          <div className="w-full space-y-3 mt-2 sm:mt-4">
             {total === 0 ? (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground font-medium font-bold uppercase tracking-widest">No records</p>
               </div>
             ) : data?.map((item, index) => (
-              <div key={index} className="flex items-center justify-between group">
-                <div className="flex items-center gap-3 overflow-hidden">
+              <div key={index} className="flex items-center justify-between group gap-4">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[index % colors.length] }}></div>
-                  <span className="text-xs font-bold text-foreground capitalize truncate">{item.status || item.gender || item.age_group || 'Value'}</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-foreground capitalize leading-tight">{item.status || item.gender || item.age_group || 'Value'}</span>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs font-black text-foreground">{item.count}</span>
+                <div className="flex items-center gap-3 shrink-0 ml-auto">
+                  <span className="text-[11px] sm:text-xs font-black text-foreground">{item.count}</span>
                   <span className="text-[10px] font-bold text-muted-foreground w-8 text-right">{total > 0 ? ((Number(item.count) / total) * 100).toFixed(0) : 0}%</span>
                 </div>
               </div>
@@ -280,7 +280,7 @@ const AnalyticsTab = memo(() => {
         </div>
       </div>
 
-      <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
           <MetricCard title="Total Patients" value={patientAnalytics?.totalPatients || 0} subtext="Lifetime base" icon={Users} trend={patientAnalytics?.trend} colorClass="blue" />
           <MetricCard title="Loyal Revisit" value={appointmentAnalytics?.recurringPatients || 0} subtext="Recurring base" icon={RefreshCw} colorClass="emerald" />
@@ -304,16 +304,16 @@ const AnalyticsTab = memo(() => {
           />
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 transition-all">
+          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01] h-full flex flex-col">
             <div className="mb-6 sm:mb-8">
-              <h3 className="text-xl font-black text-foreground flex items-center gap-3">
-                <Activity className="w-6 h-6 text-indigo-500" />
-                Practice Mix
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 shrink-0" />
+                <span className="truncate">Practice Mix</span>
               </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-9">Service distribution breakdown</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-1 sm:ml-7 truncate">Service distribution breakdown</p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1">
               {['consultation', 'follow-up', 'procedure', 'check-up'].map((type) => {
                 const data = appointmentAnalytics?.appointmentsByType?.find(t => t.appointment_type === type);
                 const count = Number(data?.count || 0);
@@ -336,15 +336,15 @@ const AnalyticsTab = memo(() => {
             </div>
           </div>
 
-          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01]">
+          <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-lg transition-transform hover:scale-[1.01] h-full flex flex-col">
             <div className="mb-6 sm:mb-8">
-              <h3 className="text-xl font-black text-foreground flex items-center gap-3">
-                <Users className="w-6 h-6 text-purple-500" />
-                Age Categories
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 shrink-0" />
+                <span className="truncate">Age Categories</span>
               </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-9">Demographics by age group</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 ml-1 sm:ml-7 truncate">Demographics by age group</p>
             </div>
-            <div className="space-y-5">
+            <div className="space-y-5 flex-1">
               {(patientAnalytics?.patientsByAgeGroup?.length > 0 ? patientAnalytics.patientsByAgeGroup : [{ age_group: 'N/A', count: 0 }]).map((item, index) => (
                 <div key={index} className="space-y-2 group/bar">
                   <div className="flex justify-between items-end mb-1">
@@ -369,7 +369,7 @@ const AnalyticsTab = memo(() => {
           />
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
           <ModernPieChart
             title="Appointment Status"
             tagline="Daily session completion rate"
@@ -382,8 +382,8 @@ const AnalyticsTab = memo(() => {
           />
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
             <div className="bg-card rounded-[2rem] p-6 sm:p-8 border border-border shadow-xl flex flex-col justify-center">
               <div className="mb-6">
                 <h3 className="text-xs font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
@@ -483,7 +483,7 @@ const AnalyticsTab = memo(() => {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8">
           <div className="bg-card rounded-[2.5rem] p-6 sm:p-10 border border-border shadow-xl lg:col-span-3 text-left">
             <div className="mb-6 sm:mb-10">
               <h3 className="text-xl font-black text-foreground flex items-center gap-3">
