@@ -1033,7 +1033,7 @@ const AppointmentTab = memo(() => {
                         <div className="space-y-2.5">
                             <label className="text-[11px] font-bold text-muted-foreground ml-1">Consultation Fee</label>
                             <div className="relative">
-                                <DollarSign size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-bold text-lg select-none">৳</span>
                                 <input
                                     type="number"
                                     step="0.01"

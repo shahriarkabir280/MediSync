@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
-import { Users, Calendar, DollarSign, Activity, RefreshCw, Download, ChevronDown, TrendingUp, TrendingDown, Clock, PieChart, BarChart3, ArrowUpRight } from "lucide-react";
+import { Users, Calendar, Activity, RefreshCw, Download, ChevronDown, TrendingUp, TrendingDown, Clock, PieChart, BarChart3, ArrowUpRight } from "lucide-react";
 import { analyticsApi, doctorApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
+
+const TakaIcon = ({ className }) => (
+  <span className={`${className} flex items-center justify-center font-bold select-none`}>৳</span>
+);
 
 const AnalyticsTab = memo(() => {
   const { doctorId } = useDoctor();
@@ -282,7 +286,7 @@ const AnalyticsTab = memo(() => {
           <MetricCard title="Total Patients" value={patientAnalytics?.totalPatients || 0} subtext="Lifetime base" icon={Users} trend={patientAnalytics?.trend} colorClass="blue" />
           <MetricCard title="Loyal Revisit" value={appointmentAnalytics?.recurringPatients || 0} subtext="Recurring base" icon={RefreshCw} colorClass="emerald" />
           <MetricCard title="Active visits" value={appointmentAnalytics?.appointmentsByStatus?.reduce((a, c) => a + Number(c.count), 0) || 0} subtext={`Period: ${activeTimeRange}`} icon={Calendar} trend={appointmentAnalytics?.visitTrend} colorClass="indigo" />
-          <MetricCard title="Invoiced Earn" value={`$${revenueAnalytics?.totalRevenue?.toLocaleString() || '0.00'}`} subtext={`Period: ${activeTimeRange}`} icon={DollarSign} trend={revenueAnalytics?.trend} colorClass="emerald" />
+          <MetricCard title="Invoiced Earn" value={`৳${revenueAnalytics?.totalRevenue?.toLocaleString() || '0.00'}`} subtext={`Period: ${activeTimeRange}`} icon={TakaIcon} trend={revenueAnalytics?.trend} colorClass="emerald" />
           <MetricCard title="Pending" value={stats?.pendingAppointments || 0} subtext="Needs attention" icon={Activity} colorClass="orange" />
         </section>
 
@@ -400,9 +404,9 @@ const AnalyticsTab = memo(() => {
                 <div className="flex justify-between items-center p-6 bg-blue-500/10 border border-blue-500/20 rounded-[2rem] transition-all hover:bg-blue-500/20">
                   <div>
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-1">Avg Revenue / Visit</span>
-                    <span className="text-4xl font-black text-blue-500 leading-none">${practiceHealth.avgRevenue}</span>
+                    <span className="text-4xl font-black text-blue-500 leading-none">৳{practiceHealth.avgRevenue}</span>
                   </div>
-                  <div className="w-12 h-12 bg-card rounded-2xl shadow-sm flex items-center justify-center text-blue-500"><DollarSign className="w-6 h-6" /></div>
+                  <div className="w-12 h-12 bg-card rounded-2xl shadow-sm flex items-center justify-center text-blue-500"><TakaIcon className="text-xl" /></div>
                 </div>
               </div>
             </div>
@@ -545,7 +549,7 @@ const AnalyticsTab = memo(() => {
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
               <div className="space-y-8">
                 <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                  <DollarSign className="w-4 h-4 text-blue-400" />
+                  <TakaIcon className="text-sm text-blue-400" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Financial Summary</span>
                 </div>
                 <h2 className="text-6xl font-black tracking-tight leading-none">Revenue <br /><span className="text-blue-500">Analytics.</span></h2>
@@ -554,11 +558,11 @@ const AnalyticsTab = memo(() => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 font-black uppercase tracking-widest">
                 <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
                   <p className="text-blue-400 text-[10px] mb-4">Total Earn</p>
-                  <p className="text-5xl tracking-tighter">${revenueAnalytics.totalRevenue?.toLocaleString()}</p>
+                  <p className="text-5xl tracking-tighter">৳{revenueAnalytics.totalRevenue?.toLocaleString()}</p>
                 </div>
                 <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 backdrop-blur-sm group hover:bg-white/10 transition-colors">
                   <p className="text-emerald-400 text-[10px] mb-4">Cycle</p>
-                  <p className="text-5xl tracking-tighter text-emerald-400">${revenueAnalytics.revenueThisMonth?.toLocaleString()}</p>
+                  <p className="text-5xl tracking-tighter text-emerald-400">৳{revenueAnalytics.revenueThisMonth?.toLocaleString()}</p>
                 </div>
               </div>
             </div>

@@ -216,19 +216,19 @@ const BillingTab = memo(() => {
                     <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
                         <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Total Paid</h4>
                         <p className="text-3xl font-black text-emerald-500 tracking-tight">
-                            ${parseFloat(summary.total_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ৳{parseFloat(summary.total_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                     <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
                         <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Pending</h4>
                         <p className="text-3xl font-black text-amber-500 tracking-tight">
-                            ${parseFloat(summary.total_pending || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ৳{parseFloat(summary.total_pending || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                     <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
                         <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Overdue</h4>
                         <p className="text-3xl font-black text-rose-500 tracking-tight">
-                            ${parseFloat(summary.total_overdue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ৳{parseFloat(summary.total_overdue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
                 </div>
@@ -357,7 +357,7 @@ const BillingTab = memo(() => {
                                             {record.description || 'No description'}
                                         </td>
                                         <td className="py-4 px-3 font-bold text-foreground">
-                                            ${parseFloat(record.amount).toFixed(2)}
+                                            ৳{parseFloat(record.amount).toFixed(2)}
                                         </td>
                                         <td className="py-4 px-3 text-sm text-muted-foreground">
                                             {formatDate(record.due_date)}
@@ -460,7 +460,7 @@ const BillingTab = memo(() => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Amount ($)</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Amount (৳)</label>
                                     <input
                                         type="number"
                                         step="0.01"
