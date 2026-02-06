@@ -29,24 +29,17 @@ const PatientSkeleton = () => (
 );
 
 const StatCard = ({ icon: Icon, label, value, subLabel, color }) => (
-    <div className="relative group bg-card/40 backdrop-blur-xl border border-border p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col justify-between overflow-hidden active:scale-[0.98]">
-        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity translate-x-4 -translate-y-4">
-            <Icon size={120} />
-        </div>
-        <div className="flex items-center space-x-4 mb-4">
-            <div className={`p-4 rounded-2xl ${color} bg-opacity-10 shadow-lg`}>
-                <Icon size={24} className={color.replace('bg-', 'text-')} />
+    <div className="bg-card rounded-3xl p-6 sm:p-8 border border-border shadow-sm h-full flex flex-col overflow-hidden group relative hover:shadow-xl transition-all duration-300">
+        <div className={`absolute top-0 right-0 w-24 h-24 lg:w-32 lg:h-32 opacity-10 dark:opacity-5 rounded-bl-full -mr-8 -mt-8 ${color} transition-transform group-hover:scale-110`}></div>
+        <div className="flex items-start justify-between relative z-10 gap-2">
+            <div className="min-w-0">
+                <h4 className="font-semibold text-muted-foreground mb-1 text-[10px] sm:text-xs uppercase tracking-wider truncate">{label}</h4>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground mb-2 truncate">{value}</p>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase truncate block">{subLabel}</span>
             </div>
-            <div>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</p>
-                <div className="flex items-baseline space-x-2">
-                    <h3 className="text-3xl font-black text-foreground tracking-tighter">{value}</h3>
-                    <span className="text-[10px] font-black text-emerald-500">+{subLabel}</span>
-                </div>
+            <div className={`p-3 sm:p-4 ${color}/10 rounded-xl sm:rounded-2xl transition-colors group-hover:bg-${color.split('-')[1]}-500/20 shrink-0`}>
+                <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color.replace('bg-', 'text-')}`} />
             </div>
-        </div>
-        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-            <div className={`h-full ${color} w-2/3 rounded-full opacity-50`}></div>
         </div>
     </div>
 );
@@ -138,14 +131,15 @@ const PatientTab = memo(() => {
 
     // Calculate dynamic stats for the dashboard
     const patientStats = useMemo(() => {
-        const total = patients.length;
+        const totalPatients = patients.length;
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const newThisMonth = patients.filter(p => p.created_at && new Date(p.created_at) > thirtyDaysAgo).length;
         const activePatients = patients.filter(p => (p.total_appointments || 0) > 0).length;
+        const recurringPatients = patients.filter(p => (p.total_appointments || 0) > 1).length; // Example: more than one appointment
 
-        return { total, newThisMonth, activePatients };
+        return { totalPatients, newThisMonth, activePatients, recurringPatients };
     }, [patients]);
 
     const resetPatientForm = useCallback(() => {
@@ -379,32 +373,32 @@ const PatientTab = memo(() => {
     return (
         <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Glassmorphism Header */}
-            <div className="relative p-10 rounded-[3.5rem] bg-indigo-600 dark:bg-card border border-indigo-500/20 dark:border-border overflow-hidden shadow-[0_20px_50px_rgba(79,70,229,0.3)] dark:shadow-none group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-indigo-400/30 transition-colors duration-700"></div>
+            <div className="relative p-6 sm:p-10 rounded-[2rem] sm:rounded-[3.5rem] bg-indigo-600 dark:bg-card border border-indigo-500/20 dark:border-border overflow-hidden shadow-[0_20px_50px_rgba(79,70,229,0.3)] dark:shadow-none group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl group-hover:bg-white/20 transition-colors"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-400/20 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl"></div>
 
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-                    <div className="space-y-4">
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-10">
+                    <div className="space-y-2 sm:space-y-4">
                         <div className="flex items-center space-x-3 text-indigo-100 dark:text-indigo-400 mb-2">
                             <div className="p-2 bg-white/20 dark:bg-indigo-500/10 rounded-xl backdrop-blur-md">
                                 <Users size={24} className="text-white dark:text-indigo-500" />
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em]">Patient Management</span>
                         </div>
-                        <h1 className="text-4xl lg:text-5xl font-black text-white dark:text-foreground tracking-tighter leading-none">
+                        <h1 className="text-3xl sm:text-5xl font-black text-white dark:text-foreground tracking-tighter leading-none">
                             Patient <span className="text-indigo-200 dark:text-indigo-500">Registry</span>
                         </h1>
-                        <p className="text-indigo-100/70 dark:text-muted-foreground text-sm font-medium max-w-md leading-relaxed">
+                        <p className="text-xs sm:text-sm text-indigo-100/70 dark:text-muted-foreground max-w-xl font-medium leading-relaxed">
                             Access and manage comprehensive medical records with secure data processing.
                         </p>
                     </div>
 
                     <button
                         onClick={() => setShowNewPatientModal(true)}
-                        className="group flex items-center space-x-4 px-8 py-5 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-900/40 hover:shadow-indigo-500/60 transition-all duration-300 hover:-translate-y-1 active:scale-95"
+                        className="group flex items-center space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white rounded-2xl sm:rounded-3xl font-black text-xs sm:text-sm uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10 dark:shadow-indigo-500/20 shrink-0 self-start lg:self-auto"
                     >
-                        <div className="p-1.5 bg-indigo-500/10 dark:bg-white/20 rounded-xl group-hover:rotate-90 transition-transform duration-500">
-                            <Plus size={20} />
+                        <div className="p-1 sm:p-2 bg-indigo-600/10 dark:bg-white/20 rounded-lg sm:rounded-xl group-hover:rotate-90 transition-transform duration-500">
+                            <Plus size={18} className="sm:w-5 sm:h-5" />
                         </div>
                         <span>Register New Patient</span>
                     </button>
@@ -412,24 +406,24 @@ const PatientTab = memo(() => {
             </div>
 
             {/* Statistics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <StatCard
                     icon={Users}
                     label="Total Patients"
-                    value={patientStats.total}
-                    subLabel="Unique Records"
+                    value={patientStats.totalPatients}
+                    subLabel="Medical Base"
                     color="bg-indigo-600"
                 />
                 <StatCard
-                    icon={TrendingUp}
-                    label="New Arrivals"
-                    value={patientStats.newThisMonth}
-                    subLabel="Last 30 days"
-                    color="bg-emerald-500"
+                    icon={RefreshCw}
+                    label="Recurring Patients"
+                    value={patientStats.recurringPatients}
+                    subLabel="High Loyalty"
+                    color="bg-purple-500"
                 />
                 <StatCard
                     icon={Activity}
-                    label="Active Cases"
+                    label="Patient Activity"
                     value={patientStats.activePatients}
                     subLabel="Current Cycle"
                     color="bg-amber-500"
@@ -438,8 +432,8 @@ const PatientTab = memo(() => {
 
             {/* Enhanced Search & Filter Section */}
             <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-[3rem] blur-2xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-500"></div>
-                <div className="relative flex flex-col lg:flex-row items-center gap-6 p-6 bg-card/60 backdrop-blur-2xl border border-border rounded-[3rem] shadow-xl group-hover:border-indigo-500/20 transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-[2rem] sm:rounded-[3rem] blur-2xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-500"></div>
+                <div className="relative flex flex-col lg:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-card/60 backdrop-blur-2xl border border-border rounded-[2rem] sm:rounded-[3rem] shadow-xl group-hover:border-indigo-500/20 transition-all duration-500">
                     <div className="flex-1 relative w-full group/input">
                         <div className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within/input:text-indigo-500 transition-colors">
                             <Search size={22} className="group-hover/input:scale-110 transition-transform" />
@@ -503,7 +497,7 @@ const PatientTab = memo(() => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                     {filteredPatients.length === 0 ? (
                         <div className="text-center py-12">
                             <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -526,43 +520,43 @@ const PatientTab = memo(() => {
                         filteredPatients.map((patient) => (
                             <div
                                 key={patient.id}
-                                className="group relative bg-card/60 backdrop-blur-xl border border-border rounded-[3rem] p-8 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/40 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4"
+                                className="group relative bg-card/60 backdrop-blur-xl border border-border rounded-[2rem] sm:rounded-[3rem] p-5 sm:p-8 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/40 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 overflow-hidden"
                             >
-                                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                                    <div className="flex items-center space-x-6 flex-1 min-w-0">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                                    <div className="flex items-center space-x-4 sm:space-x-6 flex-1 min-w-0">
                                         <div className="relative flex-shrink-0">
-                                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[2.2rem] flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl sm:rounded-[2.2rem] flex items-center justify-center text-white text-xl sm:text-2xl font-black shadow-xl shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                                 {patient.first_name.charAt(0)}{patient.last_name.charAt(0)}
                                             </div>
-                                            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-card rounded-2xl flex items-center justify-center shadow-lg border-2 border-white dark:border-indigo-900 ring-1 ring-border">
-                                                <Shield size={14} className="text-emerald-500" />
+                                            <div className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 bg-card rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border-2 border-white dark:border-indigo-900 ring-1 ring-border">
+                                                <Shield size={12} className="text-emerald-500 sm:w-[14px] sm:h-[14px]" />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2 flex-1 min-w-0">
-                                            <div className="flex items-center gap-3 flex-wrap">
-                                                <h4 className="text-2xl font-black text-foreground tracking-tighter group-hover:text-indigo-500 transition-colors">
+                                        <div className="space-y-3 flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                                <h4 className="text-xl sm:text-2xl font-black text-foreground tracking-tighter group-hover:text-indigo-500 transition-colors">
                                                     {patient.first_name} {patient.last_name}
                                                 </h4>
-                                                <span className="px-3 py-1 bg-indigo-500/10 text-[10px] font-black text-indigo-500 rounded-lg border border-indigo-500/20 uppercase tracking-[0.2em]">
+                                                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-indigo-500/10 text-[9px] sm:text-[10px] font-black text-indigo-500 rounded-lg border border-indigo-500/20 uppercase tracking-[0.1em] sm:tracking-[0.2em]">
                                                     {patient.unique_id}
                                                 </span>
                                             </div>
 
-                                            <div className="flex flex-nowrap items-center gap-x-6 gap-y-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
-                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                            <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                                <div className="flex items-center space-x-2">
                                                     <div className="p-1.5 bg-muted rounded-lg">
                                                         <Calendar size={14} className="text-indigo-400" />
                                                     </div>
                                                     <span>{calculateAge(patient.date_of_birth)} Years</span>
                                                 </div>
-                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                                <div className="flex items-center space-x-2">
                                                     <div className="p-1.5 bg-rose-500/10 rounded-lg">
                                                         <Heart size={14} className="text-rose-500" />
                                                     </div>
                                                     <span className="text-rose-500">{patient.blood_group || 'N/A'}</span>
                                                 </div>
-                                                <div className="flex items-center space-x-2 whitespace-nowrap">
+                                                <div className="flex items-center space-x-2">
                                                     <div className="p-1.5 bg-indigo-500/10 rounded-lg">
                                                         <User size={14} className="text-indigo-500" />
                                                     </div>
@@ -572,20 +566,20 @@ const PatientTab = memo(() => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between lg:justify-end gap-6 flex-shrink-0">
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em] mb-1">Clinical Record</span>
+                                    <div className="flex items-center justify-between md:justify-end gap-4 sm:gap-6 flex-shrink-0 min-w-0 flex-wrap">
+                                        <div className="flex flex-col items-start md:items-end min-w-0">
+                                            <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-1 w-full">Clinical Record</span>
                                             <div className="flex items-center space-x-2">
-                                                <span className="text-xl font-black text-foreground tracking-tighter">{patient.total_appointments || 0}</span>
-                                                <span className="text-[10px] font-bold text-muted-foreground/60">Consultations</span>
+                                                <span className="text-lg sm:text-xl font-black text-foreground tracking-tighter">{patient.total_appointments || 0}</span>
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground/60">Consultations</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center p-2 bg-muted/50 rounded-[1.8rem] border border-border">
+                                        <div className="flex items-center p-1.5 sm:p-2 bg-muted/50 rounded-2xl sm:rounded-[1.8rem] border border-border shrink-0">
                                             <button
                                                 onClick={() => handleViewDetails(patient)}
                                                 disabled={actionLoading === 'loading-details'}
-                                                className="w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-indigo-500 hover:bg-card rounded-2xl transition-all shadow-indigo-500/10 active:scale-95 group/btn"
+                                                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-muted-foreground hover:text-indigo-500 hover:bg-card rounded-xl sm:rounded-2xl transition-all shadow-indigo-500/10 active:scale-95 group/btn"
                                                 title="Open Patient Sheet"
                                             >
                                                 {actionLoading === 'loading-details' && selectedPatient?.id === patient.id ? (
@@ -594,19 +588,19 @@ const PatientTab = memo(() => {
                                                     <Eye size={24} className="group-hover/btn:scale-125 transition-transform" />
                                                 )}
                                             </button>
-                                            <div className="w-[1px] h-8 bg-border mx-1"></div>
+                                            <div className="w-[1px] h-6 sm:h-8 bg-border mx-1 shrink-0"></div>
                                             <button
                                                 onClick={() => openEditModal(patient)}
-                                                className="w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-amber-500 hover:bg-card rounded-2xl transition-all shadow-amber-500/10 active:scale-95 group/btn"
+                                                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-muted-foreground hover:text-amber-500 hover:bg-card rounded-xl sm:rounded-2xl transition-all shadow-amber-500/10 active:scale-95 group/btn"
                                                 title="Edit Medical Profile"
                                             >
-                                                <Edit3 size={24} className="group-hover/btn:scale-125 transition-transform" />
+                                                <Edit3 size={20} className="sm:w-6 sm:h-6 group-hover/btn:scale-125 transition-transform" />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Detailed Footer - Progressive Disclosure */}
+
                                 <div className="mt-8 pt-8 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-2 opacity-40 group-hover:opacity-100 transition-opacity duration-500 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                                     <span className="flex items-center space-x-2">
                                         <MapPin size={14} className="text-indigo-400 flex-shrink-0" />
@@ -625,1007 +619,1014 @@ const PatientTab = memo(() => {
             </div>
 
             {/* New Patient Modal */}
-            {showNewPatientModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border/60 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
-                            <div>
-                                <h2 className="text-3xl font-black text-foreground tracking-tighter">Registration Portal</h2>
-                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Initialize new clinical record</p>
+            {
+                showNewPatientModal && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                                <div>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter">Registration Portal</h2>
+                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Initialize new clinical record</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowNewPatientModal(false);
+                                        resetPatientForm();
+                                    }}
+                                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border transition-all active:scale-90"
+                                >
+                                    <X size={20} className="sm:w-6 sm:h-6" />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => {
-                                    setShowNewPatientModal(false);
-                                    resetPatientForm();
-                                }}
-                                className="w-12 h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-2xl border border-border transition-all active:scale-90"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
-                            {error && (
-                                <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
-                                    <AlertCircle size={18} />
-                                    <span>{error}</span>
-                                </div>
-                            )}
+                            <div className="flex-1 overflow-y-auto p-6 sm:p-10 no-scrollbar">
+                                {error && (
+                                    <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
+                                        <AlertCircle size={18} />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
 
-                            <form onSubmit={handleCreatePatient} className="space-y-8">
-                                {/* Basic Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
-                                        <input
-                                            type="text"
-                                            value={patientForm.first_name}
-                                            onChange={(e) => setPatientForm({ ...patientForm, first_name: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            placeholder="e.g. John"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
-                                        <input
-                                            type="text"
-                                            value={patientForm.last_name}
-                                            onChange={(e) => setPatientForm({ ...patientForm, last_name: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            placeholder="e.g. Doe"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
-                                        <input
-                                            type="email"
-                                            value={patientForm.email}
-                                            onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            placeholder="john.doe@example.com"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
-                                        <input
-                                            type="tel"
-                                            value={patientForm.phone}
-                                            onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            placeholder="+1 (555) 000-0000"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
-                                        <input
-                                            type="date"
-                                            value={patientForm.date_of_birth}
-                                            onChange={(e) => setPatientForm({ ...patientForm, date_of_birth: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
-                                        <select
-                                            value={patientForm.gender}
-                                            onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
-                                        >
-                                            <option value="">Select Identity</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
-                                        <select
-                                            value={patientForm.blood_group}
-                                            onChange={(e) => setPatientForm({ ...patientForm, blood_group: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
-                                        >
-                                            <option value="">Select Group</option>
-                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
-                                                <option key={group} value={group}>{group}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
-                                    <textarea
-                                        value={patientForm.address}
-                                        onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
-                                        className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                        rows="2"
-                                        placeholder="Full residential details..."
-                                    />
-                                </div>
-
-                                {/* Emergency Contact Section */}
-                                <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
-                                    <div className="flex items-center space-x-3 mb-2">
-                                        <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
-                                            <Shield size={16} />
-                                        </div>
-                                        <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
-                                    </div>
+                                <form onSubmit={handleCreatePatient} className="space-y-8">
+                                    {/* Basic Information */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
                                             <input
                                                 type="text"
-                                                value={patientForm.emergency_contact_name}
-                                                onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                                placeholder="Legal guardian or relative"
+                                                value={patientForm.first_name}
+                                                onChange={(e) => setPatientForm({ ...patientForm, first_name: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                placeholder="e.g. John"
+                                                required
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
+                                            <input
+                                                type="text"
+                                                value={patientForm.last_name}
+                                                onChange={(e) => setPatientForm({ ...patientForm, last_name: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                placeholder="e.g. Doe"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
+                                            <input
+                                                type="email"
+                                                value={patientForm.email}
+                                                onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                placeholder="john.doe@example.com"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
                                             <input
                                                 type="tel"
-                                                value={patientForm.emergency_contact_phone}
-                                                onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_phone: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                                placeholder="Secondary contact line"
+                                                value={patientForm.phone}
+                                                onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                placeholder="+1 (555) 000-0000"
                                             />
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Medical Info Section */}
-                                <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
-                                    <div className="flex items-center space-x-3 mb-2">
-                                        <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-                                            <Stethoscope size={16} />
-                                        </div>
-                                        <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
-                                    </div>
-                                    <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
-                                            <textarea
-                                                value={patientForm.medical_history}
-                                                onChange={(e) => setPatientForm({ ...patientForm, medical_history: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                rows="3"
-                                                placeholder="Previous conditions, surgeries, chronic diseases..."
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
+                                            <input
+                                                type="date"
+                                                value={patientForm.date_of_birth}
+                                                onChange={(e) => setPatientForm({ ...patientForm, date_of_birth: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
-                                            <textarea
-                                                value={patientForm.allergies}
-                                                onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                rows="2"
-                                                placeholder="Drug, food, or environmental allergies..."
-                                            />
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
+                                            <select
+                                                value={patientForm.gender}
+                                                onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select Identity</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
+                                            <select
+                                                value={patientForm.blood_group}
+                                                onChange={(e) => setPatientForm({ ...patientForm, blood_group: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select Group</option>
+                                                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
+                                                    <option key={group} value={group}>{group}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center space-x-5 pt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowNewPatientModal(false);
-                                            resetPatientForm();
-                                        }}
-                                        className="flex-1 px-10 py-5 border border-border/60 text-muted-foreground font-black text-[12px] uppercase tracking-widest rounded-2xl hover:bg-muted transition-all"
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading === 'create-patient'}
-                                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
-                                    >
-                                        {actionLoading === 'create-patient' ? (
-                                            <div className="flex items-center justify-center space-x-3">
-                                                <RefreshCw size={20} className="animate-spin" />
-                                                <span>Synchronizing...</span>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
+                                        <textarea
+                                            value={patientForm.address}
+                                            onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
+                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                            rows="2"
+                                            placeholder="Full residential details..."
+                                        />
+                                    </div>
+
+                                    {/* Emergency Contact Section */}
+                                    <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
+                                                <Shield size={16} />
                                             </div>
-                                        ) : 'Initialize Record'}
-                                    </button>
-                                </div>
-                            </form>
+                                            <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={patientForm.emergency_contact_name}
+                                                    onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_name: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    placeholder="Legal guardian or relative"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                                <input
+                                                    type="tel"
+                                                    value={patientForm.emergency_contact_phone}
+                                                    onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_phone: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    placeholder="Secondary contact line"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Medical Info Section */}
+                                    <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                                                <Stethoscope size={16} />
+                                            </div>
+                                            <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
+                                                <textarea
+                                                    value={patientForm.medical_history}
+                                                    onChange={(e) => setPatientForm({ ...patientForm, medical_history: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="3"
+                                                    placeholder="Previous conditions, surgeries, chronic diseases..."
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
+                                                <textarea
+                                                    value={patientForm.allergies}
+                                                    onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="2"
+                                                    placeholder="Drug, food, or environmental allergies..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 pt-8">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowNewPatientModal(false);
+                                                resetPatientForm();
+                                            }}
+                                            className="w-full sm:flex-1 px-10 py-4 sm:py-5 border border-border/60 text-muted-foreground font-black text-[11px] sm:text-[12px] uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-muted transition-all"
+                                        >
+                                            Discard
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={actionLoading === 'create-patient'}
+                                            className="w-full sm:flex-[2] py-4 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                        >
+                                            {actionLoading === 'create-patient' ? (
+                                                <div className="flex items-center justify-center space-x-3">
+                                                    <RefreshCw size={18} className="animate-spin" />
+                                                    <span>Synchronizing...</span>
+                                                </div>
+                                            ) : 'Initialize Record'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             {/* Edit Patient Modal */}
-            {showEditPatientModal && selectedPatient && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border/60 rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
-                            <div>
-                                <h2 className="text-3xl font-black text-foreground tracking-tighter">Profile Amendment</h2>
-                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Modify existing clinical registry</p>
+            {
+                showEditPatientModal && selectedPatient && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                                <div>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter">Profile Amendment</h2>
+                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Modify existing clinical registry</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowEditPatientModal(false)}
+                                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border transition-all active:scale-90"
+                                >
+                                    <X size={20} className="sm:w-6 sm:h-6" />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setShowEditPatientModal(false)}
-                                className="w-12 h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-2xl border border-border transition-all active:scale-90"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
-                            {error && (
-                                <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
-                                    <AlertCircle size={18} />
-                                    <span>{error}</span>
-                                </div>
-                            )}
+                            <div className="flex-1 overflow-y-auto p-6 sm:p-10 no-scrollbar">
+                                {error && (
+                                    <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
+                                        <AlertCircle size={18} />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
 
-                            <form onSubmit={handleEditPatient} className="space-y-8">
-                                {/* Basic Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
-                                        <input
-                                            type="text"
-                                            value={editForm.first_name}
-                                            onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
-                                        <input
-                                            type="text"
-                                            value={editForm.last_name}
-                                            onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
-                                        <input
-                                            type="email"
-                                            value={editForm.email}
-                                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
-                                        <input
-                                            type="tel"
-                                            value={editForm.phone}
-                                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
-                                        <input
-                                            type="date"
-                                            value={editForm.date_of_birth}
-                                            onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
-                                        <select
-                                            value={editForm.gender}
-                                            onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
-                                        >
-                                            <option value="">Select Identity</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
-                                        <select
-                                            value={editForm.blood_group}
-                                            onChange={(e) => setEditForm({ ...editForm, blood_group: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
-                                        >
-                                            <option value="">Select Group</option>
-                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
-                                                <option key={group} value={group}>{group}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
-                                    <textarea
-                                        value={editForm.address}
-                                        onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                                        className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                        rows="2"
-                                    />
-                                </div>
-
-                                {/* Emergency Contact */}
-                                <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
-                                    <div className="flex items-center space-x-3 mb-2">
-                                        <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
-                                            <Shield size={16} />
-                                        </div>
-                                        <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
-                                    </div>
+                                <form onSubmit={handleEditPatient} className="space-y-8">
+                                    {/* Basic Information */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
                                             <input
                                                 type="text"
-                                                value={editForm.emergency_contact_name}
-                                                onChange={(e) => setEditForm({ ...editForm, emergency_contact_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                value={editForm.first_name}
+                                                onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                required
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
+                                            <input
+                                                type="text"
+                                                value={editForm.last_name}
+                                                onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
+                                            <input
+                                                type="email"
+                                                value={editForm.email}
+                                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
                                             <input
                                                 type="tel"
-                                                value={editForm.emergency_contact_phone}
-                                                onChange={(e) => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                value={editForm.phone}
+                                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Medical Information */}
-                                <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
-                                    <div className="flex items-center space-x-3 mb-2">
-                                        <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-                                            <Stethoscope size={16} />
-                                        </div>
-                                        <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
-                                    </div>
-                                    <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
-                                            <textarea
-                                                value={editForm.medical_history}
-                                                onChange={(e) => setEditForm({ ...editForm, medical_history: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                rows="3"
-                                                placeholder="Previous conditions, surgeries, chronic diseases..."
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
+                                            <input
+                                                type="date"
+                                                value={editForm.date_of_birth}
+                                                onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
-                                            <textarea
-                                                value={editForm.allergies}
-                                                onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
-                                                className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                rows="2"
-                                                placeholder="Food allergies, drug allergies, environmental allergies..."
-                                            />
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
+                                            <select
+                                                value={editForm.gender}
+                                                onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select Identity</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
+                                            <select
+                                                value={editForm.blood_group}
+                                                onChange={(e) => setEditForm({ ...editForm, blood_group: e.target.value })}
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select Group</option>
+                                                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
+                                                    <option key={group} value={group}>{group}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center space-x-5 pt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEditPatientModal(false)}
-                                        className="flex-1 px-10 py-5 border border-border/60 text-muted-foreground font-black text-[12px] uppercase tracking-widest rounded-2xl hover:bg-muted transition-all"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading === 'edit-patient'}
-                                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
-                                    >
-                                        {actionLoading === 'edit-patient' ? (
-                                            <div className="flex items-center justify-center space-x-3">
-                                                <RefreshCw size={20} className="animate-spin" />
-                                                <span>Updating...</span>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
+                                        <textarea
+                                            value={editForm.address}
+                                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                            rows="2"
+                                        />
+                                    </div>
+
+                                    {/* Emergency Contact */}
+                                    <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
+                                                <Shield size={16} />
                                             </div>
-                                        ) : 'Update Record'}
-                                    </button>
-                                </div>
-                            </form>
+                                            <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={editForm.emergency_contact_name}
+                                                    onChange={(e) => setEditForm({ ...editForm, emergency_contact_name: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                                <input
+                                                    type="tel"
+                                                    value={editForm.emergency_contact_phone}
+                                                    onChange={(e) => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Medical Information */}
+                                    <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                                                <Stethoscope size={16} />
+                                            </div>
+                                            <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
+                                                <textarea
+                                                    value={editForm.medical_history}
+                                                    onChange={(e) => setEditForm({ ...editForm, medical_history: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="3"
+                                                    placeholder="Previous conditions, surgeries, chronic diseases..."
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
+                                                <textarea
+                                                    value={editForm.allergies}
+                                                    onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="2"
+                                                    placeholder="Food allergies, drug allergies, environmental allergies..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 pt-8">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEditPatientModal(false)}
+                                            className="w-full sm:flex-1 px-10 py-4 sm:py-5 border border-border/60 text-muted-foreground font-black text-[11px] sm:text-[12px] uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-muted transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={actionLoading === 'edit-patient'}
+                                            className="w-full sm:flex-[2] py-4 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                        >
+                                            {actionLoading === 'edit-patient' ? (
+                                                <div className="flex items-center justify-center space-x-3">
+                                                    <RefreshCw size={18} className="animate-spin" />
+                                                    <span>Updating...</span>
+                                                </div>
+                                            ) : 'Update Record'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Patient Details Modal */}
-            {showPatientModal && selectedPatient && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 sm:p-10 animate-in fade-in duration-500">
-                    <div className="bg-card/80 backdrop-blur-3xl rounded-[3.5rem] w-full max-w-7xl h-[92vh] flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.5)] dark:shadow-none border border-border/50 relative overflow-hidden animate-in zoom-in-95 duration-700">
-                        {/* High-end Gradient Accents */}
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
+            {
+                showPatientModal && selectedPatient && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-0 sm:p-4 lg:p-10 animate-in fade-in duration-500">
+                        <div className="bg-card/80 backdrop-blur-3xl rounded-none sm:rounded-[2rem] lg:rounded-[3.5rem] w-full max-w-7xl h-full sm:h-[92vh] flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.5)] dark:shadow-none border border-border/50 relative overflow-hidden animate-in zoom-in-95 duration-700">
+                            {/* High-end Gradient Accents */}
+                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
+                            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
 
-                        {/* Modal Header */}
-                        <div className="relative z-10 flex-shrink-0 px-12 py-10 border-b border-border/40 bg-card/40">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                                <div className="flex items-center space-x-6">
-                                    <div className="relative group">
-                                        <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[3rem] flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-indigo-500/20 group-hover:scale-105 transition-all duration-500 ring-4 ring-white dark:ring-indigo-900/20">
-                                            {selectedPatient.first_name.charAt(0)}{selectedPatient.last_name.charAt(0)}
-                                        </div>
-                                        <div className="absolute -bottom-1 -right-1 p-2.5 bg-emerald-500 text-white rounded-2xl border-4 border-white dark:border-indigo-900 shadow-xl ring-1 ring-emerald-400/50">
-                                            <Shield size={18} weight="fill" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-4">
-                                            <h2 className="text-4xl lg:text-5xl font-black text-foreground tracking-tighter leading-tight">
-                                                {selectedPatient.first_name} <span className="text-indigo-500">{selectedPatient.last_name}</span>
-                                            </h2>
-                                            <div className="px-5 py-2 bg-indigo-500/10 text-[10px] font-black text-indigo-500 rounded-2xl border border-indigo-500/20 uppercase tracking-[0.3em] shadow-sm">
-                                                {selectedPatient.unique_id}
+                            {/* Modal Header */}
+                            <div className="relative z-10 flex-shrink-0 px-6 sm:px-12 py-8 sm:py-10 border-b border-border/40 bg-card/40">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
+                                        <div className="relative group">
+                                            <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl sm:rounded-[3rem] flex items-center justify-center text-white text-2xl sm:text-4xl font-black shadow-2xl shadow-indigo-500/20 group-hover:scale-105 transition-all duration-500 ring-4 ring-white dark:ring-indigo-900/20">
+                                                {selectedPatient.first_name.charAt(0)}{selectedPatient.last_name.charAt(0)}
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 p-2 sm:p-2.5 bg-emerald-500 text-white rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white dark:border-indigo-900 shadow-xl ring-1 ring-emerald-400/50">
+                                                <Shield size={14} className="sm:w-[18px] sm:h-[18px]" />
                                             </div>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
-                                            <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
-                                                <Calendar size={18} className="text-indigo-400" />
-                                                <span>{calculateAge(selectedPatient.date_of_birth)} Years</span>
-                                            </span>
-                                            <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
-                                                <MapPin size={18} className="text-muted-foreground/40" />
-                                                <span>{selectedPatient.address || 'Location Hidden'}</span>
-                                            </span>
-                                            <div className="flex items-center space-x-2 px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 shadow-sm">
-                                                <Activity size={16} />
-                                                <span>Active Case</span>
+                                        <div className="space-y-2 flex-1 min-w-0">
+                                            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                                                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tighter leading-tight truncate">
+                                                    {selectedPatient.first_name} <span className="text-indigo-500">{selectedPatient.last_name}</span>
+                                                </h2>
+                                                <div className="px-3 sm:px-5 py-1 sm:py-2 bg-indigo-500/10 text-[9px] sm:text-[10px] font-black text-indigo-500 rounded-xl sm:rounded-2xl border border-indigo-500/20 uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-sm">
+                                                    {selectedPatient.unique_id}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                                <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
+                                                    <Calendar size={18} className="text-indigo-400" />
+                                                    <span>{calculateAge(selectedPatient.date_of_birth)} Years</span>
+                                                </span>
+                                                <span className="flex items-center space-x-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/50">
+                                                    <MapPin size={18} className="text-muted-foreground/40" />
+                                                    <span>{selectedPatient.address || 'Location Hidden'}</span>
+                                                </span>
+                                                <div className="flex items-center space-x-2 px-4 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 shadow-sm">
+                                                    <Activity size={16} />
+                                                    <span>Active Case</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center space-x-5">
-                                    <button
-                                        onClick={() => openEditModal(selectedPatient)}
-                                        className="hidden md:flex items-center space-x-3 px-8 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"
-                                    >
-                                        <Edit3 size={18} className="group-hover/btn:rotate-12 transition-transform" />
-                                        <span>Update Profile</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setShowPatientModal(false)}
-                                        className="w-16 h-16 flex items-center justify-center bg-muted/30 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-[1.8rem] transition-all border border-border hover:border-rose-500/20 active:scale-90"
-                                    >
-                                        <X size={28} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Modern Tab Navigation */}
-                        <div className="relative z-10 flex-shrink-0 px-12 py-6 bg-muted/20 backdrop-blur-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-border/40">
-                            <div className="flex items-center space-x-3 p-1.5 bg-card/60 rounded-[2.2rem] border border-border/50 overflow-x-auto no-scrollbar shadow-inner">
-                                {[
-                                    { id: 'profile', label: 'Clinical Overview', icon: UserCircle },
-                                    { id: 'medical-history', label: 'History', icon: Stethoscope },
-                                    { id: 'records', label: 'Documents', icon: FileText },
-                                    { id: 'appointments', label: 'Schedule', icon: Clock },
-                                    { id: 'prescriptions', label: 'Meds', icon: Pill }
-                                ].map((tab) => {
-                                    const Icon = tab.icon;
-                                    const isActive = activeDetailsTab === tab.id;
-                                    return (
+                                    <div className="flex items-center justify-center sm:justify-end space-x-3 sm:space-x-5">
                                         <button
-                                            key={tab.id}
-                                            onClick={() => setActiveDetailsTab(tab.id)}
-                                            className={`flex items-center space-x-3 px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${isActive
-                                                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/40 scale-105 active:scale-95'
-                                                : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
-                                                }`}
+                                            onClick={() => openEditModal(selectedPatient)}
+                                            className="hidden sm:flex items-center space-x-3 px-6 sm:px-8 py-3 sm:py-5 bg-indigo-600 text-white rounded-2xl sm:rounded-[2rem] font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"
                                         >
-                                            <Icon size={18} className={isActive ? 'text-white' : 'text-muted-foreground/40'} />
-                                            <span>{tab.label}</span>
+                                            <Edit3 size={16} className="sm:w-[18px] sm:h-[18px] group-hover/btn:rotate-12 transition-transform" />
+                                            <span>Update Profile</span>
                                         </button>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={() => handleDeletePatient(selectedPatient.id)}
-                                    className="w-12 h-12 flex items-center justify-center bg-rose-500/5 text-rose-300 hover:text-rose-600 hover:bg-rose-500/10 transition-all rounded-2xl border border-border hover:border-rose-500/20"
-                                >
-                                    <Trash2 size={20} />
-                                </button>
-                                <div className="w-[1px] h-8 bg-border hidden lg:block"></div>
-                                <button className="flex items-center space-x-2 px-6 py-3 bg-muted/50 border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-card transition-all">
-                                    <Download size={16} />
-                                    <span>Export Dossier</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Modal Body Container */}
-                        <div className="relative z-10 flex-1 overflow-y-auto bg-card no-scrollbar">
-                            <div className="px-10 py-10">
-                                {detailsLoading ? (
-                                    <div className="flex flex-col items-center justify-center py-32 space-y-6">
-                                        <div className="relative">
-                                            <div className="w-20 h-20 border-4 border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Activity size={32} className="text-indigo-600 animate-pulse" />
-                                            </div>
-                                        </div>
-                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.4em]">Decrypting Clinical Intelligence...</p>
+                                        <button
+                                            onClick={() => setShowPatientModal(false)}
+                                            className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-muted/30 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl sm:rounded-[1.8rem] transition-all border border-border hover:border-rose-500/20 active:scale-90"
+                                        >
+                                            <X size={20} className="sm:w-7 sm:h-7" />
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="min-h-full space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
-                                        {/* Profile Overview Tab */}
-                                        {activeDetailsTab === 'profile' && (
-                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                                                <div className="lg:col-span-2 space-y-10">
-                                                    <div className="bg-muted/10 border border-border/40 rounded-[3.5rem] p-12 shadow-inner group/info">
-                                                        <h3 className="text-2xl font-black text-foreground tracking-tighter mb-10 flex items-center space-x-5">
-                                                            <div className="p-4 bg-indigo-600 rounded-[1.5rem] text-white shadow-2xl shadow-indigo-500/20 group-hover/info:rotate-6 transition-transform">
-                                                                <Info size={24} />
-                                                            </div>
-                                                            <span>Vital Identification</span>
-                                                        </h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-10">
-                                                            {[
-                                                                { label: 'Email Address', value: selectedPatient.email, icon: Mail },
-                                                                { label: 'Primary Contact', value: selectedPatient.phone || 'Not Recorded', icon: Phone },
-                                                                { label: 'Date of Birth', value: formatDate(selectedPatient.date_of_birth), icon: Calendar },
-                                                                { label: 'Blood Grouping', value: selectedPatient.blood_group || 'Unknown', icon: Heart, badge: true }
-                                                            ].map((field, idx) => (
-                                                                <div key={idx} className="space-y-3 group/field">
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <field.icon size={12} className="text-muted-foreground/30 group-hover/field:text-indigo-500 transition-colors" />
-                                                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">{field.label}</p>
-                                                                    </div>
-                                                                    {field.badge ? (
-                                                                        <span className="inline-block px-5 py-1.5 bg-rose-500/10 text-rose-500 rounded-xl font-black text-xs border border-rose-500/20 shadow-sm">{field.value}</span>
-                                                                    ) : (
-                                                                        <p className="text-lg font-black text-foreground tracking-tight">{field.value}</p>
-                                                                    )}
+                                </div>
+                            </div>
+
+                            {/* Modern Tab Navigation */}
+                            <div className="relative z-10 flex-shrink-0 px-6 sm:px-12 py-4 sm:py-6 bg-muted/20 backdrop-blur-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-8 border-b border-border/40">
+                                <div className="flex items-center space-x-2 sm:space-x-3 p-1 sm:p-1.5 bg-card/60 rounded-xl sm:rounded-[2.2rem] border border-border/50 overflow-x-auto no-scrollbar shadow-inner">
+                                    {[
+                                        { id: 'profile', label: 'Clinical Overview', icon: UserCircle },
+                                        { id: 'medical-history', label: 'History', icon: Stethoscope },
+                                        { id: 'records', label: 'Documents', icon: FileText },
+                                        { id: 'appointments', label: 'Schedule', icon: Clock },
+                                        { id: 'prescriptions', label: 'Meds', icon: Pill }
+                                    ].map((tab) => {
+                                        const Icon = tab.icon;
+                                        const isActive = activeDetailsTab === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setActiveDetailsTab(tab.id)}
+                                                className={`flex items-center space-x-2 sm:space-x-3 px-4 sm:px-8 py-2.5 sm:py-4 rounded-lg sm:rounded-[1.8rem] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${isActive
+                                                    ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/40 scale-105 active:scale-95'
+                                                    : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
+                                                    }`}
+                                            >
+                                                <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isActive ? 'text-white' : 'text-muted-foreground/40'}`} />
+                                                <span>{tab.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="flex items-center space-x-4">
+                                    <button
+                                        onClick={() => handleDeletePatient(selectedPatient.id)}
+                                        className="w-12 h-12 flex items-center justify-center bg-rose-500/5 text-rose-300 hover:text-rose-600 hover:bg-rose-500/10 transition-all rounded-2xl border border-border hover:border-rose-500/20"
+                                    >
+                                        <Trash2 size={20} />
+                                    </button>
+                                    <div className="w-[1px] h-8 bg-border hidden lg:block"></div>
+                                    <button className="flex items-center space-x-2 px-6 py-3 bg-muted/50 border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-card transition-all">
+                                        <Download size={16} />
+                                        <span>Export Dossier</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Modal Body Container */}
+                            <div className="relative z-10 flex-1 overflow-y-auto bg-card no-scrollbar">
+                                <div className="px-6 sm:px-10 py-8 sm:py-10">
+                                    {detailsLoading ? (
+                                        <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                                            <div className="relative">
+                                                <div className="w-20 h-20 border-4 border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Activity size={32} className="text-indigo-600 animate-pulse" />
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.4em]">Decrypting Clinical Intelligence...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="min-h-full space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                                            {/* Profile Overview Tab */}
+                                            {activeDetailsTab === 'profile' && (
+                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+                                                    <div className="lg:col-span-2 space-y-6 sm:space-y-10">
+                                                        <div className="bg-muted/10 border border-border/40 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 shadow-inner group/info">
+                                                            <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tighter mb-6 sm:mb-10 flex items-center space-x-4 sm:space-x-5">
+                                                                <div className="p-3 sm:p-4 bg-indigo-600 rounded-xl sm:rounded-[1.5rem] text-white shadow-2xl shadow-indigo-500/20 group-hover/info:rotate-6 transition-transform">
+                                                                    <Info size={20} className="sm:w-6 sm:h-6" />
                                                                 </div>
-                                                            ))}
+                                                                <span>Vital Identification</span>
+                                                            </h3>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 sm:gap-x-20 gap-y-6 sm:gap-y-10">
+                                                                {[
+                                                                    { label: 'Email Address', value: selectedPatient.email, icon: Mail },
+                                                                    { label: 'Primary Contact', value: selectedPatient.phone || 'Not Recorded', icon: Phone },
+                                                                    { label: 'Date of Birth', value: formatDate(selectedPatient.date_of_birth), icon: Calendar },
+                                                                    { label: 'Blood Grouping', value: selectedPatient.blood_group || 'Unknown', icon: Heart, badge: true }
+                                                                ].map((field, idx) => (
+                                                                    <div key={idx} className="space-y-3 group/field">
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <field.icon size={12} className="text-muted-foreground/30 group-hover/field:text-indigo-500 transition-colors" />
+                                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">{field.label}</p>
+                                                                        </div>
+                                                                        {field.badge ? (
+                                                                            <span className="inline-block px-5 py-1.5 bg-rose-500/10 text-rose-500 rounded-xl font-black text-xs border border-rose-500/20 shadow-sm">{field.value}</span>
+                                                                        ) : (
+                                                                            <p className="text-lg font-black text-foreground tracking-tight">{field.value}</p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-muted/10 border border-border/40 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 shadow-inner group/emergency">
+                                                            <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tighter mb-6 sm:mb-10 flex items-center space-x-4 sm:space-x-5">
+                                                                <div className="p-3 sm:p-4 bg-rose-500 rounded-xl sm:rounded-[1.5rem] text-white shadow-2xl shadow-rose-500/20 group-hover/emergency:-rotate-6 transition-transform">
+                                                                    <AlertCircle size={20} className="sm:w-6 sm:h-6" />
+                                                                </div>
+                                                                <span>Emergency Protocols</span>
+                                                            </h3>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 bg-card/40 backdrop-blur-xl p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-border group-hover/emergency:border-rose-500/20 transition-all duration-500">
+                                                                <div className="space-y-3 group/field">
+                                                                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Guardian / Contact</p>
+                                                                    <p className="text-lg font-black text-foreground tracking-tight">{selectedPatient.emergency_contact_name || 'N/A'}</p>
+                                                                </div>
+                                                                <div className="space-y-3 group/field">
+                                                                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Verified Emergency Line</p>
+                                                                    <p className="text-lg font-black text-foreground tracking-tight text-rose-500">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="bg-muted/10 border border-border/40 rounded-[3.5rem] p-12 shadow-inner group/emergency">
-                                                        <h3 className="text-2xl font-black text-foreground tracking-tighter mb-10 flex items-center space-x-5">
-                                                            <div className="p-4 bg-rose-500 rounded-[1.5rem] text-white shadow-2xl shadow-rose-500/20 group-hover/emergency:-rotate-6 transition-transform">
-                                                                <AlertCircle size={24} />
+                                                    <div className="space-y-6 sm:space-y-10">
+                                                        <div className="bg-indigo-600 rounded-3xl sm:rounded-[3rem] p-8 sm:p-10 text-white shadow-2xl shadow-indigo-500/20 overflow-hidden relative group/notes">
+                                                            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover/notes:scale-150 transition-transform duration-1000"></div>
+                                                            <Zap size={32} className="sm:w-12 sm:h-12 text-indigo-200/40 mb-6 sm:mb-8 relative z-10" />
+                                                            <h4 className="text-xl sm:text-2xl font-black tracking-tighter mb-3 sm:mb-4 relative z-10">Clinical Perspective</h4>
+                                                            <p className="text-indigo-100/80 text-sm font-bold leading-relaxed mb-10 relative z-10 italic">
+                                                                "{selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 120) + '...' : 'No primary clinical notes active for this patient record.'}"
+                                                            </p>
+                                                            <button
+                                                                onClick={() => setActiveDetailsTab('medical-history')}
+                                                                className="w-full py-4 sm:py-5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all relative z-10"
+                                                            >
+                                                                Examine Full Record
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="bg-card border border-border/60 rounded-3xl sm:rounded-[3rem] p-8 sm:p-10 shadow-xl space-y-6 sm:space-y-8">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Patient Score</p>
+                                                                <span className="text-2xl font-black text-indigo-500">9.4</span>
                                                             </div>
-                                                            <span>Emergency Protocols</span>
-                                                        </h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-card/40 backdrop-blur-xl p-10 rounded-[3rem] border border-border group-hover/emergency:border-rose-500/20 transition-all duration-500">
-                                                            <div className="space-y-3 group/field">
-                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Guardian / Contact</p>
-                                                                <p className="text-lg font-black text-foreground tracking-tight">{selectedPatient.emergency_contact_name || 'N/A'}</p>
+                                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-[94%]"></div>
                                                             </div>
-                                                            <div className="space-y-3 group/field">
-                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] group-hover/field:text-rose-500 transition-colors">Verified Emergency Line</p>
-                                                                <p className="text-lg font-black text-foreground tracking-tight text-rose-500">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
-                                                            </div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground/60 leading-relaxed text-center">High diagnostic compliance and clinical stability observed.</p>
                                                         </div>
                                                     </div>
                                                 </div>
+                                            )}
 
-                                                <div className="space-y-10">
-                                                    <div className="bg-indigo-600 rounded-[3rem] p-10 text-white shadow-2xl shadow-indigo-500/20 overflow-hidden relative group/notes">
-                                                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover/notes:scale-150 transition-transform duration-1000"></div>
-                                                        <Zap size={48} className="text-indigo-200/40 mb-8 relative z-10" />
-                                                        <h4 className="text-2xl font-black tracking-tighter mb-4 relative z-10">Clinical Perspective</h4>
-                                                        <p className="text-indigo-100/80 text-sm font-bold leading-relaxed mb-10 relative z-10 italic">
-                                                            "{selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 120) + '...' : 'No primary clinical notes active for this patient record.'}"
-                                                        </p>
+                                            {/* Clinical History Tab */}
+                                            {activeDetailsTab === 'medical-history' && (
+                                                <div className="space-y-6 sm:space-y-12">
+                                                    <div className="bg-muted/10 border border-border/40 rounded-[2rem] sm:rounded-[4rem] p-6 sm:p-12 shadow-inner group/history">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-8 mb-8 sm:mb-16">
+                                                            <div className="flex items-center space-x-4 sm:space-x-6">
+                                                                <div className="p-3 sm:p-5 bg-indigo-600 text-white rounded-xl sm:rounded-[2rem] shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
+                                                                    <Stethoscope size={24} className="sm:w-8 sm:h-8" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Medical Biography</h3>
+                                                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em]">Chronological Patient Registry</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {selectedPatient.medical_history ? (
+                                                            <div className="space-y-10">
+                                                                {selectedPatient.medical_history.split('\n').filter(line => line.trim()).map((entry, index) => (
+                                                                    <div key={index} className="group/item relative pl-10 sm:pl-16 pb-8 sm:pb-12 last:pb-0">
+                                                                        <div className="absolute left-[15px] sm:left-[23px] top-6 bottom-0 w-[2px] bg-indigo-500/10 group-last/item:hidden"></div>
+                                                                        <div className="absolute left-0 top-4 w-8 h-8 sm:w-12 sm:h-12 bg-card rounded-lg sm:rounded-2xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
+                                                                            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                        </div>
+                                                                        <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
+                                                                            <p className="text-sm sm:text-base font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center py-32 bg-muted/5 rounded-[4rem] border-2 border-dashed border-border/40">
+                                                                <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8 shadow-xl">
+                                                                    <Stethoscope size={64} className="text-muted-foreground/10" />
+                                                                </div>
+                                                                <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.5em]">No temporal signatures indexed</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="bg-rose-500/5 border border-rose-500/10 rounded-[2rem] sm:rounded-[4rem] p-6 sm:p-12 group/allergies shadow-inner">
+                                                        <div className="flex items-center space-x-4 sm:space-x-8 mb-8 sm:mb-12">
+                                                            <div className="p-3 sm:p-5 bg-rose-600 text-white rounded-xl sm:rounded-[2rem] shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
+                                                                <AlertCircle size={24} className="sm:w-8 sm:h-8" />
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-xl sm:text-3xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
+                                                                <p className="text-[10px] sm:text-[11px] font-black text-rose-500/40 uppercase tracking-[0.2em] sm:tracking-[0.4em]">High-Priority Safety Alerts</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {selectedPatient.allergies ? (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                                                {selectedPatient.allergies.split(',').map((allergy, index) => (
+                                                                    <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
+                                                                        <div className="flex items-center space-x-4 sm:space-x-6">
+                                                                            <div className="p-3 sm:p-4 bg-rose-500/10 text-rose-500 rounded-xl sm:rounded-2xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
+                                                                                <Shield size={18} className="sm:w-6 sm:h-6" />
+                                                                            </div>
+                                                                            <p className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/5 rounded-[4rem] border-2 border-dashed border-emerald-500/10">
+                                                                <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8">
+                                                                    <Shield size={64} className="text-emerald-500/10" />
+                                                                </div>
+                                                                <p className="text-xs font-black text-emerald-600/30 uppercase tracking-[0.5em]">No Sensitivities Detected</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Medical Records Tab */}
+                                            {activeDetailsTab === 'records' && (
+                                                <div className="space-y-12">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-6">
+                                                        <div>
+                                                            <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
+                                                            <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Cryptographically Secured Documents</p>
+                                                        </div>
                                                         <button
-                                                            onClick={() => setActiveDetailsTab('medical-history')}
-                                                            className="w-full py-5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all relative z-10"
+                                                            onClick={() => setShowFileUpload(true)}
+                                                            className="flex items-center space-x-3 sm:space-x-4 px-6 sm:px-10 py-3 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-[2.5rem] text-[10px] sm:text-[12px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 sm:hover:-translate-y-1.5 transition-all active:scale-95"
                                                         >
-                                                            Examine Full Record
+                                                            <Plus size={18} className="sm:w-[22px] sm:h-[22px]" />
+                                                            <span>Injest New Record</span>
                                                         </button>
                                                     </div>
 
-                                                    <div className="bg-card border border-border/60 rounded-[3rem] p-10 shadow-xl space-y-8">
-                                                        <div className="flex items-center justify-between">
-                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Patient Score</p>
-                                                            <span className="text-2xl font-black text-indigo-500">9.4</span>
-                                                        </div>
-                                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-[94%]"></div>
-                                                        </div>
-                                                        <p className="text-[10px] font-bold text-muted-foreground/60 leading-relaxed text-center">High diagnostic compliance and clinical stability observed.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Clinical History Tab */}
-                                        {activeDetailsTab === 'medical-history' && (
-                                            <div className="space-y-12">
-                                                <div className="bg-muted/10 border border-border/40 rounded-[4rem] p-12 shadow-inner group/history">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
-                                                        <div className="flex items-center space-x-6">
-                                                            <div className="p-5 bg-indigo-600 text-white rounded-[2rem] shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
-                                                                <Stethoscope size={32} />
+                                                    {medicalRecords.filter(r => !r.prescription && r.file_type !== 'prescription').length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-40 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-4">
+                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
+                                                                <FileText size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/5" />
                                                             </div>
-                                                            <div>
-                                                                <h3 className="text-3xl font-black text-foreground tracking-tighter">Medical Biography</h3>
-                                                                <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em]">Chronological Patient Registry</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {selectedPatient.medical_history ? (
-                                                        <div className="space-y-10">
-                                                            {selectedPatient.medical_history.split('\n').filter(line => line.trim()).map((entry, index) => (
-                                                                <div key={index} className="group/item relative pl-16 pb-12 last:pb-0">
-                                                                    <div className="absolute left-[23px] top-6 bottom-0 w-[2px] bg-indigo-500/10 group-last/item:hidden"></div>
-                                                                    <div className="absolute left-0 top-4 w-12 h-12 bg-card rounded-2xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
-                                                                        <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                                                                    </div>
-                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[2.5rem] p-10 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
-                                                                        <p className="text-base font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">Secure Vault is Empty</p>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center justify-center py-32 bg-muted/5 rounded-[4rem] border-2 border-dashed border-border/40">
-                                                            <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8 shadow-xl">
-                                                                <Stethoscope size={64} className="text-muted-foreground/10" />
-                                                            </div>
-                                                            <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.5em]">No temporal signatures indexed</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="bg-rose-500/5 border border-rose-500/10 rounded-[4rem] p-12 group/allergies shadow-inner">
-                                                    <div className="flex items-center space-x-8 mb-12">
-                                                        <div className="p-5 bg-rose-600 text-white rounded-[2rem] shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
-                                                            <AlertCircle size={32} />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-3xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
-                                                            <p className="text-[11px] font-black text-rose-500/40 uppercase tracking-[0.4em]">High-Priority Safety Alerts</p>
-                                                        </div>
-                                                    </div>
-
-                                                    {selectedPatient.allergies ? (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                                            {selectedPatient.allergies.split(',').map((allergy, index) => (
-                                                                <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-[2.5rem] p-8 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
-                                                                    <div className="flex items-center space-x-6">
-                                                                        <div className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
-                                                                            <Shield size={24} />
-                                                                        </div>
-                                                                        <p className="text-lg font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/5 rounded-[4rem] border-2 border-dashed border-emerald-500/10">
-                                                            <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8">
-                                                                <Shield size={64} className="text-emerald-500/10" />
-                                                            </div>
-                                                            <p className="text-xs font-black text-emerald-600/30 uppercase tracking-[0.5em]">No Sensitivities Detected</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Medical Records Tab */}
-                                        {activeDetailsTab === 'records' && (
-                                            <div className="space-y-12">
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-6">
-                                                    <div>
-                                                        <h3 className="text-3xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
-                                                        <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Cryptographically Secured Documents</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setShowFileUpload(true)}
-                                                        className="flex items-center space-x-4 px-10 py-5 bg-indigo-600 text-white rounded-[2.5rem] text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1.5 transition-all active:scale-95"
-                                                    >
-                                                        <Plus size={22} />
-                                                        <span>Injest New Record</span>
-                                                    </button>
-                                                </div>
-
-                                                {medicalRecords.filter(r => !r.prescription && r.file_type !== 'prescription').length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-40 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-4">
-                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
-                                                            <FileText size={72} className="text-muted-foreground/5" />
-                                                        </div>
-                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">Secure Vault is Empty</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 px-4">
-                                                        {medicalRecords
-                                                            .filter(record => !record.prescription && record.file_type !== 'prescription')
-                                                            .map((record, index) => (
-                                                                <div key={index} className="group relative bg-card/60 backdrop-blur-3xl border border-border/60 rounded-[3rem] p-10 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/40 transition-all duration-700">
-                                                                    <div className="flex items-start justify-between mb-10">
-                                                                        <div className="p-5 bg-muted rounded-[2rem] group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-2xl border border-border/50">
-                                                                            <FileText size={32} />
-                                                                        </div>
-                                                                        <div className="flex space-x-3">
-                                                                            <button className="w-14 h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-2xl border border-border/50 transition-all hover:scale-110">
-                                                                                <Download size={22} />
-                                                                            </button>
-                                                                            <button className="w-14 h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-2xl border border-border/50 transition-all hover:scale-110">
-                                                                                <Trash2 size={22} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="space-y-3">
-                                                                        <h4 className="text-xl font-black text-foreground tracking-tighter truncate group-hover:text-indigo-500 transition-colors uppercase">{record.file_name}</h4>
-                                                                        <div className="flex items-center space-x-3">
-                                                                            <Calendar size={12} className="text-muted-foreground/40" />
-                                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">{formatDate(record.created_at)}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="mt-10 pt-10 border-t border-border/40 flex items-center justify-between">
-                                                                        <span className="px-5 py-2 bg-muted/50 text-[10px] font-black text-muted-foreground/60 rounded-xl uppercase tracking-[0.2em] border border-border/50">
-                                                                            {record.file_type || 'Registry'}
-                                                                        </span>
-                                                                        <button className="text-[11px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.3em] flex items-center space-x-3 px-5 py-2.5 hover:bg-indigo-500/5 rounded-2xl">
-                                                                            <span>Analyze</span>
-                                                                            <ExternalLink size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Appointments Tab */}
-                                        {activeDetailsTab === 'appointments' && (
-                                            <div className="space-y-12">
-                                                <div className="px-8">
-                                                    <h3 className="text-3xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
-                                                    <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Live calendar sync & clinical history</p>
-                                                </div>
-
-                                                {appointmentLoading ? (
-                                                    <div className="flex flex-col items-center justify-center py-40 space-y-8">
-                                                        <RefreshCw size={48} className="animate-spin text-indigo-500/20" />
-                                                        <p className="text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.5em]">Synchronizing temporal data...</p>
-                                                    </div>
-                                                ) : patientAppointments.length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-32 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-6">
-                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
-                                                            <Calendar size={72} className="text-muted-foreground/10" />
-                                                        </div>
-                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">No temporal logs detected</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-8 px-8">
-                                                        {patientAppointments.map((appointment) => (
-                                                            <div key={appointment.id} className="group relative pl-20 before:absolute before:left-[31px] before:top-0 before:bottom-0 before:w-[3px] before:bg-indigo-500/5 last:before:hidden">
-                                                                <div className="absolute left-0 top-6 w-16 h-16 bg-card rounded-3xl border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
-                                                                    <Clock size={28} className="text-indigo-500" />
-                                                                </div>
-                                                                <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[3.5rem] p-12 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
-                                                                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
-                                                                        <div className="space-y-4">
-                                                                            <h4 className="text-2xl font-black text-foreground tracking-tighter">
-                                                                                {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-3">|</span> {appointment.appointment_time}
-                                                                            </h4>
-                                                                            <div className="flex items-center space-x-6">
-                                                                                <div className="flex items-center space-x-3">
-                                                                                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                                                                                    <span className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] font-outfit">
-                                                                                        {appointment.appointment_type || 'Clinical'} Consultation
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="w-[1px] h-4 bg-border/60"></div>
-                                                                                <span className="text-[11px] font-black text-indigo-500/50 uppercase tracking-[0.3em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-10 px-0 sm:px-4">
+                                                            {medicalRecords
+                                                                .filter(record => !record.prescription && record.file_type !== 'prescription')
+                                                                .map((record, index) => (
+                                                                    <div key={index} className="group relative bg-card/60 backdrop-blur-3xl border border-border/60 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/40 transition-all duration-700">
+                                                                        <div className="flex items-start justify-between mb-6 sm:mb-10">
+                                                                            <div className="p-3 sm:p-5 bg-muted rounded-xl sm:rounded-[2rem] group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-2xl border border-border/50">
+                                                                                <FileText size={24} className="sm:w-8 sm:h-8" />
+                                                                            </div>
+                                                                            <div className="flex space-x-2 sm:space-x-3">
+                                                                                <button className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-xl sm:rounded-2xl border border-border/50 transition-all hover:scale-110">
+                                                                                    <Download size={18} className="sm:w-[22px] sm:h-[22px]" />
+                                                                                </button>
+                                                                                <button className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border/50 transition-all hover:scale-110">
+                                                                                    <Trash2 size={18} className="sm:w-[22px] sm:h-[22px]" />
+                                                                                </button>
                                                                             </div>
                                                                         </div>
-                                                                        <div className={`px-10 py-4 rounded-[1.8rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-lg border-2 ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
-                                                                            appointment.status === 'confirmed' ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
-                                                                                appointment.status === 'pending' ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
-                                                                                    'bg-rose-500/5 text-rose-500 border-rose-500/10'
-                                                                            }`}>
-                                                                            {appointment.status}
+                                                                        <div className="space-y-3">
+                                                                            <h4 className="text-xl font-black text-foreground tracking-tighter truncate group-hover:text-indigo-500 transition-colors uppercase">{record.file_name}</h4>
+                                                                            <div className="flex items-center space-x-3">
+                                                                                <Calendar size={12} className="text-muted-foreground/40" />
+                                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">{formatDate(record.created_at)}</p>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Prescriptions Tab */}
-                                        {activeDetailsTab === 'prescriptions' && (
-                                            <div className="space-y-12">
-                                                <div className="px-8">
-                                                    <h3 className="text-3xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
-                                                    <p className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-2">Active pharmacological regimens</p>
-                                                </div>
-
-                                                {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-32 bg-muted/10 rounded-[5rem] border-2 border-dashed border-border/40 mx-6">
-                                                        <div className="p-10 bg-card rounded-[3rem] border border-border/50 mb-8 shadow-2xl">
-                                                            <Pill size={72} className="text-muted-foreground/10" />
-                                                        </div>
-                                                        <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.6em]">No Medication Records</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-8">
-                                                        {medicalRecords
-                                                            .filter(record => record.prescription || record.file_type === 'prescription')
-                                                            .map((record, index) => (
-                                                                <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[3.5rem] p-12 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
-                                                                    <div className="flex items-center justify-between mb-10">
-                                                                        <div className="p-5 bg-amber-500/10 text-amber-500 rounded-[2rem] group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
-                                                                            <Pill size={32} />
-                                                                        </div>
-                                                                        <div className="flex flex-col items-end">
-                                                                            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mb-1">Authenticated Ledger</span>
-                                                                            <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-[0.2em]">{record.file_name || 'Rx-SIG'}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="bg-muted/30 p-10 rounded-[2.5rem] border-l-[6px] border-amber-500 mb-10 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
-                                                                        <div className="absolute right-[-20px] top-[-20px] p-10 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
-                                                                            <Pill size={120} />
-                                                                        </div>
-                                                                        <p className="text-lg font-black text-foreground leading-relaxed italic relative z-10">
-                                                                            "{record.prescription || 'Primary pharmacological instructions pending details.'}"
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="flex items-center justify-between pt-4">
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Registry Date</p>
-                                                                            <p className="text-sm font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
-                                                                        </div>
-                                                                        {record.file_path && (
-                                                                            <button
-                                                                                onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                className="px-6 py-3 bg-card border border-border rounded-2xl text-[10px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.3em] shadow-lg"
-                                                                            >
-                                                                                View Script
+                                                                        <div className="mt-10 pt-10 border-t border-border/40 flex items-center justify-between">
+                                                                            <span className="px-5 py-2 bg-muted/50 text-[10px] font-black text-muted-foreground/60 rounded-xl uppercase tracking-[0.2em] border border-border/50">
+                                                                                {record.file_type || 'Registry'}
+                                                                            </span>
+                                                                            <button className="text-[11px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.3em] flex items-center space-x-3 px-5 py-2.5 hover:bg-indigo-500/5 rounded-2xl">
+                                                                                <span>Analyze</span>
+                                                                                <ExternalLink size={16} />
                                                                             </button>
-                                                                        )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Appointments Tab */}
+                                            {activeDetailsTab === 'appointments' && (
+                                                <div className="space-y-6 sm:space-y-12">
+                                                    <div className="px-0 sm:px-8">
+                                                        <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
+                                                        <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Live calendar sync & clinical history</p>
+                                                    </div>
+
+                                                    {appointmentLoading ? (
+                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-40 space-y-6 sm:space-y-8">
+                                                            <RefreshCw size={32} className="sm:w-12 sm:h-12 animate-spin text-indigo-500/20" />
+                                                            <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] sm:tracking-[0.5em]">Synchronizing temporal data...</p>
+                                                        </div>
+                                                    ) : patientAppointments.length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-32 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-6">
+                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
+                                                                <Calendar size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/10" />
+                                                            </div>
+                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">No temporal logs detected</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-6 sm:space-y-8 px-0 sm:px-8">
+                                                            {patientAppointments.map((appointment) => (
+                                                                <div key={appointment.id} className="group relative pl-12 sm:pl-20 before:absolute before:left-[19px] sm:before:left-[31px] before:top-0 before:bottom-0 before:w-[3px] before:bg-indigo-500/5 last:before:hidden">
+                                                                    <div className="absolute left-0 top-6 w-10 h-10 sm:w-16 sm:h-16 bg-card rounded-xl sm:rounded-3xl border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
+                                                                        <Clock size={18} className="sm:w-7 sm:h-7 text-indigo-500" />
+                                                                    </div>
+                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
+                                                                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 sm:gap-10">
+                                                                            <div className="space-y-3 sm:space-y-4">
+                                                                                <h4 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">
+                                                                                    {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-2 sm:mx-3">|</span> {appointment.appointment_time}
+                                                                                </h4>
+                                                                                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                                                                                    <div className="flex items-center space-x-2 sm:space-x-3">
+                                                                                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                                        <span className="text-[10px] sm:text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] sm:tracking-[0.3em] font-outfit">
+                                                                                            {appointment.appointment_type || 'Clinical'} Consultation
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="w-[1px] h-3 sm:h-4 bg-border/60 hidden sm:block"></div>
+                                                                                    <span className="text-[10px] sm:text-[11px] font-black text-indigo-500/50 uppercase tracking-[0.2em] sm:tracking-[0.3em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`px-6 sm:px-10 py-2.5 sm:py-4 rounded-xl sm:rounded-[1.8rem] text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-lg border-2 self-start sm:self-auto ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
+                                                                                appointment.status === 'confirmed' ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
+                                                                                    appointment.status === 'pending' ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
+                                                                                        'bg-rose-500/5 text-rose-500 border-rose-500/10'
+                                                                                }`}>
+                                                                                {appointment.status}
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            ))
-                                                        }
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Prescriptions Tab */}
+                                            {activeDetailsTab === 'prescriptions' && (
+                                                <div className="space-y-6 sm:space-y-12">
+                                                    <div className="px-0 sm:px-8">
+                                                        <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
+                                                        <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Active pharmacological regimens</p>
                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+
+                                                    {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-32 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-6">
+                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
+                                                                <Pill size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/10" />
+                                                            </div>
+                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">No Medication Records</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 px-0 sm:px-8">
+                                                            {medicalRecords
+                                                                .filter(record => record.prescription || record.file_type === 'prescription')
+                                                                .map((record, index) => (
+                                                                    <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
+                                                                        <div className="flex items-center justify-between mb-8 sm:mb-10">
+                                                                            <div className="p-4 sm:p-5 bg-amber-500/10 text-amber-500 rounded-[1.5rem] sm:rounded-[2rem] group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
+                                                                                <Pill size={24} className="sm:w-8 sm:h-8" />
+                                                                            </div>
+                                                                            <div className="flex flex-col items-end">
+                                                                                <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1">Authenticated Ledger</span>
+                                                                                <span className="text-[9px] sm:text-[10px] font-black text-amber-500/60 uppercase tracking-[0.1em] sm:tracking-[0.2em]">{record.file_name || 'Rx-SIG'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="bg-muted/30 p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] border-l-4 sm:border-l-[6px] border-amber-500 mb-6 sm:mb-10 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
+                                                                            <div className="absolute right-[-20px] top-[-20px] p-10 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
+                                                                                <Pill size={80} className="sm:w-[120px] sm:h-[120px]" />
+                                                                            </div>
+                                                                            <p className="text-base sm:text-lg font-black text-foreground leading-relaxed italic relative z-10">
+                                                                                "{record.prescription || 'Primary pharmacological instructions pending details.'}"
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between pt-4">
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Registry Date</p>
+                                                                                <p className="text-xs sm:text-sm font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
+                                                                            </div>
+                                                                            {record.file_path && (
+                                                                                <button
+                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                    className="px-4 sm:px-6 py-2 sm:py-3 bg-card border border-border rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-lg"
+                                                                                >
+                                                                                    View Script
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-            {showFileUpload && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <div>
-                                    <h3 className="text-xl font-black text-foreground tracking-tight">Upload Document</h3>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Clinical Data Storage</p>
-                                </div>
-                                <button
-                                    onClick={() => setShowFileUpload(false)}
-                                    className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Document Category</label>
-                                    <select
-                                        className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
-                                        id="fileType"
-                                    >
-                                        <option value="medical_record">General Medical Record</option>
-                                        <option value="prescription">Digital Prescription</option>
-                                        <option value="lab_result">Laboratory Analysis</option>
-                                        <option value="xray">Radiology (X-Ray)</option>
-                                        <option value="scan">Advanced Scan (CT/MRI)</option>
-                                        <option value="report">Formal Medical Report</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Select Clinical File</label>
-                                    <div className="relative group">
-                                        <input
-                                            type="file"
-                                            accept=".pdf,.jpg,.jpeg,.png"
-                                            className="hidden"
-                                            id="fileInput"
-                                            onChange={(e) => {
-                                                const fileName = e.target.files[0]?.name;
-                                                const label = document.getElementById('fileLabel');
-                                                if (label) label.innerText = fileName || 'Choose a file...';
-                                            }}
-                                        />
-                                        <label
-                                            htmlFor="fileInput"
-                                            id="fileLabel"
-                                            className="flex items-center justify-center w-full px-5 py-8 border-2 border-dashed border-border rounded-[2rem] text-sm font-bold text-muted-foreground cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group-hover:scale-[1.02]"
-                                        >
-                                            Drag & drop or click to browse
-                                        </label>
+                )
+            }
+            {
+                showFileUpload && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border rounded-[2rem] sm:rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-6 sm:p-8">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h3 className="text-xl font-black text-foreground tracking-tight">Upload Document</h3>
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Clinical Data Storage</p>
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground font-medium text-center mt-2">
-                                        Max File Size: 10MB | Formats: PDF, JPG, PNG
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center space-x-4 pt-4">
                                     <button
                                         onClick={() => setShowFileUpload(false)}
-                                        className="flex-1 px-8 py-5 border border-border text-muted-foreground rounded-2xl font-black text-sm hover:bg-muted transition-all"
+                                        className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground border border-border/50"
                                     >
-                                        Cancel
+                                        <X size={20} />
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            const fileInput = document.getElementById('fileInput');
-                                            const fileType = document.getElementById('fileType');
-                                            const file = fileInput.files[0];
+                                </div>
 
-                                            if (file) {
-                                                if (file.size > 10 * 1024 * 1024) {
-                                                    setError('File size must be less than 10MB');
-                                                    return;
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Document Category</label>
+                                        <select
+                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
+                                            id="fileType"
+                                        >
+                                            <option value="medical_record">General Medical Record</option>
+                                            <option value="prescription">Digital Prescription</option>
+                                            <option value="lab_result">Laboratory Analysis</option>
+                                            <option value="xray">Radiology (X-Ray)</option>
+                                            <option value="scan">Advanced Scan (CT/MRI)</option>
+                                            <option value="report">Formal Medical Report</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Select Clinical File</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                className="hidden"
+                                                id="fileInput"
+                                                onChange={(e) => {
+                                                    const fileName = e.target.files[0]?.name;
+                                                    const label = document.getElementById('fileLabel');
+                                                    if (label) label.innerText = fileName || 'Choose a file...';
+                                                }}
+                                            />
+                                            <label
+                                                htmlFor="fileInput"
+                                                id="fileLabel"
+                                                className="flex items-center justify-center w-full px-5 py-8 border-2 border-dashed border-border rounded-[2rem] text-sm font-bold text-muted-foreground cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group-hover:scale-[1.02]"
+                                            >
+                                                Drag & drop or click to browse
+                                            </label>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground font-medium text-center mt-2">
+                                            Max File Size: 10MB | Formats: PDF, JPG, PNG
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                                        <button
+                                            onClick={() => setShowFileUpload(false)}
+                                            className="w-full sm:flex-1 px-8 py-4 sm:py-5 border border-border text-muted-foreground rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-sm hover:bg-muted transition-all uppercase tracking-widest"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const fileInput = document.getElementById('fileInput');
+                                                const fileType = document.getElementById('fileType');
+                                                const file = fileInput.files[0];
+
+                                                if (file) {
+                                                    if (file.size > 10 * 1024 * 1024) {
+                                                        setError('File size must be less than 10MB');
+                                                        return;
+                                                    }
+                                                    handleFileUpload(file, fileType.value);
+                                                } else {
+                                                    setError('Please select a file');
                                                 }
-                                                handleFileUpload(file, fileType.value);
-                                            } else {
-                                                setError('Please select a file');
-                                            }
-                                        }}
-                                        disabled={uploadingFile}
-                                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm tracking-tight shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
-                                    >
-                                        {uploadingFile ? (
-                                            <div className="flex items-center justify-center space-x-2">
-                                                <RefreshCw size={20} className="animate-spin" />
-                                                <span>Uploading...</span>
-                                            </div>
-                                        ) : 'Sync to Cloud'}
-                                    </button>
+                                            }}
+                                            disabled={uploadingFile}
+                                            className="w-full sm:flex-[2] py-4 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-sm tracking-tight shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50 uppercase tracking-widest"
+                                        >
+                                            {uploadingFile ? (
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <RefreshCw size={18} className="animate-spin" />
+                                                    <span>Syncing...</span>
+                                                </div>
+                                            ) : 'Sync to Cloud'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )
+                )
             }
         </div >
     );
