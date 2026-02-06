@@ -579,14 +579,14 @@ const AppointmentTab = memo(() => {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-4xl font-black text-foreground font-outfit tracking-tight">
+                <div className="px-1">
+                    <h1 className="text-3xl sm:text-4xl font-black text-foreground font-outfit tracking-tight">
                         Appointments
                     </h1>
-                    <p className="text-muted-foreground text-sm font-medium mt-1 flex items-center space-x-2">
+                    <p className="text-muted-foreground text-[11px] sm:text-sm font-medium mt-1 flex items-center space-x-2">
                         <Activity size={14} className="text-indigo-500" />
                         <span>Manage your clinical schedule</span>
                     </p>
@@ -607,34 +607,34 @@ const AppointmentTab = memo(() => {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
                     { label: "Today", value: stats?.todayAppointments || 0, icon: Clock, color: "indigo", bg: "bg-indigo-50", text: "text-indigo-600" },
                     { label: "This Week", value: stats?.weekAppointments || 0, icon: CalendarDays, color: "emerald", bg: "bg-emerald-50", text: "text-emerald-600" },
                     { label: "This Month", value: stats?.monthAppointments || 0, icon: TrendingUp, color: "amber", bg: "bg-amber-50", text: "text-amber-600" },
                     { label: "Pending", value: allAppointments.filter(apt => apt.status === 'pending').length, icon: AlertCircle, color: "rose", bg: "bg-rose-50", text: "text-rose-600" }
                 ].map((stat, i) => (
-                    <div key={i} className="group bg-card p-6 rounded-[2rem] border border-border shadow-sm hover:shadow-xl hover:border-indigo-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative">
-                        <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bg} rounded-bl-[4rem] opacity-20 transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform`}></div>
+                    <div key={i} className="group bg-card p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-border shadow-sm hover:shadow-xl hover:border-indigo-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative">
+                        <div className={`absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 ${stat.bg} rounded-bl-[4rem] opacity-20 transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform`}></div>
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`p-3 ${stat.bg} ${stat.text} rounded-2xl group-hover:rotate-6 transition-transform`}>
-                                    <stat.icon size={24} />
+                            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                <div className={`p-2 sm:p-3 ${stat.bg} ${stat.text} rounded-xl sm:rounded-2xl group-hover:rotate-6 transition-transform`}>
+                                    <stat.icon size={20} className="sm:w-6 sm:h-6" />
                                 </div>
-                                <span className="text-xs font-bold text-muted-foreground tracking-tight leading-none">{stat.label}</span>
+                                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground tracking-tight leading-none">{stat.label}</span>
                             </div>
-                            <h3 className="text-3xl font-black text-foreground mb-1">{stat.value}</h3>
-                            <p className="text-[10px] font-medium text-muted-foreground">Total Appointments</p>
+                            <h3 className="text-2xl sm:text-3xl font-black text-foreground mb-1">{stat.value}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Appointments</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Search and Filters Bar */}
-            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-[2rem] p-4 shadow-sm">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                    <div className="lg:col-span-3 space-y-1.5 px-1">
-                        <label className="text-[11px] font-bold text-slate-500 ml-1">Appointment Date</label>
+            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-[1.5rem] sm:rounded-[2rem] p-3 sm:p-4 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
+                    <div className="lg:col-span-3 space-y-1 sm:space-y-1.5 px-1">
+                        <label className="text-[10px] sm:text-[11px] font-bold text-slate-500 ml-1">Appointment Date</label>
                         <div className="relative group">
                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
@@ -649,8 +649,8 @@ const AppointmentTab = memo(() => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-5 space-y-1.5 px-1">
-                        <label className="text-[11px] font-bold text-muted-foreground ml-1">Search Patients</label>
+                    <div className="lg:col-span-5 space-y-1 sm:space-y-1.5 px-0.5 sm:px-1">
+                        <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Search Patients</label>
                         <div className="relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
@@ -663,8 +663,8 @@ const AppointmentTab = memo(() => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-3 space-y-1.5 px-1">
-                        <label className="text-[11px] font-bold text-muted-foreground ml-1">Filter by Status</label>
+                    <div className="lg:col-span-3 space-y-1 sm:space-y-1.5 px-1">
+                        <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Filter by Status</label>
                         <div className="relative group">
                             <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <select
@@ -699,9 +699,9 @@ const AppointmentTab = memo(() => {
             </div>
 
             {/* Main Content Area */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Appointment List Section */}
-                <div className="xl:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     <div className="flex items-center justify-between px-2">
                         <div className="flex items-center space-x-3">
                             <div className="p-2 bg-slate-100 rounded-xl">
@@ -742,12 +742,12 @@ const AppointmentTab = memo(() => {
                             filteredAppointments.map((appointment) => (
                                 <div
                                     key={appointment.id}
-                                    className={`group flex items-center justify-between p-5 bg-card border border-border rounded-[2rem] hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-300 ${appointment.status === 'completed' ? 'opacity-80' : ''
+                                    className={`group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-5 bg-card border border-border rounded-[1.5rem] sm:rounded-[2rem] hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-300 gap-3 sm:gap-0 ${appointment.status === 'completed' ? 'opacity-80' : ''
                                         }`}
                                 >
-                                    <div className="flex items-center space-x-5 flex-1 min-w-0">
-                                        <div className="relative">
-                                            <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center border font-outfit shadow-sm ${appointment.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                    <div className="flex items-center space-x-3 sm:space-x-5 flex-1 min-w-0">
+                                        <div className="relative shrink-0">
+                                            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border font-outfit shadow-sm ${appointment.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                 appointment.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                                     appointment.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                                         'bg-slate-50 text-slate-500 border-slate-200'
@@ -765,13 +765,13 @@ const AppointmentTab = memo(() => {
                                             }}></div>
                                         </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center space-x-2 mb-1">
-                                                <h4 className={`font-black text-foreground tracking-tight truncate ${appointment.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                                        <div className="flex-1 min-w-0 pr-1 sm:pr-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-0.5 sm:mb-1 overflow-hidden">
+                                                <h4 className={`text-xs sm:text-base font-black text-foreground tracking-tight truncate ${appointment.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
                                                     {appointment.patient_first_name} {appointment.patient_last_name}
                                                 </h4>
-                                                <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-bold text-muted-foreground">
-                                                    ID: {appointment.patient_unique_id}
+                                                <span className="px-1.5 sm:px-2 py-0.5 bg-muted rounded text-[9px] sm:text-[10px] font-bold text-muted-foreground truncate w-fit">
+                                                    #{appointment.patient_unique_id}
                                                 </span>
                                             </div>
                                             <div className="flex items-center space-x-3">
@@ -789,8 +789,11 @@ const AppointmentTab = memo(() => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-6">
-                                        <div className={`hidden md:block px-4 py-1.5 rounded-xl border text-[10px] font-bold tracking-tight capitalize ${getStatusStyle(appointment.status)}`}>
+                                    <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-6 w-full sm:w-auto">
+                                        <div className={`px-3 py-1.5 rounded-xl border text-[9px] sm:text-[10px] font-bold tracking-tight capitalize sm:hidden block ${getStatusStyle(appointment.status)}`}>
+                                            {appointment.status}
+                                        </div>
+                                        <div className={`hidden sm:block px-3 sm:px-4 py-1.5 rounded-xl border text-[9px] sm:text-[10px] font-bold tracking-tight capitalize ${getStatusStyle(appointment.status)}`}>
                                             {appointment.status}
                                         </div>
                                         <div className="flex items-center transition-all">
@@ -804,9 +807,9 @@ const AppointmentTab = memo(() => {
                 </div>
 
                 {/* Right Column - Secondary Actions & Insights */}
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                     {/* Fast Navigation Panel */}
-                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                    <div className="bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 text-white relative overflow-hidden shadow-2xl">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[5rem]"></div>
                         <h3 className="text-xl font-black font-outfit tracking-tight mb-6 relative z-10 flex items-center space-x-2">
                             <Zap size={20} className="text-amber-400" />
@@ -858,7 +861,7 @@ const AppointmentTab = memo(() => {
                                 <button
                                     key={i}
                                     onClick={btn.action}
-                                    className="w-full flex items-center justify-between p-4 rounded-3xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group"
+                                    className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group"
                                 >
                                     <div className="flex items-center space-x-4">
                                         <div className={`p-2.5 ${btn.bg} ${btn.color} rounded-2xl transition-transform group-hover:rotate-6`}>
@@ -876,7 +879,7 @@ const AppointmentTab = memo(() => {
                     </div>
 
                     {/* Insights/Notice Card */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[2.5rem] p-8 border border-indigo-100 shadow-sm relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 border border-indigo-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full -translate-y-16 translate-x-16 group-hover:scale-110 transition-transform duration-700"></div>
 
                         <div className="flex items-center justify-between mb-8 relative z-10">
@@ -892,19 +895,19 @@ const AppointmentTab = memo(() => {
                         <div className="space-y-6 relative z-10">
                             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm">
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
+                                    <div className="w-1.5 h-6 sm:h-8 bg-emerald-500 rounded-full"></div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Confirmed</p>
-                                        <p className="text-lg font-black text-slate-800">
+                                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight">Confirmed</p>
+                                        <p className="text-base sm:text-lg font-black text-slate-800">
                                             {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'confirmed').length}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
+                                    <div className="w-1.5 h-6 sm:h-8 bg-amber-500 rounded-full"></div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pending</p>
-                                        <p className="text-lg font-black text-slate-800">
+                                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pending</p>
+                                        <p className="text-base sm:text-lg font-black text-slate-800">
                                             {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'pending').length}
                                         </p>
                                     </div>
@@ -920,7 +923,7 @@ const AppointmentTab = memo(() => {
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between relative z-10">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1 sm:space-x-2">
                                 <div className="flex -space-x-2">
                                     {[1, 2, 3].map(i => (
                                         <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
@@ -928,7 +931,7 @@ const AppointmentTab = memo(() => {
                                         </div>
                                     ))}
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">Clinical Team active</span>
+                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-tight truncate max-w-[80px] sm:max-w-none">Clinical Team active</span>
                             </div>
                             <button
                                 onClick={() => toast('Insights report generation coming soon!')}
@@ -942,18 +945,18 @@ const AppointmentTab = memo(() => {
             </div>
 
             {/* Appointment Settings Section */}
-            <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm relative overflow-hidden group">
+            <div className="bg-card border border-border rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4 group-hover:bg-indigo-500/10 transition-colors duration-700"></div>
 
                 <div className="relative z-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-border">
-                        <div className="flex items-center space-x-4">
-                            <div className="p-3 bg-indigo-500/10 text-indigo-500 rounded-2xl">
-                                <SettingsIcon size={24} />
+                        <div className="flex items-center space-x-3 sm:space-x-4">
+                            <div className="p-2 sm:p-3 bg-indigo-500/10 text-indigo-500 rounded-xl sm:rounded-2xl">
+                                <SettingsIcon size={20} className="sm:w-6 sm:h-6" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-foreground tracking-tight">Practice Settings</h3>
-                                <p className="text-xs font-medium text-muted-foreground mt-1">Configure your scheduling preferences</p>
+                                <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Practice Settings</h3>
+                                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-1">Configure your scheduling preferences</p>
                             </div>
                         </div>
 
@@ -961,24 +964,24 @@ const AppointmentTab = memo(() => {
                             {!settingsEditing ? (
                                 <button
                                     onClick={() => setSettingsEditing(true)}
-                                    className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold transition-all hover:bg-indigo-700 hover:shadow-xl active:scale-95"
+                                    className="flex items-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all hover:bg-indigo-700 hover:shadow-xl active:scale-95"
                                 >
-                                    <Edit3 size={18} />
+                                    <Edit3 size={16} className="sm:w-4 sm:h-4" />
                                     <span>Customize Preference</span>
                                 </button>
                             ) : (
-                                <div className="flex items-center space-x-3 animate-in fade-in slide-in-from-right-4">
+                                <div className="flex items-center space-x-2 sm:space-x-3 animate-in fade-in slide-in-from-right-4">
                                     <button
                                         onClick={handleCancelSettings}
-                                        className="px-6 py-3 border border-border text-muted-foreground rounded-2xl font-bold hover:bg-muted transition-all font-outfit"
+                                        className="px-4 sm:px-6 py-2.5 sm:py-3 border border-border text-muted-foreground rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold hover:bg-muted transition-all font-outfit"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={handleSaveSettings}
-                                        className="flex items-center space-x-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold transition-all hover:bg-indigo-700 hover:shadow-xl shadow-indigo-500/20 active:scale-95"
+                                        className="flex items-center space-x-1 sm:space-x-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all hover:bg-indigo-700 hover:shadow-xl shadow-indigo-500/20 active:scale-95"
                                     >
-                                        <Check size={18} />
+                                        <Check size={16} className="sm:w-4 sm:h-4" />
                                         <span>Apply Changes</span>
                                     </button>
                                 </div>
@@ -1030,15 +1033,15 @@ const AppointmentTab = memo(() => {
                             </div>
                         </div>
 
-                        <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-muted-foreground ml-1">Consultation Fee</label>
+                        <div className="space-y-2 sm:space-y-2.5">
+                            <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Consultation Fee</label>
                             <div className="relative">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-bold text-lg select-none">৳</span>
+                                <span className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-bold text-base sm:text-lg select-none">৳</span>
                                 <input
                                     type="number"
                                     step="0.01"
                                     min="0"
-                                    className="w-full pl-12 pr-5 py-4 bg-muted/30 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
+                                    className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
                                     value={tempSettings?.consultation_fee || 0}
                                     onChange={(e) => setTempSettings({ ...tempSettings, consultation_fee: parseFloat(e.target.value) })}
                                     disabled={!settingsEditing}
@@ -1046,18 +1049,18 @@ const AppointmentTab = memo(() => {
                             </div>
                         </div>
 
-                        <div className="lg:col-span-4 flex items-center bg-muted/20 p-6 rounded-3xl border border-border mt-2">
-                            <div className="flex-1">
-                                <h4 className="font-black text-foreground tracking-tight">Accept New Patients</h4>
-                                <p className="text-[11px] font-bold text-muted-foreground max-w-xs">Enable this to allow patients to find and book appointments with you through the public directory.</p>
+                        <div className="lg:col-span-4 flex items-center bg-muted/20 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border mt-2">
+                            <div className="flex-1 pr-4">
+                                <h4 className="text-sm sm:text-base font-black text-foreground tracking-tight">Accept New Patients</h4>
+                                <p className="text-[9px] sm:text-[11px] font-bold text-muted-foreground max-w-xs leading-relaxed">Enable this to allow patients to find and book appointments with you through the public directory.</p>
                             </div>
                             <button
                                 onClick={() => settingsEditing && setTempSettings({ ...tempSettings, accept_new_patients: !tempSettings?.accept_new_patients })}
                                 disabled={!settingsEditing}
-                                className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${tempSettings?.accept_new_patients ? 'bg-indigo-600' : 'bg-muted'
+                                className={`relative inline-flex h-6 sm:h-8 w-11 sm:w-14 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${tempSettings?.accept_new_patients ? 'bg-indigo-600' : 'bg-muted'
                                     }`}
                             >
-                                <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${tempSettings?.accept_new_patients ? 'translate-x-6' : 'translate-x-0'
+                                <span className={`pointer-events-none inline-block h-4 sm:h-6 w-4 sm:w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${tempSettings?.accept_new_patients ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'
                                     }`} />
                             </button>
                         </div>
@@ -1071,14 +1074,14 @@ const AppointmentTab = memo(() => {
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
                         onClick={() => { setShowNewAppointmentModal(false); setShowEditAppointmentModal(false); setEditingAppointment(null); resetAppointmentForm(); }}></div>
 
-                    <div className="bg-card w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border">
+                    <div className="bg-card w-full max-w-lg rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border mx-2 sm:mx-0">
                         {/* Modal Header */}
-                        <div className="p-8 pb-4 flex items-center justify-between border-b border-border">
+                        <div className="p-6 sm:p-8 pb-4 flex items-center justify-between border-b border-border">
                             <div>
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">
+                                <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
                                     {showNewAppointmentModal ? "New Appointment" : "Update Appointment"}
                                 </h2>
-                                <p className="text-xs font-medium text-muted-foreground mt-1">
+                                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-1">
                                     {showNewAppointmentModal ? "Schedule a new clinical session" : "Modify existing schedule details"}
                                 </p>
                             </div>
@@ -1091,7 +1094,7 @@ const AppointmentTab = memo(() => {
                         </div>
 
                         {/* Modal Body */}
-                        <form onSubmit={showNewAppointmentModal ? handleNewAppointment : handleEditAppointment} className="p-8 space-y-6">
+                        <form onSubmit={showNewAppointmentModal ? handleNewAppointment : handleEditAppointment} className="p-6 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-muted-foreground ml-1">Select Patient</label>
                                 <div className="relative">
@@ -1102,7 +1105,7 @@ const AppointmentTab = memo(() => {
                                             ? setAppointmentForm({ ...appointmentForm, patient_id: e.target.value })
                                             : setEditingAppointment({ ...editingAppointment, patient_id: e.target.value })
                                         }
-                                        className="w-full pl-12 pr-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
+                                        className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
                                         required
                                     >
                                         <option value="">Choose a registered patient</option>
@@ -1124,35 +1127,35 @@ const AppointmentTab = memo(() => {
                                             type="date"
                                             value={appointmentForm.appointment_date}
                                             onChange={(e) => setAppointmentForm({ ...appointmentForm, appointment_date: e.target.value })}
-                                            className="w-full pl-12 pr-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             required
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-muted-foreground ml-1">Arrival Time</label>
+                                <div className="space-y-1.5 sm:space-y-2">
+                                    <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Arrival Time</label>
                                     <div className="relative">
-                                        <Clock size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                                        <Clock size={16} className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                                         <input
                                             type="time"
                                             value={appointmentForm.appointment_time}
                                             onChange={(e) => setAppointmentForm({ ...appointmentForm, appointment_time: e.target.value })}
-                                            className="w-full pl-12 pr-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             required
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-muted-foreground ml-1">Appointment Category</label>
-                                <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Appointment Category</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {["consultation", "follow-up", "check-up", "emergency", "procedure"].map((type) => (
                                         <button
                                             key={type}
                                             type="button"
                                             onClick={() => setAppointmentForm({ ...appointmentForm, appointment_type: type })}
-                                            className={`px-3 py-3 rounded-2xl text-[10px] font-bold transition-all border ${appointmentForm.appointment_type === type
+                                            className={`px-3 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold transition-all border ${appointmentForm.appointment_type === type
                                                 ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20 scale-[1.03]"
                                                 : "bg-muted/50 text-muted-foreground border-border hover:border-indigo-500/30"
                                                 }`}
@@ -1163,12 +1166,12 @@ const AppointmentTab = memo(() => {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-muted-foreground ml-1">Clinical Notes (Optional)</label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Clinical Notes (Optional)</label>
                                 <textarea
                                     value={appointmentForm.notes}
                                     onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
-                                    className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[100px] text-foreground"
+                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[80px] sm:min-h-[100px] text-foreground"
                                     placeholder="Enter case summary or specialized requirements..."
                                 />
                             </div>
@@ -1176,7 +1179,7 @@ const AppointmentTab = memo(() => {
                             <button
                                 type="submit"
                                 disabled={actionLoading === 'create-appointment' || actionLoading === 'edit-appointment'}
-                                className="w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-[1.5rem] font-bold tracking-tight shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                                className="w-full py-4 sm:py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl sm:rounded-[1.5rem] text-sm sm:text-base font-bold tracking-tight shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2 sm:mt-4"
                             >
                                 {actionLoading === 'create-appointment' || actionLoading === 'edit-appointment'
                                     ? <RefreshCw className="animate-spin mx-auto" size={24} />
