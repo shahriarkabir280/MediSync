@@ -39,11 +39,17 @@ const TabLoader = () => (
 );
 
 const DoctorDashboard = () => {
-  const [activeTab, setActiveTab] = useState('appointments');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('doctorActiveTab') || 'appointments';
+  });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { unreadCount, refreshCount } = useNotificationCount();
+
+  useEffect(() => {
+    localStorage.setItem('doctorActiveTab', activeTab);
+  }, [activeTab]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
