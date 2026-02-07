@@ -1307,7 +1307,7 @@ const PatientTab = memo(() => {
                                         { id: 'profile', label: 'Clinical Overview', icon: UserCircle },
                                         { id: 'medical-history', label: 'History', icon: Stethoscope },
                                         { id: 'records', label: 'Documents', icon: FileText },
-                                        { id: 'appointments', label: 'Schedule', icon: Clock },
+                                        { id: 'appointments', label: 'Appointments', icon: Clock },
                                         { id: 'prescriptions', label: 'Meds', icon: Pill }
                                     ].map((tab) => {
                                         const Icon = tab.icon;
@@ -1762,8 +1762,8 @@ const PatientTab = memo(() => {
                                             {activeDetailsTab === 'appointments' && (
                                                 <div className="space-y-6 sm:space-y-12">
                                                     <div className="px-4">
-                                                        <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
-                                                        <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">Live calendar sync & clinical history</p>
+                                                        <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Clinical History Timeline</h3>
+                                                        <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">Audit trail of all previous sessions & consultations</p>
                                                     </div>
 
                                                     {appointmentLoading ? (
@@ -1772,42 +1772,73 @@ const PatientTab = memo(() => {
                                                             <p className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">Synchronizing data...</p>
                                                         </div>
                                                     ) : patientAppointments.length === 0 ? (
-                                                        <div className="flex flex-col items-center justify-center py-20 bg-muted/10 rounded-[2rem] border-2 border-dashed border-border/40 mx-4">
-                                                            <div className="p-6 bg-card rounded-2xl border border-border/50 mb-6 shadow-2xl">
-                                                                <Calendar size={48} className="text-muted-foreground/10" />
+                                                        <div className="flex flex-col items-center justify-center py-24 bg-muted/10 rounded-[3rem] border-2 border-dashed border-border/40 mx-4">
+                                                            <div className="p-8 bg-card rounded-[2rem] border border-border/50 mb-6 shadow-2xl transition-transform hover:rotate-6">
+                                                                <Calendar size={56} className="text-muted-foreground/10" />
                                                             </div>
-                                                            <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.4em]">No temporal logs detected</p>
+                                                            <p className="text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">No digital health records detected</p>
                                                         </div>
                                                     ) : (
-                                                        <div className="space-y-4 px-4">
+                                                        <div className="space-y-8 px-4 relative">
+                                                            {/* Vertical Timeline Thread */}
+                                                            <div className="absolute left-[2.45rem] top-4 bottom-4 w-[2px] bg-gradient-to-b from-indigo-500/20 via-slate-500/10 to-transparent hidden sm:block"></div>
+
                                                             {patientAppointments.map((appointment) => (
-                                                                <div key={appointment.id} className="group relative pl-10 before:absolute before:left-[15px] before:top-0 before:bottom-0 before:w-[2px] before:bg-indigo-500/5 last:before:hidden">
-                                                                    <div className="absolute left-0 top-3 w-8 h-8 bg-card rounded-lg border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
-                                                                        <Clock size={16} className="text-indigo-500" />
+                                                                <div key={appointment.id} className="group relative sm:pl-16">
+                                                                    {/* Timeline Node */}
+                                                                    <div className="absolute left-6 top-6 w-5 h-5 bg-card rounded-full border-[3px] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)] hidden sm:flex items-center justify-center z-10 group-hover:scale-125 transition-all duration-500">
+                                                                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></div>
                                                                     </div>
-                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-2xl p-4 sm:p-5 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
-                                                                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 sm:gap-10">
-                                                                            <div className="space-y-3 sm:space-y-4">
-                                                                                <h4 className="text-base sm:text-xl font-black text-foreground tracking-tighter">
-                                                                                    {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-2">|</span> {appointment.appointment_time}
-                                                                                </h4>
-                                                                                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                                                                                    <div className="flex items-center space-x-1.5 sm:space-x-2">
-                                                                                        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                                                                                        <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.15em] font-outfit">
-                                                                                            {appointment.appointment_type || 'Clinical'} Consultation
-                                                                                        </span>
+
+                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[2rem] p-5 sm:p-7 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.05)] hover:border-indigo-500/30 transition-all duration-700 relative overflow-hidden">
+                                                                        {/* Background Gradient Mesh */}
+                                                                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-1000"></div>
+
+                                                                        <div className="relative z-10 flex flex-col xl:flex-row xl:items-start justify-between gap-6">
+                                                                            <div className="space-y-4 flex-1">
+                                                                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                                                                    <div className="flex items-center space-x-2">
+                                                                                        <Calendar size={14} className="text-indigo-500/60" />
+                                                                                        <h4 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">
+                                                                                            {formatDate(appointment.appointment_date)}
+                                                                                        </h4>
                                                                                     </div>
-                                                                                    <div className="w-[1px] h-2.5 sm:h-3 bg-border/60 hidden sm:block"></div>
-                                                                                    <span className="text-[9px] sm:text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.15em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
+                                                                                    <div className="w-fit px-3 py-1 bg-muted/40 rounded-full border border-border/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center">
+                                                                                        <Clock size={12} className="mr-2 opacity-40" />
+                                                                                        {appointment.appointment_time}
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                            <div className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] shadow-lg border-2 self-start sm:self-auto ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
-                                                                                appointment.status === 'confirmed' ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
-                                                                                    appointment.status === 'pending' ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
-                                                                                        'bg-rose-500/5 text-rose-500 border-rose-500/10'
-                                                                                }`}>
-                                                                                {appointment.status}
+
+                                                                                <div className="flex flex-wrap items-center gap-4">
+                                                                                    <div className="flex items-center p-2.5 px-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100/30 group-hover:border-indigo-500/20 transition-all">
+                                                                                        <div className="p-1.5 rounded-lg mr-3 bg-indigo-500/10 text-indigo-500">
+                                                                                            <Stethoscope size={14} />
+                                                                                        </div>
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none mb-1">Attending Clinician</span>
+                                                                                            <span className="text-[11px] font-black text-foreground uppercase tracking-tighter">DR. {appointment.doctor_name || 'AUTHENTICATED MD'}</span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className="flex items-center p-2.5 px-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-xl border border-slate-100/30">
+                                                                                        <Zap size={14} className="mr-3 text-indigo-500" />
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none mb-1">Consultation Class</span>
+                                                                                            <span className="text-[11px] font-black text-foreground uppercase tracking-tighter"> {appointment.appointment_type || 'STANDARD'} SESSION</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {/* Clinical Notes Section */}
+                                                                                <div className="mt-4 p-4 bg-muted/20 border border-border/30 rounded-2xl relative group-hover:bg-card/60 transition-all">
+                                                                                    <div className="flex items-center mb-2 px-1">
+                                                                                        <FileText size={12} className="text-indigo-500/60 mr-2" />
+                                                                                        <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Clinical Ledger & Scientific Notes</span>
+                                                                                    </div>
+                                                                                    <p className="text-[13px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic pr-4">
+                                                                                        {appointment.notes ? `"${appointment.notes}"` : "No specific clinical notes were recorded for this session. The patient presented for a routine evaluation as part of their comprehensive health management program."}
+                                                                                    </p>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
