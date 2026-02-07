@@ -6,7 +6,7 @@ import {
     User, Phone, Mail, Calendar, Heart, AlertCircle, AlertTriangle, Plus, Edit2, Edit, Edit3, Eye, X, Save,
     FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle, Search,
     Users, Activity, Filter, ChevronRight, ArrowRight, ExternalLink, TrendingUp, Zap,
-    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan
+    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan, Mic
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { debounce } from "../../utils/performance";
@@ -68,12 +68,15 @@ const PatientTab = memo(() => {
     const [showFileUpload, setShowFileUpload] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [patientToDelete, setPatientToDelete] = useState(null);
+    const [recordToDelete, setRecordToDelete] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = React.useRef(null);
+    const chunksRef = React.useRef([]);
 
     // Document Tab States
     const [documentSearch, setDocumentSearch] = useState('');
     const [documentFilter, setDocumentFilter] = useState('all');
     const [showDocumentDeleteConfirm, setShowDocumentDeleteConfirm] = useState(false);
-    const [recordToDelete, setRecordToDelete] = useState(null);
 
     // Form state
     const [patientForm, setPatientForm] = useState({
@@ -189,6 +192,30 @@ const PatientTab = memo(() => {
         }
     }, [patientForm, resetPatientForm, fetchPatients]);
 
+
+
+    const handleUpdatePatient = useCallback(async (e) => {
+        e.preventDefault();
+        setActionLoading('create-patient');
+
+        try {
+            const result = await patientApi.create(patientForm);
+
+            // Refresh the patient list from the server to ensure consistency
+            await fetchPatients();
+
+            setShowNewPatientModal(false);
+            resetPatientForm();
+            setError(null);
+
+            toast.success('Patient registered successfully!');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setActionLoading(null);
+        }
+    }, [patientForm, resetPatientForm, fetchPatients]);
+
     const handleFileUpload = useCallback(async (file, fileType) => {
         if (!file || !selectedPatient) return;
 
@@ -229,6 +256,44 @@ const PatientTab = memo(() => {
             setUploadingFile(null);
         }
     }, [selectedPatient, doctorId]);
+
+    const handleStartRecording = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            chunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    chunksRef.current.push(e.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                const file = new File([blob], `voice_note_${Date.now()}.webm`, { type: 'audio/webm' });
+                handleFileUpload(file, 'medical_record');
+
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+            toast.success('Recording started...');
+        } catch (err) {
+            console.error('Error accessing microphone:', err);
+            toast.error('Could not access microphone');
+        }
+    }, [handleFileUpload]);
+
+    const handleStopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            toast.success('Recording saved and uploading...');
+        }
+    }, [isRecording]);
 
     const handleEditPatient = useCallback(async (e) => {
         e.preventDefault();
@@ -1423,6 +1488,18 @@ const PatientTab = memo(() => {
                                                                     className="w-full sm:w-64 pl-9 pr-4 py-2.5 bg-muted/30 border border-border/50 rounded-xl text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
                                                                 />
                                                             </div>
+
+                                                            {/* Voice Recorder Button */}
+                                                            <button
+                                                                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                                                                className={`flex items-center justify-center space-x-2 px-5 py-2.5 bg-card text-foreground border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 ${isRecording
+                                                                    ? 'border-rose-500 text-rose-500 animate-pulse shadow-rose-500/20'
+                                                                    : 'hover:border-indigo-500/50 hover:text-indigo-500 hover:shadow-indigo-500/10'
+                                                                    }`}
+                                                            >
+                                                                {isRecording ? <div className="w-3.5 h-3.5 bg-rose-500 rounded-sm animate-pulse" /> : <Mic size={14} />}
+                                                                <span>{isRecording ? 'Stop' : 'Voice'}</span>
+                                                            </button>
 
                                                             {/* Camera Input */}
                                                             <input
