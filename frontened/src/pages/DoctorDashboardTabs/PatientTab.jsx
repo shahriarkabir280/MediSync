@@ -1291,74 +1291,68 @@ const PatientTab = memo(() => {
 
                                             {/* Clinical History Tab */}
                                             {activeDetailsTab === 'medical-history' && (
-                                                <div className="space-y-6 sm:space-y-12">
-                                                    <div className="bg-muted/10 border border-border/40 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 shadow-inner group/history">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                                <div className="space-y-6 sm:space-y-8">
+                                                    <div className="bg-muted/10 border border-border/40 rounded-[1.5rem] p-4 sm:p-6 shadow-inner group/history">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                                             <div className="flex items-center space-x-3 sm:space-x-4">
-                                                                <div className="p-2.5 sm:p-3.5 bg-indigo-600 text-white rounded-lg sm:rounded-2xl shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
-                                                                    <Stethoscope size={20} className="sm:w-6 sm:h-6" />
+                                                                <div className="p-2 sm:p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
+                                                                    <Stethoscope size={20} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div>
-                                                                    <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Medical Biography</h3>
-                                                                    <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Chronological Patient Registry</p>
+                                                                    <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Medical Biography</h3>
+                                                                    <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">Chronological Patient Registry</p>
                                                                 </div>
                                                             </div>
                                                         </div>
 
                                                         {selectedPatient.medical_history ? (
-                                                            <div className="space-y-10">
+                                                            <div className="space-y-4">
                                                                 {selectedPatient.medical_history.split('\n').filter(line => line.trim()).map((entry, index) => (
-                                                                    <div key={index} className="group/item relative pl-10 sm:pl-16 pb-8 sm:pb-12 last:pb-0">
-                                                                        <div className="absolute left-[11px] sm:left-[17px] top-6 bottom-0 w-[1.5px] bg-indigo-500/10 group-last/item:hidden"></div>
-                                                                        <div className="absolute left-0 top-4 w-6 h-6 sm:w-9 sm:h-9 bg-card rounded-md sm:rounded-xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
-                                                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                    <div key={index} className="group/item relative pl-8 sm:pl-10 pb-6 last:pb-0">
+                                                                        <div className="absolute left-[9px] top-5 bottom-0 w-[2px] bg-indigo-500/10 group-last/item:hidden"></div>
+                                                                        <div className="absolute left-0 top-3 w-5 h-5 bg-card rounded-md border text-indigo-500 border-indigo-500/30 flex items-center justify-center shadow-sm group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
+                                                                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
                                                                         </div>
-                                                                        <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[1.2rem] sm:rounded-[1.8rem] p-4 sm:p-6 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
-                                                                            <p className="text-xs sm:text-sm font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
+                                                                        <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl p-3 sm:p-4 hover:bg-card hover:shadow-md transition-all duration-300">
+                                                                            <p className="text-sm font-medium text-foreground/80 leading-relaxed">{entry}</p>
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         ) : (
-                                                            <div className="flex flex-col items-center justify-center py-32 bg-muted/5 rounded-[4rem] border-2 border-dashed border-border/40">
-                                                                <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8 shadow-xl">
-                                                                    <Stethoscope size={64} className="text-muted-foreground/10" />
+                                                            <div className="flex flex-col items-center justify-center py-16 bg-muted/5 rounded-3xl border-2 border-dashed border-border/40">
+                                                                <div className="p-4 bg-card rounded-2xl border border-border/50 mb-4 shadow-sm">
+                                                                    <Stethoscope size={32} className="text-muted-foreground/20" />
                                                                 </div>
-                                                                <p className="text-xs font-black text-muted-foreground/20 uppercase tracking-[0.5em]">No temporal signatures indexed</p>
+                                                                <p className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">No temporal signatures indexed</p>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="bg-rose-500/5 border border-rose-500/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 group/allergies shadow-inner">
-                                                        <div className="flex items-center space-x-3 sm:space-x-4 mb-6">
-                                                            <div className="p-2.5 sm:p-3.5 bg-rose-600 text-white rounded-lg sm:rounded-2xl shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
-                                                                <AlertCircle size={20} className="sm:w-6 sm:h-6" />
+                                                    <div className="bg-rose-500/5 border border-rose-500/10 rounded-[1.5rem] p-4 sm:p-6 group/allergies shadow-inner">
+                                                        <div className="flex items-center space-x-3 mb-4">
+                                                            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg group-hover/allergies:rotate-12 transition-transform">
+                                                                <AlertCircle size={18} />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
-                                                                <p className="text-[9px] sm:text-[10px] font-black text-rose-500/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">High-Priority Safety Alerts</p>
+                                                                <h3 className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-500 tracking-tight">Critical Sensitivities</h3>
+                                                                {/* <p className="text-[9px] font-bold text-rose-500/40 uppercase tracking-widest">High-Priority Alerts</p> */}
                                                             </div>
                                                         </div>
 
                                                         {selectedPatient.allergies ? (
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                                            <div className="flex flex-wrap gap-2 sm:gap-3">
                                                                 {selectedPatient.allergies.split(',').map((allergy, index) => (
-                                                                    <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-xl sm:rounded-2xl p-3 sm:p-5 hover:shadow-xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
-                                                                        <div className="flex items-center space-x-3 sm:space-x-4">
-                                                                            <div className="p-2 sm:p-2.5 bg-rose-500/10 text-rose-500 rounded-lg sm:rounded-xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
-                                                                                <Shield size={14} className="sm:w-[16px] sm:h-[16px]" />
-                                                                            </div>
-                                                                            <p className="text-sm sm:text-base font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
-                                                                        </div>
+                                                                    <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-lg py-1.5 px-3 hover:shadow-lg hover:shadow-rose-500/5 hover:border-rose-500/30 transition-all flex items-center space-x-2">
+                                                                        <Shield size={12} className="text-rose-500/70 group-hover/alert:text-rose-500 transition-colors" />
+                                                                        <span className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wide">{allergy.trim()}</span>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         ) : (
-                                                            <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/5 rounded-[4rem] border-2 border-dashed border-emerald-500/10">
-                                                                <div className="p-8 bg-card rounded-[2.5rem] border border-border/50 mb-8">
-                                                                    <Shield size={64} className="text-emerald-500/10" />
-                                                                </div>
-                                                                <p className="text-xs font-black text-emerald-600/30 uppercase tracking-[0.5em]">No Sensitivities Detected</p>
+                                                            <div className="flex flex-col items-center justify-center py-12 bg-emerald-500/5 rounded-2xl border-2 border-dashed border-emerald-500/10">
+                                                                <Shield size={32} className="text-emerald-500/10 mb-2" />
+                                                                <p className="text-[10px] font-bold text-emerald-600/30 uppercase tracking-widest">No Sensitivities Detected</p>
                                                             </div>
                                                         )}
                                                     </div>
