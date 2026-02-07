@@ -1176,16 +1176,16 @@ const PatientTab = memo(() => {
                                     })}
                                 </div>
 
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 sm:space-x-2">
                                     <button
                                         onClick={() => handleDeletePatient(selectedPatient.id)}
-                                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-rose-500/5 text-rose-300 hover:text-rose-600 hover:bg-rose-500/10 transition-all rounded-lg border border-border hover:border-rose-500/20"
+                                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-rose-500/5 text-rose-300 hover:text-rose-600 hover:bg-rose-500/10 transition-all rounded-lg border border-border hover:border-rose-500/20"
                                     >
-                                        <Trash2 size={15} className="sm:w-4 sm:h-4" />
+                                        <Trash2 size={13} className="sm:w-3.5 sm:h-3.5" />
                                     </button>
-                                    <div className="w-[1px] h-5 bg-border hidden lg:block"></div>
-                                    <button className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-muted/50 border border-border rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-card transition-all">
-                                        <Download size={13} className="sm:w-[14px] sm:h-[14px]" />
+                                    <div className="w-[1px] h-4 bg-border hidden lg:block"></div>
+                                    <button className="flex items-center space-x-1 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-muted/50 border border-border rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-card transition-all">
+                                        <Download size={12} className="sm:w-[13px] sm:h-[13px]" />
                                         <span className="hidden sm:inline">Export</span>
                                     </button>
                                 </div>
@@ -1211,9 +1211,9 @@ const PatientTab = memo(() => {
                                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                                     <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                                                         <div className="bg-muted/10 border border-border/40 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 shadow-inner group/info">
-                                                            <h3 className="text-base sm:text-lg font-black text-foreground tracking-tighter mb-4 sm:mb-6 flex items-center space-x-3 sm:space-x-4">
-                                                                <div className="p-2 sm:p-2.5 bg-indigo-600 rounded-lg sm:rounded-xl text-white shadow-xl shadow-indigo-500/20 group-hover/info:rotate-6 transition-transform">
-                                                                    <Info size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                                            <h3 className="text-sm sm:text-base font-black text-foreground tracking-tighter mb-4 flex items-center space-x-3">
+                                                                <div className="p-2 bg-indigo-600 rounded-lg text-white shadow-xl shadow-indigo-500/20 group-hover/info:rotate-6 transition-transform">
+                                                                    <Info size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                                 </div>
                                                                 <span>Vital Identification</span>
                                                             </h3>
@@ -1230,9 +1230,9 @@ const PatientTab = memo(() => {
                                                                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em]">{field.label}</p>
                                                                         </div>
                                                                         {field.badge ? (
-                                                                            <span className="inline-block px-3 sm:px-4 py-1 bg-rose-500/10 text-rose-500 rounded-lg font-black text-xs border border-rose-500/20 shadow-sm">{field.value}</span>
+                                                                            <span className="inline-block px-2 py-0.5 bg-rose-500/10 text-rose-500 rounded-lg font-black text-[10px] sm:text-xs border border-rose-500/20 shadow-sm">{field.value}</span>
                                                                         ) : (
-                                                                            <p className="text-sm sm:text-base font-black text-foreground tracking-tight">{field.value}</p>
+                                                                            <p className="text-xs sm:text-sm font-black text-foreground tracking-tight">{field.value}</p>
                                                                         )}
                                                                     </div>
                                                                 ))}
@@ -1240,20 +1240,20 @@ const PatientTab = memo(() => {
                                                         </div>
 
                                                         <div className="bg-muted/10 border border-border/40 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 shadow-inner group/emergency">
-                                                            <h3 className="text-base sm:text-lg font-black text-foreground tracking-tighter mb-4 sm:mb-6 flex items-center space-x-3 sm:space-x-4">
-                                                                <div className="p-2 sm:p-2.5 bg-rose-500 rounded-lg sm:rounded-xl text-white shadow-xl shadow-rose-500/20 group-hover/emergency:-rotate-6 transition-transform">
-                                                                    <AlertCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                                            <h3 className="text-sm sm:text-base font-black text-foreground tracking-tighter mb-4 flex items-center space-x-3">
+                                                                <div className="p-2 bg-rose-500 rounded-lg text-white shadow-xl shadow-rose-500/20 group-hover/emergency:-rotate-6 transition-transform">
+                                                                    <AlertCircle size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                                 </div>
                                                                 <span>Emergency Protocols</span>
                                                             </h3>
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-card/40 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-border group-hover/emergency:border-rose-500/20 transition-all duration-500">
                                                                 <div className="space-y-2 group/field">
-                                                                    <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] group-hover/field:text-rose-500 transition-colors">Guardian / Contact</p>
-                                                                    <p className="text-sm sm:text-base font-black text-foreground tracking-tight">{selectedPatient.emergency_contact_name || 'N/A'}</p>
+                                                                    <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] group-hover/field:text-rose-500 transition-colors">Guardian / Contact</p>
+                                                                    <p className="text-xs sm:text-sm font-black text-foreground tracking-tight">{selectedPatient.emergency_contact_name || 'N/A'}</p>
                                                                 </div>
-                                                                <div className="space-y-2 group/field">
-                                                                    <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] group-hover/field:text-rose-500 transition-colors">Emergency Line</p>
-                                                                    <p className="text-sm sm:text-base font-black text-foreground tracking-tight text-rose-500">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
+                                                                <div className="space-y-1.5 group/field">
+                                                                    <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] group-hover/field:text-rose-500 transition-colors">Emergency Line</p>
+                                                                    <p className="text-xs sm:text-sm font-black text-foreground tracking-tight text-rose-500">{selectedPatient.emergency_contact_phone || 'N/A'}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1263,13 +1263,13 @@ const PatientTab = memo(() => {
                                                         <div className="bg-indigo-600 rounded-3xl sm:rounded-[3rem] p-8 sm:p-10 text-white shadow-2xl shadow-indigo-500/20 overflow-hidden relative group/notes">
                                                             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover/notes:scale-150 transition-transform duration-1000"></div>
                                                             <Zap size={32} className="sm:w-12 sm:h-12 text-indigo-200/40 mb-6 sm:mb-8 relative z-10" />
-                                                            <h4 className="text-xl sm:text-2xl font-black tracking-tighter mb-3 sm:mb-4 relative z-10">Clinical Perspective</h4>
-                                                            <p className="text-indigo-100/80 text-sm font-bold leading-relaxed mb-10 relative z-10 italic">
-                                                                "{selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 120) + '...' : 'No primary clinical notes active for this patient record.'}"
+                                                            <h4 className="text-lg sm:text-xl font-black tracking-tighter mb-2 relative z-10">Clinical Perspective</h4>
+                                                            <p className="text-indigo-100/80 text-[12px] font-bold leading-relaxed mb-6 relative z-10 italic">
+                                                                "{selectedPatient.medical_history ? selectedPatient.medical_history.substring(0, 100) + '...' : 'No primary clinical notes active for this patient record.'}"
                                                             </p>
                                                             <button
                                                                 onClick={() => setActiveDetailsTab('medical-history')}
-                                                                className="w-full py-4 sm:py-5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all relative z-10"
+                                                                className="w-full py-3 sm:py-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl sm:rounded-2xl text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] transition-all relative z-10"
                                                             >
                                                                 Examine Full Record
                                                             </button>
@@ -1277,13 +1277,13 @@ const PatientTab = memo(() => {
 
                                                         <div className="bg-card border border-border/60 rounded-3xl sm:rounded-[3rem] p-8 sm:p-10 shadow-xl space-y-6 sm:space-y-8">
                                                             <div className="flex items-center justify-between">
-                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Patient Score</p>
-                                                                <span className="text-2xl font-black text-indigo-500">9.4</span>
+                                                                <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Patient Score</p>
+                                                                <span className="text-xl font-black text-indigo-500">9.4</span>
                                                             </div>
-                                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                                                 <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-[94%]"></div>
                                                             </div>
-                                                            <p className="text-[10px] font-bold text-muted-foreground/60 leading-relaxed text-center">High diagnostic compliance and clinical stability observed.</p>
+                                                            <p className="text-[9px] font-bold text-muted-foreground/60 leading-relaxed text-center">High diagnostic compliance and clinical stability observed.</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1292,15 +1292,15 @@ const PatientTab = memo(() => {
                                             {/* Clinical History Tab */}
                                             {activeDetailsTab === 'medical-history' && (
                                                 <div className="space-y-6 sm:space-y-12">
-                                                    <div className="bg-muted/10 border border-border/40 rounded-[2rem] sm:rounded-[4rem] p-6 sm:p-12 shadow-inner group/history">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-8 mb-8 sm:mb-16">
-                                                            <div className="flex items-center space-x-4 sm:space-x-6">
-                                                                <div className="p-3 sm:p-5 bg-indigo-600 text-white rounded-xl sm:rounded-[2rem] shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
-                                                                    <Stethoscope size={24} className="sm:w-8 sm:h-8" />
+                                                    <div className="bg-muted/10 border border-border/40 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 shadow-inner group/history">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                                            <div className="flex items-center space-x-3 sm:space-x-4">
+                                                                <div className="p-2.5 sm:p-3.5 bg-indigo-600 text-white rounded-lg sm:rounded-2xl shadow-2xl shadow-indigo-500/20 group-hover/history:scale-110 transition-transform">
+                                                                    <Stethoscope size={20} className="sm:w-6 sm:h-6" />
                                                                 </div>
                                                                 <div>
-                                                                    <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Medical Biography</h3>
-                                                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em]">Chronological Patient Registry</p>
+                                                                    <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Medical Biography</h3>
+                                                                    <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Chronological Patient Registry</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1309,12 +1309,12 @@ const PatientTab = memo(() => {
                                                             <div className="space-y-10">
                                                                 {selectedPatient.medical_history.split('\n').filter(line => line.trim()).map((entry, index) => (
                                                                     <div key={index} className="group/item relative pl-10 sm:pl-16 pb-8 sm:pb-12 last:pb-0">
-                                                                        <div className="absolute left-[15px] sm:left-[23px] top-6 bottom-0 w-[2px] bg-indigo-500/10 group-last/item:hidden"></div>
-                                                                        <div className="absolute left-0 top-4 w-8 h-8 sm:w-12 sm:h-12 bg-card rounded-lg sm:rounded-2xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
-                                                                            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                        <div className="absolute left-[11px] sm:left-[17px] top-6 bottom-0 w-[1.5px] bg-indigo-500/10 group-last/item:hidden"></div>
+                                                                        <div className="absolute left-0 top-4 w-6 h-6 sm:w-9 sm:h-9 bg-card rounded-md sm:rounded-xl border-2 border-indigo-500/20 flex items-center justify-center shadow-lg group-hover/item:border-indigo-500 group-hover/item:scale-110 transition-all">
+                                                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-indigo-500 rounded-full animate-pulse"></div>
                                                                         </div>
-                                                                        <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
-                                                                            <p className="text-sm sm:text-base font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
+                                                                        <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[1.2rem] sm:rounded-[1.8rem] p-4 sm:p-6 hover:shadow-2xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-700">
+                                                                            <p className="text-xs sm:text-sm font-black text-foreground leading-relaxed tracking-tight">{entry}</p>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1329,26 +1329,26 @@ const PatientTab = memo(() => {
                                                         )}
                                                     </div>
 
-                                                    <div className="bg-rose-500/5 border border-rose-500/10 rounded-[2rem] sm:rounded-[4rem] p-6 sm:p-12 group/allergies shadow-inner">
-                                                        <div className="flex items-center space-x-4 sm:space-x-8 mb-8 sm:mb-12">
-                                                            <div className="p-3 sm:p-5 bg-rose-600 text-white rounded-xl sm:rounded-[2rem] shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
-                                                                <AlertCircle size={24} className="sm:w-8 sm:h-8" />
+                                                    <div className="bg-rose-500/5 border border-rose-500/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-6 lg:p-8 group/allergies shadow-inner">
+                                                        <div className="flex items-center space-x-3 sm:space-x-4 mb-6">
+                                                            <div className="p-2.5 sm:p-3.5 bg-rose-600 text-white rounded-lg sm:rounded-2xl shadow-2xl shadow-rose-500/20 group-hover/allergies:rotate-12 transition-transform">
+                                                                <AlertCircle size={20} className="sm:w-6 sm:h-6" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-xl sm:text-3xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
-                                                                <p className="text-[10px] sm:text-[11px] font-black text-rose-500/40 uppercase tracking-[0.2em] sm:tracking-[0.4em]">High-Priority Safety Alerts</p>
+                                                                <h3 className="text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">Critical Sensitivities</h3>
+                                                                <p className="text-[9px] sm:text-[10px] font-black text-rose-500/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">High-Priority Safety Alerts</p>
                                                             </div>
                                                         </div>
 
                                                         {selectedPatient.allergies ? (
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                                                 {selectedPatient.allergies.split(',').map((allergy, index) => (
-                                                                    <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
-                                                                        <div className="flex items-center space-x-4 sm:space-x-6">
-                                                                            <div className="p-3 sm:p-4 bg-rose-500/10 text-rose-500 rounded-xl sm:rounded-2xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
-                                                                                <Shield size={18} className="sm:w-6 sm:h-6" />
+                                                                    <div key={index} className="group/alert bg-card border border-rose-500/10 rounded-xl sm:rounded-2xl p-3 sm:p-5 hover:shadow-xl hover:shadow-rose-500/10 hover:border-rose-500/40 transition-all">
+                                                                        <div className="flex items-center space-x-3 sm:space-x-4">
+                                                                            <div className="p-2 sm:p-2.5 bg-rose-500/10 text-rose-500 rounded-lg sm:rounded-xl group-hover/alert:bg-rose-600 group-hover/alert:text-white transition-all">
+                                                                                <Shield size={14} className="sm:w-[16px] sm:h-[16px]" />
                                                                             </div>
-                                                                            <p className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
+                                                                            <p className="text-sm sm:text-base font-black text-rose-600 dark:text-rose-400 tracking-tight uppercase">{allergy.trim()}</p>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1368,17 +1368,17 @@ const PatientTab = memo(() => {
                                             {/* Medical Records Tab */}
                                             {activeDetailsTab === 'records' && (
                                                 <div className="space-y-12">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-6">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
                                                         <div>
-                                                            <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
-                                                            <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Cryptographically Secured Documents</p>
+                                                            <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
+                                                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">Cryptographically Secured Documents</p>
                                                         </div>
                                                         <button
                                                             onClick={() => setShowFileUpload(true)}
-                                                            className="flex items-center space-x-3 sm:space-x-4 px-6 sm:px-10 py-3 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-[2.5rem] text-[10px] sm:text-[12px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 sm:hover:-translate-y-1.5 transition-all active:scale-95"
+                                                            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.1em] shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all active:scale-95 self-start md:self-auto"
                                                         >
-                                                            <Plus size={18} className="sm:w-[22px] sm:h-[22px]" />
-                                                            <span>Injest New Record</span>
+                                                            <Plus size={16} />
+                                                            <span>Injest Record</span>
                                                         </button>
                                                     </div>
 
@@ -1395,16 +1395,16 @@ const PatientTab = memo(() => {
                                                                 .filter(record => !record.prescription && record.file_type !== 'prescription')
                                                                 .map((record, index) => (
                                                                     <div key={index} className="group relative bg-card/60 backdrop-blur-3xl border border-border/60 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/40 transition-all duration-700">
-                                                                        <div className="flex items-start justify-between mb-6 sm:mb-10">
-                                                                            <div className="p-3 sm:p-5 bg-muted rounded-xl sm:rounded-[2rem] group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-2xl border border-border/50">
-                                                                                <FileText size={24} className="sm:w-8 sm:h-8" />
+                                                                        <div className="flex items-start justify-between mb-4 sm:mb-6">
+                                                                            <div className="p-2 sm:p-3 bg-muted rounded-lg sm:rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-xl border border-border/50">
+                                                                                <FileText size={18} className="sm:w-6 sm:h-6" />
                                                                             </div>
-                                                                            <div className="flex space-x-2 sm:space-x-3">
-                                                                                <button className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-xl sm:rounded-2xl border border-border/50 transition-all hover:scale-110">
-                                                                                    <Download size={18} className="sm:w-[22px] sm:h-[22px]" />
+                                                                            <div className="flex space-x-1.5 sm:space-x-2">
+                                                                                <button className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-lg sm:rounded-xl border border-border/50 transition-all hover:scale-110">
+                                                                                    <Download size={14} className="sm:w-[18px] sm:h-[18px]" />
                                                                                 </button>
-                                                                                <button className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border/50 transition-all hover:scale-110">
-                                                                                    <Trash2 size={18} className="sm:w-[22px] sm:h-[22px]" />
+                                                                                <button className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-lg sm:rounded-xl border border-border/50 transition-all hover:scale-110">
+                                                                                    <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
                                                                                 </button>
                                                                             </div>
                                                                         </div>
@@ -1415,13 +1415,13 @@ const PatientTab = memo(() => {
                                                                                 <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">{formatDate(record.created_at)}</p>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="mt-10 pt-10 border-t border-border/40 flex items-center justify-between">
-                                                                            <span className="px-5 py-2 bg-muted/50 text-[10px] font-black text-muted-foreground/60 rounded-xl uppercase tracking-[0.2em] border border-border/50">
+                                                                        <div className="mt-6 pt-6 border-t border-border/40 flex items-center justify-between">
+                                                                            <span className="px-3 py-1 bg-muted/50 text-[8px] font-black text-muted-foreground/60 rounded-lg uppercase tracking-[0.2em] border border-border/50">
                                                                                 {record.file_type || 'Registry'}
                                                                             </span>
-                                                                            <button className="text-[11px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.3em] flex items-center space-x-3 px-5 py-2.5 hover:bg-indigo-500/5 rounded-2xl">
+                                                                            <button className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.2em] flex items-center space-x-2 px-3 py-1.5 hover:bg-indigo-500/5 rounded-xl">
                                                                                 <span>Analyze</span>
-                                                                                <ExternalLink size={16} />
+                                                                                <ExternalLink size={14} />
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -1434,48 +1434,48 @@ const PatientTab = memo(() => {
                                             {/* Appointments Tab */}
                                             {activeDetailsTab === 'appointments' && (
                                                 <div className="space-y-6 sm:space-y-12">
-                                                    <div className="px-0 sm:px-8">
-                                                        <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
-                                                        <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Live calendar sync & clinical history</p>
+                                                    <div className="px-4">
+                                                        <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Scheduling Timeline</h3>
+                                                        <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">Live calendar sync & clinical history</p>
                                                     </div>
 
                                                     {appointmentLoading ? (
-                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-40 space-y-6 sm:space-y-8">
-                                                            <RefreshCw size={32} className="sm:w-12 sm:h-12 animate-spin text-indigo-500/20" />
-                                                            <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/30 uppercase tracking-[0.4em] sm:tracking-[0.5em]">Synchronizing temporal data...</p>
+                                                        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                                            <RefreshCw size={24} className="animate-spin text-indigo-500/20" />
+                                                            <p className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.4em]">Synchronizing data...</p>
                                                         </div>
                                                     ) : patientAppointments.length === 0 ? (
-                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-32 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-6">
-                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
-                                                                <Calendar size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/10" />
+                                                        <div className="flex flex-col items-center justify-center py-20 bg-muted/10 rounded-[2rem] border-2 border-dashed border-border/40 mx-4">
+                                                            <div className="p-6 bg-card rounded-2xl border border-border/50 mb-6 shadow-2xl">
+                                                                <Calendar size={48} className="text-muted-foreground/10" />
                                                             </div>
-                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">No temporal logs detected</p>
+                                                            <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.4em]">No temporal logs detected</p>
                                                         </div>
                                                     ) : (
-                                                        <div className="space-y-6 sm:space-y-8 px-0 sm:px-8">
+                                                        <div className="space-y-4 px-4">
                                                             {patientAppointments.map((appointment) => (
-                                                                <div key={appointment.id} className="group relative pl-12 sm:pl-20 before:absolute before:left-[19px] sm:before:left-[31px] before:top-0 before:bottom-0 before:w-[3px] before:bg-indigo-500/5 last:before:hidden">
-                                                                    <div className="absolute left-0 top-6 w-10 h-10 sm:w-16 sm:h-16 bg-card rounded-xl sm:rounded-3xl border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
-                                                                        <Clock size={18} className="sm:w-7 sm:h-7 text-indigo-500" />
+                                                                <div key={appointment.id} className="group relative pl-10 before:absolute before:left-[15px] before:top-0 before:bottom-0 before:w-[2px] before:bg-indigo-500/5 last:before:hidden">
+                                                                    <div className="absolute left-0 top-3 w-8 h-8 bg-card rounded-lg border-2 border-indigo-500/20 flex items-center justify-center shadow-2xl group-hover:border-indigo-500 group-hover:scale-110 transition-all z-10">
+                                                                        <Clock size={16} className="text-indigo-500" />
                                                                     </div>
-                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
+                                                                    <div className="bg-card/40 backdrop-blur-3xl border border-border/60 rounded-2xl p-4 sm:p-5 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-700">
                                                                         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 sm:gap-10">
                                                                             <div className="space-y-3 sm:space-y-4">
-                                                                                <h4 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">
-                                                                                    {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-2 sm:mx-3">|</span> {appointment.appointment_time}
+                                                                                <h4 className="text-base sm:text-xl font-black text-foreground tracking-tighter">
+                                                                                    {formatDate(appointment.appointment_date)} <span className="text-indigo-500/30 mx-2">|</span> {appointment.appointment_time}
                                                                                 </h4>
-                                                                                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                                                                                    <div className="flex items-center space-x-2 sm:space-x-3">
-                                                                                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                                                                                        <span className="text-[10px] sm:text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] sm:tracking-[0.3em] font-outfit">
+                                                                                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                                                                                    <div className="flex items-center space-x-1.5 sm:space-x-2">
+                                                                                        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                                                                                        <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.15em] font-outfit">
                                                                                             {appointment.appointment_type || 'Clinical'} Consultation
                                                                                         </span>
                                                                                     </div>
-                                                                                    <div className="w-[1px] h-3 sm:h-4 bg-border/60 hidden sm:block"></div>
-                                                                                    <span className="text-[10px] sm:text-[11px] font-black text-indigo-500/50 uppercase tracking-[0.2em] sm:tracking-[0.3em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
+                                                                                    <div className="w-[1px] h-2.5 sm:h-3 bg-border/60 hidden sm:block"></div>
+                                                                                    <span className="text-[9px] sm:text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.15em]">DR. {appointment.doctor_name || 'MD On Call'}</span>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`px-6 sm:px-10 py-2.5 sm:py-4 rounded-xl sm:rounded-[1.8rem] text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-lg border-2 self-start sm:self-auto ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
+                                                                            <div className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] shadow-lg border-2 self-start sm:self-auto ${appointment.status === 'completed' ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/10' :
                                                                                 appointment.status === 'confirmed' ? 'bg-indigo-500/5 text-indigo-500 border-indigo-500/10' :
                                                                                     appointment.status === 'pending' ? 'bg-amber-500/5 text-amber-500 border-amber-500/10' :
                                                                                         'bg-rose-500/5 text-rose-500 border-rose-500/10'
@@ -1494,9 +1494,9 @@ const PatientTab = memo(() => {
                                             {/* Prescriptions Tab */}
                                             {activeDetailsTab === 'prescriptions' && (
                                                 <div className="space-y-6 sm:space-y-12">
-                                                    <div className="px-0 sm:px-8">
-                                                        <h3 className="text-xl sm:text-3xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
-                                                        <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Active pharmacological regimens</p>
+                                                    <div className="px-4">
+                                                        <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
+                                                        <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] mt-1">Active pharmacological regimens</p>
                                                     </div>
 
                                                     {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0 ? (
@@ -1507,45 +1507,44 @@ const PatientTab = memo(() => {
                                                             <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">No Medication Records</p>
                                                         </div>
                                                     ) : (
-                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 px-0 sm:px-8">
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-4">
                                                             {medicalRecords
                                                                 .filter(record => record.prescription || record.file_type === 'prescription')
                                                                 .map((record, index) => (
-                                                                    <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[2rem] sm:rounded-[3.5rem] p-6 sm:p-12 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
-                                                                        <div className="flex items-center justify-between mb-8 sm:mb-10">
-                                                                            <div className="p-4 sm:p-5 bg-amber-500/10 text-amber-500 rounded-[1.5rem] sm:rounded-[2rem] group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
-                                                                                <Pill size={24} className="sm:w-8 sm:h-8" />
+                                                                    <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
+                                                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
+                                                                            <div className="p-2.5 sm:p-3.5 bg-amber-500/10 text-amber-500 rounded-lg sm:rounded-xl group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
+                                                                                <Pill size={18} className="sm:w-6 sm:h-6" />
                                                                             </div>
                                                                             <div className="flex flex-col items-end">
-                                                                                <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1">Authenticated Ledger</span>
-                                                                                <span className="text-[9px] sm:text-[10px] font-black text-amber-500/60 uppercase tracking-[0.1em] sm:tracking-[0.2em]">{record.file_name || 'Rx-SIG'}</span>
+                                                                                <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.1em] mb-0.5">Authenticated Ledger</span>
+                                                                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.05em]">{record.file_name || 'Rx-SIG'}</span>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="bg-muted/30 p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] border-l-4 sm:border-l-[6px] border-amber-500 mb-6 sm:mb-10 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
-                                                                            <div className="absolute right-[-20px] top-[-20px] p-10 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
-                                                                                <Pill size={80} className="sm:w-[120px] sm:h-[120px]" />
+                                                                        <div className="bg-muted/30 p-4 sm:p-6 rounded-lg sm:rounded-xl border-l-4 border-amber-500 mb-4 sm:mb-6 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
+                                                                            <div className="absolute right-[-10px] top-[-10px] p-6 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
+                                                                                <Pill size={60} className="sm:w-20 sm:h-20" />
                                                                             </div>
-                                                                            <p className="text-base sm:text-lg font-black text-foreground leading-relaxed italic relative z-10">
+                                                                            <p className="text-sm sm:text-base font-black text-foreground leading-relaxed italic relative z-10">
                                                                                 "{record.prescription || 'Primary pharmacological instructions pending details.'}"
                                                                             </p>
                                                                         </div>
-                                                                        <div className="flex items-center justify-between pt-4">
-                                                                            <div className="space-y-1">
-                                                                                <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Registry Date</p>
-                                                                                <p className="text-xs sm:text-sm font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
+                                                                        <div className="flex items-center justify-between pt-2">
+                                                                            <div className="space-y-0.5">
+                                                                                <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.1em]">Registry Date</p>
+                                                                                <p className="text-[10px] sm:text-xs font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
                                                                             </div>
                                                                             {record.file_path && (
                                                                                 <button
                                                                                     onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                    className="px-4 sm:px-6 py-2 sm:py-3 bg-card border border-border rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.2em] sm:tracking-[0.3em] shadow-lg"
+                                                                                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-card border border-border rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.1em] shadow-lg"
                                                                                 >
                                                                                     View Script
                                                                                 </button>
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                ))
-                                                            }
+                                                                ))}
                                                         </div>
                                                     )}
                                                 </div>
