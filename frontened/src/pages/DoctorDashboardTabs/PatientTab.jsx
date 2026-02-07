@@ -6,7 +6,7 @@ import {
     User, Phone, Mail, Calendar, Heart, AlertCircle, AlertTriangle, Plus, Edit2, Edit, Edit3, Eye, X, Save,
     FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle, Search,
     Users, Activity, Filter, ChevronRight, ArrowRight, ExternalLink, TrendingUp, Zap,
-    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw
+    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { debounce } from "../../utils/performance";
@@ -221,8 +221,10 @@ const PatientTab = memo(() => {
 
             setError(null);
             setShowFileUpload(false);
+            toast.success('Document uploaded successfully');
         } catch (err) {
             setError(err.message || 'Failed to upload file');
+            toast.error(err.message || 'Failed to upload file');
         } finally {
             setUploadingFile(null);
         }
@@ -1422,6 +1424,31 @@ const PatientTab = memo(() => {
                                                                 />
                                                             </div>
 
+                                                            {/* Camera Input */}
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                capture="environment"
+                                                                className="hidden"
+                                                                id="cameraInput"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files[0];
+                                                                    if (file) {
+                                                                        handleFileUpload(file, 'imaging');
+                                                                    }
+                                                                }}
+                                                            />
+
+                                                            {/* Scanner Button */}
+                                                            <button
+                                                                onClick={() => document.getElementById('cameraInput').click()}
+                                                                disabled={!!uploadingFile}
+                                                                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-card text-foreground border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-500/50 hover:text-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                {uploadingFile ? <RefreshCw size={14} className="animate-spin" /> : <Scan size={14} />}
+                                                                <span>{uploadingFile ? 'Scanning...' : 'Scan'}</span>
+                                                            </button>
+
                                                             {/* Upload Button */}
                                                             <button
                                                                 onClick={() => setShowFileUpload(true)}
@@ -1439,15 +1466,15 @@ const PatientTab = memo(() => {
                                                             { id: 'all', label: 'All Files' },
                                                             { id: 'medical_record', label: 'Reports' },
                                                             { id: 'lab_result', label: 'Lab Results' },
-                                                            { id: 'scan', label: 'Imaging' },
+                                                            { id: 'imaging', label: 'Imaging' },
                                                             { id: 'other', label: 'Other' }
                                                         ].map(filter => (
                                                             <button
                                                                 key={filter.id}
                                                                 onClick={() => setDocumentFilter(filter.id)}
                                                                 className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${documentFilter === filter.id
-                                                                        ? 'bg-foreground text-background border-foreground'
-                                                                        : 'bg-card border-border/50 text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                                                                    ? 'bg-foreground text-background border-foreground'
+                                                                    : 'bg-card border-border/50 text-muted-foreground hover:border-foreground/20 hover:text-foreground'
                                                                     }`}
                                                             >
                                                                 {filter.label}
@@ -1459,9 +1486,18 @@ const PatientTab = memo(() => {
                                                     {(() => {
                                                         const filteredDocs = medicalRecords.filter(r => {
                                                             const isNotPrescription = !r.prescription && r.file_type !== 'prescription';
+                                                            const isImaging = ['scan', 'xray', 'imaging'].includes(r.file_type);
+                                                            const isLab = r.file_type === 'lab_result';
+                                                            const isReport = r.file_type === 'medical_record';
+
                                                             const matchesType = documentFilter === 'all'
                                                                 ? true
-                                                                : (r.file_type === documentFilter || (documentFilter === 'other' && !['medical_record', 'lab_result', 'scan'].includes(r.file_type)));
+                                                                : (
+                                                                    (documentFilter === 'imaging' && isImaging) ||
+                                                                    (documentFilter === 'lab_result' && isLab) ||
+                                                                    (documentFilter === 'medical_record' && isReport) ||
+                                                                    (documentFilter === 'other' && !isImaging && !isLab && !isReport)
+                                                                );
                                                             const matchesSearch = r.file_name?.toLowerCase().includes(documentSearch.toLowerCase());
                                                             return isNotPrescription && matchesType && matchesSearch;
                                                         });
@@ -1498,11 +1534,11 @@ const PatientTab = memo(() => {
 
                                                                         <div className="flex items-start justify-between mb-4 relative z-10">
                                                                             <div className="flex items-center space-x-3">
-                                                                                <div className={`p-2.5 rounded-xl ${record.file_type === 'scan' ? 'bg-purple-500/10 text-purple-500' :
-                                                                                        record.file_type === 'lab_result' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                                                            'bg-blue-500/10 text-blue-500'
+                                                                                <div className={`p-2.5 rounded-xl ${['scan', 'xray', 'imaging'].includes(record.file_type) ? 'bg-purple-500/10 text-purple-500' :
+                                                                                    record.file_type === 'lab_result' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                                                        'bg-blue-500/10 text-blue-500'
                                                                                     }`}>
-                                                                                    {record.file_type === 'scan' ? <Zap size={18} /> :
+                                                                                    {['scan', 'xray', 'imaging'].includes(record.file_type) ? <Zap size={18} /> :
                                                                                         record.file_type === 'lab_result' ? <Activity size={18} /> :
                                                                                             <FileText size={18} />}
                                                                                 </div>
@@ -1714,17 +1750,21 @@ const PatientTab = memo(() => {
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Document Category</label>
-                                        <select
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
-                                            id="fileType"
-                                        >
-                                            <option value="medical_record">General Medical Record</option>
-                                            <option value="prescription">Digital Prescription</option>
-                                            <option value="lab_result">Laboratory Analysis</option>
-                                            <option value="xray">Radiology (X-Ray)</option>
-                                            <option value="scan">Advanced Scan (CT/MRI)</option>
-                                            <option value="report">Formal Medical Report</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
+                                                id="fileType"
+                                                defaultValue="medical_record"
+                                            >
+                                                <option value="medical_record">Medical Report</option>
+                                                <option value="lab_result">Lab Result</option>
+                                                <option value="imaging">Imaging (X-Ray, CT, MRI)</option>
+                                                <option value="other">Other Document</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                                <ChevronRight size={16} className="rotate-90" />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2">
