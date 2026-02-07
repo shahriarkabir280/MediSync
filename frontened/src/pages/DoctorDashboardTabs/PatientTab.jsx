@@ -302,6 +302,7 @@ const PatientTab = memo(() => {
             emergency_contact_name: patient.emergency_contact_name || '',
             emergency_contact_phone: patient.emergency_contact_phone || '',
             medical_history: patient.medical_history || '',
+            allergies: patient.allergies || '',
         });
         setShowEditPatientModal(true);
     }, []);
