@@ -632,7 +632,7 @@ const PatientTab = memo(() => {
             {/* New Patient Modal */}
             {
                 showNewPatientModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[155] p-4 animate-in fade-in duration-300">
                         <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
                             <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
                                 <div>
@@ -855,7 +855,7 @@ const PatientTab = memo(() => {
             {/* Edit Patient Modal */}
             {
                 showEditPatientModal && selectedPatient && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[155] p-4 animate-in fade-in duration-300">
                         <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
                             <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
                                 <div>
@@ -1560,7 +1560,7 @@ const PatientTab = memo(() => {
             }
             {
                 showFileUpload && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[160] p-4 animate-in fade-in duration-300">
                         <div className="bg-card border border-border rounded-[2rem] sm:rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-500">
                             <div className="p-6 sm:p-8">
                                 <div className="flex items-center justify-between mb-8">
