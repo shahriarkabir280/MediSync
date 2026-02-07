@@ -6,8 +6,23 @@ import {
     User, Phone, Mail, Calendar, Heart, AlertCircle, AlertTriangle, Plus, Edit2, Edit, Edit3, Eye, X, Save,
     FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle, Search,
     Users, Activity, Filter, ChevronRight, ArrowRight, ExternalLink, TrendingUp, Zap,
-    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan, Mic
+    MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan, Mic,
+    Link
 } from "lucide-react";
+import {
+    WhatsappShareButton, WhatsappIcon,
+    EmailShareButton, EmailIcon,
+    TelegramShareButton, TelegramIcon,
+    TwitterShareButton, XIcon,
+    FacebookShareButton, FacebookIcon,
+    LinkedinShareButton, LinkedinIcon,
+    RedditShareButton, RedditIcon,
+    PinterestShareButton, PinterestIcon,
+    PocketShareButton, PocketIcon,
+    LineShareButton, LineIcon,
+    ViberShareButton, ViberIcon,
+    FacebookMessengerShareButton, FacebookMessengerIcon
+} from "react-share";
 import { toast } from "react-hot-toast";
 import { debounce } from "../../utils/performance";
 
@@ -77,6 +92,8 @@ const PatientTab = memo(() => {
     const [documentSearch, setDocumentSearch] = useState('');
     const [documentFilter, setDocumentFilter] = useState('all');
     const [showDocumentDeleteConfirm, setShowDocumentDeleteConfirm] = useState(false);
+    const [showShareMenu, setShowShareMenu] = useState(false);
+    const [activeShareRecord, setActiveShareRecord] = useState(null);
 
     // Form state
     const [patientForm, setPatientForm] = useState({
@@ -294,6 +311,41 @@ const PatientTab = memo(() => {
             toast.success('Recording saved and uploading...');
         }
     }, [isRecording]);
+
+    const handleShareFile = useCallback((record) => {
+        setActiveShareRecord(record);
+        setShowShareMenu(true);
+    }, []);
+
+    const executeShare = async (method) => {
+        if (!activeShareRecord) return;
+
+        const fileUrl = `${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`;
+        const text = `Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}: ${activeShareRecord.original_name || 'Document'}`;
+
+        switch (method) {
+            case 'copy':
+                await navigator.clipboard.writeText(fileUrl);
+                toast.success('Link copied to clipboard');
+                break;
+            case 'native':
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: activeShareRecord.original_name || 'Medical Record',
+                            text: text,
+                            url: fileUrl
+                        });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') toast.error('Sharing failed');
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        setShowShareMenu(false);
+    };
 
     const handleEditPatient = useCallback(async (e) => {
         e.preventDefault();
@@ -1638,6 +1690,13 @@ const PatientTab = memo(() => {
                                                                                     <Eye size={16} />
                                                                                 </button>
                                                                                 <button
+                                                                                    onClick={() => handleShareFile(record)}
+                                                                                    className="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                                                                    title="Share Document"
+                                                                                >
+                                                                                    <Share2 size={16} />
+                                                                                </button>
+                                                                                <button
                                                                                     onClick={() => handleDeleteRecord(record)}
                                                                                     className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
                                                                                     title="Delete Document"
@@ -2069,8 +2128,177 @@ const PatientTab = memo(() => {
                     </div>
                 )
             }
-        </div >
 
+            {/* Share Menu Modal */}
+            {showShareMenu && activeShareRecord && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
+                    <div className="bg-card border border-border/60 rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+                        <div className="p-6 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                            <div>
+                                <h3 className="text-xl font-black text-foreground tracking-tight">Share Record</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-1">Select official channel</p>
+                            </div>
+                            <button
+                                onClick={() => setShowShareMenu(false)}
+                                className="p-2 hover:bg-muted rounded-xl transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 grid grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            <WhatsappShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <WhatsappIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-emerald-600 transition-colors">WhatsApp</span>
+                            </WhatsappShareButton>
+
+                            <TelegramShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <TelegramIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-sky-600 transition-colors">Telegram</span>
+                            </TelegramShareButton>
+
+                            <EmailShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                subject="Medical Record from CareConnect"
+                                body={`Please find attached the medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <EmailIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600 transition-colors">Email</span>
+                            </EmailShareButton>
+
+                            <FacebookShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                quote={`Medical documentation via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <FacebookIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-700 transition-colors">Facebook</span>
+                            </FacebookShareButton>
+
+                            <FacebookMessengerShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                appId="521171313219467"
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <FacebookMessengerIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-500 transition-colors">Messenger</span>
+                            </FacebookMessengerShareButton>
+
+                            <LinkedinShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                summary={`Patient: ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <LinkedinIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-800 transition-colors">LinkedIn</span>
+                            </LinkedinShareButton>
+
+                            <TwitterShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <XIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-slate-900 transition-colors">Twitter (X)</span>
+                            </TwitterShareButton>
+
+                            <RedditShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <RedditIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-orange-600 transition-colors">Reddit</span>
+                            </RedditShareButton>
+
+                            <ViberShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <ViberIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-purple-600 transition-colors">Viber</span>
+                            </ViberShareButton>
+
+                            <LineShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <LineIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-green-600 transition-colors">Line</span>
+                            </LineShareButton>
+
+                            <PinterestShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                media={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                description={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <PinterestIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-600 transition-colors">Pinterest</span>
+                            </PinterestShareButton>
+
+                            <PocketShareButton
+                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                title={`Medical record via CareConnect`}
+                                onClick={() => setShowShareMenu(false)}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <PocketIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-400 transition-colors">Pocket</span>
+                            </PocketShareButton>
+
+                            <button
+                                onClick={() => executeShare('copy')}
+                                className="flex flex-col items-center group transition-all"
+                            >
+                                <div className="w-[44px] h-[44px] rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
+                                    <Link size={20} className="text-slate-600 dark:text-slate-400 group-hover:rotate-45" />
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-foreground">Copy Link</span>
+                            </button>
+
+                            {navigator.share && (
+                                <button
+                                    onClick={() => {
+                                        setShowShareMenu(false);
+                                        executeShare('native');
+                                    }}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <div className="w-[44px] h-[44px] rounded-full bg-blue-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
+                                        <Share2 size={20} className="text-white" />
+                                    </div>
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600">More Apps</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 });
 
