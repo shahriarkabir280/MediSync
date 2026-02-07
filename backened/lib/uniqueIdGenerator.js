@@ -22,49 +22,36 @@ export const generateDoctorUniqueId = async () => {
 };
 
 /**
- * Generate unique ID for patients
- * @returns {Promise<string>} Unique patient ID like PAT-001
- */
-export const generatePatientUniqueId = async () => {
-  try {
-    const { count, error } = await supabase
-      .from('patients')
-      .select('*', { count: 'exact', head: true });
-
-    if (error) throw error;
-
-    const nextCount = (count || 0) + 1;
-    return `PAT-${String(nextCount).padStart(3, '0')}`;
-  } catch (error) {
-    console.error('Error generating patient unique ID:', error);
-    throw new Error('Failed to generate patient unique ID');
-  }
-};
-
-/**
  * Get next available unique ID for doctors
  * @returns {Promise<string>} Next available doctor ID
  */
 export const getNextDoctorId = async () => {
   try {
+    // Get all doctor IDs to find the maximum number
     const { data, error } = await supabase
       .from('doctors')
       .select('unique_id')
       .not('unique_id', 'is', null)
-      .order('unique_id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .like('unique_id', 'DOC-%');
 
     if (error) throw error;
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return 'DOC-001';
     }
 
-    const lastId = data.unique_id;
-    // Extract number part: DOC-001 -> 001
-    const lastNumber = parseInt(lastId.split('-')[1]);
-    return `DOC-${String(lastNumber + 1).padStart(3, '0')}`;
+    // Extract numeric parts and find the maximum
+    const numbers = data
+      .map(item => {
+        const match = item.unique_id.match(/DOC-(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => !isNaN(num));
+
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const nextNumber = maxNumber + 1;
+
+    return `DOC-${String(nextNumber).padStart(3, '0')}`;
   } catch (error) {
     console.error('Error getting next doctor ID:', error);
     throw new Error('Failed to get next doctor ID');
@@ -77,23 +64,31 @@ export const getNextDoctorId = async () => {
  */
 export const getNextPatientId = async () => {
   try {
+    // Get all patient IDs to find the maximum number
     const { data, error } = await supabase
       .from('patients')
       .select('unique_id')
       .not('unique_id', 'is', null)
-      .order('unique_id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .like('unique_id', 'PAT-%');
 
     if (error) throw error;
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return 'PAT-001';
     }
 
-    const lastId = data.unique_id;
-    const lastNumber = parseInt(lastId.split('-')[1]);
-    return `PAT-${String(lastNumber + 1).padStart(3, '0')}`;
+    // Extract numeric parts and find the maximum
+    const numbers = data
+      .map(item => {
+        const match = item.unique_id.match(/PAT-(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => !isNaN(num));
+
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const nextNumber = maxNumber + 1;
+
+    return `PAT-${String(nextNumber).padStart(3, '0')}`;
   } catch (error) {
     console.error('Error getting next patient ID:', error);
     throw new Error('Failed to get next patient ID');

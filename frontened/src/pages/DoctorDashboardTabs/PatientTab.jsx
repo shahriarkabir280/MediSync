@@ -166,17 +166,20 @@ const PatientTab = memo(() => {
         try {
             const result = await patientApi.create(patientForm);
 
-            // Add new patient to local state
-            setPatients(prev => [...prev, result.data]);
+            // Refresh the patient list from the server to ensure consistency
+            await fetchPatients();
+
             setShowNewPatientModal(false);
             resetPatientForm();
             setError(null);
+
+            toast.success('Patient registered successfully!');
         } catch (err) {
             setError(err.message);
         } finally {
             setActionLoading(null);
         }
-    }, [patientForm, resetPatientForm]);
+    }, [patientForm, resetPatientForm, fetchPatients]);
 
     const handleFileUpload = useCallback(async (file, fileType) => {
         if (!file || !selectedPatient) return;

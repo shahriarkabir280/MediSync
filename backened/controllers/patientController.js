@@ -7,11 +7,12 @@ export const getPatients = async (req, res) => {
     const { doctorId } = req.params;
     const { search, limit = 50, offset = 0 } = req.query;
 
+    // Build query to get all patients
+    // Note: In a multi-doctor system, you might want to filter by doctor_id or appointments
+    // For now, we show all patients and calculate their appointment count with this specific doctor
     let query = supabase
       .from('patients')
-      .select('*, appointments!inner(doctor_id)')
-      // Use !inner join to filter patients who have at least one appointment with this doctor
-      .eq('appointments.doctor_id', doctorId);
+      .select('*');
 
     if (search) {
       // Search by name or email
@@ -22,35 +23,30 @@ export const getPatients = async (req, res) => {
     const from = parseInt(offset);
     const to = from + parseInt(limit) - 1;
 
-    const { data: patients, error, count } = await query
+    const { data: patients, error } = await query
       .range(from, to)
       .order('first_name', { ascending: true })
-      .order('last_name', { ascending: true }); // Secondary sort
+      .order('last_name', { ascending: true });
 
     if (error) throw error;
 
-    // Supabase returns the joined 'appointments' field because of the select.
-    // We might want to remove it from the response if it's large, but here it's just helpful linkage.
-    // However, the original response didn't include it in 'data' structure explicitly as a list of appts, 
-    // but the SQL query had COUNT(a.id) as total_appointments.
-    // We can't easily get the per-patient appointment count in the same query without a view/RPC.
-    // For now, we'll return the patients. The frontend might not strictly rely on total_appointments count in the list.
-    // If it does, we'd need a separate step or RPC.
+    // For each patient, count their appointments with this specific doctor
+    const patientsWithCounts = await Promise.all(
+      patients.map(async (patient) => {
+        const { count } = await supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('patient_id', patient.id)
+          .eq('doctor_id', doctorId);
 
-    // Clean up response structure: remove the 'appointments' array if we just wanted it for filtering
-    const cleanedPatients = patients.map(p => {
-      const { appointments, ...rest } = p;
-      return {
-        ...rest,
-        // Approximate total appointments from the join results? 
-        // The !inner join might limit returned appointments to those matching filters? 
-        // In Supabase, embedded resources are filtered. So appointments array will contain matching appointments.
-        // So we CAN count them!
-        total_appointments: appointments ? appointments.length : 0
-      };
-    });
+        return {
+          ...patient,
+          total_appointments: count || 0
+        };
+      })
+    );
 
-    res.json({ success: true, data: cleanedPatients, count: cleanedPatients.length });
+    res.json({ success: true, data: patientsWithCounts, count: patientsWithCounts.length });
   } catch (error) {
     console.error('Error fetching patients:', error);
     res.status(500).json({ error: 'Failed to fetch patients' });
