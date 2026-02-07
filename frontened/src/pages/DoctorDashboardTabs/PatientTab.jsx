@@ -1648,6 +1648,25 @@ const PatientTab = memo(() => {
                                                                         </div>
 
                                                                         <div className="relative z-10 space-y-3">
+                                                                            {/* Image Preview */}
+                                                                            {['scan', 'xray', 'imaging'].includes(record.file_type) && (
+                                                                                <div
+                                                                                    className="mb-1 rounded-xl overflow-hidden h-32 bg-muted/30 border border-border/50 relative group/image cursor-pointer"
+                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                >
+                                                                                    <img
+                                                                                        src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`}
+                                                                                        alt={record.file_name}
+                                                                                        className="w-full h-full object-cover opacity-80 group-hover/image:opacity-100 transition-opacity"
+                                                                                        onError={(e) => {
+                                                                                            e.target.onerror = null; // Prevent infinite loop
+                                                                                            e.target.style.display = 'none';
+                                                                                            e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                                                                                            e.target.parentElement.innerHTML = '<span class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">Preview Unavailable</span>';
+                                                                                        }}
+                                                                                    />
+                                                                                </div>
+                                                                            )}
                                                                             <div className="h-10 flex items-start">
                                                                                 <h4 className="text-sm font-bold text-foreground line-clamp-2 w-full" title={record.file_name}>
                                                                                     {record.file_name}

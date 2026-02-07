@@ -135,6 +135,24 @@ export const getPatientFiles = async (req, res) => {
   }
 };
 
+// Helper to determine mime type
+const getMimeType = (filename) => {
+  const ext = filename.split('.').pop().toLowerCase();
+  const mimeTypes = {
+    'pdf': 'application/pdf',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'svg': 'image/svg+xml',
+    'webm': 'audio/webm',
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav'
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+};
+
 // Download/View file
 export const downloadFile = async (req, res) => {
   try {
@@ -159,8 +177,11 @@ export const downloadFile = async (req, res) => {
       return res.status(404).json({ error: 'File record not found' });
     }
 
+    // Determine content type
+    const contentType = getMimeType(fileRecord.original_name || filename);
+
     // Set appropriate headers
-    res.setHeader('Content-Type', 'application/pdf'); // Default to PDF - ideally use mime type from DB or file
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `inline; filename="${fileRecord.original_name}"`);
 
     // Stream the file
