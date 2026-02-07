@@ -525,23 +525,23 @@ const PatientTab = memo(() => {
                                 key={patient.id}
                                 className="group relative bg-card/60 backdrop-blur-xl border border-border rounded-[2rem] sm:rounded-[3rem] p-5 sm:p-8 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/40 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 overflow-hidden"
                             >
-                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                                <div className="flex flex-col md:flex-row md:items-start gap-6">
                                     <div className="flex items-center space-x-4 sm:space-x-6 flex-1 min-w-0">
                                         <div className="relative flex-shrink-0">
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl sm:rounded-[2.2rem] flex items-center justify-center text-white text-xl sm:text-2xl font-black shadow-xl shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl sm:rounded-[2.2rem] flex items-center justify-center text-white text-lg sm:text-xl font-black shadow-xl shadow-indigo-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                                 {patient.first_name.charAt(0)}{patient.last_name.charAt(0)}
                                             </div>
-                                            <div className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 bg-card rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border-2 border-white dark:border-indigo-900 ring-1 ring-border">
-                                                <Shield size={12} className="text-emerald-500 sm:w-[14px] sm:h-[14px]" />
+                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-card rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border-2 border-white dark:border-indigo-900 ring-1 ring-border">
+                                                <Shield size={10} className="text-emerald-500 sm:w-[12px] sm:h-[12px]" />
                                             </div>
                                         </div>
 
                                         <div className="space-y-3 flex-1 min-w-0">
                                             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                                                <h4 className="text-xl sm:text-2xl font-black text-foreground tracking-tighter group-hover:text-indigo-500 transition-colors">
+                                                <h4 className="text-lg sm:text-xl font-black text-foreground tracking-tighter group-hover:text-indigo-500 transition-colors truncate max-w-[280px] sm:max-w-none">
                                                     {patient.first_name} {patient.last_name}
                                                 </h4>
-                                                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-indigo-500/10 text-[9px] sm:text-[10px] font-black text-indigo-500 rounded-lg border border-indigo-500/20 uppercase tracking-[0.1em] sm:tracking-[0.2em]">
+                                                <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-indigo-500/10 text-[9px] sm:text-[10px] font-black text-indigo-500 rounded-lg border border-indigo-500/20 uppercase tracking-[0.1em] sm:tracking-[0.2em] flex-shrink-0">
                                                     {patient.unique_id}
                                                 </span>
                                             </div>
@@ -569,15 +569,7 @@ const PatientTab = memo(() => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between md:justify-end gap-4 sm:gap-6 flex-shrink-0 min-w-0 flex-wrap">
-                                        <div className="flex flex-col items-start md:items-end min-w-0">
-                                            <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-1 w-full">Clinical Record</span>
-                                            <div className="flex items-center space-x-2">
-                                                <span className="text-lg sm:text-xl font-black text-foreground tracking-tighter">{patient.total_appointments || 0}</span>
-                                                <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground/60">Consultations</span>
-                                            </div>
-                                        </div>
-
+                                    <div className="flex flex-col items-center md:items-end gap-3 flex-shrink-0">
                                         <div className="flex items-center p-1.5 sm:p-2 bg-muted/50 rounded-2xl sm:rounded-[1.8rem] border border-border shrink-0">
                                             <button
                                                 onClick={() => handleViewDetails(patient)}
@@ -586,19 +578,27 @@ const PatientTab = memo(() => {
                                                 title="Open Patient Sheet"
                                             >
                                                 {actionLoading === 'loading-details' && selectedPatient?.id === patient.id ? (
-                                                    <RefreshCw size={22} className="animate-spin text-indigo-500" />
+                                                    <RefreshCw size={18} className="animate-spin text-indigo-500" />
                                                 ) : (
-                                                    <Eye size={24} className="group-hover/btn:scale-125 transition-transform" />
+                                                    <Eye size={20} className="group-hover/btn:scale-125 transition-transform" />
                                                 )}
                                             </button>
                                             <div className="w-[1px] h-6 sm:h-8 bg-border mx-1 shrink-0"></div>
                                             <button
                                                 onClick={() => openEditModal(patient)}
-                                                className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-muted-foreground hover:text-amber-500 hover:bg-card rounded-xl sm:rounded-2xl transition-all shadow-amber-500/10 active:scale-95 group/btn"
+                                                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-muted-foreground hover:text-amber-500 hover:bg-card rounded-xl sm:rounded-2xl transition-all shadow-amber-500/10 active:scale-95 group/btn"
                                                 title="Edit Medical Profile"
                                             >
-                                                <Edit3 size={20} className="sm:w-6 sm:h-6 group-hover/btn:scale-125 transition-transform" />
+                                                <Edit3 size={16} className="sm:w-[18px] sm:h-[18px] group-hover/btn:scale-125 transition-transform" />
                                             </button>
+                                        </div>
+
+                                        <div className="flex flex-col items-center md:items-end">
+                                            <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-1 whitespace-nowrap">Clinical Record</span>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-lg sm:text-xl font-black text-foreground tracking-tighter">{patient.total_appointments || 0}</span>
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground/60 whitespace-nowrap">Consultations</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
