@@ -69,6 +69,12 @@ const PatientTab = memo(() => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [patientToDelete, setPatientToDelete] = useState(null);
 
+    // Document Tab States
+    const [documentSearch, setDocumentSearch] = useState('');
+    const [documentFilter, setDocumentFilter] = useState('all');
+    const [showDocumentDeleteConfirm, setShowDocumentDeleteConfirm] = useState(false);
+    const [recordToDelete, setRecordToDelete] = useState(null);
+
     // Form state
     const [patientForm, setPatientForm] = useState({
         first_name: '',
@@ -332,6 +338,32 @@ const PatientTab = memo(() => {
             setActionLoading(null);
         }
     }, [patientToDelete]);
+
+    const handleDeleteRecord = useCallback((record) => {
+        setRecordToDelete(record);
+        setShowDocumentDeleteConfirm(true);
+    }, []);
+
+    const confirmDeleteRecord = useCallback(async () => {
+        if (!recordToDelete || !selectedPatient) return;
+
+        try {
+            setActionLoading('delete-record');
+            await patientApi.deleteMedicalRecord(selectedPatient.id, recordToDelete.id);
+
+            // Update local state
+            setMedicalRecords(prev => prev.filter(r => r.id !== recordToDelete.id));
+
+            setShowDocumentDeleteConfirm(false);
+            setRecordToDelete(null);
+            toast.success('Document deleted successfully');
+        } catch (err) {
+            console.error('Error deleting document:', err);
+            toast.error('Failed to delete document');
+        } finally {
+            setActionLoading(null);
+        }
+    }, [recordToDelete, selectedPatient]);
 
     const loadPatientAppointments = useCallback(async (patientId) => {
         try {
@@ -1362,67 +1394,176 @@ const PatientTab = memo(() => {
 
                                             {/* Medical Records Tab */}
                                             {activeDetailsTab === 'records' && (
-                                                <div className="space-y-12">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
-                                                        <div>
-                                                            <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Clinical Dossier</h3>
-                                                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">Cryptographically Secured Documents</p>
+                                                <div className="space-y-6 sm:space-y-8">
+                                                    {/* Header & Controls */}
+                                                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center space-x-2">
+                                                                <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-500">
+                                                                    <FileText size={18} />
+                                                                </div>
+                                                                <h3 className="text-xl font-black text-foreground tracking-tight">Digital Asset Vault</h3>
+                                                            </div>
+                                                            <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-widest pl-1">
+                                                                Secure Clinical Documentation
+                                                            </p>
                                                         </div>
-                                                        <button
-                                                            onClick={() => setShowFileUpload(true)}
-                                                            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.1em] shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all active:scale-95 self-start md:self-auto"
-                                                        >
-                                                            <Plus size={16} />
-                                                            <span>Injest Record</span>
-                                                        </button>
+
+                                                        <div className="flex flex-col sm:flex-row gap-3">
+                                                            {/* Search */}
+                                                            <div className="relative group">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-indigo-500 transition-colors" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search records..."
+                                                                    value={documentSearch}
+                                                                    onChange={(e) => setDocumentSearch(e.target.value)}
+                                                                    className="w-full sm:w-64 pl-9 pr-4 py-2.5 bg-muted/30 border border-border/50 rounded-xl text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                                                                />
+                                                            </div>
+
+                                                            {/* Upload Button */}
+                                                            <button
+                                                                onClick={() => setShowFileUpload(true)}
+                                                                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all active:scale-95"
+                                                            >
+                                                                <Plus size={14} />
+                                                                <span>Upload</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
 
-                                                    {medicalRecords.filter(r => !r.prescription && r.file_type !== 'prescription').length === 0 ? (
-                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-40 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-4">
-                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
-                                                                <FileText size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/5" />
-                                                            </div>
-                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">Secure Vault is Empty</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-10 px-0 sm:px-4">
-                                                            {medicalRecords
-                                                                .filter(record => !record.prescription && record.file_type !== 'prescription')
-                                                                .map((record, index) => (
-                                                                    <div key={index} className="group relative bg-card/60 backdrop-blur-3xl border border-border/60 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 hover:shadow-2xl hover:shadow-indigo-500/15 hover:border-indigo-500/40 transition-all duration-700">
-                                                                        <div className="flex items-start justify-between mb-4 sm:mb-6">
-                                                                            <div className="p-2 sm:p-3 bg-muted rounded-lg sm:rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-xl border border-border/50">
-                                                                                <FileText size={18} className="sm:w-6 sm:h-6" />
-                                                                            </div>
-                                                                            <div className="flex space-x-1.5 sm:space-x-2">
-                                                                                <button className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-indigo-500 rounded-lg sm:rounded-xl border border-border/50 transition-all hover:scale-110">
-                                                                                    <Download size={14} className="sm:w-[18px] sm:h-[18px]" />
-                                                                                </button>
-                                                                                <button className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground/30 hover:text-rose-500 rounded-lg sm:rounded-xl border border-border/50 transition-all hover:scale-110">
-                                                                                    <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
-                                                                                </button>
-                                                                            </div>
+                                                    {/* Filters */}
+                                                    <div className="flex flex-wrap gap-2 pb-2 bg-gradient-to-r from-transparent via-transparent to-transparent">
+                                                        {[
+                                                            { id: 'all', label: 'All Files' },
+                                                            { id: 'medical_record', label: 'Reports' },
+                                                            { id: 'lab_result', label: 'Lab Results' },
+                                                            { id: 'scan', label: 'Imaging' },
+                                                            { id: 'other', label: 'Other' }
+                                                        ].map(filter => (
+                                                            <button
+                                                                key={filter.id}
+                                                                onClick={() => setDocumentFilter(filter.id)}
+                                                                className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${documentFilter === filter.id
+                                                                        ? 'bg-foreground text-background border-foreground'
+                                                                        : 'bg-card border-border/50 text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                                                                    }`}
+                                                            >
+                                                                {filter.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Documents Grid */}
+                                                    {(() => {
+                                                        const filteredDocs = medicalRecords.filter(r => {
+                                                            const isNotPrescription = !r.prescription && r.file_type !== 'prescription';
+                                                            const matchesType = documentFilter === 'all'
+                                                                ? true
+                                                                : (r.file_type === documentFilter || (documentFilter === 'other' && !['medical_record', 'lab_result', 'scan'].includes(r.file_type)));
+                                                            const matchesSearch = r.file_name?.toLowerCase().includes(documentSearch.toLowerCase());
+                                                            return isNotPrescription && matchesType && matchesSearch;
+                                                        });
+
+                                                        if (filteredDocs.length === 0) {
+                                                            return (
+                                                                <div className="flex flex-col items-center justify-center py-24 bg-muted/5 rounded-[2.5rem] border-2 border-dashed border-border/40">
+                                                                    <div className="p-6 bg-card rounded-[2rem] border border-border/50 mb-4 shadow-xl">
+                                                                        <Search size={32} className="text-muted-foreground/20" />
+                                                                    </div>
+                                                                    <p className="text-xs font-black text-muted-foreground/30 uppercase tracking-[0.3em]">
+                                                                        {documentSearch ? 'No matches found' : 'No documents found'}
+                                                                    </p>
+                                                                    {documentSearch && (
+                                                                        <button
+                                                                            onClick={() => setDocumentSearch('')}
+                                                                            className="mt-4 text-[10px] font-bold text-indigo-500 hover:text-indigo-600 uppercase tracking-wider"
+                                                                        >
+                                                                            Clear Search
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                                                {filteredDocs.map((record, index) => (
+                                                                    <div key={index} className="group bg-card hover:bg-card/50 border border-border/50 hover:border-indigo-500/30 rounded-[1.5rem] p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 relative overflow-hidden">
+                                                                        {/* Decor */}
+                                                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform duration-500">
+                                                                            <FileText size={80} />
                                                                         </div>
-                                                                        <div className="space-y-3">
-                                                                            <h4 className="text-xl font-black text-foreground tracking-tighter truncate group-hover:text-indigo-500 transition-colors uppercase">{record.file_name}</h4>
+
+                                                                        <div className="flex items-start justify-between mb-4 relative z-10">
                                                                             <div className="flex items-center space-x-3">
-                                                                                <Calendar size={12} className="text-muted-foreground/40" />
-                                                                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">{formatDate(record.created_at)}</p>
+                                                                                <div className={`p-2.5 rounded-xl ${record.file_type === 'scan' ? 'bg-purple-500/10 text-purple-500' :
+                                                                                        record.file_type === 'lab_result' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                                                            'bg-blue-500/10 text-blue-500'
+                                                                                    }`}>
+                                                                                    {record.file_type === 'scan' ? <Zap size={18} /> :
+                                                                                        record.file_type === 'lab_result' ? <Activity size={18} /> :
+                                                                                            <FileText size={18} />}
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none mb-1">
+                                                                                        {record.file_type?.replace('_', ' ') || 'Document'}
+                                                                                    </p>
+                                                                                    <p className="text-xs font-bold text-foreground leading-none">
+                                                                                        {formatDate(record.created_at || record.record_date)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex items-center space-x-1">
+                                                                                <button
+                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                    className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                                                                                    title="View Document"
+                                                                                >
+                                                                                    <Eye size={16} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleDeleteRecord(record)}
+                                                                                    className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                                                                    title="Delete Document"
+                                                                                >
+                                                                                    <Trash2 size={16} />
+                                                                                </button>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="mt-6 pt-6 border-t border-border/40 flex items-center justify-between">
-                                                                            <span className="px-3 py-1 bg-muted/50 text-[8px] font-black text-muted-foreground/60 rounded-lg uppercase tracking-[0.2em] border border-border/50">
-                                                                                {record.file_type || 'Registry'}
-                                                                            </span>
-                                                                            <button className="text-[9px] font-black text-indigo-500 hover:text-indigo-700 transition-all uppercase tracking-[0.2em] flex items-center space-x-2 px-3 py-1.5 hover:bg-indigo-500/5 rounded-xl">
-                                                                                <span>Analyze</span>
-                                                                                <ExternalLink size={14} />
-                                                                            </button>
+
+                                                                        <div className="relative z-10 space-y-3">
+                                                                            <div className="h-10 flex items-start">
+                                                                                <h4 className="text-sm font-bold text-foreground line-clamp-2 w-full" title={record.file_name}>
+                                                                                    {record.file_name}
+                                                                                </h4>
+                                                                            </div>
+
+                                                                            <div className="pt-3 border-t border-border/40 flex items-center justify-between">
+                                                                                {record.doctor_first_name ? (
+                                                                                    <div className="flex items-center space-x-1.5">
+                                                                                        <UserCircle size={12} className="text-muted-foreground/60" />
+                                                                                        <span className="text-[10px] font-medium text-muted-foreground">Dr. {record.doctor_first_name}</span>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-[10px] text-muted-foreground/40 italic">System Upload</span>
+                                                                                )}
+
+                                                                                <button
+                                                                                    className="text-[9px] font-black text-indigo-500 uppercase tracking-wider hover:underline"
+                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                >
+                                                                                    Download
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 ))}
-                                                        </div>
-                                                    )}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             )}
 
@@ -1721,6 +1862,68 @@ const PatientTab = memo(() => {
                                             <>
                                                 <Trash2 size={18} />
                                                 <span>Confirm Purge</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Document Delete Confirmation Modal */}
+            {
+                showDocumentDeleteConfirm && (
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[200] p-4 animate-in fade-in duration-500">
+                        <div className="bg-card/90 backdrop-blur-3xl rounded-[2.5rem] w-full max-w-lg shadow-2xl border border-rose-500/20 relative overflow-hidden animate-in zoom-in-95 duration-500">
+                            <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-rose-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+
+                            <div className="relative z-10 p-8 sm:p-10 text-center">
+                                <div className="flex justify-center mb-6">
+                                    <div className="w-20 h-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center text-rose-500 shadow-inner">
+                                        <Trash2 size={40} className="animate-pulse" />
+                                    </div>
+                                </div>
+
+                                <h3 className="text-2xl font-black text-foreground tracking-tighter mb-4">
+                                    Delete Document?
+                                </h3>
+
+                                <div className="bg-muted/30 border border-border/50 rounded-2xl p-5 mb-8 text-left">
+                                    <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed mb-4">
+                                        You are removing <span className="font-bold text-foreground mx-1">{recordToDelete?.file_name}</span> from the permanent registry.
+                                    </p>
+                                    <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-rose-500/60 p-3 bg-rose-500/5 rounded-xl border border-rose-500/10">
+                                        <AlertTriangle size={12} />
+                                        <span>File access will be revoked</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                    <button
+                                        onClick={() => {
+                                            setShowDocumentDeleteConfirm(false);
+                                            setRecordToDelete(null);
+                                        }}
+                                        className="w-full sm:flex-1 py-4 bg-muted/40 hover:bg-muted/60 text-foreground font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmDeleteRecord}
+                                        disabled={actionLoading === 'delete-record'}
+                                        className="w-full sm:flex-[2] py-4 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:shadow-rose-500/40 hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                                    >
+                                        {actionLoading === 'delete-record' ? (
+                                            <>
+                                                <RefreshCw size={16} className="animate-spin" />
+                                                <span>Deleting...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Trash2 size={16} />
+                                                <span>Confirm Delete</span>
                                             </>
                                         )}
                                     </button>

@@ -6,7 +6,8 @@ import {
   updatePatient,
   deletePatient,
   getPatientMedicalHistory,
-  addMedicalRecord
+  addMedicalRecord,
+  deleteMedicalRecord
 } from '../controllers/patientController.js';
 
 const router = express.Router();
@@ -21,5 +22,6 @@ router.delete('/:patientId', deletePatient);
 // Medical records routes
 router.get('/:patientId/medical-history', getPatientMedicalHistory);
 router.post('/:patientId/medical-records', addMedicalRecord);
+router.delete('/:patientId/medical-records/:recordId', deleteMedicalRecord);
 
 export default router;

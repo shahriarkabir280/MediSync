@@ -335,3 +335,25 @@ export const addMedicalRecord = async (req, res) => {
     res.status(500).json({ error: 'Failed to add medical record' });
   }
 };
+
+// Delete medical record
+export const deleteMedicalRecord = async (req, res) => {
+  try {
+    const { recordId } = req.params;
+
+    const { error } = await supabase
+      .from('medical_records')
+      .delete()
+      .eq('id', recordId);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Medical record deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting medical record:', error);
+    res.status(500).json({ error: 'Failed to delete medical record' });
+  }
+};
