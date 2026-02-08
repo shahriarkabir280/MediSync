@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   status VARCHAR(20) DEFAULT 'pending',
   appointment_type VARCHAR(50) DEFAULT 'consultation',
   notes TEXT,
+  suggestions TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

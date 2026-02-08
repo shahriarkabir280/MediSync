@@ -104,7 +104,8 @@ export const createAppointment = async (req, res) => {
       appointment_date,
       appointment_time,
       appointment_type,
-      notes
+      notes,
+      suggestions
     } = req.body;
 
     // Validate required fields
@@ -135,6 +136,7 @@ export const createAppointment = async (req, res) => {
         appointment_time,
         appointment_type: appointment_type || 'consultation',
         notes: notes || '',
+        suggestions: suggestions || '',
         status: 'pending',
         created_at: new Date().toISOString(), // Optional if default exists
         updated_at: new Date().toISOString()
@@ -163,7 +165,7 @@ export const updateAppointment = async (req, res) => {
 
     // Explicitly pick allowed fields
     const updates = {};
-    const allowed = ['appointment_date', 'appointment_time', 'status', 'appointment_type', 'notes'];
+    const allowed = ['appointment_date', 'appointment_time', 'status', 'appointment_type', 'notes', 'suggestions'];
 
     allowed.forEach(field => {
       if (body[field] !== undefined) updates[field] = body[field];

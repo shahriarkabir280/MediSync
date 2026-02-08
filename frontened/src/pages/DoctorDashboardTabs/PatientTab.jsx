@@ -1829,15 +1829,32 @@ const PatientTab = memo(() => {
                                                                                     </div>
                                                                                 </div>
 
-                                                                                {/* Clinical Notes Section */}
-                                                                                <div className="mt-4 p-4 bg-muted/20 border border-border/30 rounded-2xl relative group-hover:bg-card/60 transition-all">
-                                                                                    <div className="flex items-center mb-2 px-1">
-                                                                                        <FileText size={12} className="text-indigo-500/60 mr-2" />
-                                                                                        <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Clinical Ledger & Scientific Notes</span>
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                                                                    {/* Clinical Notes Section */}
+                                                                                    <div className="p-4 bg-muted/20 border border-border/30 rounded-2xl relative group-hover:bg-card/60 transition-all flex flex-col">
+                                                                                        <div className="flex items-center mb-3 px-1">
+                                                                                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center mr-2">
+                                                                                                <FileText size={10} className="text-indigo-500" />
+                                                                                            </div>
+                                                                                            <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">Clinical Ledger</span>
+                                                                                        </div>
+                                                                                        <p className="text-[12px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic pr-4 flex-1">
+                                                                                            {appointment.notes ? `"${appointment.notes}"` : "No specific clinical notes were recorded for this session. The patient presented for routine evaluation."}
+                                                                                        </p>
                                                                                     </div>
-                                                                                    <p className="text-[13px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed italic pr-4">
-                                                                                        {appointment.notes ? `"${appointment.notes}"` : "No specific clinical notes were recorded for this session. The patient presented for a routine evaluation as part of their comprehensive health management program."}
-                                                                                    </p>
+
+                                                                                    {/* Professional Suggestions Section */}
+                                                                                    <div className="p-4 bg-indigo-500/[0.03] border border-indigo-500/10 rounded-2xl relative group-hover:bg-indigo-500/[0.07] transition-all flex flex-col">
+                                                                                        <div className="flex items-center mb-3 px-1">
+                                                                                            <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center mr-2">
+                                                                                                <Zap size={10} className="text-indigo-500" />
+                                                                                            </div>
+                                                                                            <span className="text-[9px] font-black text-indigo-500/60 uppercase tracking-[0.2em]">Strategic Suggestions</span>
+                                                                                        </div>
+                                                                                        <p className="text-[12px] font-bold text-slate-800 dark:text-slate-200 leading-relaxed pr-4 flex-1">
+                                                                                            {appointment.suggestions || "Follow standard clinical protocols as discussed during the consultation."}
+                                                                                        </p>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>

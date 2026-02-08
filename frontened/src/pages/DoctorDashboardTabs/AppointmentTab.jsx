@@ -73,6 +73,7 @@ const AppointmentTab = memo(() => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [patientSearch, setPatientSearch] = useState('');
 
     // Form states
     const [appointmentForm, setAppointmentForm] = useState({
@@ -80,7 +81,8 @@ const AppointmentTab = memo(() => {
         appointment_date: new Date().toISOString().split('T')[0],
         appointment_time: '',
         appointment_type: 'consultation',
-        notes: ''
+        notes: '',
+        suggestions: ''
     });
 
     // View mode for specialized filters (like Week View)
@@ -242,7 +244,8 @@ const AppointmentTab = memo(() => {
             appointment_date: new Date().toISOString().split('T')[0],
             appointment_time: '',
             appointment_type: 'consultation',
-            notes: ''
+            notes: '',
+            suggestions: ''
         });
     }, []);
 
@@ -418,7 +421,8 @@ const AppointmentTab = memo(() => {
             appointment_date: appointment.appointment_date,
             appointment_time: appointment.appointment_time,
             appointment_type: appointment.appointment_type,
-            notes: appointment.notes || ''
+            notes: appointment.notes || '',
+            suggestions: appointment.suggestions || ''
         });
         setShowEditAppointmentModal(true);
     }, []);
@@ -1097,25 +1101,61 @@ const AppointmentTab = memo(() => {
                         <form onSubmit={showNewAppointmentModal ? handleNewAppointment : handleEditAppointment} className="p-6 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-muted-foreground ml-1">Select Patient</label>
+
+                                {/* Search Input */}
                                 <div className="relative">
-                                    <User size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                                    <select
-                                        value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
-                                        onChange={(e) => showNewAppointmentModal
-                                            ? setAppointmentForm({ ...appointmentForm, patient_id: e.target.value })
-                                            : setEditingAppointment({ ...editingAppointment, patient_id: e.target.value })
-                                        }
-                                        className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
-                                        required
-                                    >
-                                        <option value="">Choose a registered patient</option>
-                                        {patients.map((patient) => (
-                                            <option key={patient.id} value={patient.id}>
-                                                {patient.first_name} {patient.last_name} ({patient.unique_id})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 z-10 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name or ID..."
+                                        value={patientSearch}
+                                        onChange={(e) => setPatientSearch(e.target.value)}
+                                        className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                    />
                                 </div>
+
+
+                                {/* Filtered Patient List - Only show when search has text */}
+                                {patientSearch && (
+                                    <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <User size={18} className="absolute left-5 top-4 text-muted-foreground/50 z-10 pointer-events-none" />
+                                        <select
+                                            value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
+                                            onChange={(e) => {
+                                                if (showNewAppointmentModal) {
+                                                    setAppointmentForm({ ...appointmentForm, patient_id: e.target.value });
+                                                } else {
+                                                    setEditingAppointment({ ...editingAppointment, patient_id: e.target.value });
+                                                }
+                                            }}
+                                            size="4"
+                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-2 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none cursor-pointer text-foreground overflow-y-auto custom-scrollbar"
+                                        >
+                                            <option value="" disabled>
+                                                {patients.filter(p =>
+                                                    `${p.first_name} ${p.last_name} ${p.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
+                                                ).length === 0 ? 'No patients found' : 'Choose from filtered results'}
+                                            </option>
+                                            {patients
+                                                .filter(patient =>
+                                                    `${patient.first_name} ${patient.last_name} ${patient.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
+                                                )
+                                                .map((patient) => (
+                                                    <option key={patient.id} value={patient.id} className="py-2">
+                                                        {patient.first_name} {patient.last_name} ({patient.unique_id})
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Hidden input to satisfy form required validation */}
+                                <input
+                                    type="hidden"
+                                    value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
+                                    required
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -1173,6 +1213,18 @@ const AppointmentTab = memo(() => {
                                     onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
                                     className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[80px] sm:min-h-[100px] text-foreground"
                                     placeholder="Enter case summary or specialized requirements..."
+                                />
+                            </div>
+
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <label className="text-[10px] sm:text-[11px] font-bold text-indigo-500 ml-1 flex items-center">
+                                    <Zap size={10} className="mr-1" /> Doctor's Suggestions & Advice
+                                </label>
+                                <textarea
+                                    value={appointmentForm.suggestions}
+                                    onChange={(e) => setAppointmentForm({ ...appointmentForm, suggestions: e.target.value })}
+                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[80px] sm:min-h-[100px] text-foreground placeholder:text-indigo-400/30"
+                                    placeholder="Enter professional advice, exercise regimens, or dietary suggestions..."
                                 />
                             </div>
 
