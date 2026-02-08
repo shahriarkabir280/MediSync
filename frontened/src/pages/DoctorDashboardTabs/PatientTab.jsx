@@ -173,6 +173,219 @@ const generateSinglePrescriptionHTML = (record, index, patient, API_BASE_URL, fo
     `;
 };
 
+// Helper function to generate print HTML for a single medical document
+const generateMedicalDocumentHTML = (record, index, patient, API_BASE_URL, formatDate) => {
+    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
+    const isPdf = /\.pdf$/i.test(record.file_name);
+
+    let fileContent = '';
+
+    if (isImage) {
+        fileContent = `<img src="${fileUrl}" alt="Document ${index + 1}" />`;
+    } else if (isPdf) {
+        fileContent = `<iframe src="${fileUrl}" type="application/pdf"></iframe>`;
+    } else {
+        fileContent = `<p>File type not supported for preview. <a href="${fileUrl}" target="_blank">Download file</a></p>`;
+    }
+
+    const docType = record.file_type ? record.file_type.replace('_', ' ').toUpperCase() : 'DOCUMENT';
+
+    return `
+        <html>
+            <head>
+                <title>${docType} #${index + 1} - ${patient.first_name} ${patient.last_name}</title>
+                <style>
+                    body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1e293b; }
+                    h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; font-size: 24px; }
+                    .header-info { margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+                    .header-info p { margin: 8px 0; font-size: 14px; }
+                    .file-container { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+                    .file-container img { max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
+                    .file-container iframe { width: 100%; min-height: 900px; border: none; border-radius: 8px; }
+                    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: #e0f2fe; color: #0284c7; margin-bottom: 10px; }
+                    @media print { 
+                        .no-print { display: none; }
+                        body { padding: 0; margin: 0; }
+                        .file-container { border: none; padding: 0; box-shadow: none; }
+                        .header-info { border: none; background: none; padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info no-print">
+                    <span class="badge">${docType}</span>
+                    <h1>${docType} #${index + 1}</h1>
+                    <p><strong>Patient:</strong> ${patient.first_name} ${patient.last_name}</p>
+                    <p><strong>Patient ID:</strong> ${patient.unique_id}</p>
+                    <p><strong>File:</strong> ${record.file_name}</p>
+                    <p><strong>Date:</strong> ${formatDate(record.record_date || record.created_at)}</p>
+                    <button onclick="window.print()" class="no-print" style="margin-top: 15px; padding: 10px 20px; background: #0f172a; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print Document</button>
+                    <a href="${fileUrl}" target="_blank" class="no-print" style="display: inline-block; margin-top: 15px; margin-left: 10px; padding: 10px 20px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold;">Download</a>
+                </div>
+                <div class="file-container">
+                    ${fileContent}
+                </div>
+            </body>
+        </html>
+    `;
+};
+
+const DocumentCard = memo(({ record, index, patient, API_BASE_URL, formatDate, onShare, onDelete }) => {
+    const [previewError, setPreviewError] = useState(false);
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
+    const isPdf = /\.pdf$/i.test(record.file_name);
+
+    return (
+        <div className="group bg-card hover:bg-card/50 border border-border/50 hover:border-indigo-500/30 rounded-[1.5rem] p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 relative overflow-hidden flex flex-col h-full">
+            {/* Decor */}
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform duration-500">
+                <FileText size={80} />
+            </div>
+
+            <div className="flex items-start justify-between mb-4 relative z-10">
+                <div className="flex items-center space-x-3">
+                    <div className={`p-2.5 rounded-xl ${['scan', 'xray', 'imaging'].includes(record.file_type) ? 'bg-purple-500/10 text-purple-500' :
+                        record.file_type === 'lab_result' ? 'bg-emerald-500/10 text-emerald-500' :
+                            'bg-blue-500/10 text-blue-500'
+                        }`}>
+                        {['scan', 'xray', 'imaging'].includes(record.file_type) ? <Zap size={18} /> :
+                            record.file_type === 'lab_result' ? <Activity size={18} /> :
+                                <FileText size={18} />}
+                    </div>
+                    <div>
+                        <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none mb-1">
+                            {record.file_type?.replace('_', ' ') || 'Document'}
+                        </p>
+                        <p className="text-xs font-bold text-foreground leading-none">
+                            {formatDate(record.created_at || record.record_date)}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-1">
+                    <button
+                        onClick={() => window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                        className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                        title="View Document"
+                    >
+                        <Eye size={16} />
+                    </button>
+                    <button
+                        onClick={() => {
+                            window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank');
+                            toast.success('Downloading document...');
+                        }}
+                        className="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        title="Download Document"
+                    >
+                        <Download size={16} />
+                    </button>
+                    <button
+                        onClick={() => {
+                            const printWindow = window.open('', '_blank');
+                            const htmlContent = generateMedicalDocumentHTML(record, index, patient, API_BASE_URL, formatDate);
+                            if (printWindow) {
+                                printWindow.document.write(htmlContent);
+                                printWindow.document.close();
+                            }
+                        }}
+                        className="p-2 text-muted-foreground hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
+                        title="Print Document"
+                    >
+                        <Printer size={16} />
+                    </button>
+                    <button
+                        onClick={() => onShare(record)}
+                        className="p-2 text-muted-foreground hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
+                        title="Share Document"
+                    >
+                        <Share2 size={16} />
+                    </button>
+                    <button
+                        onClick={() => onDelete(record)}
+                        className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Delete Document"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="relative z-10 space-y-3 flex-grow">
+                {/* File Preview Section */}
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 border border-border/60 rounded-xl p-3 relative overflow-hidden mb-3">
+                    <div className="bg-white dark:bg-slate-950 rounded-lg overflow-hidden border border-border/40 shadow-sm">
+                        {isImage && !previewError ? (
+                            <div
+                                className="cursor-pointer h-40 group/img relative"
+                                onClick={() => window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                            >
+                                <img
+                                    src={`${API_BASE_URL}/api/files/${record.file_name}`}
+                                    alt={record.file_name}
+                                    className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 transition-transform group-hover/img:scale-105"
+                                    onError={() => setPreviewError(true)}
+                                />
+                            </div>
+                        ) : previewError ? (
+                            <div className="w-full h-40 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                                <div className="text-center">
+                                    <FileText size={40} className="mx-auto text-muted-foreground/30 mb-2" />
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Preview not available</p>
+                                </div>
+                            </div>
+                        ) : isPdf ? (
+                            <iframe
+                                src={`${API_BASE_URL}/api/files/${record.file_name}#toolbar=0`}
+                                className="w-full h-40 bg-slate-50 dark:bg-slate-900"
+                                title={`Document ${index + 1}`}
+                            />
+                        ) : (
+                            <div className="w-full h-40 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                                <div className="text-center">
+                                    <FileText size={40} className="mx-auto text-muted-foreground/30 mb-2" />
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Preview not available</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-start justify-between gap-2">
+                    <h4 className="text-sm font-bold text-foreground line-clamp-2 w-full break-all" title={record.file_name}>
+                        {record.file_name}
+                    </h4>
+                </div>
+
+                <div className="pt-3 border-t border-border/40 flex items-center justify-between">
+                    {record.doctor_first_name ? (
+                        <div className="flex items-center space-x-1.5">
+                            <UserCircle size={12} className="text-muted-foreground/60" />
+                            <span className="text-[10px] font-bold text-muted-foreground">
+                                Dr. {record.doctor_first_name}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center space-x-1.5">
+                            <UserCircle size={12} className="text-muted-foreground/60" />
+                            <span className="text-[10px] font-bold text-muted-foreground">
+                                System Upload
+                            </span>
+                        </div>
+                    )}
+                    <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${isPdf
+                        ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        }`}>
+                        {isPdf ? 'PDF' : 'IMAGE'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+});
+
 const PatientTab = memo(() => {
     const { doctorId } = useDoctor();
     const [patients, setPatients] = useState([]);
@@ -1769,102 +1982,16 @@ const PatientTab = memo(() => {
                                                         return (
                                                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                                                 {filteredDocs.map((record, index) => (
-                                                                    <div key={index} className="group bg-card hover:bg-card/50 border border-border/50 hover:border-indigo-500/30 rounded-[1.5rem] p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 relative overflow-hidden">
-                                                                        {/* Decor */}
-                                                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform duration-500">
-                                                                            <FileText size={80} />
-                                                                        </div>
-
-                                                                        <div className="flex items-start justify-between mb-4 relative z-10">
-                                                                            <div className="flex items-center space-x-3">
-                                                                                <div className={`p-2.5 rounded-xl ${['scan', 'xray', 'imaging'].includes(record.file_type) ? 'bg-purple-500/10 text-purple-500' :
-                                                                                    record.file_type === 'lab_result' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                                                        'bg-blue-500/10 text-blue-500'
-                                                                                    }`}>
-                                                                                    {['scan', 'xray', 'imaging'].includes(record.file_type) ? <Zap size={18} /> :
-                                                                                        record.file_type === 'lab_result' ? <Activity size={18} /> :
-                                                                                            <FileText size={18} />}
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest leading-none mb-1">
-                                                                                        {record.file_type?.replace('_', ' ') || 'Document'}
-                                                                                    </p>
-                                                                                    <p className="text-xs font-bold text-foreground leading-none">
-                                                                                        {formatDate(record.created_at || record.record_date)}
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div className="flex items-center space-x-1">
-                                                                                <button
-                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                    className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                                                                                    title="View Document"
-                                                                                >
-                                                                                    <Eye size={16} />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleShareFile(record)}
-                                                                                    className="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                                                                                    title="Share Document"
-                                                                                >
-                                                                                    <Share2 size={16} />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleDeleteRecord(record)}
-                                                                                    className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                                                                                    title="Delete Document"
-                                                                                >
-                                                                                    <Trash2 size={16} />
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="relative z-10 space-y-3">
-                                                                            {/* Image Preview */}
-                                                                            {['scan', 'xray', 'imaging'].includes(record.file_type) && (
-                                                                                <div
-                                                                                    className="mb-1 rounded-xl overflow-hidden h-32 bg-muted/30 border border-border/50 relative group/image cursor-pointer"
-                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                >
-                                                                                    <img
-                                                                                        src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`}
-                                                                                        alt={record.file_name}
-                                                                                        className="w-full h-full object-cover opacity-80 group-hover/image:opacity-100 transition-opacity"
-                                                                                        onError={(e) => {
-                                                                                            e.target.onerror = null; // Prevent infinite loop
-                                                                                            e.target.style.display = 'none';
-                                                                                            e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
-                                                                                            e.target.parentElement.innerHTML = '<span class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">Preview Unavailable</span>';
-                                                                                        }}
-                                                                                    />
-                                                                                </div>
-                                                                            )}
-                                                                            <div className="h-10 flex items-start">
-                                                                                <h4 className="text-sm font-bold text-foreground line-clamp-2 w-full" title={record.file_name}>
-                                                                                    {record.file_name}
-                                                                                </h4>
-                                                                            </div>
-
-                                                                            <div className="pt-3 border-t border-border/40 flex items-center justify-between">
-                                                                                {record.doctor_first_name ? (
-                                                                                    <div className="flex items-center space-x-1.5">
-                                                                                        <UserCircle size={12} className="text-muted-foreground/60" />
-                                                                                        <span className="text-[10px] font-medium text-muted-foreground">Dr. {record.doctor_first_name}</span>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <span className="text-[10px] text-muted-foreground/40 italic">System Upload</span>
-                                                                                )}
-
-                                                                                <button
-                                                                                    className="text-[9px] font-black text-indigo-500 uppercase tracking-wider hover:underline"
-                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                >
-                                                                                    Download
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
+                                                                    <DocumentCard
+                                                                        key={index}
+                                                                        record={record}
+                                                                        index={index}
+                                                                        patient={selectedPatient}
+                                                                        API_BASE_URL={API_CONFIG.BASE_URL}
+                                                                        formatDate={formatDate}
+                                                                        onShare={handleShareFile}
+                                                                        onDelete={handleDeleteRecord}
+                                                                    />
                                                                 ))}
                                                             </div>
                                                         );
@@ -2302,7 +2429,7 @@ const PatientTab = memo(() => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </div >
                         </div >
                     </div >
                 )
