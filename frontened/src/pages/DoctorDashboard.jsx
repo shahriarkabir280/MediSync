@@ -81,7 +81,7 @@ const DoctorDashboard = () => {
         case 'settings': return <SettingsTab />;
         case 'profile': return <ProfileTab />;
         case 'website': return <PublicWebsiteTab />;
-        case 'appointments': return <AppointmentTab />;
+        case 'appointments': return <AppointmentTab onSwitchTab={setActiveTab} />;
         case 'patients': return <PatientTab />;
         case 'laboratory': return <LabratoryTab />;
         case 'chat': return <ChatTab />;

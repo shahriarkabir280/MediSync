@@ -49,7 +49,7 @@ const StatSkeleton = () => (
     </div>
 );
 
-const AppointmentTab = memo(() => {
+const AppointmentTab = memo(({ onSwitchTab }) => {
     const { user } = useAuth();
     const doctorId = user?.id;
     const [allAppointments, setAllAppointments] = useState([]);
@@ -1117,37 +1117,75 @@ const AppointmentTab = memo(() => {
 
                                 {/* Filtered Patient List - Only show when search has text */}
                                 {patientSearch && (
-                                    <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <User size={18} className="absolute left-5 top-4 text-muted-foreground/50 z-10 pointer-events-none" />
-                                        <select
-                                            value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
-                                            onChange={(e) => {
-                                                if (showNewAppointmentModal) {
-                                                    setAppointmentForm({ ...appointmentForm, patient_id: e.target.value });
-                                                } else {
-                                                    setEditingAppointment({ ...editingAppointment, patient_id: e.target.value });
-                                                }
-                                            }}
-                                            size="4"
-                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-2 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none cursor-pointer text-foreground overflow-y-auto custom-scrollbar"
-                                        >
-                                            <option value="" disabled>
-                                                {patients.filter(p =>
-                                                    `${p.first_name} ${p.last_name} ${p.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
-                                                ).length === 0 ? 'No patients found' : 'Choose from filtered results'}
-                                            </option>
-                                            {patients
-                                                .filter(patient =>
-                                                    `${patient.first_name} ${patient.last_name} ${patient.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
-                                                )
-                                                .map((patient) => (
-                                                    <option key={patient.id} value={patient.id} className="py-2">
-                                                        {patient.first_name} {patient.last_name} ({patient.unique_id})
-                                                    </option>
-                                                ))
-                                            }
-                                        </select>
-                                    </div>
+                                    <>
+                                        {patients.filter(p =>
+                                            `${p.first_name} ${p.last_name} ${p.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
+                                        ).length === 0 ? (
+                                            // No patients found message
+                                            <div className="bg-amber-50 border border-amber-200 rounded-xl sm:rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="p-2 bg-amber-100 rounded-lg shrink-0">
+                                                        <AlertCircle size={20} className="text-amber-600" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h4 className="text-sm font-bold text-amber-900 mb-1">Patient Not Found</h4>
+                                                        <p className="text-xs text-amber-700 leading-relaxed mb-3">
+                                                            No patient matches "<span className="font-bold">{patientSearch}</span>". Please register the patient first.
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setShowNewAppointmentModal(false);
+                                                                setShowEditAppointmentModal(false);
+                                                                setPatientSearch('');
+                                                                if (onSwitchTab) {
+                                                                    onSwitchTab('patients');
+                                                                }
+                                                                toast('Switched to Patient tab. Register the new patient here.', {
+                                                                    icon: '👤',
+                                                                    duration: 4000
+                                                                });
+                                                            }}
+                                                            className="flex items-center space-x-2 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all"
+                                                        >
+                                                            <Users size={14} />
+                                                            <span>Go to Patient Tab</span>
+                                                            <ArrowRight size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // Patient list dropdown
+                                            <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <User size={18} className="absolute left-5 top-4 text-muted-foreground/50 z-10 pointer-events-none" />
+                                                <select
+                                                    value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
+                                                    onChange={(e) => {
+                                                        if (showNewAppointmentModal) {
+                                                            setAppointmentForm({ ...appointmentForm, patient_id: e.target.value });
+                                                        } else {
+                                                            setEditingAppointment({ ...editingAppointment, patient_id: e.target.value });
+                                                        }
+                                                    }}
+                                                    size="4"
+                                                    className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-2 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none cursor-pointer text-foreground overflow-y-auto custom-scrollbar"
+                                                >
+                                                    <option value="" disabled>Choose from filtered results</option>
+                                                    {patients
+                                                        .filter(patient =>
+                                                            `${patient.first_name} ${patient.last_name} ${patient.unique_id}`.toLowerCase().includes(patientSearch.toLowerCase())
+                                                        )
+                                                        .map((patient) => (
+                                                            <option key={patient.id} value={patient.id} className="py-2">
+                                                                {patient.first_name} {patient.last_name} ({patient.unique_id})
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
 
                                 {/* Hidden input to satisfy form required validation */}
