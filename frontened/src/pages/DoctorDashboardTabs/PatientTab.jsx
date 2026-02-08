@@ -2198,6 +2198,15 @@ const PatientTab = memo(() => {
                                                                                         >
                                                                                             <Printer size={16} />
                                                                                         </button>
+                                                                                        {record.file_path && (
+                                                                                            <button
+                                                                                                onClick={() => handleShareFile(record)}
+                                                                                                className="p-2 text-muted-foreground hover:text-green-600 hover:bg-green-500/10 rounded-lg transition-all"
+                                                                                                title="Share Prescription"
+                                                                                            >
+                                                                                                <Share2 size={16} />
+                                                                                            </button>
+                                                                                        )}
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
