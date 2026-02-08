@@ -59,6 +59,120 @@ const StatCard = ({ icon: Icon, label, value, subLabel, color }) => (
     </div>
 );
 
+// Helper functions for generating print HTML
+const generatePrescriptionFileHTML = (record, index, API_BASE_URL, formatDate) => {
+    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
+    const isPdf = /\.pdf$/i.test(record.file_name);
+
+    let fileContent;
+    if (isImage) {
+        fileContent = `<img src="${fileUrl}" alt="Prescription ${index + 1}" />`;
+    } else if (isPdf) {
+        fileContent = `<iframe src="${fileUrl}" type="application/pdf"></iframe>`;
+    } else {
+        fileContent = `<p>File type not supported for preview. <a href="${fileUrl}" target="_blank">Download file</a></p>`;
+    }
+
+    return `
+        <div class="prescription-file">
+            <h2>Prescription #${index + 1}</h2>
+            <p><strong>File:</strong> ${record.file_name}</p>
+            <p><strong>Date:</strong> ${formatDate(record.record_date || record.created_at)}</p>
+            <div class="file-container">
+                ${fileContent}
+            </div>
+        </div>
+    `;
+};
+
+const generatePrintAllHTML = (prescriptions, patient, API_BASE_URL, formatDate) => {
+    const prescriptionHTML = prescriptions.map((record, index) =>
+        generatePrescriptionFileHTML(record, index, API_BASE_URL, formatDate)
+    ).join('');
+
+    return `
+        <html>
+            <head>
+                <title>Prescriptions - ${patient.first_name} ${patient.last_name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                    h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header-info { margin-bottom: 30px; }
+                    .prescription-file { margin: 30px 0; page-break-inside: avoid; page-break-after: always; }
+                    .prescription-file:last-child { page-break-after: auto; }
+                    .prescription-file h2 { color: #6366F1; margin-bottom: 15px; }
+                    .file-container { border: 2px solid #E5E7EB; border-radius: 10px; padding: 10px; background: white; }
+                    .file-container img { max-width: 100%; height: auto; display: block; }
+                    .file-container iframe { width: 100%; min-height: 800px; border: none; }
+                    @media print { 
+                        .no-print { display: none; }
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info no-print">
+                    <h1>Prescription Records - ${patient.first_name} ${patient.last_name}</h1>
+                    <p><strong>Patient ID:</strong> ${patient.unique_id}</p>
+                    <p><strong>Print Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    <button onclick="window.print()" style="margin: 20px 0; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print All</button>
+                </div>
+                ${prescriptionHTML}
+            </body>
+        </html>
+    `;
+};
+
+const generateSinglePrescriptionHTML = (record, index, patient, API_BASE_URL, formatDate) => {
+    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
+    const isPdf = /\.pdf$/i.test(record.file_name);
+
+    let fileContent;
+    if (isImage) {
+        fileContent = `<img src="${fileUrl}" alt="Prescription ${index + 1}" />`;
+    } else if (isPdf) {
+        fileContent = `<iframe src="${fileUrl}" type="application/pdf"></iframe>`;
+    } else {
+        fileContent = `<p>File type not supported for preview. <a href="${fileUrl}" target="_blank">Download file</a></p>`;
+    }
+
+    return `
+        <html>
+            <head>
+                <title>Prescription #${index + 1} - ${patient.first_name} ${patient.last_name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                    h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header-info { margin-bottom: 30px; }
+                    .file-container { border: 2px solid #E5E7EB; border-radius: 10px; padding: 10px; background: white; }
+                    .file-container img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+                    .file-container iframe { width: 100%; min-height: 800px; border: none; }
+                    @media print { 
+                        .no-print { display: none; }
+                        body { padding: 0; }
+                        .file-container { border: none; padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info no-print">
+                    <h1>Prescription #${index + 1}</h1>
+                    <p><strong>Patient:</strong> ${patient.first_name} ${patient.last_name}</p>
+                    <p><strong>Patient ID:</strong> ${patient.unique_id}</p>
+                    <p><strong>File:</strong> ${record.file_name}</p>
+                    <p><strong>Date:</strong> ${formatDate(record.record_date || record.created_at)}</p>
+                    <button onclick="window.print()" style="margin: 20px 0; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print</button>
+                </div>
+                <div class="file-container">
+                    ${fileContent}
+                </div>
+            </body>
+        </html>
+    `;
+};
+
 const PatientTab = memo(() => {
     const { doctorId } = useDoctor();
     const [patients, setPatients] = useState([]);
@@ -1952,14 +2066,29 @@ const PatientTab = memo(() => {
                                                                             toast.error('No prescriptions to download');
                                                                             return;
                                                                         }
-                                                                        prescriptions.forEach(record => {
+                                                                        let downloadCount = 0;
+                                                                        prescriptions.forEach((record, index) => {
                                                                             if (record.file_name) {
-                                                                                window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                                                                                // Create a temporary link to trigger download
+                                                                                setTimeout(() => {
+                                                                                    const link = document.createElement('a');
+                                                                                    link.href = `${API_CONFIG.BASE_URL}/api/files/${record.file_name}`;
+                                                                                    link.download = record.file_name;
+                                                                                    link.target = '_blank';
+                                                                                    document.body.appendChild(link);
+                                                                                    link.click();
+                                                                                    document.body.removeChild(link);
+                                                                                }, index * 500); // Stagger downloads
+                                                                                downloadCount++;
                                                                             }
                                                                         });
-                                                                        toast.success(`Downloading ${prescriptions.length} prescription(s)`);
+                                                                        if (downloadCount > 0) {
+                                                                            toast.success(`Downloading ${downloadCount} prescription file(s)`);
+                                                                        } else {
+                                                                            toast.error('No prescription files available to download');
+                                                                        }
                                                                     }}
-                                                                    disabled={medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0}
+                                                                    disabled={medicalRecords.filter(r => (r.prescription || r.file_type === 'prescription') && r.file_name).length === 0}
                                                                     className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-card border border-border/50 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:border-blue-500/50 hover:bg-blue-500/5 hover:text-blue-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     title="Download All Prescriptions"
                                                                 >
@@ -1970,49 +2099,15 @@ const PatientTab = memo(() => {
                                                                 {/* Print All */}
                                                                 <button
                                                                     onClick={() => {
-                                                                        const prescriptions = medicalRecords.filter(r => r.prescription || r.file_type === 'prescription');
+                                                                        const prescriptions = medicalRecords.filter(r => (r.prescription || r.file_type === 'prescription') && r.file_name);
                                                                         if (prescriptions.length === 0) {
-                                                                            toast.error('No prescriptions to print');
+                                                                            toast.error('No prescription files to print');
                                                                             return;
                                                                         }
 
-                                                                        // Create a print-friendly view
                                                                         const printWindow = window.open('', '_blank');
-                                                                        printWindow.document.write(`
-                                                                            <html>
-                                                                                <head>
-                                                                                    <title>Prescriptions - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
-                                                                                    <style>
-                                                                                        body { font-family: Arial, sans-serif; padding: 40px; }
-                                                                                        h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; }
-                                                                                        .prescription { margin: 30px 0; padding: 20px; border: 2px solid #E5E7EB; border-radius: 10px; page-break-inside: avoid; }
-                                                                                        .prescription h2 { color: #6366F1; margin-top: 0; }
-                                                                                        .meta { display: flex; gap: 30px; margin-top: 15px; font-size: 14px; color: #6B7280; }
-                                                                                        .details { margin: 15px 0; padding: 15px; background: #F9FAFB; border-left: 4px solid #6366F1; }
-                                                                                        @media print { .no-print { display: none; } }
-                                                                                    </style>
-                                                                                </head>
-                                                                                <body>
-                                                                                    <h1>Prescription Records - ${selectedPatient.first_name} ${selectedPatient.last_name}</h1>
-                                                                                    <p><strong>Patient ID:</strong> ${selectedPatient.unique_id}</p>
-                                                                                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                                                                                    ${prescriptions.map((record, index) => `
-                                                                                        <div class="prescription">
-                                                                                            <h2>Prescription #${index + 1}</h2>
-                                                                                            <div class="details">
-                                                                                                <strong>Medication Details:</strong><br/>
-                                                                                                ${record.prescription || 'Details not available'}
-                                                                                            </div>
-                                                                                            <div class="meta">
-                                                                                                <div><strong>Date:</strong> ${formatDate(record.record_date || record.created_at)}</div>
-                                                                                                <div><strong>Prescribed By:</strong> ${record.doctor_first_name ? `Dr. ${record.doctor_first_name}` : 'System'}</div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    `).join('')}
-                                                                                    <button class="no-print" onclick="window.print()" style="margin-top: 30px; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print</button>
-                                                                                </body>
-                                                                            </html>
-                                                                        `);
+                                                                        const htmlContent = generatePrintAllHTML(prescriptions, selectedPatient, API_CONFIG.BASE_URL, formatDate);
+                                                                        printWindow.document.write(htmlContent);
                                                                         printWindow.document.close();
                                                                     }}
                                                                     disabled={medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0}
@@ -2093,42 +2188,9 @@ const PatientTab = memo(() => {
                                                                                         )}
                                                                                         <button
                                                                                             onClick={() => {
-                                                                                                // Create a print-friendly view for single prescription
                                                                                                 const printWindow = window.open('', '_blank');
-                                                                                                printWindow.document.write(`
-                                                                                                <html>
-                                                                                                    <head>
-                                                                                                        <title>Prescription #${index + 1} - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
-                                                                                                        <style>
-                                                                                                            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                                                                                                            h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; }
-                                                                                                            .prescription { margin: 30px 0; padding: 20px; border: 2px solid #E5E7EB; border-radius: 10px; }
-                                                                                                            .prescription h2 { color: #6366F1; margin-top: 0; }
-                                                                                                            .meta { display: flex; gap: 30px; margin-top: 15px; font-size: 14px; color: #6B7280; }
-                                                                                                            .details { margin: 15px 0; padding: 15px; background: #F9FAFB; border-left: 4px solid #6366F1; }
-                                                                                                            @media print { .no-print { display: none; } }
-                                                                                                        </style>
-                                                                                                    </head>
-                                                                                                    <body>
-                                                                                                        <h1>Prescription Record</h1>
-                                                                                                        <p><strong>Patient:</strong> ${selectedPatient.first_name} ${selectedPatient.last_name}</p>
-                                                                                                        <p><strong>Patient ID:</strong> ${selectedPatient.unique_id}</p>
-                                                                                                        <p><strong>Print Date:</strong> ${new Date().toLocaleDateString()}</p>
-                                                                                                        <div class="prescription">
-                                                                                                            <h2>Prescription #${index + 1}</h2>
-                                                                                                            <div class="details">
-                                                                                                                <strong>Medication Details:</strong><br/>
-                                                                                                                ${record.prescription || 'Details not available'}
-                                                                                                            </div>
-                                                                                                            <div class="meta">
-                                                                                                                <div><strong>Prescribed Date:</strong> ${formatDate(record.record_date || record.created_at)}</div>
-                                                                                                                <div><strong>Prescribed By:</strong> ${record.doctor_first_name ? `Dr. ${record.doctor_first_name}` : 'System'}</div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                        <button class="no-print" onclick="window.print()" style="margin-top: 30px; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print</button>
-                                                                                                    </body>
-                                                                                                </html>
-                                                                                            `);
+                                                                                                const htmlContent = generateSinglePrescriptionHTML(record, index, selectedPatient, API_CONFIG.BASE_URL, formatDate);
+                                                                                                printWindow.document.write(htmlContent);
                                                                                                 printWindow.document.close();
                                                                                             }}
                                                                                             className="p-2 text-muted-foreground hover:text-purple-600 hover:bg-purple-500/10 rounded-lg transition-all"
@@ -2142,6 +2204,62 @@ const PatientTab = memo(() => {
 
                                                                             {/* Card Body - Prescription Details */}
                                                                             <div className="p-4 sm:p-6 space-y-4">
+                                                                                {/* File Preview Section */}
+                                                                                {record.file_name && (
+                                                                                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 border-2 border-indigo-500/20 rounded-2xl p-4 relative overflow-hidden">
+                                                                                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                                                                                            <FileText size={80} />
+                                                                                        </div>
+                                                                                        <div className="relative z-10 space-y-3">
+                                                                                            <div className="flex items-start justify-between gap-3">
+                                                                                                <div className="flex-1 min-w-0">
+                                                                                                    <p className="text-[9px] font-black text-indigo-600/60 dark:text-indigo-400/60 uppercase tracking-wider mb-1">Prescription File</p>
+                                                                                                    <p className="text-sm font-bold text-foreground truncate" title={record.file_name}>
+                                                                                                        {record.file_name}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${/\.pdf$/i.test(record.file_name)
+                                                                                                        ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                                                                                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                                                                                    }`}>
+                                                                                                    {/\.pdf$/i.test(record.file_name) ? 'PDF' : 'IMAGE'}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className="bg-white dark:bg-slate-950 rounded-xl overflow-hidden border border-border/40 shadow-sm">
+                                                                                                {/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name) ? (
+                                                                                                    <img
+                                                                                                        src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`}
+                                                                                                        alt={`Prescription ${index + 1}`}
+                                                                                                        className="w-full h-48 object-contain bg-slate-50 dark:bg-slate-900"
+                                                                                                        onError={(e) => {
+                                                                                                            e.target.style.display = 'none';
+                                                                                                            e.target.nextSibling.style.display = 'flex';
+                                                                                                        }}
+                                                                                                    />
+                                                                                                ) : /\.pdf$/i.test(record.file_name) ? (
+                                                                                                    <iframe
+                                                                                                        src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0`}
+                                                                                                        className="w-full h-48 bg-slate-50 dark:bg-slate-900"
+                                                                                                        title={`Prescription ${index + 1}`}
+                                                                                                    />
+                                                                                                ) : (
+                                                                                                    <div className="w-full h-48 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                                                                                                        <div className="text-center">
+                                                                                                            <FileText size={48} className="mx-auto text-muted-foreground/30 mb-2" />
+                                                                                                            <p className="text-xs text-muted-foreground">Preview not available</p>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                <div className="hidden w-full h-48 items-center justify-center bg-slate-50 dark:bg-slate-900">
+                                                                                                    <div className="text-center">
+                                                                                                        <FileText size={48} className="mx-auto text-muted-foreground/30 mb-2" />
+                                                                                                        <p className="text-xs text-muted-foreground">Failed to load preview</p>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
                                                                                 {/* Medication Details */}
                                                                                 <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 rounded-xl p-4 relative overflow-hidden">
                                                                                     <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
@@ -2200,8 +2318,8 @@ const PatientTab = memo(() => {
                                     )}
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 )
             }
             {
