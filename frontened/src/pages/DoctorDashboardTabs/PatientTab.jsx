@@ -1545,7 +1545,7 @@ const PatientTab = memo(() => {
             {/* Patient Details Modal */}
             {
                 showPatientModal && selectedPatient && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-0 sm:p-3 lg:p-6 animate-in fade-in duration-500">
+                    <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[100] p-0 sm:p-3 lg:p-6 animate-in fade-in duration-500">
                         <div className="bg-card/80 backdrop-blur-3xl rounded-none sm:rounded-[2rem] lg:rounded-[2.5rem] w-full max-w-5xl h-full sm:h-[95vh] flex flex-col shadow-[0_40px_100px_rgba(0,0,0,0.5)] dark:shadow-none border border-border/50 relative overflow-hidden animate-in zoom-in-95 duration-700">
                             {/* High-end Gradient Accents */}
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
