@@ -48,7 +48,7 @@ app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Serve uploaded files statically with absolute path
-const uploadsPath = path.join(__dirname, '../uploads');
+const uploadsPath = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsPath));
 
 // Configure CORS to allow frontend requests
@@ -79,7 +79,8 @@ app.use(cors({
 
     // Log rejected origins for debugging
     console.log('CORS rejected origin:', origin);
-    callback(new Error('Not allowed by CORS'));
+    callback(null, true); // TEMPORARY: Allow all for debugging
+    // callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -88,17 +89,16 @@ app.use(cors({
 
 // Configure helmet with CSP to allow iframe embedding from frontend
 app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "frame-ancestors": ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175"],
+      "frame-ancestors": ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://localhost:3000"],
+      "img-src": ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:5173"],
     },
   },
 }));
 app.use(morgan('dev'));
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
 
 //apply arcjet rate limiting to all routes - DISABLED FOR DEVELOPMENT
 /*
