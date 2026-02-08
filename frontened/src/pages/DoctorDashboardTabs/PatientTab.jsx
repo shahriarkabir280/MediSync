@@ -2219,8 +2219,8 @@ const PatientTab = memo(() => {
                                                                                                     </p>
                                                                                                 </div>
                                                                                                 <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${/\.pdf$/i.test(record.file_name)
-                                                                                                        ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                                                                                                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                                                                                    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                                                                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                                                                                                     }`}>
                                                                                                     {/\.pdf$/i.test(record.file_name) ? 'PDF' : 'IMAGE'}
                                                                                                 </div>
@@ -2260,18 +2260,6 @@ const PatientTab = memo(() => {
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
-                                                                                {/* Medication Details */}
-                                                                                <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 rounded-xl p-4 relative overflow-hidden">
-                                                                                    <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
-                                                                                        <Pill size={64} />
-                                                                                    </div>
-                                                                                    <div className="relative z-10">
-                                                                                        <p className="text-[9px] font-black text-indigo-600/60 dark:text-indigo-400/60 uppercase tracking-wider mb-2">Medication Details</p>
-                                                                                        <p className="text-sm sm:text-base font-bold text-foreground leading-relaxed">
-                                                                                            {record.prescription || 'Prescription details not available. Please contact your healthcare provider for more information.'}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                </div>
 
                                                                                 {/* Meta Information */}
                                                                                 <div className="grid grid-cols-2 gap-3">
@@ -2294,19 +2282,7 @@ const PatientTab = memo(() => {
                                                                                 </div>
                                                                             </div>
 
-                                                                            {/* Card Footer - Actions */}
-                                                                            {record.file_path && (
-                                                                                <div className="px-4 sm:px-6 pb-4 sm:pb-5">
-                                                                                    <button
-                                                                                        onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                        className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all group/btn"
-                                                                                    >
-                                                                                        <FileText size={14} className="group-hover/btn:rotate-12 transition-transform" />
-                                                                                        <span>View Full Prescription</span>
-                                                                                        <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                                                                                    </button>
-                                                                                </div>
-                                                                            )}
+
                                                                         </div>
                                                                     ))}
                                                             </div>
