@@ -7,7 +7,7 @@ import {
     FileText, Clock, Trash2, Stethoscope, Pill, ClipboardList, UserCircle, Search,
     Users, Activity, Filter, ChevronRight, ArrowRight, ExternalLink, TrendingUp, Zap,
     MoreHorizontal, Download, Share2, Shield, Info, MapPin, RefreshCw, Scan, Mic,
-    Link
+    Link, Camera, Printer, Upload
 } from "lucide-react";
 import {
     WhatsappShareButton, WhatsappIcon,
@@ -1308,7 +1308,7 @@ const PatientTab = memo(() => {
                                         { id: 'medical-history', label: 'History', icon: Stethoscope },
                                         { id: 'records', label: 'Documents', icon: FileText },
                                         { id: 'appointments', label: 'Appointments', icon: Clock },
-                                        { id: 'prescriptions', label: 'Meds', icon: Pill }
+                                        { id: 'prescriptions', label: 'Prescriptions', icon: Pill }
                                     ].map((tab) => {
                                         const Icon = tab.icon;
                                         const isActive = activeDetailsTab === tab.id;
@@ -1868,58 +1868,330 @@ const PatientTab = memo(() => {
 
                                             {/* Prescriptions Tab */}
                                             {activeDetailsTab === 'prescriptions' && (
-                                                <div className="space-y-6 sm:space-y-12">
-                                                    <div className="px-4">
-                                                        <h3 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">Prescription Logs</h3>
-                                                        <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.15em] mt-1">Active pharmacological regimens</p>
+                                                <div className="space-y-6 sm:space-y-8">
+                                                    {/* Modern Header with Gradient */}
+                                                    <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/20 p-6 sm:p-8">
+                                                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl"></div>
+                                                        <div className="relative z-10 space-y-4">
+                                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                                <div className="flex items-center space-x-4">
+                                                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl shadow-indigo-500/20">
+                                                                        <Pill size={24} className="text-white sm:w-7 sm:h-7" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Prescription Records</h3>
+                                                                        <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider mt-1">Medication History & Active Prescriptions</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center space-x-2">
+                                                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-wider">
+                                                                            {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length} Total
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Action Buttons Row */}
+                                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                                {/* Camera Upload */}
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    capture="environment"
+                                                                    className="hidden"
+                                                                    id="prescriptionCameraInput"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            handleFileUpload(file, 'prescription');
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button
+                                                                    onClick={() => document.getElementById('prescriptionCameraInput').click()}
+                                                                    disabled={!!uploadingFile}
+                                                                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-card border border-border/50 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Scan Prescription"
+                                                                >
+                                                                    <Camera size={14} className="sm:w-4 sm:h-4" />
+                                                                    <span className="hidden sm:inline">Scan</span>
+                                                                </button>
+
+                                                                {/* File Upload */}
+                                                                <input
+                                                                    type="file"
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                                    className="hidden"
+                                                                    id="prescriptionFileInput"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            handleFileUpload(file, 'prescription');
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button
+                                                                    onClick={() => document.getElementById('prescriptionFileInput').click()}
+                                                                    disabled={!!uploadingFile}
+                                                                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-card border border-border/50 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:border-purple-500/50 hover:bg-purple-500/5 hover:text-purple-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Upload Prescription File"
+                                                                >
+                                                                    <Upload size={14} className="sm:w-4 sm:h-4" />
+                                                                    <span className="hidden sm:inline">Upload</span>
+                                                                </button>
+
+                                                                <div className="w-px h-6 bg-border/50 hidden sm:block"></div>
+
+                                                                {/* Download All */}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const prescriptions = medicalRecords.filter(r => r.prescription || r.file_type === 'prescription');
+                                                                        if (prescriptions.length === 0) {
+                                                                            toast.error('No prescriptions to download');
+                                                                            return;
+                                                                        }
+                                                                        prescriptions.forEach(record => {
+                                                                            if (record.file_name) {
+                                                                                window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                                                                            }
+                                                                        });
+                                                                        toast.success(`Downloading ${prescriptions.length} prescription(s)`);
+                                                                    }}
+                                                                    disabled={medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0}
+                                                                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-card border border-border/50 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider hover:border-blue-500/50 hover:bg-blue-500/5 hover:text-blue-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Download All Prescriptions"
+                                                                >
+                                                                    <Download size={14} className="sm:w-4 sm:h-4" />
+                                                                    <span className="hidden sm:inline">Download All</span>
+                                                                </button>
+
+                                                                {/* Print All */}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const prescriptions = medicalRecords.filter(r => r.prescription || r.file_type === 'prescription');
+                                                                        if (prescriptions.length === 0) {
+                                                                            toast.error('No prescriptions to print');
+                                                                            return;
+                                                                        }
+
+                                                                        // Create a print-friendly view
+                                                                        const printWindow = window.open('', '_blank');
+                                                                        printWindow.document.write(`
+                                                                            <html>
+                                                                                <head>
+                                                                                    <title>Prescriptions - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
+                                                                                    <style>
+                                                                                        body { font-family: Arial, sans-serif; padding: 40px; }
+                                                                                        h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; }
+                                                                                        .prescription { margin: 30px 0; padding: 20px; border: 2px solid #E5E7EB; border-radius: 10px; page-break-inside: avoid; }
+                                                                                        .prescription h2 { color: #6366F1; margin-top: 0; }
+                                                                                        .meta { display: flex; gap: 30px; margin-top: 15px; font-size: 14px; color: #6B7280; }
+                                                                                        .details { margin: 15px 0; padding: 15px; background: #F9FAFB; border-left: 4px solid #6366F1; }
+                                                                                        @media print { .no-print { display: none; } }
+                                                                                    </style>
+                                                                                </head>
+                                                                                <body>
+                                                                                    <h1>Prescription Records - ${selectedPatient.first_name} ${selectedPatient.last_name}</h1>
+                                                                                    <p><strong>Patient ID:</strong> ${selectedPatient.unique_id}</p>
+                                                                                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                                                                                    ${prescriptions.map((record, index) => `
+                                                                                        <div class="prescription">
+                                                                                            <h2>Prescription #${index + 1}</h2>
+                                                                                            <div class="details">
+                                                                                                <strong>Medication Details:</strong><br/>
+                                                                                                ${record.prescription || 'Details not available'}
+                                                                                            </div>
+                                                                                            <div class="meta">
+                                                                                                <div><strong>Date:</strong> ${formatDate(record.record_date || record.created_at)}</div>
+                                                                                                <div><strong>Prescribed By:</strong> ${record.doctor_first_name ? `Dr. ${record.doctor_first_name}` : 'System'}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    `).join('')}
+                                                                                    <button class="no-print" onclick="window.print()" style="margin-top: 30px; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print</button>
+                                                                                </body>
+                                                                            </html>
+                                                                        `);
+                                                                        printWindow.document.close();
+                                                                    }}
+                                                                    disabled={medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0}
+                                                                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Print All Prescriptions"
+                                                                >
+                                                                    <Printer size={14} className="sm:w-4 sm:h-4" />
+                                                                    <span className="hidden sm:inline">Print All</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                     {medicalRecords.filter(r => r.prescription || r.file_type === 'prescription').length === 0 ? (
-                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-32 bg-muted/10 rounded-[2rem] sm:rounded-[5rem] border-2 border-dashed border-border/40 mx-0 sm:mx-6">
-                                                            <div className="p-6 sm:p-10 bg-card rounded-2xl sm:rounded-[3rem] border border-border/50 mb-6 sm:mb-8 shadow-2xl">
-                                                                <Pill size={48} className="sm:w-[72px] sm:h-[72px] text-muted-foreground/10" />
+                                                        <div className="flex flex-col items-center justify-center py-20 sm:py-32 bg-gradient-to-br from-muted/30 to-muted/10 rounded-[2rem] sm:rounded-[3rem] border-2 border-dashed border-border/40 relative overflow-hidden">
+                                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.03),transparent_50%)]"></div>
+                                                            <div className="relative z-10 flex flex-col items-center">
+                                                                <div className="p-8 sm:p-12 bg-card/80 backdrop-blur-sm rounded-[2rem] sm:rounded-[3rem] border border-border/50 mb-6 shadow-2xl">
+                                                                    <Pill size={56} className="sm:w-20 sm:h-20 text-muted-foreground/20" />
+                                                                </div>
+                                                                <h4 className="text-base sm:text-lg font-black text-foreground/60 mb-2">No Prescriptions Found</h4>
+                                                                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground/40 text-center max-w-sm">
+                                                                    No medication records have been added to this patient's profile yet.
+                                                                </p>
                                                             </div>
-                                                            <p className="text-[10px] sm:text-xs font-black text-muted-foreground/20 uppercase tracking-[0.4em] sm:tracking-[0.6em]">No Medication Records</p>
                                                         </div>
                                                     ) : (
-                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-4">
-                                                            {medicalRecords
-                                                                .filter(record => record.prescription || record.file_type === 'prescription')
-                                                                .map((record, index) => (
-                                                                    <div key={index} className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 hover:shadow-2xl hover:border-amber-500/20 transition-all duration-700 group/pill">
-                                                                        <div className="flex items-center justify-between mb-4 sm:mb-6">
-                                                                            <div className="p-2.5 sm:p-3.5 bg-amber-500/10 text-amber-500 rounded-lg sm:rounded-xl group-hover/pill:bg-amber-500 group-hover/pill:text-white transition-all shadow-xl">
-                                                                                <Pill size={18} className="sm:w-6 sm:h-6" />
+                                                        <div className="space-y-6">
+                                                            {/* Prescription Cards Grid */}
+                                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                                                                {medicalRecords
+                                                                    .filter(record => record.prescription || record.file_type === 'prescription')
+                                                                    .map((record, index) => (
+                                                                        <div
+                                                                            key={index}
+                                                                            className="group/rx bg-card border border-border/60 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-500"
+                                                                        >
+                                                                            {/* Card Header */}
+                                                                            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-4 sm:p-5 border-b border-border/40">
+                                                                                <div className="flex items-start justify-between">
+                                                                                    <div className="flex items-center space-x-3">
+                                                                                        <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20 group-hover/rx:scale-110 transition-transform">
+                                                                                            <Pill size={18} className="text-white" />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div className="flex items-center space-x-2 mb-1">
+                                                                                                <h4 className="text-sm sm:text-base font-black text-foreground tracking-tight">Prescription #{index + 1}</h4>
+                                                                                                <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                                                                                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider">Active</span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wide">
+                                                                                                {record.file_name || 'Rx-' + (index + 1).toString().padStart(4, '0')}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-center space-x-1">
+                                                                                        {record.file_path && (
+                                                                                            <button
+                                                                                                onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                                className="p-2 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-500/10 rounded-lg transition-all"
+                                                                                                title="View Prescription"
+                                                                                            >
+                                                                                                <Eye size={16} />
+                                                                                            </button>
+                                                                                        )}
+                                                                                        {record.file_path && (
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                                                                                                    toast.success('Downloading prescription...');
+                                                                                                }}
+                                                                                                className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
+                                                                                                title="Download Prescription"
+                                                                                            >
+                                                                                                <Download size={16} />
+                                                                                            </button>
+                                                                                        )}
+                                                                                        <button
+                                                                                            onClick={() => {
+                                                                                                // Create a print-friendly view for single prescription
+                                                                                                const printWindow = window.open('', '_blank');
+                                                                                                printWindow.document.write(`
+                                                                                                <html>
+                                                                                                    <head>
+                                                                                                        <title>Prescription #${index + 1} - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
+                                                                                                        <style>
+                                                                                                            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                                                                                                            h1 { color: #4F46E5; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; }
+                                                                                                            .prescription { margin: 30px 0; padding: 20px; border: 2px solid #E5E7EB; border-radius: 10px; }
+                                                                                                            .prescription h2 { color: #6366F1; margin-top: 0; }
+                                                                                                            .meta { display: flex; gap: 30px; margin-top: 15px; font-size: 14px; color: #6B7280; }
+                                                                                                            .details { margin: 15px 0; padding: 15px; background: #F9FAFB; border-left: 4px solid #6366F1; }
+                                                                                                            @media print { .no-print { display: none; } }
+                                                                                                        </style>
+                                                                                                    </head>
+                                                                                                    <body>
+                                                                                                        <h1>Prescription Record</h1>
+                                                                                                        <p><strong>Patient:</strong> ${selectedPatient.first_name} ${selectedPatient.last_name}</p>
+                                                                                                        <p><strong>Patient ID:</strong> ${selectedPatient.unique_id}</p>
+                                                                                                        <p><strong>Print Date:</strong> ${new Date().toLocaleDateString()}</p>
+                                                                                                        <div class="prescription">
+                                                                                                            <h2>Prescription #${index + 1}</h2>
+                                                                                                            <div class="details">
+                                                                                                                <strong>Medication Details:</strong><br/>
+                                                                                                                ${record.prescription || 'Details not available'}
+                                                                                                            </div>
+                                                                                                            <div class="meta">
+                                                                                                                <div><strong>Prescribed Date:</strong> ${formatDate(record.record_date || record.created_at)}</div>
+                                                                                                                <div><strong>Prescribed By:</strong> ${record.doctor_first_name ? `Dr. ${record.doctor_first_name}` : 'System'}</div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <button class="no-print" onclick="window.print()" style="margin-top: 30px; padding: 10px 20px; background: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print</button>
+                                                                                                    </body>
+                                                                                                </html>
+                                                                                            `);
+                                                                                                printWindow.document.close();
+                                                                                            }}
+                                                                                            className="p-2 text-muted-foreground hover:text-purple-600 hover:bg-purple-500/10 rounded-lg transition-all"
+                                                                                            title="Print Prescription"
+                                                                                        >
+                                                                                            <Printer size={16} />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="flex flex-col items-end">
-                                                                                <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.1em] mb-0.5">Authenticated Ledger</span>
-                                                                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.05em]">{record.file_name || 'Rx-SIG'}</span>
+
+                                                                            {/* Card Body - Prescription Details */}
+                                                                            <div className="p-4 sm:p-6 space-y-4">
+                                                                                {/* Medication Details */}
+                                                                                <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 rounded-xl p-4 relative overflow-hidden">
+                                                                                    <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
+                                                                                        <Pill size={64} />
+                                                                                    </div>
+                                                                                    <div className="relative z-10">
+                                                                                        <p className="text-[9px] font-black text-indigo-600/60 dark:text-indigo-400/60 uppercase tracking-wider mb-2">Medication Details</p>
+                                                                                        <p className="text-sm sm:text-base font-bold text-foreground leading-relaxed">
+                                                                                            {record.prescription || 'Prescription details not available. Please contact your healthcare provider for more information.'}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {/* Meta Information */}
+                                                                                <div className="grid grid-cols-2 gap-3">
+                                                                                    <div className="bg-muted/30 rounded-xl p-3 border border-border/40">
+                                                                                        <div className="flex items-center space-x-2 mb-1.5">
+                                                                                            <Calendar size={12} className="text-indigo-500" />
+                                                                                            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/50 uppercase tracking-wider">Prescribed Date</p>
+                                                                                        </div>
+                                                                                        <p className="text-xs sm:text-sm font-black text-foreground">{formatDate(record.record_date || record.created_at)}</p>
+                                                                                    </div>
+                                                                                    <div className="bg-muted/30 rounded-xl p-3 border border-border/40">
+                                                                                        <div className="flex items-center space-x-2 mb-1.5">
+                                                                                            <UserCircle size={12} className="text-purple-500" />
+                                                                                            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/50 uppercase tracking-wider">Prescribed By</p>
+                                                                                        </div>
+                                                                                        <p className="text-xs sm:text-sm font-black text-foreground truncate">
+                                                                                            {record.doctor_first_name ? `Dr. ${record.doctor_first_name}` : 'System'}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                        <div className="bg-muted/30 p-4 sm:p-6 rounded-lg sm:rounded-xl border-l-4 border-amber-500 mb-4 sm:mb-6 relative overflow-hidden group-hover/pill:bg-muted/50 transition-colors">
-                                                                            <div className="absolute right-[-10px] top-[-10px] p-6 opacity-[0.03] group-hover/pill:rotate-12 transition-transform duration-1000">
-                                                                                <Pill size={60} className="sm:w-20 sm:h-20" />
-                                                                            </div>
-                                                                            <p className="text-sm sm:text-base font-black text-foreground leading-relaxed italic relative z-10">
-                                                                                "{record.prescription || 'Primary pharmacological instructions pending details.'}"
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="flex items-center justify-between pt-2">
-                                                                            <div className="space-y-0.5">
-                                                                                <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.1em]">Registry Date</p>
-                                                                                <p className="text-[10px] sm:text-xs font-black text-foreground tracking-tight">{formatDate(record.record_date || record.created_at)}</p>
-                                                                            </div>
+
+                                                                            {/* Card Footer - Actions */}
                                                                             {record.file_path && (
-                                                                                <button
-                                                                                    onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
-                                                                                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-card border border-border rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] font-black text-indigo-500 hover:text-white hover:bg-indigo-600 transition-all uppercase tracking-[0.1em] shadow-lg"
-                                                                                >
-                                                                                    View Script
-                                                                                </button>
+                                                                                <div className="px-4 sm:px-6 pb-4 sm:pb-5">
+                                                                                    <button
+                                                                                        onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                        className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all group/btn"
+                                                                                    >
+                                                                                        <FileText size={14} className="group-hover/btn:rotate-12 transition-transform" />
+                                                                                        <span>View Full Prescription</span>
+                                                                                        <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                                                                                    </button>
+                                                                                </div>
                                                                             )}
                                                                         </div>
-                                                                    </div>
-                                                                ))}
+                                                                    ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2178,175 +2450,177 @@ const PatientTab = memo(() => {
             }
 
             {/* Share Menu Modal */}
-            {showShareMenu && activeShareRecord && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
-                    <div className="bg-card border border-border/60 rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-                        <div className="p-6 border-b border-border/40 flex items-center justify-between bg-muted/20">
-                            <div>
-                                <h3 className="text-xl font-black text-foreground tracking-tight">Share Record</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-1">Select official channel</p>
-                            </div>
-                            <button
-                                onClick={() => setShowShareMenu(false)}
-                                className="p-2 hover:bg-muted rounded-xl transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-6 grid grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                            <WhatsappShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <WhatsappIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-emerald-600 transition-colors">WhatsApp</span>
-                            </WhatsappShareButton>
-
-                            <TelegramShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <TelegramIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-sky-600 transition-colors">Telegram</span>
-                            </TelegramShareButton>
-
-                            <EmailShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                subject="Medical Record from CareConnect"
-                                body={`Please find attached the medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <EmailIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600 transition-colors">Email</span>
-                            </EmailShareButton>
-
-                            <FacebookShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                quote={`Medical documentation via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <FacebookIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-700 transition-colors">Facebook</span>
-                            </FacebookShareButton>
-
-                            <FacebookMessengerShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                appId="521171313219467"
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <FacebookMessengerIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-500 transition-colors">Messenger</span>
-                            </FacebookMessengerShareButton>
-
-                            <LinkedinShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                summary={`Patient: ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <LinkedinIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-800 transition-colors">LinkedIn</span>
-                            </LinkedinShareButton>
-
-                            <TwitterShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <XIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-slate-900 transition-colors">Twitter (X)</span>
-                            </TwitterShareButton>
-
-                            <RedditShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <RedditIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-orange-600 transition-colors">Reddit</span>
-                            </RedditShareButton>
-
-                            <ViberShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <ViberIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-purple-600 transition-colors">Viber</span>
-                            </ViberShareButton>
-
-                            <LineShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <LineIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-green-600 transition-colors">Line</span>
-                            </LineShareButton>
-
-                            <PinterestShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                media={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                description={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <PinterestIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-600 transition-colors">Pinterest</span>
-                            </PinterestShareButton>
-
-                            <PocketShareButton
-                                url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                title={`Medical record via CareConnect`}
-                                onClick={() => setShowShareMenu(false)}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <PocketIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-400 transition-colors">Pocket</span>
-                            </PocketShareButton>
-
-                            <button
-                                onClick={() => executeShare('copy')}
-                                className="flex flex-col items-center group transition-all"
-                            >
-                                <div className="w-[44px] h-[44px] rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
-                                    <Link size={20} className="text-slate-600 dark:text-slate-400 group-hover:rotate-45" />
+            {
+                showShareMenu && activeShareRecord && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border/60 rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-6 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                                <div>
+                                    <h3 className="text-xl font-black text-foreground tracking-tight">Share Record</h3>
+                                    <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-1">Select official channel</p>
                                 </div>
-                                <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-foreground">Copy Link</span>
-                            </button>
-
-                            {navigator.share && (
                                 <button
-                                    onClick={() => {
-                                        setShowShareMenu(false);
-                                        executeShare('native');
-                                    }}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="p-2 hover:bg-muted rounded-xl transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 grid grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                <WhatsappShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                    onClick={() => setShowShareMenu(false)}
                                     className="flex flex-col items-center group transition-all"
                                 >
-                                    <div className="w-[44px] h-[44px] rounded-full bg-blue-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
-                                        <Share2 size={20} className="text-white" />
+                                    <WhatsappIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-emerald-600 transition-colors">WhatsApp</span>
+                                </WhatsappShareButton>
+
+                                <TelegramShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <TelegramIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-sky-600 transition-colors">Telegram</span>
+                                </TelegramShareButton>
+
+                                <EmailShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    subject="Medical Record from CareConnect"
+                                    body={`Please find attached the medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <EmailIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600 transition-colors">Email</span>
+                                </EmailShareButton>
+
+                                <FacebookShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    quote={`Medical documentation via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <FacebookIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-700 transition-colors">Facebook</span>
+                                </FacebookShareButton>
+
+                                <FacebookMessengerShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    appId="521171313219467"
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <FacebookMessengerIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-500 transition-colors">Messenger</span>
+                                </FacebookMessengerShareButton>
+
+                                <LinkedinShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    summary={`Patient: ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <LinkedinIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-800 transition-colors">LinkedIn</span>
+                                </LinkedinShareButton>
+
+                                <TwitterShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <XIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-slate-900 transition-colors">Twitter (X)</span>
+                                </TwitterShareButton>
+
+                                <RedditShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <RedditIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-orange-600 transition-colors">Reddit</span>
+                                </RedditShareButton>
+
+                                <ViberShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <ViberIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-purple-600 transition-colors">Viber</span>
+                                </ViberShareButton>
+
+                                <LineShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <LineIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-green-600 transition-colors">Line</span>
+                                </LineShareButton>
+
+                                <PinterestShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    media={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    description={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <PinterestIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-600 transition-colors">Pinterest</span>
+                                </PinterestShareButton>
+
+                                <PocketShareButton
+                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    title={`Medical record via CareConnect`}
+                                    onClick={() => setShowShareMenu(false)}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <PocketIcon size={44} round className="shadow-md group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-rose-400 transition-colors">Pocket</span>
+                                </PocketShareButton>
+
+                                <button
+                                    onClick={() => executeShare('copy')}
+                                    className="flex flex-col items-center group transition-all"
+                                >
+                                    <div className="w-[44px] h-[44px] rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
+                                        <Link size={20} className="text-slate-600 dark:text-slate-400 group-hover:rotate-45" />
                                     </div>
-                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600">More Apps</span>
+                                    <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-foreground">Copy Link</span>
                                 </button>
-                            )}
+
+                                {navigator.share && (
+                                    <button
+                                        onClick={() => {
+                                            setShowShareMenu(false);
+                                            executeShare('native');
+                                        }}
+                                        className="flex flex-col items-center group transition-all"
+                                    >
+                                        <div className="w-[44px] h-[44px] rounded-full bg-blue-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-all">
+                                            <Share2 size={20} className="text-white" />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-tighter mt-2 text-muted-foreground group-hover:text-blue-600">More Apps</span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 });
 
