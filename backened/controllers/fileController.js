@@ -173,16 +173,22 @@ export const downloadFile = async (req, res) => {
 
     if (error) throw error;
 
-    if (!fileRecord) {
-      return res.status(404).json({ error: 'File record not found' });
-    }
-
     // Determine content type
-    const contentType = getMimeType(fileRecord.original_name || filename);
+    let contentType = 'application/octet-stream';
+    let originalName = filename;
+
+    if (fileRecord) {
+      contentType = getMimeType(fileRecord.original_name || filename);
+      originalName = fileRecord.original_name;
+    } else {
+      // Fallback for files that exist on disk but lack a DB record (useful for dev/mocking)
+      contentType = getMimeType(filename);
+      console.log(`Serving file from disk without DB record: ${filename}`);
+    }
 
     // Set appropriate headers
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${fileRecord.original_name}"`);
+    res.setHeader('Content-Disposition', `inline; filename="${originalName}"`);
 
     // Stream the file
     const fileStream = fs.createReadStream(filePath);

@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
-import { User, FlaskConical, Plus, Upload, Search, Filter, Eye, Calendar, Clock, AlertTriangle, Bot, MessageSquare, X, Sparkles, Send, Paperclip } from "lucide-react";
+import {
+  User, FlaskConical, Plus, Upload, Search, Filter, Eye, Calendar, Clock,
+  AlertTriangle, Bot, MessageSquare, X, Sparkles, Send, Paperclip, FileText,
+  ExternalLink, Scan, Printer, Download as DownloadIcon
+} from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { debounce } from "../../utils/performance";
+import { API_CONFIG } from "../../config/api";
+import { toast } from "react-hot-toast";
 
 const LabratoryTab = memo(() => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -144,6 +150,67 @@ const LabratoryTab = memo(() => {
     }, 1500);
   };
 
+  // Helper function to generate print HTML for a lab report
+  const generateLabReportHTML = (selectedReport) => {
+    if (!selectedReport) return '';
+    const fileUrl = `${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`;
+    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(selectedReport.file_name);
+    const isPdf = /\.pdf$/i.test(selectedReport.file_name);
+
+    let fileContent = '';
+    if (isImage) {
+      fileContent = `<img src="${fileUrl}" alt="Lab Report" />`;
+    } else if (isPdf) {
+      fileContent = `<iframe src="${fileUrl}" type="application/pdf"></iframe>`;
+    } else {
+      fileContent = `<p>File type not supported for preview. <a href="${fileUrl}" target="_blank">Download file</a></p>`;
+    }
+
+    const { order } = selectedReport;
+
+    return `
+        <html>
+            <head>
+                <title>Lab Report #${order.order_number} - ${order.patient_first_name} ${order.patient_last_name}</title>
+                <style>
+                    body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1e293b; }
+                    h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; font-size: 24px; }
+                    .header-info { margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                    .header-info p { margin: 8px 0; font-size: 14px; }
+                    .file-container { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+                    .file-container img { max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
+                    .file-container iframe { width: 100%; min-height: 900px; border: none; border-radius: 8px; }
+                    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: #eff6ff; color: #2563eb; margin-bottom: 10px; }
+                    @media print { 
+                        .no-print { display: none; }
+                        body { padding: 0; margin: 0; }
+                        .file-container { border: none; padding: 0; box-shadow: none; }
+                        .header-info { border: none; background: none; padding: 0; border: 1px solid #eee; margin-bottom: 20px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info">
+                    <div>
+                        <span class="badge">LABORATORY REPORT</span>
+                        <h1>Report #${order.order_number}</h1>
+                        <p><strong>Patient:</strong> ${order.patient_first_name} ${order.patient_last_name}</p>
+                        <p><strong>Patient ID:</strong> ${order.patient_unique_id}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p><strong>Order Date:</strong> ${new Date(order.order_date).toLocaleDateString()}</p>
+                        <p><strong>Doctor:</strong> Dr. ${order.doctor_first_name} ${order.doctor_last_name}</p>
+                        <button onclick="window.print()" class="no-print" style="margin-top: 15px; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print Report</button>
+                    </div>
+                </div>
+                <div class="file-container">
+                    ${fileContent}
+                </div>
+            </body>
+        </html>
+    `;
+  };
+
   // Fetch lab statistics on component mount
   useEffect(() => {
     fetchLabStats();
@@ -155,7 +222,7 @@ const LabratoryTab = memo(() => {
   const fetchLabStats = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/lab/stats');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/stats`);
       const result = await response.json();
       if (result.success) {
         setLabStats(result.data);
@@ -169,7 +236,7 @@ const LabratoryTab = memo(() => {
 
   const fetchRecentOrders = useCallback(async () => {
     try {
-      const response = await fetch('/api/lab/recent?limit=10');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=10`);
       const result = await response.json();
       if (result.success) {
         setRecentOrders(result.data);
@@ -182,7 +249,7 @@ const LabratoryTab = memo(() => {
 
   const fetchLabCategories = useCallback(async () => {
     try {
-      const response = await fetch('/api/lab/categories');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/categories`);
       const result = await response.json();
       if (result.success) {
         setLabCategories(result.data);
@@ -197,7 +264,7 @@ const LabratoryTab = memo(() => {
       const url = searchTerm ?
         `/api/lab/patients?search=${encodeURIComponent(searchTerm)}&limit=5` :
         '/api/lab/patients?limit=5';
-      const response = await fetch(url);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${url}`);
       const result = await response.json();
       if (result.success) {
         setPatients(result.data);
@@ -224,7 +291,7 @@ const LabratoryTab = memo(() => {
   const handleSearch = useCallback(async (term) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
       const result = await response.json();
       if (result.success) {
         setFilteredOrders(result.data);
@@ -257,7 +324,7 @@ const LabratoryTab = memo(() => {
           break;
         default:
           // For 'all', just fetch recent orders
-          const response = await fetch('/api/lab/recent?limit=20');
+          const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=20`);
           const result = await response.json();
           if (result.success) {
             setFilteredOrders(result.data);
@@ -265,7 +332,7 @@ const LabratoryTab = memo(() => {
           return;
       }
 
-      const response = await fetch(endpoint);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`);
       const result = await response.json();
       if (result.success) {
         setFilteredOrders(result.data);
@@ -280,7 +347,7 @@ const LabratoryTab = memo(() => {
   const handleViewReport = async (orderId) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/lab/report/${orderId}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/report/${orderId}`);
       const result = await response.json();
       if (result.success) {
         setSelectedReport(result.data);
@@ -749,7 +816,7 @@ const LabratoryTab = memo(() => {
               </div>
 
               {/* Right Column: Details */}
-              <div className="flex-1 h-auto lg:h-full overflow-y-auto scrollbar-thin rounded-xl border-t lg:border-t-0 border-border bg-card p-1 custom-scrollbar min-w-0 flex">
+              <div className="flex-1 overflow-x-hidden h-auto lg:h-full overflow-y-auto scrollbar-thin rounded-xl border-t lg:border-t-0 border-border bg-card p-1 custom-scrollbar min-w-0 flex flex-col">
                 {selectedPatient && (
                   <div className="flex-1 p-1">
                     {/* Simplified Patient Overview */}
@@ -835,7 +902,7 @@ const LabratoryTab = memo(() => {
                             ].map((report, index, array) => (
                               <div
                                 key={report.id}
-                                onClick={() => { setSelectedReport({ order: { order_number: report.id, patient_first_name: selectedPatient.first_name, patient_last_name: selectedPatient.last_name, patient_unique_id: selectedPatient.unique_id, patient_gender: 'M', patient_dob: '1990-01-01', order_date: report.date, priority: report.priority.toLowerCase(), status: report.status.toLowerCase(), doctor_first_name: 'Sarah', doctor_last_name: 'Johnson' }, items: [{ test_name: report.testName, category_name: 'General', result_text: '185', unit: 'mg/dL', reference_range: '70-99', result_status: report.abnormal ? 'abnormal' : 'normal', abnormal_flag: report.abnormal }] }); setShowReportModal(true); }}
+                                onClick={() => { setSelectedReport({ order: { order_number: report.id, patient_first_name: selectedPatient.first_name, patient_last_name: selectedPatient.last_name, patient_unique_id: selectedPatient.unique_id, patient_gender: 'M', patient_dob: '1990-01-01', order_date: report.date, priority: report.priority.toLowerCase(), status: report.status.toLowerCase(), doctor_first_name: 'Sarah', doctor_last_name: 'Johnson' }, items: [{ test_name: report.testName, category_name: 'General', result_text: '185', unit: 'mg/dL', reference_range: '70-99', result_status: report.abnormal ? 'abnormal' : 'normal', abnormal_flag: report.abnormal }], file_name: report.id === 'R001' ? '1764353980932-Lecture-Slide-16-ODE-Solving-Method.pdf' : report.id === 'R002' ? '1764354095279-factory.png' : '1770451443166-example-cfg.pdf', file_type: (report.id === 'R001' || report.id === 'R003') ? 'pdf' : 'image' }); setShowReportModal(true); }}
                                 className={`p-5 md:p-6 hover:bg-muted/50 transition-all cursor-pointer group ${index !== array.length - 1 ? 'border-b border-border' : ''}`}
                               >
                                 <div className="flex items-center justify-between gap-4">
@@ -936,367 +1003,381 @@ const LabratoryTab = memo(() => {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Simple New Test Order Modal */}
-        {
-          showNewOrderModal && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-card rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-border">
-                <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-                  <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
-                    <Plus className="w-5 h-5 text-blue-600" />
+      {/* Simple New Test Order Modal */}
+      {
+        showNewOrderModal && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all border border-border">
+              <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+                <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
+                  <Plus className="w-5 h-5 text-blue-600" />
+                </div>
+                New Test Order
+              </h3>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient ID</label>
+                  <input
+                    type="text"
+                    placeholder="Enter patient ID"
+                    className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Clinical Notes</label>
+                  <textarea
+                    placeholder="Enter clinical notes"
+                    className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium min-h-[100px] text-foreground placeholder:text-muted-foreground/50"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Priority</label>
+                  <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
+                    <option value="normal">Normal Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="urgent">Urgent Priority</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-8">
+                <button
+                  onClick={() => {
+                    alert('Order creation functionality - to be implemented');
+                    setShowNewOrderModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95"
+                >
+                  Create Order
+                </button>
+                <button
+                  onClick={() => setShowNewOrderModal(false)}
+                  className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Lab Report Viewing Modal */}
+      {
+        showReportModal && selectedReport && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-2xl w-full max-w-5xl h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-border">
+              {/* Modal Header */}
+              <div className="px-8 py-6 border-b border-border flex justify-between items-center bg-muted/30">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-500/10 p-3 rounded-xl">
+                    <FlaskConical className="w-6 h-6 text-blue-600" />
                   </div>
-                  New Test Order
-                </h3>
-                <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient ID</label>
+                    <h3 className="text-xl font-bold text-foreground">Lab Report Details</h3>
+                    <p className="text-sm text-muted-foreground font-medium">Order #{selectedReport.order.order_number}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-muted/30 scrollbar-thin">
+                {/* Report Header Info */}
+                <div className="bg-card rounded-xl border border-border p-6 shadow-sm mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Patient Information</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Name</span>
+                          <span className="font-semibold text-foreground">{selectedReport.order.patient_first_name} {selectedReport.order.patient_last_name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">ID</span>
+                          <span className="font-mono text-foreground bg-muted px-2 py-0.5 rounded text-xs">{selectedReport.order.patient_unique_id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Gender/DOB</span>
+                          <span className="font-medium text-foreground">{selectedReport.order.patient_gender} • {selectedReport.order.patient_dob ? new Date(selectedReport.order.patient_dob).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Order Details</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Date</span>
+                          <span className="font-medium text-foreground">{new Date(selectedReport.order.order_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Priority</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.priority === 'urgent' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                            selectedReport.order.priority === 'high' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                              'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                            }`}>
+                            {selectedReport.order.priority}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Status</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                            'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                            }`}>
+                            {selectedReport.order.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Physician</span>
+                          <span className="font-medium text-foreground">Dr. {selectedReport.order.doctor_first_name} {selectedReport.order.doctor_last_name}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedReport.order.clinical_notes && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Clinical Notes</h4>
+                      <p className="text-foreground bg-muted/30 p-4 rounded-xl text-sm leading-relaxed border border-border italic">
+                        "{selectedReport.order.clinical_notes}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Document Preview Section */}
+                <div className="bg-muted/10 border-y border-border p-4 md:p-8">
+                  <div className="max-w-4xl mx-auto">
+                    <div className="bg-card rounded-2xl border border-border shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+                      <div className="bg-muted/50 px-6 py-4 border-b border-border flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-lg ${selectedReport.file_type === 'pdf' ? 'bg-rose-500/10 text-rose-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-foreground truncate max-w-[200px] md:max-w-xs">{selectedReport.file_name}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{selectedReport.file_type === 'pdf' ? 'PDF Document' : 'Microscopy/Image'}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              const printWindow = window.open('', '_blank');
+                              const htmlContent = generateLabReportHTML(selectedReport);
+                              if (printWindow) {
+                                printWindow.document.write(htmlContent);
+                                printWindow.document.close();
+                              }
+                            }}
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-card rounded-lg transition-all"
+                            title="Print"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <a
+                            href={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-card rounded-lg transition-all"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4 md:p-8">
+                        {selectedReport.file_type === 'pdf' ? (
+                          <iframe
+                            src={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}#view=FitH&toolbar=0`}
+                            className="w-full min-h-[500px] h-full rounded-lg shadow-inner bg-white border-none"
+                            title="Lab Report PDF Preview"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="relative group">
+                            <img
+                              src={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`}
+                              alt="Lab Report Result"
+                              className="max-sm:w-full max-h-[600px] object-contain rounded-lg shadow-2xl bg-white"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none rounded-lg">
+                              <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-bold text-slate-900 shadow-xl border border-white/20 flex items-center space-x-2">
+                                <Eye className="w-3 h-3 text-blue-600" />
+                                <span>High-Resolution Preview</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Summary/Notes below preview */}
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Findings Summary</span>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          Values within normal limits except for slightly elevated glucose and markers consistent with the primary diagnosis.
+                        </p>
+                      </div>
+                      <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Technician Notes</span>
+                        <p className="text-sm text-foreground italic">
+                          "Specimen was clear. All calibrations verified."
+                        </p>
+                      </div>
+                      <div className="bg-card rounded-xl border border-border p-4 shadow-sm flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Review Status</span>
+                          <div className="flex items-center space-x-2 text-emerald-600">
+                            <span className="text-[10px] text-muted-foreground">Digital ID: {selectedReport.order.order_number}-SEC-01</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-8 py-6 border-t border-border bg-muted/30 flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Digital Signature Verified</span>
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      const printWindow = window.open('', '_blank');
+                      const htmlContent = generateLabReportHTML(selectedReport);
+                      if (printWindow) {
+                        printWindow.document.write(htmlContent);
+                        printWindow.document.close();
+                      }
+                    }}
+                    className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-bold shadow-sm flex items-center space-x-2 bg-card active:scale-95"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Print Document</span>
+                  </button>
+                  <a
+                    href={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`}
+                    download={selectedReport.file_name}
+                    onClick={() => toast.success('Your report download has started.')}
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold flex items-center space-x-2 active:scale-95"
+                  >
+                    <DownloadIcon className="w-4 h-4" />
+                    <span>Download PDF</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* Advanced Search Modal */}
+      {
+        showSearchModal && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-2xl p-8 w-full max-w-lg shadow-2xl transition-all border border-border">
+              <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
+                <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
+                  <Filter className="w-5 h-5 text-blue-600" />
+                </div>
+                Advanced Search
+              </h3>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
                     <input
                       type="text"
-                      placeholder="Enter patient ID"
-                      className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
+                      placeholder="Enter patient name"
+                      className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Clinical Notes</label>
-                    <textarea
-                      placeholder="Enter clinical notes"
-                      className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium min-h-[100px] text-foreground placeholder:text-muted-foreground/50"
-                      rows={3}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Order Number</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
+                    <input
+                      type="text"
+                      placeholder="Enter order number"
+                      className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
                     />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Status</label>
+                    <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
+                      <option value="">All Statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Priority</label>
                     <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
-                      <option value="normal">Normal Priority</option>
-                      <option value="high">High Priority</option>
-                      <option value="urgent">Urgent Priority</option>
+                      <option value="">All Priorities</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
                     </select>
                   </div>
                 </div>
-                <div className="flex space-x-3 mt-8">
-                  <button
-                    onClick={() => {
-                      alert('Order creation functionality - to be implemented');
-                      setShowNewOrderModal(false);
-                    }}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95"
-                  >
-                    Create Order
-                  </button>
-                  <button
-                    onClick={() => setShowNewOrderModal(false)}
-                    className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-        {/* Lab Report Viewing Modal */}
-        {
-          showReportModal && selectedReport && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-card rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-border">
-                {/* Modal Header */}
-                <div className="px-8 py-6 border-b border-border flex justify-between items-center bg-muted/30">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-blue-500/10 p-3 rounded-xl">
-                      <FlaskConical className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-foreground">Lab Report Details</h3>
-                      <p className="text-sm text-muted-foreground font-medium">Order #{selectedReport.order.order_number}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowReportModal(false)}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
-                  >
-                    <span className="sr-only">Close</span>
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="overflow-y-auto p-8 bg-muted/30">
-                  {/* Report Header Info */}
-                  <div className="bg-card rounded-xl border border-border p-6 shadow-sm mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div>
-                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Patient Information</h4>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Name</span>
-                            <span className="font-semibold text-foreground">{selectedReport.order.patient_first_name} {selectedReport.order.patient_last_name}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">ID</span>
-                            <span className="font-mono text-foreground bg-muted px-2 py-0.5 rounded text-xs">{selectedReport.order.patient_unique_id}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Gender/DOB</span>
-                            <span className="font-medium text-foreground">{selectedReport.order.patient_gender} • {selectedReport.order.patient_dob ? new Date(selectedReport.order.patient_dob).toLocaleDateString() : 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Order Details</h4>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Date</span>
-                            <span className="font-medium text-foreground">{new Date(selectedReport.order.order_date).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Priority</span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.priority === 'urgent' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                              selectedReport.order.priority === 'high' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                              }`}>
-                              {selectedReport.order.priority}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Status</span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${selectedReport.order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                              'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                              }`}>
-                              {selectedReport.order.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Physician</span>
-                            <span className="font-medium text-foreground">Dr. {selectedReport.order.doctor_first_name} {selectedReport.order.doctor_last_name}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedReport.order.clinical_notes && (
-                      <div className="mt-6 pt-6 border-t border-border">
-                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Clinical Notes</h4>
-                        <p className="text-foreground bg-muted/30 p-4 rounded-xl text-sm leading-relaxed border border-border italic">
-                          "{selectedReport.order.clinical_notes}"
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Test Results */}
-                  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden mb-6">
-                    <div className="px-6 py-4 border-b border-border bg-muted/30 flex justify-between items-center">
-                      <h4 className="font-bold text-foreground">Test Results</h4>
-                      <span className="text-xs font-medium text-muted-foreground bg-card px-2 py-1 rounded border border-border">{selectedReport.items.length} Tests</span>
-                    </div>
-
-                    {/* Desktop View: Table */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-muted/50 border-b border-border">
-                          <tr>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Test Name</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Result</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference Range</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/50">
-                          {selectedReport.items.map((item, index) => (
-                            <tr key={index} className="hover:bg-muted/50 transition-colors">
-                              <td className="py-4 px-6">
-                                <div className="font-medium text-foreground">{item.test_name}</div>
-                                <div className="text-xs text-muted-foreground">{item.category_name}</div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <div className="flex items-center space-x-2">
-                                  <span className={`font-bold ${item.abnormal_flag ? 'text-rose-500' :
-                                    item.critical_flag ? 'text-rose-800' : 'text-foreground'
-                                    }`}>
-                                    {item.result_text || item.result_value || 'Pending'}
-                                  </span>
-                                  {item.abnormal_flag && <AlertTriangle className="w-4 h-4 text-rose-500" />}
-                                </div>
-                              </td>
-                              <td className="py-4 px-6 text-sm text-muted-foreground">{item.unit || '-'}</td>
-                              <td className="py-4 px-6 text-sm text-muted-foreground">{item.reference_range || '-'}</td>
-                              <td className="py-4 px-6">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${item.result_status === 'normal' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                  item.result_status === 'abnormal' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                    item.result_status === 'critical' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
-                                      'bg-muted text-muted-foreground border-border'
-                                  }`}>
-                                  {item.result_status || 'Pending'}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Mobile View: Simplified Results List */}
-                    <div className="md:hidden divide-y divide-border">
-                      {selectedReport.items.map((item, index) => (
-                        <div key={index} className="p-5 bg-card hover:bg-muted/30 transition-colors">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="min-w-0">
-                              <div className="font-semibold text-foreground text-sm break-words">{item.test_name}</div>
-                              <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider break-words">{item.category_name}</div>
-                            </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border whitespace-nowrap ${item.result_status === 'normal' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                              item.result_status === 'abnormal' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                item.result_status === 'critical' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
-                                  'bg-muted text-muted-foreground border-border'
-                              }`}>
-                              {item.result_status || 'Pending'}
-                            </span>
-                          </div>
-
-                          <div className="flex items-end justify-between bg-muted/20 p-3 rounded-lg border border-border/30">
-                            <div>
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-0.5">Result</span>
-                              <div className="flex items-center space-x-2">
-                                <span className={`text-xl font-black ${item.abnormal_flag ? 'text-rose-600' :
-                                  item.critical_flag ? 'text-rose-800' : 'text-foreground'
-                                  }`}>
-                                  {item.result_text || item.result_value || 'Pending'}
-                                </span>
-                                <span className="text-sm font-medium text-muted-foreground">{item.unit}</span>
-                                {item.abnormal_flag && <AlertTriangle className="w-4 h-4 text-rose-500" />}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-0.5">Reference Range</span>
-                              <span className="text-xs font-semibold text-foreground">{item.reference_range || '-'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-8 py-6 border-t border-border bg-muted/30 flex justify-end space-x-4">
-                  <button
-                    onClick={() => alert('Print functionality - to be implemented')}
-                    className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium shadow-sm flex items-center space-x-2 bg-card"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                    <span>Print Report</span>
-                  </button>
-                  <button
-                    onClick={() => alert('Download PDF functionality - to be implemented')}
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-medium flex items-center space-x-2 active:scale-95"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    <span>Download PDF</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-        {/* Advanced Search Modal */}
-        {
-          showSearchModal && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-card rounded-2xl p-8 w-full max-w-lg shadow-2xl transition-all border border-border">
-                <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-                  <div className="bg-blue-500/10 p-2 rounded-lg mr-3">
-                    <Filter className="w-5 h-5 text-blue-600" />
-                  </div>
-                  Advanced Search
-                </h3>
-                <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Patient Name</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
-                      <input
-                        type="text"
-                        placeholder="Enter patient name"
-                        className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
-                      />
-                    </div>
+                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date From</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Order Number</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground/50" />
-                      <input
-                        type="text"
-                        placeholder="Enter order number"
-                        className="w-full pl-10 pr-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground placeholder:text-muted-foreground/50"
-                      />
-                    </div>
+                    <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date To</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Status</label>
-                      <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Priority</label>
-                      <select className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground">
-                        <option value="">All Priorities</option>
-                        <option value="normal">Normal</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date From</label>
-                      <input
-                        type="date"
-                        className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Date To</label>
-                      <input
-                        type="date"
-                        className="w-full px-4 py-3 bg-muted/30 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 transition-all font-medium text-foreground"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-3 mt-8">
-                  <button
-                    onClick={() => {
-                      alert('Advanced search functionality - to be implemented');
-                      setShowSearchModal(false);
-                    }}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95 flex items-center justify-center space-x-2"
-                  >
-                    <Search className="w-5 h-5" />
-                    <span>Search Orders</span>
-                  </button>
-                  <button
-                    onClick={() => setShowSearchModal(false)}
-                    className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
-                  >
-                    Cancel
-                  </button>
                 </div>
               </div>
+              <div className="flex space-x-3 mt-8">
+                <button
+                  onClick={() => {
+                    alert('Advanced search functionality - to be implemented');
+                    setShowSearchModal(false);
+                  }}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 font-bold active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  <Search className="w-5 h-5" />
+                  <span>Search Orders</span>
+                </button>
+                <button
+                  onClick={() => setShowSearchModal(false)}
+                  className="px-6 py-3 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-medium bg-card"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          )
-        }
-      </div >
+          </div>
+        )
+      }
+
       {/* AI Chat Floating Button */}
       {
         selectedPatient && (
@@ -1390,7 +1471,6 @@ const LabratoryTab = memo(() => {
                 )}
                 <div ref={chatEndRef} />
               </div>
-
               {/* Modal Footer (Input) */}
               <div className="relative z-10 p-4 bg-white/5 border-t border-white/10 backdrop-blur-md">
                 {/* Suggested Actions - Sliding */}
@@ -1432,7 +1512,8 @@ const LabratoryTab = memo(() => {
               </div>
             </div>
           </div>
-        )}
+        )
+      }
     </div>
   );
 });
