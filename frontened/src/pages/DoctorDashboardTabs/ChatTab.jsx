@@ -1358,8 +1358,9 @@ const ChatTab = () => {
               </div>
             )}
 
+            {/* Scroll Target */}
+            <div ref={messagesEndRef} className="h-4" />
           </div>
-
           {/* Reply Preview */}
           {replyTo && (
             <div className="px-6 py-4 bg-card/80 backdrop-blur-xl border-t border-border flex items-center justify-between animate-in slide-in-from-bottom-full duration-300">
