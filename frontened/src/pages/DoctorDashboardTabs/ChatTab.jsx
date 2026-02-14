@@ -1083,8 +1083,8 @@ const ChatTab = () => {
         <div className="flex-1 min-w-0 flex flex-col bg-background relative z-30">
           {/* Chat Header */}
           {/* Modern Chat Header */}
-          <div className="bg-card/80 backdrop-blur-xl border-b border-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-20">
-            <div className="flex items-center space-x-3">
+          <div className="bg-card/80 backdrop-blur-xl border-b border-border pl-4 pr-1.5 md:pl-6 md:pr-4 py-3 flex items-center justify-between sticky top-0 z-20">
+            <div className="flex items-center space-x-1.5 md:space-x-3 flex-1 min-w-0 mr-3">
               <button
                 onClick={() => setSelectedChat(null)}
                 className="md:hidden p-2 hover:bg-muted rounded-xl transition-colors"
@@ -1103,7 +1103,7 @@ const ChatTab = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="font-black text-foreground text-sm md:text-base font-outfit leading-tight truncate">
+                <h3 className="font-black text-foreground text-sm md:text-base font-outfit leading-tight">
                   {selectedChat.other_user?.user_name}
                 </h3>
                 <p className="text-[10px] md:text-xs flex items-center space-x-1.5 truncate">
