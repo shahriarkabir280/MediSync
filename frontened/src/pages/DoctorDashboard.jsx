@@ -69,7 +69,7 @@ const DoctorDashboard = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'website', label: 'Edit Public Website', icon: Globe },
+    { id: 'website', label: 'Public Website', icon: Globe },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
     { id: 'logout', label: 'Logout', icon: LogOut },
@@ -112,7 +112,7 @@ const DoctorDashboard = () => {
     <div className="flex h-screen bg-background text-foreground selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300">
       {/* Left Sidebar */}
       <aside
-        className={`${isCollapsed ? 'w-16 lg:w-20' : 'w-56 lg:w-64'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[transition-timing-function:cubic-bezier(0.23,1,0.32,1)] relative z-50`}
+        className={`${isCollapsed ? 'w-14 lg:w-16' : 'w-48 lg:w-56'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[transition-timing-function:cubic-bezier(0.23,1,0.32,1)] relative z-50`}
       >
         {/* Sidebar Header */}
         <div className={`${isCollapsed ? 'h-20 px-0 justify-center' : 'h-20 lg:h-24 px-4 lg:px-8'} flex items-center justify-between border-b border-gray-800/50`}>
@@ -228,12 +228,12 @@ const DoctorDashboard = () => {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h1 className="text-lg lg:text-xl font-black text-gray-900 dark:text-gray-100 tracking-tight">
-                  Welcome, Dr. {user?.name || 'Doctor'}
+                <h1 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 dark:text-gray-100 tracking-tight truncate max-w-[180px] sm:max-w-none">
+                  Welcome, Dr. {user?.name?.split(' ')[0] || 'Doctor'}
                 </h1>
               </div>
-              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1 ml-4">
-                {user?.specialization || 'Clinical Lead'} • {user?.email}
+              <p className="text-[9px] lg:text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 lg:mt-1 ml-4 truncate max-w-[140px] sm:max-w-none">
+                {user?.specialization || 'Clinical Lead'} <span className="hidden md:inline">• {user?.email}</span>
               </p>
             </div>
           </div>
@@ -258,8 +258,8 @@ const DoctorDashboard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end mr-2">
+            <div className="flex items-center gap-2 lg:gap-4">
+              <div className="hidden sm:flex flex-col items-end mr-1 lg:mr-2">
                 <span className="text-xs font-black text-gray-900 dark:text-gray-100 leading-none">{user?.name}</span>
                 <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-1">Admin Access</span>
               </div>
