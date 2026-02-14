@@ -498,6 +498,13 @@ const ChatTab = () => {
   const handleFileSelect = (e, type = 'file') => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check for 25MB limit
+      const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+      if (file.size > MAX_SIZE) {
+        showToast('File size exceeds 25MB limit', 'error');
+        e.target.value = ''; // Clear selection
+        return;
+      }
       handleFileUpload(file, type);
     }
   };
@@ -1550,31 +1557,46 @@ const ChatTab = () => {
                 </div>
 
                 <div className="flex-1 relative group">
-                  <input
-                    type="text"
+                  <textarea
                     ref={messageInputRef}
+                    rows="1"
                     placeholder={uploadingFile ? "Uploading..." : "Type a message..."}
                     value={messageInput}
                     onChange={(e) => {
-                      setMessageInput(e.target.value);
+                      const val = e.target.value.slice(0, 2500);
+                      setMessageInput(val);
                       handleTyping();
+
+                      // Auto-grow height
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                     }}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey && !uploadingFile) {
                         e.preventDefault();
                         handleSendMessage();
+                        e.target.style.height = 'auto';
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full bg-muted/50 border border-transparent focus:border-indigo-500/20 focus:bg-card px-4 py-2.5 rounded-xl text-xs font-bold outline-none transition-all placeholder:text-muted-foreground/60 text-foreground"
+                    className="w-full bg-muted/50 border border-transparent focus:border-indigo-500/20 focus:bg-card px-4 py-2.5 rounded-xl text-xs font-bold outline-none transition-all placeholder:text-muted-foreground/60 text-foreground resize-none scrollbar-none min-h-[42px] max-h-[120px]"
                   />
+                  {messageInput.length >= 2400 && (
+                    <div className={`absolute -top-6 right-2 text-[9px] font-black uppercase tracking-widest ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'
+                      }`}>
+                      {messageInput.length}/2500
+                    </div>
+                  )}
                 </div>
 
                 {messageInput.trim() || uploadingFile ? (
                   <button
-                    onClick={handleSendMessage}
-                    disabled={!messageInput.trim() || uploadingFile}
-                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
+                    onClick={() => {
+                      handleSendMessage();
+                      if (messageInputRef.current) messageInputRef.current.style.height = 'auto';
+                    }}
+                    disabled={!messageInput.trim() || messageInput.length > 2500 || uploadingFile}
+                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 flex-shrink-0"
                   >
                     <Send size={16} />
                   </button>
