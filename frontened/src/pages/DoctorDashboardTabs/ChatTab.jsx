@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Search, Plus, Send, Paperclip, Smile, MoreVertical, MapPin, RotateCcw,
+  Search, Plus, Send, Paperclip, Smile, MoreVertical, MoreHorizontal, MapPin, RotateCcw,
   Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
@@ -2167,7 +2167,15 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
 
 // Message Bubble Component
 const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onCallBack }) => {
-  const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
+  const [showActionsMenu, setShowActionsMenu] = React.useState(false);
+
+  // Close actions menu when clicking anywhere else
+  React.useEffect(() => {
+    if (!showActionsMenu) return;
+    const handleClick = () => setShowActionsMenu(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [showActionsMenu]);
 
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -2201,9 +2209,25 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
   return (
     <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-1 px-2 md:px-4 group relative`}>
-      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[85%] md:max-w-[75%] gap-2 transition-all duration-300`}>
+      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[85%] md:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
+          {/* Reaction Bar (Hover) */}
+          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/bubble:translate-y-0 flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
+            {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
+              <button
+                key={emoji}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReact(message.id, emoji);
+                }}
+                className="hover:scale-125 transition-transform px-0.5 text-base"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+
           {message.reply_to && (
             <div className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] mx-1 opacity-80`}>
               <p className="font-bold text-indigo-600 truncate">{message.reply_to.sender_name}</p>
@@ -2257,6 +2281,17 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
               </p>
             )}
 
+            {/* Reactions Display */}
+            {message.reactions && message.reactions.length > 0 && (
+              <div className={`absolute -bottom-2 ${isOwn ? 'left-0' : 'right-0'} flex -space-x-1`}>
+                {message.reactions.map((r, idx) => (
+                  <div key={idx} className="bg-card shadow-sm border border-border/50 rounded-full px-1 py-0.5 text-[10px] transform hover:scale-110 transition-transform">
+                    {r.emoji}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Inline Meta (Time & Status) */}
             <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
               <span>{formatTime(message.created_at)}</span>
@@ -2264,14 +2299,51 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             </div>
           </div>
 
-          {/* Quick Actions (Hover) */}
-          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-opacity flex gap-1 ${isOwn ? '-left-12 pr-2' : '-right-12 pl-2'}`}>
-            <button onClick={() => onReply(message)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors" title="Reply">
-              <RotateCcw size={14} />
-            </button>
-            <button onClick={() => onCopy(message.content)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors" title="Copy">
-              <Copy size={14} />
-            </button>
+          {/* Quick Actions Menu (Messenger Style) */}
+          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 flex items-center ${isOwn ? '-left-10 pr-2' : '-right-10 pl-2'}`}>
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowActionsMenu(!showActionsMenu);
+                }}
+                className={`p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-all duration-300 ${showActionsMenu ? 'bg-muted rotate-90' : ''}`}
+                title="More"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+
+              {showActionsMenu && (
+                <div className={`absolute bottom-full mb-2 ${isOwn ? 'right-0' : 'left-0'} w-32 bg-card border border-border/50 shadow-2xl rounded-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onReply(message); setShowActionsMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                  >
+                    <RotateCcw size={14} className="text-indigo-500" /> Reply
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onForward(message); setShowActionsMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                  >
+                    <Forward size={14} className="text-emerald-500" /> Forward
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onCopy(message.content); setShowActionsMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                  >
+                    <Copy size={14} className="text-amber-500" /> Copy
+                  </button>
+                  {isOwn && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(message.id); setShowActionsMenu(false); }}
+                      className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted text-rose-500 flex items-center gap-2.5 transition-colors"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
