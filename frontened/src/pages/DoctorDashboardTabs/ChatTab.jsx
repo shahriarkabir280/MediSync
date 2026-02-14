@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Search, Plus, Send, Paperclip, Smile, MoreVertical,
+  Search, Plus, Send, Paperclip, Smile, MoreVertical, MapPin, RotateCcw,
   Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
@@ -1309,27 +1309,34 @@ const ChatTab = () => {
                 </p>
               </div>
             ) : (
-              messages.map((message, index) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  isOwn={message.sender_id === currentUser.userId && message.sender_type === currentUser.userType}
-                  showAvatar={
-                    index === 0 ||
-                    messages[index - 1].sender_id !== message.sender_id
-                  }
-                  onReply={() => setReplyTo(message)}
-                  onDelete={() => handleDeleteMessage(message)}
-                  onForward={() => handleForwardMessage(message)}
-                  onCopy={() => handleCopyMessage(message)}
-                  onReact={(emoji) => handleAddReaction(message, emoji)}
-                  onCallBack={(type) => {
-                    setCallType(type);
-                    setIsIncomingCall(false);
-                    setShowVideoCall(true);
-                  }}
-                />
-              ))
+              messages.map((message, index) => {
+                const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
+                const prevMessage = messages[index - 1];
+                const nextMessage = messages[index + 1];
+
+                const isFirst = !prevMessage || prevMessage.sender_id !== message.sender_id;
+                const isLast = !nextMessage || nextMessage.sender_id !== message.sender_id;
+
+                return (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    isOwn={isOwn}
+                    isFirst={isFirst}
+                    isLast={isLast}
+                    onReply={() => setReplyTo(message)}
+                    onDelete={() => handleDeleteMessage(message)}
+                    onForward={() => handleForwardMessage(message)}
+                    onCopy={() => handleCopyMessage(message)}
+                    onReact={(emoji) => handleAddReaction(message, emoji)}
+                    onCallBack={(type) => {
+                      setCallType(type);
+                      setIsIncomingCall(false);
+                      setShowVideoCall(true);
+                    }}
+                  />
+                );
+              })
             )}
 
             {/* Typing indicator */}
@@ -2137,536 +2144,117 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
 };
 
 // Message Bubble Component
-const MessageBubble = ({ message, isOwn, showAvatar, onReply, onDelete, onForward, onCopy, onReact, onCallBack }) => {
-  const [showMenu, setShowMenu] = React.useState(false);
+const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onCallBack }) => {
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
 
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const quickEmojis = ['❤️', '😂', '😮', '😢', '🙏', '👍'];
-
-  const handleEmojiClick = (emoji) => {
-    if (onReact) {
-      onReact(emoji);
-    }
-    setShowEmojiPicker(false);
-  };
-
   const getStatusIcon = () => {
     if (!isOwn) return null;
-
     const status = message.my_status?.status;
-    if (status === 'read') {
-      return <CheckCheck size={12} className="text-indigo-500" />;
-    } else if (status === 'delivered') {
-      return <CheckCheck size={12} className="text-muted-foreground/60" />;
-    } else {
-      return <Check size={12} className="text-muted-foreground/60" />;
-    }
+    if (status === 'read') return <CheckCheck size={12} className="text-white/80" />;
+    if (status === 'delivered') return <CheckCheck size={12} className="text-white/60" />;
+    return <Check size={12} className="text-white/60" />;
   };
 
   if (message.is_deleted) {
     return (
-      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4 px-4`}>
-        <div className="max-w-[85%] md:max-w-[66.6%] px-4 py-2 rounded-2xl bg-muted border border-border text-muted-foreground italic text-sm">
-          Message was deleted
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 px-4`}>
+        <div className="max-w-[85%] px-4 py-2 rounded-2xl bg-muted/30 border border-border/50 text-muted-foreground italic text-[11px]">
+          Message deleted
         </div>
       </div>
     );
   }
 
+  // Border Radius Logic for modern grouping
+  const getCorners = () => {
+    if (isOwn) {
+      return `rounded-[20px] ${isFirst ? 'rounded-tr-lg' : 'rounded-tr-[4px]'} ${isLast ? 'rounded-br-lg' : 'rounded-br-[4px]'}`;
+    }
+    return `rounded-[20px] ${isFirst ? 'rounded-tl-lg' : 'rounded-tl-[4px]'} ${isLast ? 'rounded-bl-lg' : 'rounded-bl-[4px]'}`;
+  };
+
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group mb-2 px-2 md:px-4 relative transition-all duration-300 isolate ${(showEmojiPicker || showMenu) ? 'z-[100]' : 'hover:z-50'} animate-in fade-in slide-in-from-${isOwn ? 'right-4' : 'left-4'} duration-500 ease-out fill-mode-both`}>
-      <div className={`max-w-[85%] md:max-w-[66.6%] ${isOwn ? 'order-2' : 'order-1'} relative`}>
-        {message.reply_to && (
-          <div className="mb-px px-4 py-2 bg-muted/80 backdrop-blur-sm rounded-t-2xl text-xs border-l-2 border-indigo-500 shadow-sm mx-1">
-            <p className="font-bold text-indigo-600 mb-0.5">{message.reply_to.sender_name}</p>
-            <p className="text-muted-foreground truncate">{message.reply_to.content}</p>
-          </div>
-        )}
+    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-1 px-2 md:px-4 group relative`}>
+      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[85%] md:max-w-[75%] gap-2 transition-all duration-300`}>
 
-        <div
-          className={`relative transition-all duration-300 shadow-sm ${message.reply_to ? 'rounded-b-2xl' : 'rounded-2xl'} ${isOwn
-            ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-tr-none shadow-indigo-500/10'
-            : 'bg-card border border-border text-foreground rounded-tl-none shadow-sm'
-            } ${showEmojiPicker ? 'z-50' : ''}`}
-        >
-          {/* Media Header (for attachments) */}
-          {message.media_url && !message.media_type?.startsWith('image/') && (
-            <div className={`px-3 pt-1.5 pb-0.5 ${isOwn ? 'bg-white/10' : 'bg-muted/50'} rounded-t-2xl`}>
-              <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest opacity-80">
-                <span className={isOwn ? 'text-indigo-100' : 'text-muted-foreground'}>
-                  {message.message_type?.replace('_', ' ') || 'Attachment'}
-                </span>
-                <span className={isOwn ? 'text-indigo-200' : 'text-indigo-500'}>Secure</span>
-              </div>
+        <div className="flex flex-col relative group/bubble">
+          {message.reply_to && (
+            <div className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] mx-1 opacity-80`}>
+              <p className="font-bold text-indigo-600 truncate">{message.reply_to.sender_name}</p>
+              <p className="text-muted-foreground truncate italic">{message.reply_to.content}</p>
             </div>
           )}
 
-          {/* Image Message */}
-          {message.media_type?.startsWith('image/') && message.media_url && (
-            <div className="relative group/img overflow-hidden">
-              <img
-                src={`http://localhost:3001${message.media_url}`}
-                alt="Shared media"
-                className="max-w-sm w-full h-auto object-cover hover:scale-[1.02] transition-transform duration-500 ease-out cursor-pointer"
-                onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
-              />
-              <div className="absolute top-3 right-3 opacity-0 group-hover/img:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover/img:translate-y-0">
-                <a
-                  href={`http://localhost:3001${message.media_url}`}
-                  download={message.media_name}
-                  className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-xl backdrop-blur-md shadow-xl transition-all duration-200 border border-white/30"
-                >
-                  <Download size={18} />
-                </a>
-              </div>
-              {message.content && (
-                <div className={`p-3 bg-gradient-to-t from-black/20 to-transparent ${isOwn ? 'text-white' : 'text-foreground'}`}>
-                  <p className="text-sm font-medium leading-relaxed">{message.content}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Audio Message */}
-          {message.media_type?.startsWith('audio/') && message.media_url && (
-            <div className="px-4 py-3 min-w-[280px]">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-xl ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10'}`}>
-                    <Mic size={18} className={isOwn ? 'text-white' : 'text-indigo-500'} />
-                  </div>
-                  <span className={`text-xs font-bold ${isOwn ? 'text-white' : 'text-foreground'}`}>Voice Message</span>
-                </div>
-                <a
-                  href={`http://localhost:3001${message.media_url}`}
-                  download={message.media_name}
-                  className={`p-2 transition-colors rounded-lg ${isOwn ? 'hover:bg-white/10 text-white' : 'hover:bg-muted text-muted-foreground'}`}
-                >
-                  <Download size={16} />
-                </a>
-              </div>
-              <audio
-                controls
-                className="w-full"
-              >
-                <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
-              </audio>
-            </div>
-          )}
-
-          {/* Video Message */}
-          {message.media_type?.startsWith('video/') && message.media_url && (
-            <div className="relative group/video overflow-hidden rounded-2xl">
-              <video
-                controls
-                className="max-w-sm w-full h-auto object-cover shadow-xl hover:scale-[1.01] transition-transform duration-500 ease-out"
-                style={{ maxHeight: '400px' }}
-              >
-                <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
-              </video>
-
-              {/* Video Actions Overlay */}
-              <div className="absolute top-3 right-3 opacity-0 group-hover/video:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover/video:translate-y-0 flex space-x-2">
-                <a
-                  href={`http://localhost:3001${message.media_url}`}
-                  download={message.media_name}
-                  className="p-2.5 bg-white/20 hover:bg-white/40 text-white rounded-xl backdrop-blur-md shadow-xl transition-all duration-200 border border-white/30"
-                  title="Download Video"
-                >
-                  <Download size={18} />
-                </a>
-              </div>
-
-              {/* Video Info */}
-              <div className={`px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider ${isOwn ? 'bg-indigo-700/50' : 'bg-muted'} border-t ${isOwn ? 'border-indigo-400/20' : 'border-border'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <FileVideo size={14} className={isOwn ? 'text-indigo-200' : 'text-muted-foreground'} />
-                    <span className={`truncate ${isOwn ? 'text-indigo-100' : 'text-foreground'}`}>
-                      {message.media_name || 'Video Attachment'}
-                    </span>
-                  </div>
-                  <span className={`ml-3 ${isOwn ? 'text-indigo-300' : 'text-muted-foreground'}`}>
-                    {message.media_size ? `${(message.media_size / (1024 * 1024)).toFixed(1)} MB` : ''}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Document Message */}
-          {message.message_type === 'document' && message.media_url && (
-            <div className="px-3.5 py-3">
-              <div className={`rounded-xl p-3 transition-all duration-300 border ${isOwn ? 'bg-white/10 border-indigo-400/30' : 'bg-muted/50 border-border group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20'}`}>
-                <div className="flex items-start space-x-3">
-                  {/* Modern File Icon Container */}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transform group-hover:scale-105 transition-transform duration-300 ${isOwn
-                    ? 'bg-white text-indigo-600'
-                    : message.media_name?.match(/\.(pdf)$/i)
-                      ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white'
-                      : message.media_name?.match(/\.(doc|docx)$/i)
-                        ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
-                        : message.media_name?.match(/\.(zip|rar)$/i)
-                          ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white'
-                          : 'bg-gradient-to-br from-slate-500 to-slate-600 text-white'
-                    }`}>
-                    {message.media_name?.match(/\.(pdf)$/i) ? (
-                      <FileText size={24} />
-                    ) : message.media_name?.match(/\.(doc|docx)$/i) ? (
-                      <FileText size={24} />
-                    ) : (
-                      <File size={24} />
-                    )}
-                  </div>
-
-                  {/* File Meta */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm truncate leading-snug ${isOwn ? 'text-white' : 'text-foreground'}`}>
-                      {message.media_name || 'Attached File'}
-                    </p>
-                    <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isOwn ? 'text-indigo-200' : 'text-muted-foreground'}`}>
-                      {message.media_type?.split('/')[1]?.toUpperCase() || 'FILE'} • {message.media_size ? `${(message.media_size / 1024).toFixed(1)} KB` : '---'}
-                    </p>
-
-                    <div className="flex items-center space-x-3 mt-4">
-                      <a
-                        href={`http://localhost:3001${message.media_url}`}
-                        download={message.media_name}
-                        className={`flex items-center space-x-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.05] ${isOwn
-                          ? 'bg-white text-indigo-600 hover:bg-slate-50'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          }`}
-                      >
-                        <Download size={14} />
-                        <span>Download</span>
-                      </a>
-                      <a
-                        href={`http://localhost:3001${message.media_url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex items-center space-x-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.05] ${isOwn
-                          ? 'bg-card text-indigo-400 hover:bg-muted font-bold'
-                          : 'bg-muted text-foreground hover:bg-muted/80'
-                          }`}
-                      >
-                        <ExternalLink size={14} />
-                        <span>Open Preview</span>
-                      </a>
+          <div
+            className={`relative p-2.5 transition-all duration-300 ${getCorners()} ${isOwn
+              ? 'bg-indigo-600 text-white'
+              : 'bg-[#F2F3F5] dark:bg-muted/40 text-foreground'
+              } ${message.reply_to ? 'rounded-t-none' : ''}`}
+          >
+            {/* Media Content */}
+            {message.media_url && (
+              <div className="mb-1.5 -mx-0.5 -mt-0.5 overflow-hidden rounded-[14px]">
+                {message.media_type?.startsWith('image/') ? (
+                  <img
+                    src={`http://localhost:3001${message.media_url}`}
+                    alt="Media"
+                    className="max-w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
+                  />
+                ) : message.media_type?.startsWith('video/') ? (
+                  <video controls className="max-w-full">
+                    <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
+                  </video>
+                ) : (
+                  <div className={`flex items-center gap-2.5 p-2.5 ${isOwn ? 'bg-white/10' : 'bg-black/5'}`}>
+                    <div className={`p-2 rounded-xl ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
+                      <FileText size={18} />
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Location Message */}
-          {message.message_type === 'location' && message.media_url && (
-            <div className="px-5 py-4">
-              <a
-                href={message.media_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`group/loc block rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:shadow-xl ${isOwn ? 'border-indigo-400/30' : 'border-border'}`}
-              >
-                <div className="bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 p-5 flex items-center space-x-4">
-                  <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl shadow-lg border border-white/30 transform group-hover/loc:scale-110 transition-transform duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                      <circle cx="12" cy="10" r="3"></circle>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-base">Location Shared</p>
-                    <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-0.5">Tap to view on Google Maps</p>
-                  </div>
-                  <div className="p-2 bg-white/10 rounded-xl">
-                    <ExternalLink size={18} className="text-white" />
-                  </div>
-                </div>
-              </a>
-              {message.content && (
-                <p className={`mt-3 text-sm font-medium px-1 leading-relaxed ${isOwn ? 'text-white/90' : 'text-foreground'}`}>{message.content}</p>
-              )}
-            </div>
-          )}
-
-          {/* Call Message - Modern WhatsApp Style */}
-          {message.message_type === 'call' && (() => {
-            const [callIcon, direction, status, duration] = (message.content || '').split('|');
-            const isVideo = callIcon === 'video';
-            const isMissed = status === 'missed';
-            const isDeclined = status === 'declined';
-            const isNotAnswered = status === 'not_answered';
-            const isCompleted = status === 'completed';
-
-            const iconColor = isMissed ? 'text-rose-500' : isDeclined || isNotAnswered ? 'text-muted-foreground/60' : 'text-emerald-500';
-            const textColor = isMissed ? 'text-rose-600' : isDeclined || isNotAnswered ? 'text-muted-foreground' : isOwn ? 'text-white' : 'text-foreground';
-            const cardBg = isOwn ? 'bg-white/10 border-indigo-400/20' : 'bg-muted/50 border-border';
-
-            const callType = isVideo ? 'Video Call' : 'Audio Call';
-            let callText = '';
-            let subText = '';
-
-            if (isMissed) {
-              callText = `Missed ${callType}`;
-              subText = 'Tap to call back';
-            } else if (isDeclined) {
-              callText = `${callType} declined`;
-              subText = 'Tap to try again';
-            } else if (isNotAnswered) {
-              callText = `${callType}`;
-              subText = 'No answer';
-            } else if (isCompleted) {
-              callText = `${callType}`;
-              subText = `Duration: ${duration}`;
-            }
-
-            return (
-              <div
-                className={`px-4 py-3 rounded-2xl border transition-all duration-300 ${cardBg} ${(isMissed || isDeclined) && onCallBack ? 'cursor-pointer hover:shadow-lg transform hover:scale-[1.02]' : ''}`}
-                onClick={(isMissed || isDeclined) && onCallBack ? () => onCallBack(isVideo ? 'video' : 'audio') : undefined}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-xl shadow-sm ${isOwn ? 'bg-white/20' : 'bg-card border border-border'}`}>
-                    {isVideo ? (
-                      <Video size={16} className={isOwn ? 'text-white' : iconColor} strokeWidth={2.5} />
-                    ) : (
-                      <Phone size={16} className={isOwn ? 'text-white' : iconColor} strokeWidth={2.5} />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-bold ${textColor}`}>
-                      {callText}
-                    </p>
-                    {subText && (
-                      <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isOwn ? 'text-indigo-200' : 'text-muted-foreground'}`}>
-                        {subText}
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className={`text-[11px] font-bold truncate ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
+                      <p className={`text-[9px] opacity-70 font-bold ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
+                        {(message.media_size / 1024).toFixed(1)} KB
                       </p>
-                    )}
+                    </div>
+                    <a href={`http://localhost:3001${message.media_url}`} download className={`p-1.5 rounded-lg transition-colors ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+                      <Download size={14} className={isOwn ? 'text-white' : 'text-muted-foreground'} />
+                    </a>
                   </div>
-                </div>
+                )}
               </div>
-            );
-          })()}
+            )}
 
-          {/* Text Message with URL Preview */}
-          {(message.message_type === 'text' || !message.message_type) && (
-            <div className="px-4 py-2">
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            {/* Message Content */}
+            {message.content && message.content !== message.media_name && (
+              <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+                {message.content}
+              </p>
+            )}
 
-              {/* URL Preview */}
-              {(() => {
-                const urls = message.content.match(/(https?:\/\/[^\s]+)/g);
-                if (urls && urls.length > 0) {
-                  const urlPreview = (() => {
-                    try {
-                      const urlObj = new URL(urls[0]);
-                      return {
-                        url: urls[0],
-                        domain: urlObj.hostname.replace('www.', ''),
-                        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`
-                      };
-                    } catch {
-                      return null;
-                    }
-                  })();
-
-                  if (urlPreview) {
-                    return (
-                      <a
-                        href={urlPreview.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`block mt-3 rounded-2xl border transition-all duration-300 hover:shadow-xl ${isOwn ? 'bg-white/10 border-indigo-400/30 font-bold' : 'bg-muted/50 border-border hover:bg-muted hover:border-indigo-500/20'}`}
-                      >
-                        <div className="px-3 py-2 flex items-center space-x-2">
-                          <div className={`p-1.5 rounded-lg flex-shrink-0 ${isOwn ? 'bg-white/20' : 'bg-card shadow-sm border border-border'}`}>
-                            <img
-                              src={urlPreview.favicon}
-                              alt=""
-                              className="w-5 h-5 rounded"
-                              onError={(e) => { e.target.src = 'https://www.google.com/s2/favicons?domain=google.com'; }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-[10px] font-black uppercase tracking-widest truncate ${isOwn ? 'text-indigo-200' : 'text-muted-foreground'}`}>
-                              {urlPreview.domain}
-                            </p>
-                          </div>
-                          <ExternalLink size={14} className={isOwn ? 'text-indigo-200' : 'text-muted-foreground'} />
-                        </div>
-                      </a>
-                    );
-                  }
-                }
-                return null;
-              })()}
-            </div>
-          )}
-
-          {/* File Message (generic) */}
-          {message.message_type === 'file' && message.media_url && (
-            <div className="px-5 py-4">
-              <div className={`rounded-2xl p-4 transition-all duration-300 border ${isOwn ? 'bg-white/10 border-indigo-400/30' : 'bg-muted/50 border-border group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20'}`}>
-                <div className="flex items-center space-x-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transform group-hover:scale-105 transition-transform duration-300 ${isOwn
-                    ? 'bg-white text-indigo-600'
-                    : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
-                    }`}>
-                    <File size={28} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm truncate leading-snug ${isOwn ? 'text-white' : 'text-foreground'}`}>
-                      {message.media_name || 'Attached File'}
-                    </p>
-                    <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isOwn ? 'text-indigo-200' : 'text-muted-foreground'}`}>
-                      {message.media_type?.split('/')[1]?.toUpperCase() || 'FILE'} • {message.media_size ? `${(message.media_size / 1024).toFixed(1)} KB` : '---'}
-                    </p>
-                    <div className="flex items-center space-x-3 mt-4">
-                      <a
-                        href={`http://localhost:3001${message.media_url}`}
-                        download={message.media_name}
-                        className={`flex items-center space-x-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-[1.05] ${isOwn
-                          ? 'bg-white text-indigo-600 hover:bg-slate-50'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          }`}
-                      >
-                        <Download size={14} />
-                        <span>Download</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Reactions Overlay */}
-          {message.reactions && message.reactions.length > 0 && (
-            <div className={`absolute -bottom-2 flex flex-wrap gap-1 ${isOwn ? 'right-4' : 'left-4'} z-10 animate-in zoom-in-50 duration-300`}>
-              {(() => {
-                const reactionGroups = {};
-                message.reactions.forEach(r => {
-                  if (!reactionGroups[r.reaction]) reactionGroups[r.reaction] = [];
-                  reactionGroups[r.reaction].push(r);
-                });
-
-                return Object.entries(reactionGroups).map(([emoji, reactions]) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleEmojiClick(emoji)}
-                    className="bg-card/90 backdrop-blur-md border border-border hover:border-indigo-500/30 px-2 py-0.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-md flex items-center space-x-1 group/reac"
-                  >
-                    <span className="text-xs">{emoji}</span>
-                    {reactions.length > 1 && (
-                      <span className="text-[10px] font-black text-muted-foreground group-hover/reac:text-indigo-500">
-                        {reactions.length}
-                      </span>
-                    )}
-                  </button>
-                ));
-              })()}
-            </div>
-          )}
-        </div>
-
-        {/* Floating Actions on Hover */}
-        <div className={`absolute top-0 flex items-center h-full transition-all duration-300 z-[100] ${isOwn
-          ? 'right-full mr-3 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'
-          : 'left-full ml-3 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0'
-          }`}>
-          <div className="flex flex-col space-y-1.5">
-            <div className="relative">
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-1.5 bg-card border border-border hover:border-indigo-500/30 text-muted-foreground hover:text-indigo-500 rounded-lg shadow-lg transition-all transform hover:scale-110"
-              >
-                <Smile size={16} />
-              </button>
-              {showEmojiPicker && (
-                <div className={`absolute bottom-full mb-3 flex items-center space-x-1 bg-card/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-2xl border border-border z-[70] animate-in fade-in zoom-in slide-in-from-bottom-2 duration-300 ${isOwn ? 'right-0' : 'left-0'}`}>
-                  {quickEmojis.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleEmojiClick(emoji)}
-                      className="w-8 h-8 flex items-center justify-center text-lg hover:bg-muted hover:scale-125 transition-all rounded-lg"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => onReply(message)}
-              className="p-1.5 bg-card border border-border hover:border-indigo-500/30 text-muted-foreground hover:text-indigo-500 rounded-lg shadow-lg transition-all transform hover:scale-110"
-            >
-              <Reply size={16} />
-            </button>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className={`p-1.5 bg-card border border-border hover:border-indigo-500/30 text-muted-foreground hover:text-indigo-500 rounded-lg shadow-lg transition-all transform hover:scale-110 ${showMenu ? 'bg-muted border-indigo-500/30' : ''}`}
-              >
-                <MoreVertical size={16} />
-              </button>
-
-              {showMenu && (
-                <div className={`absolute top-0 py-2 w-48 bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-border z-[70] animate-in fade-in zoom-in-95 duration-200 ${isOwn ? 'right-full mr-3' : 'left-full ml-3'}`}>
-                  <button
-                    onClick={() => { onForward(); setShowMenu(false); }}
-                    className="w-full px-4 py-2.5 text-left hover:bg-muted/50 flex items-center space-x-3 group/item transition-colors"
-                  >
-                    <div className="p-1.5 bg-muted/50 group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-500 rounded-lg text-muted-foreground transition-colors">
-                      <Forward size={14} />
-                    </div>
-                    <span className="text-sm font-bold text-foreground group-hover/item:text-indigo-500 transition-colors">Forward</span>
-                  </button>
-                  <button
-                    onClick={() => { onCopy(); setShowMenu(false); }}
-                    className="w-full px-4 py-2.5 text-left hover:bg-muted/50 flex items-center space-x-3 group/item transition-colors"
-                  >
-                    <div className="p-1.5 bg-muted/50 group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-500 rounded-lg text-muted-foreground transition-colors">
-                      <Copy size={14} />
-                    </div>
-                    <span className="text-sm font-bold text-foreground group-hover/item:text-indigo-500 transition-colors">Copy</span>
-                  </button>
-                  {isOwn && (
-                    <button
-                      onClick={() => { onDelete(); setShowMenu(false); }}
-                      className="w-full px-4 py-2.5 text-left hover:bg-rose-500/10 flex items-center space-x-3 group/item transition-colors border-t border-border mt-1"
-                    >
-                      <div className="p-1.5 bg-rose-500/10 group-hover/item:bg-rose-500/20 text-rose-500 rounded-lg transition-colors">
-                        <Trash2 size={14} />
-                      </div>
-                      <span className="text-sm font-bold text-rose-500 transition-colors">Delete</span>
-                    </button>
-                  )}
-                </div>
-              )}
+            {/* Inline Meta (Time & Status) */}
+            <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
+              <span>{formatTime(message.created_at)}</span>
+              {getStatusIcon()}
             </div>
           </div>
-        </div>
 
-        {/* Timestamp */}
-        <div className={`absolute bottom-0.5 ${isOwn ? 'right-2' : 'left-2'} flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
-          <span className="text-[8px] font-bold text-muted-foreground/60 uppercase">
-            {formatTime(message.created_at)}
-          </span>
-          {isOwn && getStatusIcon()}
+          {/* Quick Actions (Hover) */}
+          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-opacity flex gap-1 ${isOwn ? '-left-12 pr-2' : '-right-12 pl-2'}`}>
+            <button onClick={() => onReply(message)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors" title="Reply">
+              <RotateCcw size={14} />
+            </button>
+            <button onClick={() => onCopy(message.content)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors" title="Copy">
+              <Copy size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-
 
 export default ChatTab;
