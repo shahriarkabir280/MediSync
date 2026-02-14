@@ -911,7 +911,7 @@ const ChatTab = () => {
   const showNoResults = searchQuery.trim().length >= 1 && searchResults.length === 0 && !isSearching;
 
   return (
-    <div className="h-[calc(100vh-120px)] w-full min-w-0 flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
+    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full min-w-0 flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
       {/* Left Sidebar - Chat List */}
       <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] lg:w-[300px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
         {/* Modern Glassmorphism Header */}
@@ -1083,7 +1083,7 @@ const ChatTab = () => {
         <div className="flex-1 min-w-0 flex flex-col bg-background relative z-30">
           {/* Chat Header */}
           {/* Modern Chat Header */}
-          <div className="bg-card/80 backdrop-blur-xl border-b border-border pl-4 pr-1.5 md:pl-6 md:pr-4 py-3 flex items-center justify-between sticky top-0 z-20">
+          <div className="h-16 bg-card/80 backdrop-blur-xl border-b border-border pl-4 pr-1.5 md:pl-6 md:pr-4 flex items-center justify-between sticky top-0 z-20">
             <div className="flex items-center space-x-1.5 md:space-x-3 flex-1 min-w-0 mr-3">
               <button
                 onClick={() => setSelectedChat(null)}
@@ -2082,7 +2082,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
   return (
     <div
       onClick={onClick}
-      className={`relative group p-3 rounded-2xl border transition-all duration-500 cursor-pointer mb-2
+      className={`relative group h-16 p-3 rounded-2xl border transition-all duration-500 cursor-pointer mb-2 overflow-hidden
         ${isSelected
           ? 'bg-card border-border shadow-2xl shadow-indigo-500/10 scale-[1.01] z-10 translate-x-1'
           : 'bg-transparent border-transparent hover:bg-card hover:border-border hover:shadow-xl hover:shadow-slate-500/5 hover:translate-x-1'
@@ -2101,7 +2101,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
             {chat.other_user?.user_name?.charAt(0) || '?'}
           </div>
           {isOnline && (
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card"></div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
           )}
         </div>
 

@@ -291,7 +291,7 @@ const DoctorDashboard = () => {
 
         {/* Dynamic Canvas */}
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F8FAFC] dark:from-gray-900 dark:to-gray-950 custom-scrollbar transition-colors duration-300">
-          <div className="p-4 lg:p-8 pb-20">
+          <div className={`p-4 ${activeTab === 'chat' ? 'lg:px-4 pb-0' : 'lg:p-8 pb-20'}`}>
             {renderContent()}
           </div>
         </div>
