@@ -1296,13 +1296,29 @@ const ChatTab = () => {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 bg-muted/20">
             {loading ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="relative w-16 h-16">
-                    <div className="absolute inset-0 rounded-2xl border-4 border-slate-100"></div>
-                    <div className="absolute inset-0 rounded-2xl border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+              <div className="flex flex-col items-center justify-center h-full space-y-6">
+                <div className="relative group">
+                  {/* Decorative Glow */}
+                  <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full group-hover:bg-indigo-500/30 transition-all duration-700 animate-pulse"></div>
+
+                  {/* Outer Pulsing Container */}
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/20 transform animate-in zoom-in-50 duration-500">
+                    <div className="absolute inset-0 rounded-[2rem] border-2 border-white/20 animate-ping opacity-20"></div>
+                    <div className="absolute inset-2 rounded-[1.6rem] border-2 border-white/10 animate-pulse"></div>
+
+                    {/* Brand Icon */}
+                    <MessageCircle size={36} className="text-white animate-bounce [animation-duration:2s]" />
                   </div>
-                  <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 animate-pulse">Loading Messages</p>
+                </div>
+
+                {/* Refined Text */}
+                <div className="flex flex-col items-center space-y-1">
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 animate-pulse">
+                    Synchronizing
+                  </h3>
+                  <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                    Preparing your secure workspace
+                  </p>
                 </div>
               </div>
             ) : messages.length === 0 ? (
@@ -2092,16 +2108,27 @@ const ChatTab = () => {
 const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
   const formatTime = (date) => {
     if (!date) return '';
-    const d = new Date(date);
-    const now = new Date();
-    const diff = now - d;
+    try {
+      // If the date string doesn't include a timezone, assume UTC
+      let utcDate = date;
+      if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
+        utcDate = date.replace(' ', 'T') + 'Z';
+      }
 
-    if (diff < 86400000) { // Less than 24 hours
-      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else if (diff < 604800000) { // Less than 7 days
-      return d.toLocaleDateString('en-US', { weekday: 'short' });
-    } else {
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const d = new Date(utcDate);
+      const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
+      const now = new Date();
+      const diff = now - finalDate;
+
+      if (diff < 86400000) { // Less than 24 hours
+        return finalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      } else if (diff < 604800000) { // Less than 7 days
+        return finalDate.toLocaleDateString([], { weekday: 'short' });
+      } else {
+        return finalDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch (e) {
+      return '';
     }
   };
 
@@ -2179,7 +2206,27 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   }, [showActionsMenu]);
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (!date) return '';
+    try {
+      // If the date string doesn't include a timezone, assume UTC
+      let utcDate = date;
+      if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
+        // Handle 'YYYY-MM-DD HH:MM:SS' or similar formats by converting to ISO and adding Z
+        utcDate = date.replace(' ', 'T') + 'Z';
+      }
+
+      const d = new Date(utcDate);
+      // Fallback if the above conversion failed
+      const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
+
+      return finalDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return '';
+    }
   };
 
   const getStatusIcon = () => {
