@@ -264,7 +264,7 @@ const DoctorDashboard = () => {
                 <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-1">Admin Access</span>
               </div>
               <div className="relative group p-0.5 bg-gradient-to-tr from-indigo-500 to-indigo-400 dark:from-indigo-600 dark:to-indigo-500 rounded-lg lg:rounded-xl shadow-lg ring-2 lg:ring-4 ring-indigo-50 dark:ring-indigo-900/20">
-                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-md lg:rounded-lg overflow-hidden bg-white dark:bg-gray-800 border-[1.5px] border-white dark:border-gray-800">
+                <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-md lg:rounded-xl overflow-hidden bg-white dark:bg-gray-800 border-[1.5px] border-white dark:border-gray-800">
                   {user?.profileImage ? (
                     <img
                       src={user.profileImage}
