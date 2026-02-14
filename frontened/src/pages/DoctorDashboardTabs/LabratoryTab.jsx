@@ -1,7 +1,7 @@
 import {
-  User, FlaskConical, Plus, Upload, Search, Filter, Eye, Calendar, Clock,
+  User, FlaskConical, Plus, Search, Filter, Eye, Calendar, Clock,
   AlertTriangle, Bot, MessageSquare, X, Sparkles, Send, Paperclip, FileText,
-  ExternalLink, Scan, Printer, Download as DownloadIcon
+  ExternalLink, Scan, Download as DownloadIcon, Check
 } from "lucide-react";
 import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { debounce } from "../../utils/performance";
@@ -150,66 +150,6 @@ const LabratoryTab = memo(() => {
     }, 1500);
   };
 
-  // Helper function to generate print HTML for a lab report
-  const generateLabReportHTML = (selectedReport) => {
-    if (!selectedReport) return '';
-    const fileUrl = `${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`;
-    const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(selectedReport.file_name);
-    const isPdf = /\.pdf$/i.test(selectedReport.file_name);
-
-    let fileContent = '';
-    if (isImage) {
-      fileContent = `<img src="${fileUrl}" alt="Lab Report" />`;
-    } else if (isPdf) {
-      fileContent = `<iframe src="${fileUrl}" type="application/pdf"></iframe>`;
-    } else {
-      fileContent = `<p>File type not supported for preview. <a href="${fileUrl}" target="_blank">Download file</a></p>`;
-    }
-
-    const { order } = selectedReport;
-
-    return `
-        <html>
-            <head>
-                <title>Lab Report #${order.order_number} - ${order.patient_first_name} ${order.patient_last_name}</title>
-                <style>
-                    body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; color: #1e293b; }
-                    h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; font-size: 24px; }
-                    .header-info { margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                    .header-info p { margin: 8px 0; font-size: 14px; }
-                    .file-container { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-                    .file-container img { max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
-                    .file-container iframe { width: 100%; min-height: 900px; border: none; border-radius: 8px; }
-                    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: #eff6ff; color: #2563eb; margin-bottom: 10px; }
-                    @media print { 
-                        .no-print { display: none; }
-                        body { padding: 0; margin: 0; }
-                        .file-container { border: none; padding: 0; box-shadow: none; }
-                        .header-info { border: none; background: none; padding: 0; border: 1px solid #eee; margin-bottom: 20px; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header-info">
-                    <div>
-                        <span class="badge">LABORATORY REPORT</span>
-                        <h1>Report #${order.order_number}</h1>
-                        <p><strong>Patient:</strong> ${order.patient_first_name} ${order.patient_last_name}</p>
-                        <p><strong>Patient ID:</strong> ${order.patient_unique_id}</p>
-                    </div>
-                    <div style="text-align: right;">
-                        <p><strong>Order Date:</strong> ${new Date(order.order_date).toLocaleDateString()}</p>
-                        <p><strong>Doctor:</strong> Dr. ${order.doctor_first_name} ${order.doctor_last_name}</p>
-                        <button onclick="window.print()" class="no-print" style="margin-top: 15px; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Print Report</button>
-                    </div>
-                </div>
-                <div class="file-container">
-                    ${fileContent}
-                </div>
-            </body>
-        </html>
-    `;
-  };
 
   // Fetch lab statistics on component mount
   useEffect(() => {
@@ -284,9 +224,6 @@ const LabratoryTab = memo(() => {
     setShowNewOrderModal(true);
   };
 
-  const handleBulkActions = () => {
-    alert('Bulk actions functionality - to be implemented');
-  };
 
   const handleSearch = useCallback(async (term) => {
     try {
@@ -361,6 +298,49 @@ const LabratoryTab = memo(() => {
     }
   };
 
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Order status updated to ${newStatus}`);
+
+        // Update local state for orders
+        const updateOrders = (orders) =>
+          orders.map(order => order.id === orderId ? { ...order, status: newStatus } : order);
+
+        setFilteredOrders(prev => updateOrders(prev));
+        setRecentOrders(prev => updateOrders(prev));
+
+        // Update selection if open
+        if (selectedReport && selectedReport.order.id === orderId) {
+          setSelectedReport(prev => ({
+            ...prev,
+            order: { ...prev.order, status: newStatus }
+          }));
+        }
+
+        // Refresh stats
+        fetchLabStats();
+      } else {
+        toast.error(result.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('An error occurred while updating status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return 'text-rose-500 bg-rose-500/10 border border-rose-500/20';
@@ -403,13 +383,6 @@ const LabratoryTab = memo(() => {
               >
                 <Plus className="w-5 h-5" />
                 <span>New Test Order</span>
-              </button>
-              <button
-                onClick={handleBulkActions}
-                className="flex-1 sm:flex-none px-5 py-2.5 bg-card border border-border text-foreground rounded-xl hover:bg-muted transition-all duration-300 flex items-center justify-center space-x-2 font-medium shadow-sm hover:shadow active:scale-95"
-              >
-                <Upload className="w-5 h-5" />
-                <span>Bulk Actions</span>
               </button>
             </div>
           </div>
@@ -1168,20 +1141,6 @@ const LabratoryTab = memo(() => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => {
-                              const printWindow = window.open('', '_blank');
-                              const htmlContent = generateLabReportHTML(selectedReport);
-                              if (printWindow) {
-                                printWindow.document.write(htmlContent);
-                                printWindow.document.close();
-                              }
-                            }}
-                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-card rounded-lg transition-all"
-                            title="Print"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
                           <a
                             href={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`}
                             target="_blank"
@@ -1197,7 +1156,7 @@ const LabratoryTab = memo(() => {
                       <div className="flex-1 bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-4 md:p-8">
                         {selectedReport.file_type === 'pdf' ? (
                           <iframe
-                            src={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}#view=FitH&toolbar=0`}
+                            src={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}#view=FitH&toolbar=1`}
                             className="w-full min-h-[500px] h-full rounded-lg shadow-inner bg-white border-none"
                             title="Lab Report PDF Preview"
                             loading="lazy"
@@ -1254,20 +1213,6 @@ const LabratoryTab = memo(() => {
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Digital Signature Verified</span>
                 </div>
                 <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      const printWindow = window.open('', '_blank');
-                      const htmlContent = generateLabReportHTML(selectedReport);
-                      if (printWindow) {
-                        printWindow.document.write(htmlContent);
-                        printWindow.document.close();
-                      }
-                    }}
-                    className="px-5 py-2.5 border border-border text-foreground rounded-xl hover:bg-muted transition-all font-bold shadow-sm flex items-center space-x-2 bg-card active:scale-95"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Print Document</span>
-                  </button>
                   <a
                     href={`${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`}
                     download={selectedReport.file_name}
@@ -1277,6 +1222,15 @@ const LabratoryTab = memo(() => {
                     <DownloadIcon className="w-4 h-4" />
                     <span>Download PDF</span>
                   </a>
+                  {selectedReport.order.status !== 'completed' && (
+                    <button
+                      onClick={() => handleStatusUpdate(selectedReport.order.id, 'completed')}
+                      className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-emerald-500/20 font-bold flex items-center space-x-2 active:scale-95"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Mark as Done</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

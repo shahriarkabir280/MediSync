@@ -104,10 +104,55 @@ async function seed() {
     if (catData) {
       const hematology = catData.find(c => c.name === 'Hematology');
       if (hematology) {
-        await supabase.from('lab_tests').upsert([
+        const { data: tests } = await supabase.from('lab_tests').upsert([
           { test_code: 'CBC', test_name: 'Complete Blood Count', category_id: hematology.id, cost: 50, sample_type: 'Blood' },
-          { test_code: 'HGB', test_name: 'Hemoglobin', category_id: hematology.id, cost: 20, sample_type: 'Blood' }
-        ], { onConflict: 'test_code' });
+          { test_code: 'HGB', test_name: 'Hemoglobin', category_id: hematology.id, cost: 20, sample_type: 'Blood' },
+          { test_code: 'WBC', test_name: 'White Blood Cell Count', category_id: hematology.id, cost: 25, sample_type: 'Blood' }
+        ], { onConflict: 'test_code' }).select();
+
+        // 8. Seed Lab Orders for Doctor 1
+        if (doctor1 && seededPatients.length > 0 && tests) {
+          const orders = [
+            {
+              order_number: 'LAB-SEED-001',
+              doctor_id: doctor1.id,
+              patient_id: seededPatients[0].id,
+              status: 'pending',
+              priority: 'urgent',
+              clinical_notes: 'Fever and fatigue'
+            },
+            {
+              order_number: 'LAB-SEED-002',
+              doctor_id: doctor1.id,
+              patient_id: seededPatients[1].id,
+              status: 'completed',
+              priority: 'normal',
+              clinical_notes: 'Routine checkup'
+            }
+          ];
+          const { data: seededOrders } = await supabase.from('lab_orders').upsert(orders, { onConflict: 'order_number' }).select();
+
+          if (seededOrders) {
+            const orderItems = [
+              { order_id: seededOrders[0].id, test_id: tests[0].id },
+              { order_id: seededOrders[1].id, test_id: tests[1].id }
+            ];
+            const { data: items } = await supabase.from('lab_order_items').upsert(orderItems, { onConflict: 'id' }).select();
+
+            // Add an unverified result for the completed order to test unreviewed stats
+            if (items && seededOrders[1].status === 'completed') {
+              await supabase.from('lab_results').upsert([
+                {
+                  order_item_id: items[1].id,
+                  result_value: '14.5',
+                  unit: 'g/dL',
+                  status: 'normal',
+                  verified_by: null // Unverified
+                }
+              ], { onConflict: 'order_item_id' });
+            }
+          }
+        }
       }
       console.log('✅ Lab data seeded');
     }

@@ -30,22 +30,11 @@ export const getLabStats = async (req, res) => {
 
     if (urgentError) throw urgentError;
 
-    // Unreviewed results (Completed orders containing items with unverified results)
-    // Complex due to nesting. Strategy: Get items of completed orders, check results.
-    // Efficient approach:
-    // Select lab_results where order_item -> order -> status = 'completed' AND verified_by is null.
-    // But we need distinct ORDERS count.
+    // Unreviewed results: Count orders that are completed but have unverified results
+    // We join lab_results through lab_order_items to check status and verified_by
     const { data: unreviewedResults, error: unreviewedError } = await supabase
       .from('lab_results')
-      .select(`
-            order_item_id,
-            lab_order_items!inner (
-                order_id,
-                lab_orders!inner (
-                    id, status
-                )
-            )
-        `)
+      .select('lab_order_items!inner(order_id)')
       .is('verified_by', null)
       .eq('lab_order_items.lab_orders.status', 'completed');
 
@@ -116,17 +105,20 @@ export const searchLabOrders = async (req, res) => {
             patient:patients!inner (first_name, last_name, unique_id),
             doctor:doctors (first_name, last_name),
             lab_order_items (count)
-        `)
-      .order('order_date', { ascending: false })
-      .limit(parseInt(limit));
+        `);
 
     if (search) {
       const term = `%${search}%`;
-      // Use OR logic for search: Order Number OR Patient Name
-      query = query.or(`order_number.ilike.${term},clinical_notes.ilike.${term},patient_id.in.(select id from patients where first_name ilike '${term}' or last_name ilike '${term}' or unique_id ilike '${term}')`);
+      // Search by order number, clinical notes, OR patient name/unique_id
+      query = query.or(`order_number.ilike.${term},clinical_notes.ilike.${term},patient.first_name.ilike.${term},patient.last_name.ilike.${term},patient.unique_id.ilike.${term}`);
     }
 
-    const { data: orders, error } = await query;
+    if (status) query = query.eq('status', status);
+    if (priority) query = query.eq('priority', priority);
+
+    const { data: orders, error } = await query
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
 
     if (error) throw error;
 
@@ -261,11 +253,23 @@ export const getLabReport = async (req, res) => {
     })).sort((a, b) => (a.category_name || '').localeCompare(b.category_name || '') || (a.test_name || '').localeCompare(b.test_name || ''));
 
 
+    // Get the most recent report file if exists
+    const { data: reportFiles } = await supabase
+      .from('lab_report_files')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('uploaded_at', { ascending: false })
+      .limit(1);
+
+    const latestFile = reportFiles?.[0];
+
     res.json({
       success: true,
       data: {
         order: flattenedOrder,
         items: formattedItems,
+        file_name: latestFile?.file_name,
+        file_path: latestFile?.file_path,
         generated_at: new Date().toISOString()
       }
     });
@@ -727,5 +731,47 @@ export const getLabPatients = async (req, res) => {
   } catch (error) {
     console.error('Error fetching lab patients:', error);
     res.status(500).json({ error: 'Failed to fetch lab patients' });
+  }
+};
+
+// Upload lab report file
+export const uploadLabReportFile = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Insert into lab_report_files
+    const { data: reportFile, error } = await supabase
+      .from('lab_report_files')
+      .insert({
+        order_id: orderId,
+        file_name: file.filename,
+        file_path: file.path,
+        file_size: file.size
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Optional: Update order status to in_progress if it was pending
+    await supabase
+      .from('lab_orders')
+      .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .eq('status', 'pending');
+
+    res.status(201).json({
+      success: true,
+      message: 'Lab report uploaded successfully',
+      data: reportFile
+    });
+  } catch (error) {
+    console.error('Error uploading lab report:', error);
+    res.status(500).json({ error: 'Failed to upload lab report' });
   }
 };

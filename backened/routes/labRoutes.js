@@ -14,8 +14,10 @@ import {
   updateLabResult,
   getPatientLabHistory,
   deleteLabOrder,
-  getLabPatients
+  getLabPatients,
+  uploadLabReportFile
 } from '../controllers/labController.js';
+import { upload } from '../controllers/fileController.js';
 
 const router = express.Router();
 
@@ -39,6 +41,7 @@ router.post('/orders', createLabOrder);
 router.get('/orders/doctor/:doctorId', getLabOrders);
 router.get('/orders/:orderId', getLabOrderDetails);
 router.put('/orders/:orderId/status', updateLabOrderStatus);
+router.post('/orders/:orderId/report', upload.single('file'), uploadLabReportFile);
 router.delete('/orders/:orderId', deleteLabOrder);
 
 // Lab results
