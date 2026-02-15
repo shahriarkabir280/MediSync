@@ -969,14 +969,14 @@ const ChatTab = () => {
   const showNoResults = searchQuery.trim().length >= 1 && searchResults.length === 0 && !isSearching;
 
   return (
-    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full min-w-0 flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
+    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
       {/* Left Sidebar - Chat List */}
       <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} w-full lg:w-[320px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
         {/* Modern Glassmorphism Header */}
-        <div className="p-4 bg-card/80 backdrop-blur-xl sticky top-0 z-20 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-2 md:p-4 bg-card/80 backdrop-blur-xl sticky top-0 z-20 border-b border-border">
+          <div className="flex items-center justify-between mb-2 md:mb-4">
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent font-outfit">
+              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent font-outfit">
                 Messages
               </h2>
             </div>
@@ -1448,7 +1448,7 @@ const ChatTab = () => {
           )}
 
           {/* Message Input */}
-          <div className="bg-card border-t border-border px-4 md:px-6 py-4">
+          <div className="bg-card border-t border-border px-2 md:px-6 py-3 md:py-4">
             {isRecording ? (
               // Recording UI
               <div className="flex items-center space-x-4 p-2 bg-rose-50 rounded-2xl border border-rose-100/50 animate-in zoom-in-95 duration-300">
@@ -2313,8 +2313,8 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   };
 
   return (
-    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-2 md:px-4 group relative`}>
-      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[85%] md:max-w-[75%] gap-1 transition-all duration-300`}>
+    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-1 md:px-4 group relative`}>
+      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[75%] md:max-w-[85%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
           {/* Reaction Bar (Hover) */}
@@ -2405,7 +2405,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
           </div>
 
           {/* Quick Actions Menu (Messenger Style) */}
-          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 flex items-center ${isOwn ? '-left-10 pr-2' : '-right-10 pl-2'}`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 hidden md:flex items-center ${isOwn ? '-left-10 pr-2' : '-right-10 pl-2'}`}>
             <div className="relative">
               <button
                 onClick={(e) => {
