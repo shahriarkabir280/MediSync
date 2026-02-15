@@ -225,11 +225,17 @@ const ChatTab = () => {
     // New message received
     socket.on('new_message', (data) => {
       if (selectedChat && data.chatId === selectedChat.id) {
-        setMessages(prev => [...prev, data.message]);
-        scrollToBottom();
+        // Don't add the message if it's from the current user (already added optimistically)
+        const isMyMessage = data.message.sender_id === currentUser.userId &&
+          data.message.sender_type === currentUser.userType;
 
-        // Mark as read
-        socket.markAsRead(data.chatId, [data.message.id], currentUser.userId, currentUser.userType);
+        if (!isMyMessage) {
+          setMessages(prev => [...prev, data.message]);
+          scrollToBottom();
+
+          // Mark as read
+          socket.markAsRead(data.chatId, [data.message.id], currentUser.userId, currentUser.userType);
+        }
       }
 
       // Update chat list and exit search mode to show new chats
