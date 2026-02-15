@@ -238,8 +238,8 @@ const ChatTab = () => {
         }
       }
 
-      // Update chat list and exit search mode to show new chats
-      loadChats();
+      // Update chat list optimistically
+      updateChatListWithMessage(data.chatId, data.message);
       setIsSearchFocused(false);
       setSearchQuery('');
       setSearchResults([]);
@@ -341,6 +341,38 @@ const ChatTab = () => {
     }
   };
 
+  // Update chat list optimistically with new message
+  const updateChatListWithMessage = (chatId, message) => {
+    setChats(prevChats => {
+      const updatedChats = prevChats.map(chat => {
+        if (chat.id === chatId) {
+          return {
+            ...chat,
+            last_message: {
+              id: message.id,
+              content: message.content,
+              message_type: message.message_type,
+              sender_id: message.sender_id,
+              sender_name: message.sender_name,
+              created_at: message.created_at,
+              is_deleted: false
+            },
+            last_message_at: message.created_at,
+            updated_at: message.created_at
+          };
+        }
+        return chat;
+      });
+
+      // Sort by most recent
+      return updatedChats.sort((a, b) => {
+        const timeA = new Date(a.last_message_at || a.created_at).getTime();
+        const timeB = new Date(b.last_message_at || b.created_at).getTime();
+        return timeB - timeA;
+      });
+    });
+  };
+
   // Load messages for a chat
   const loadMessages = async (chatId) => {
     try {
@@ -404,8 +436,8 @@ const ChatTab = () => {
       // Broadcast via WebSocket
       socket.sendMessage(selectedChat.id, newMessage);
 
-      // Update chat list
-      loadChats();
+      // Update chat list optimistically
+      updateChatListWithMessage(selectedChat.id, newMessage);
 
       scrollToBottom();
     } catch (error) {
@@ -451,8 +483,8 @@ const ChatTab = () => {
       // Broadcast via WebSocket
       socket.sendMessage(selectedChat.id, newMessage);
 
-      // Update chat list
-      loadChats();
+      // Update chat list optimistically
+      updateChatListWithMessage(selectedChat.id, newMessage);
 
       scrollToBottom();
     } catch (error) {
