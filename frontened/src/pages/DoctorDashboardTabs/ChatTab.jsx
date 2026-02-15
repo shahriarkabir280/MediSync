@@ -40,7 +40,7 @@ const ChatTab = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
-  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [typingUsers, setTypingUsers] = useState(new Map());
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -277,17 +277,17 @@ const ChatTab = () => {
 
     // Typing indicator
     socket.on('user_typing', (data) => {
-      if (selectedChat && data.chatId === selectedChat.id) {
-        setTypingUsers(prev => new Set(prev).add(`${data.userId}_${data.userType}`));
+      if (selectedChat && data.chatId === selectedChat.id && data.userId !== currentUser.userId) {
+        setTypingUsers(prev => new Map(prev).set(`${data.userId}_${data.userType}`, data.userName || 'Someone'));
       }
     });
 
     socket.on('user_stopped_typing', (data) => {
       if (selectedChat && data.chatId === selectedChat.id) {
         setTypingUsers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(`${data.userId}_${data.userType}`);
-          return newSet;
+          const newMap = new Map(prev);
+          newMap.delete(`${data.userId}_${data.userType}`);
+          return newMap;
         });
       }
     });
@@ -1469,7 +1469,9 @@ const ChatTab = () => {
                   <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                   <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce"></div>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Someone is typing</span>
+                <span className="text-[11px] italic text-muted-foreground">
+                  {Array.from(typingUsers.values()).join(', ')} is typing...
+                </span>
               </div>
             )}
 
@@ -1743,83 +1745,41 @@ const ChatTab = () => {
         </div>
       )}
 
-      {/* Delete Message Modal */}
+      {/* Delete Message Modal - Simplified Messenger Style */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 border border-border">
-            {/* Modal Header */}
-            <div className="px-8 py-6 bg-gradient-to-r from-rose-500 to-rose-600 text-white relative">
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-md">
-                  <Trash2 size={24} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black font-outfit">Delete message?</h3>
-                  <p className="text-rose-100 text-[10px] font-bold uppercase tracking-widest mt-0.5">This action is permanent</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200 backdrop-blur-[2px]">
+          <div
+            className="bg-card w-full max-w-[320px] rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 border border-border/40"
+          >
+            <div className="p-4 text-center border-b border-border/40">
+              <h3 className="text-[15px] font-semibold text-foreground">Who do you want to remove this message for?</h3>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-8 space-y-4 bg-card">
-              <p className="text-muted-foreground font-medium text-center px-4">
-                Choose how you would like to proceed with deleting this message.
-              </p>
-
-              <div className="space-y-3">
-                {/* Delete for Me Option */}
+            <div className="flex flex-col divide-y divide-border/40">
+              {/* Unsend / Delete for Everyone */}
+              {canDeleteForEveryone && (
                 <button
-                  onClick={() => confirmDelete(false)}
-                  className="w-full p-5 bg-muted/50 hover:bg-muted border-2 border-transparent hover:border-border rounded-3xl transition-all duration-300 group flex items-start space-x-4"
+                  onClick={() => confirmDelete(true)}
+                  className="w-full text-left px-4 py-3.5 hover:bg-muted/40 transition-colors flex flex-col items-start active:bg-muted/60"
                 >
-                  <div className="p-3 bg-card rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
-                    <Trash2 size={20} className="text-muted-foreground group-hover:text-foreground" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <h4 className="font-bold text-foreground text-sm">Delete for Me</h4>
-                    <p className="text-[11px] text-muted-foreground font-medium mt-1">This message will be hidden from your view only.</p>
-                  </div>
+                  <span className="text-[15px] font-medium text-rose-500">Unsend</span>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">Message will be removed for everyone in the chat</span>
                 </button>
+              )}
 
-                {/* Delete for Everyone Option */}
-                {canDeleteForEveryone ? (
-                  <button
-                    onClick={() => confirmDelete(true)}
-                    className="w-full p-5 bg-rose-50 hover:bg-rose-100 border-2 border-transparent hover:border-rose-200 rounded-3xl transition-all duration-300 group flex items-start space-x-4"
-                  >
-                    <div className="p-3 bg-card rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
-                      <Trash2 size={20} className="text-rose-500" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h4 className="font-bold text-rose-600 text-sm">Delete for Everyone</h4>
-                      <p className="text-[11px] text-rose-400 font-medium mt-1">Permanently remove this message from all participants.</p>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="w-full p-5 bg-muted/30 opacity-60 rounded-3xl flex items-start space-x-4 border border-dashed border-border text-muted-foreground">
-                    <div className="p-3 bg-card rounded-2xl">
-                      <Trash2 size={20} className="text-muted-foreground/50" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h4 className="font-bold text-muted-foreground text-sm italic">Delete for Everyone</h4>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-1">Only available within 24 hours of sending.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+              {/* Remove for you */}
+              <button
+                onClick={() => confirmDelete(false)}
+                className="w-full text-left px-4 py-3.5 hover:bg-muted/40 transition-colors flex flex-col items-start active:bg-muted/60"
+              >
+                <span className="text-[15px] font-medium text-foreground">Remove for you</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">Message will be removed for you. Others can still see it</span>
+              </button>
 
-            {/* Modal Footer */}
-            <div className="px-8 py-6 bg-muted/20 flex space-x-3 border-t border-border">
+              {/* Cancel */}
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-6 py-3.5 bg-card text-muted-foreground font-bold text-sm rounded-2xl hover:bg-muted border border-border transition-all active:scale-95"
+                className="w-full text-center py-3.5 font-medium text-primary hover:bg-muted/40 transition-colors text-[15px]"
               >
                 Cancel
               </button>
