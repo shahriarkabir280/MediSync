@@ -969,7 +969,7 @@ const ChatTab = () => {
   const showNoResults = searchQuery.trim().length >= 1 && searchResults.length === 0 && !isSearching;
 
   return (
-    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
+    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full flex bg-card rounded-2xl overflow-x-hidden overflow-y-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
       {/* Left Sidebar - Chat List */}
       <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} w-full lg:w-[320px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
         {/* Modern Glassmorphism Header */}
@@ -2313,8 +2313,8 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   };
 
   return (
-    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-1 md:px-4 group relative`}>
-      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[75%] md:max-w-[85%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
+    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
+      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] md:max-w-[80%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
           {/* Reaction Bar (Hover) */}
@@ -2404,8 +2404,8 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             </div>
           </div>
 
-          {/* Quick Actions Menu (Messenger Style) */}
-          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 hidden md:flex items-center ${isOwn ? '-left-10 pr-2' : '-right-10 pl-2'}`}>
+          {/* Quick Actions Menu - Outside bubble on all devices */}
+          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 flex items-center ${isOwn ? '-left-6 md:-left-10 pr-1 md:pr-2' : '-right-6 md:-right-10 pl-1 md:pl-2'}`}>
             <div className="relative">
               <button
                 onClick={(e) => {
@@ -2419,29 +2419,29 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
               </button>
 
               {showActionsMenu && (
-                <div className={`absolute bottom-full mb-2 ${isOwn ? 'right-0' : 'left-0'} w-32 bg-card border border-border/50 shadow-2xl rounded-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
+                <div className={`absolute bottom-full mb-2 ${isOwn ? 'right-0' : 'left-0'} w-24 md:w-28 bg-card border border-border/50 shadow-2xl rounded-xl py-0.5 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
                   <button
                     onClick={(e) => { e.stopPropagation(); onReply(message); setShowActionsMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
                   >
                     <RotateCcw size={14} className="text-indigo-500" /> Reply
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onForward(message); setShowActionsMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
                   >
                     <Forward size={14} className="text-emerald-500" /> Forward
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onCopy(message.content); setShowActionsMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted flex items-center gap-2.5 transition-colors"
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
                   >
                     <Copy size={14} className="text-amber-500" /> Copy
                   </button>
                   {isOwn && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(message.id); setShowActionsMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-[11px] font-bold hover:bg-muted text-rose-500 flex items-center gap-2.5 transition-colors"
+                      className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted text-rose-500 flex items-center gap-2 transition-colors"
                     >
                       <Trash2 size={14} /> Delete
                     </button>
