@@ -210,6 +210,14 @@ const ChatTab = () => {
     }
   }, [currentUser.userId]);
 
+  // Handle socket reconnection to re-join active room
+  useEffect(() => {
+    if (socket.socket && socket.isConnected && selectedChat?.id) {
+      console.log('🔄 Reconnected - re-joining chat room:', selectedChat.id);
+      socket.joinChat(selectedChat.id);
+    }
+  }, [socket.isConnected, socket.socket, selectedChat?.id]);
+
   // WebSocket event handlers
   useEffect(() => {
     if (!socket.socket) return;
@@ -224,8 +232,11 @@ const ChatTab = () => {
         socket.markAsRead(data.chatId, [data.message.id], currentUser.userId, currentUser.userType);
       }
 
-      // Update chat list
+      // Update chat list and exit search mode to show new chats
       loadChats();
+      setIsSearchFocused(false);
+      setSearchQuery('');
+      setSearchResults([]);
     });
 
     // Message delivered
@@ -894,8 +905,10 @@ const ChatTab = () => {
 
       const data = await chatApi.startChat(currentUser, otherUser);
 
+      // Exit search mode completely
       setSearchQuery('');
       setSearchResults([]);
+      setIsSearchFocused(false);
 
       // Reload chats and select the new/existing chat
       await loadChats();
@@ -920,7 +933,7 @@ const ChatTab = () => {
   return (
     <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full min-w-0 flex bg-card rounded-2xl overflow-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
       {/* Left Sidebar - Chat List */}
-      <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] lg:w-[300px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
+      <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} w-full lg:w-[320px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
         {/* Modern Glassmorphism Header */}
         <div className="p-4 bg-card/80 backdrop-blur-xl sticky top-0 z-20 border-b border-border">
           <div className="flex items-center justify-between mb-4">
@@ -1087,14 +1100,14 @@ const ChatTab = () => {
 
       {/* Right Side - Chat Window */}
       {selectedChat ? (
-        <div className="flex-1 min-w-0 flex flex-col bg-background relative z-30">
+        <div className="flex-1 min-w-0 flex flex-col bg-background relative z-30 animate-in slide-in-from-right-4 duration-300">
           {/* Chat Header */}
           {/* Modern Chat Header */}
           <div className="h-16 bg-card/80 backdrop-blur-xl border-b border-border pl-4 pr-1.5 md:pl-6 md:pr-4 flex items-center justify-between sticky top-0 z-20">
             <div className="flex items-center space-x-1.5 md:space-x-3 flex-1 min-w-0 mr-3">
               <button
                 onClick={() => setSelectedChat(null)}
-                className="md:hidden p-2 hover:bg-muted rounded-xl transition-colors"
+                className="lg:hidden p-2 hover:bg-muted rounded-xl transition-colors"
                 title="Back to Chats"
               >
                 <ArrowLeft size={18} className="text-foreground" />
@@ -1111,7 +1124,7 @@ const ChatTab = () => {
 
               <div className="flex-1 min-w-0">
                 <h3 className="font-black text-foreground text-sm md:text-base font-outfit leading-tight">
-                  {selectedChat.other_user?.user_name}
+                  {selectedChat.other_user?.user_name || 'System User'}
                 </h3>
                 <p className="text-[10px] md:text-xs flex items-center space-x-1.5 truncate">
                   {(() => {
@@ -1596,7 +1609,7 @@ const ChatTab = () => {
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full bg-muted/50 border border-transparent focus:border-indigo-500/20 focus:bg-card px-4 py-2.5 rounded-xl text-xs font-bold outline-none transition-all placeholder:text-muted-foreground/60 text-foreground resize-none scrollbar-none min-h-[42px] max-h-[120px]"
+                    className="w-full bg-muted/30 hover:bg-muted/40 border border-border/50 focus:border-indigo-500/30 focus:bg-card px-4 py-3 rounded-2xl text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 text-foreground resize-none scrollbar-none min-h-[46px] max-h-[160px] shadow-sm"
                   />
                   {messageInput.length >= 2400 && (
                     <div className={`absolute -top-6 right-2 text-[9px] font-black uppercase tracking-widest ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'
@@ -1810,7 +1823,7 @@ const ChatTab = () => {
                     {chat.other_user?.user_name?.charAt(0) || '?'}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-bold text-foreground">{chat.other_user?.user_name}</p>
+                    <p className="font-bold text-foreground">{chat.other_user?.user_name || 'System User'}</p>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
                       {chat.other_user?.user_type}
                     </p>
@@ -2165,7 +2178,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
             <h4 className={`font-black truncate text-xs tracking-tight ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground'}`}>
-              {chat.other_user?.user_name}
+              {chat.other_user?.user_name || 'System User'}
             </h4>
             <span className={`text-[8px] font-bold uppercase tracking-wider ${isSelected ? 'text-indigo-400' : 'text-muted-foreground'}`}>
               {formatTime(chat.last_message_at || chat.created_at)}
@@ -2256,7 +2269,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   };
 
   return (
-    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-1 px-2 md:px-4 group relative`}>
+    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-2 md:px-4 group relative`}>
       <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[85%] md:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
@@ -2284,9 +2297,9 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
           )}
 
           <div
-            className={`relative p-2.5 transition-all duration-300 ${getCorners()} ${isOwn
+            className={`relative p-2.5 transition-all duration-300 shadow-sm ${getCorners()} ${isOwn
               ? 'bg-indigo-600 text-white'
-              : 'bg-[#F2F3F5] dark:bg-muted/40 text-foreground'
+              : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
               } ${message.reply_to ? 'rounded-t-none' : ''}`}
           >
             {/* Media Content */}

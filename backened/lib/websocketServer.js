@@ -35,6 +35,10 @@ export function initializeWebSocket(httpServer) {
       }
 
       const userKey = `${userId}_${userType}`;
+      const personalRoom = `user_${userKey}`;
+
+      // Join personal room for targeted broadcasting
+      socket.join(personalRoom);
 
       // Store socket info
       onlineUsers.set(socket.id, { userId, userType, userName, status: 'active' });
@@ -45,7 +49,7 @@ export function initializeWebSocket(httpServer) {
       }
       userSockets.get(userKey).add(socket.id);
 
-      // console.log(`✅ ${userName} (${userKey}) is online - Socket: ${socket.id}`);
+      // console.log(`✅ ${userName} (${userKey}) is online - Joined room: ${personalRoom}`);
 
       // Send current online users list to the newly connected user
       // Optimization: constructing this list can be heavy if many users. 
@@ -76,53 +80,58 @@ export function initializeWebSocket(httpServer) {
     });
 
     /**
-     * Send message (broadcast to chat room)
+     * Send message (broadcast to participants)
      */
     socket.on('send_message', async (data) => {
       const { chatId, message } = data;
 
-      // Broadcast to all participants in the chat room except sender
-      socket.to(`chat_${chatId}`).emit('new_message', {
-        chatId,
-        message
-      });
-
-      console.log(`💬 Message sent to chat ${chatId}`);
-
-      // Send delivery notifications to online participants
       try {
+        // 1. Get all participants of this chat to find who to notify
         const { data: participants } = await supabase
           .from('chat_participants')
           .select('user_id, user_type')
           .eq('chat_id', chatId);
 
-        if (!participants) return;
+        if (participants) {
+          participants.forEach(participant => {
+            const recipientRoom = `user_${participant.user_id}_${participant.user_type}`;
 
-        // Filter out sender
-        const recipients = participants.filter(p => !(p.user_id == message.sender_id && p.user_type == message.sender_type));
-
-        for (const participant of recipients) {
-          const userKey = `${participant.user_id}_${participant.user_type}`;
-          const socketIds = userSockets.get(userKey);
-
-          if (socketIds && socketIds.size > 0) {
-            // User is online - mark as delivered
-            // We can do this asynchronously without awaiting if we trust eventual consistency?
-            // But good to await so we know it saved before emitting 'delivered'.
-            await supabase
-              .from('message_status')
-              .update({ status: 'delivered', delivered_at: new Date().toISOString() })
-              .eq('message_id', message.id)
-              .eq('user_id', participant.user_id)
-              .eq('user_type', participant.user_type);
-
-            // Emit delivery receipt
-            socketIds.forEach(sid => {
-              io.to(sid).emit('message_delivered', {
-                messageId: message.id,
-                chatId
-              });
+            // Broadcast to all sockets of this participant (including sender's other tabs)
+            io.to(recipientRoom).emit('new_message', {
+              chatId,
+              message
             });
+          });
+        }
+
+        console.log(`💬 Message from ${message.sender_id} sent to chat ${chatId} participants`);
+
+        // 2. Handle delivery status for online recipients
+        if (participants) {
+          // Filter out sender
+          const recipients = participants.filter(p => !(p.user_id == message.sender_id && p.user_type == message.sender_type));
+
+          for (const participant of recipients) {
+            const userKey = `${participant.user_id}_${participant.user_type}`;
+            const socketIds = userSockets.get(userKey);
+
+            if (socketIds && socketIds.size > 0) {
+              // User is online - mark as delivered
+              await supabase
+                .from('message_status')
+                .update({ status: 'delivered', delivered_at: new Date().toISOString() })
+                .eq('message_id', message.id)
+                .eq('user_id', participant.user_id)
+                .eq('user_type', participant.user_type);
+
+              // Emit delivery receipt
+              socketIds.forEach(sid => {
+                io.to(sid).emit('message_delivered', {
+                  messageId: message.id,
+                  chatId
+                });
+              });
+            }
           }
         }
       } catch (error) {

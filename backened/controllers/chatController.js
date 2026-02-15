@@ -87,10 +87,20 @@ export const chatController = {
           .neq('messages.sender_id', myUserId);
 
 
+        // Helper to format other user
+        const allParts = chatData.chat_participants;
+        const otherUser = allParts.find(p => !(p.user_id == myUserId && p.user_type == myUserType)) || allParts[0];
+
         return res.json({
           chat: {
             ...chatData,
-            participants: chatData.chat_participants,
+            other_user: otherUser ? {
+              user_id: otherUser.user_id,
+              user_type: otherUser.user_type,
+              user_name: otherUser.user_name,
+              user_email: otherUser.user_email,
+              user_avatar: otherUser.user_avatar
+            } : null,
             unread_count: realUnread || 0
           },
           isNew: false
@@ -122,7 +132,11 @@ export const chatController = {
       console.log(`✅ Created new chat ${newChat.id} between ${myUserId} and ${otherUserId}`);
 
       res.json({
-        chat: { ...newChat, participants: addedParticipants, unread_count: 0 },
+        chat: {
+          ...newChat,
+          other_user: participants.find(p => !(p.user_id == myUserId && p.user_type == myUserType)),
+          unread_count: 0
+        },
         isNew: true
       });
 
@@ -592,7 +606,8 @@ export const chatController = {
         .from('doctors')
         .select('unique_id, first_name, last_name, email, profile_image_url, specialization')
         .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`)
-        .neq('unique_id', currentUserId) // Assuming currentUserId matches unique_id
+        .neq('unique_id', currentUserId)
+        .not('unique_id', 'ilike', 'DOC-00%')
         .limit(20);
 
       // Search patients
@@ -601,6 +616,7 @@ export const chatController = {
         .select('unique_id, first_name, last_name, email')
         .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`)
         .neq('unique_id', currentUserId)
+        .not('unique_id', 'ilike', 'PAT-00%')
         .limit(20);
 
       const formatDocs = (doctors || []).map(d => ({
