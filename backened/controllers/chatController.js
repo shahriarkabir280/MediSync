@@ -317,15 +317,18 @@ export const chatController = {
       if (msgError) throw msgError;
 
       // Process messages to shape them like SQL result
-      const formattedMessages = messages.map(m => {
-        const myStatus = m.message_status?.find(s => s.user_id == userId); // Assuming userId matching type too implicitly or unique userId
-        return {
-          ...m,
-          reply_to: m.reply_to, // Supabase returns single object usually for foreign key
-          my_status: myStatus,
-          reactions: m.message_reactions
-        };
-      });
+      // Filter out messages deleted by me
+      const formattedMessages = messages
+        .filter(m => !m.deleted_by || !m.deleted_by.includes(userId))
+        .map(m => {
+          const myStatus = m.message_status?.find(s => s.user_id == userId); // Assuming userId matching type too implicitly or unique userId
+          return {
+            ...m,
+            reply_to: m.reply_to, // Supabase returns single object usually for foreign key
+            my_status: myStatus,
+            reactions: m.message_reactions
+          };
+        });
 
       // Mark as delivered
       // Update message_status where chat_id matches and user is me and status is sent
@@ -507,14 +510,15 @@ export const chatController = {
 
       if (!message) return res.status(403).json({ error: 'Not allowed' });
 
-      const updateData = { is_deleted: true, deleted_at: new Date().toISOString() };
-
       if (deleteForEveryone) {
+        const updateData = {};
         const timeLimit = 24 * 60 * 60 * 1000;
         if (new Date() - new Date(message.created_at) > timeLimit) {
           return res.status(400).json({ error: 'Too late to unsend' });
         }
         updateData.delete_for_everyone = true;
+        updateData.is_deleted = true;
+        updateData.deleted_at = new Date().toISOString();
 
         // Emit socket event
         try {
@@ -527,9 +531,17 @@ export const chatController = {
         } catch (err) {
           console.error('Socket emit error:', err);
         }
-      }
 
-      await supabase.from('messages').update(updateData).eq('id', messageId);
+        await supabase.from('messages').update(updateData).eq('id', messageId);
+
+      } else {
+        // "Delete for Me" -> Update deleted_by array
+        const currentDeletedBy = message.deleted_by || [];
+        if (!currentDeletedBy.includes(userId)) {
+          const newDeletedBy = [...currentDeletedBy, userId];
+          await supabase.from('messages').update({ deleted_by: newDeletedBy }).eq('id', messageId);
+        }
+      }
 
       res.json({ success: true, deleteForEveryone });
     } catch (error) {

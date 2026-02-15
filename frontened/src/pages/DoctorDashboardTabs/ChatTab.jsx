@@ -295,7 +295,7 @@ const ChatTab = () => {
     // Reaction added
     socket.on('reaction_added', (data) => {
       setMessages(prev => prev.map(msg =>
-        msg.id === data.messageId
+        msg.id == data.messageId
           ? {
             ...msg,
             reactions: [
@@ -311,7 +311,7 @@ const ChatTab = () => {
     socket.on('message_deleted', (data) => {
       if (selectedChat && data.chatId == selectedChat.id) {
         setMessages(prev => prev.map(msg =>
-          msg.id === data.messageId
+          msg.id == data.messageId
             ? { ...msg, is_deleted: true, delete_for_everyone: data.deleteForEveryone }
             : msg
         ));
@@ -2395,11 +2395,12 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             )}
 
             {/* Reactions Display */}
+            {/* Reactions Display */}
             {message.reactions && message.reactions.length > 0 && (
               <div className={`absolute -bottom-2 ${isOwn ? 'left-0' : 'right-0'} flex -space-x-1`}>
                 {message.reactions.map((r, idx) => (
                   <div key={idx} className="bg-card shadow-sm border border-border/50 rounded-full px-1 py-0.5 text-[10px] transform hover:scale-110 transition-transform">
-                    {r.emoji}
+                    {r.reaction || r.emoji}
                   </div>
                 ))}
               </div>
