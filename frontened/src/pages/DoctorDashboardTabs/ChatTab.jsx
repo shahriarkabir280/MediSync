@@ -48,6 +48,7 @@ const ChatTab = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [userActivity, setUserActivity] = useState('active'); // active, away, offline
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [scrollTargetId, setScrollTargetId] = useState(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [isIncomingCall, setIsIncomingCall] = useState(false);
@@ -218,6 +219,13 @@ const ChatTab = () => {
     }
   }, [socket.isConnected, socket.socket, selectedChat?.id]);
 
+  // Auto-select most recent chat on load
+  useEffect(() => {
+    if (chats.length > 0 && !selectedChat) {
+      handleSelectChat(chats[0]);
+    }
+  }, [chats.length]);
+
   // WebSocket event handlers
   useEffect(() => {
     if (!socket.socket) return;
@@ -322,14 +330,33 @@ const ChatTab = () => {
     };
   }, [socket.socket, selectedChat, currentUser]);
 
-  // Auto-scroll to bottom
+  // Smart scroll: to unread or bottom
+  const handleSmartScroll = () => {
+    setTimeout(() => {
+      if (scrollTargetId) {
+        const element = document.getElementById(`message-${scrollTargetId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // After finding and scrolling, we reset so future messages scroll to bottom
+          setScrollTargetId(null);
+          return;
+        }
+      }
+      // Default: scroll to bottom
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Simple scroll to bottom (used by sendMessage etc)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    handleSmartScroll();
+  }, [messages, scrollTargetId]);
 
   // Load all chats
   const loadChats = async () => {
@@ -380,8 +407,19 @@ const ChatTab = () => {
       const data = await chatApi.getMessages(chatId, currentUser.userId, currentUser.userType);
       setMessages(data.messages || []);
 
-      // Mark as read
+      // Find first unread message to scroll to
       if (data.messages && data.messages.length > 0) {
+        const firstUnread = data.messages.find(m =>
+          m.sender_id !== currentUser.userId && m.my_status?.status !== 'read'
+        );
+
+        if (firstUnread) {
+          setScrollTargetId(firstUnread.id);
+        } else {
+          setScrollTargetId(null);
+        }
+
+        // Mark as read
         const unreadIds = data.messages
           .filter(m => m.sender_id !== currentUser.userId && m.my_status?.status !== 'read')
           .map(m => m.id);
@@ -2313,7 +2351,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   };
 
   return (
-    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
+    <div id={`message-${message.id}`} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
       <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] md:max-w-[80%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
