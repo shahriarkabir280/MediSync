@@ -2280,12 +2280,18 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
     }
   };
 
-  const getStatusIcon = () => {
-    if (!isOwn) return null;
+  // Message status indicator (for sender's messages)
+  const MessageStatus = ({ message }) => {
     const status = message.my_status?.status;
-    if (status === 'read') return <CheckCheck size={12} className="text-white/80" />;
+    if (!status) return null;
+
+    // Read: Blue double check (WhatsApp style)
+    if (status === 'read') return <CheckCheck size={12} className="text-blue-400" />;
+    // Delivered: Gray double check
     if (status === 'delivered') return <CheckCheck size={12} className="text-white/60" />;
-    return <Check size={12} className="text-white/60" />;
+    // Sent: Single gray check
+    if (status === 'sent') return <Check size={12} className="text-white/60" />;
+    return null;
   };
 
   if (message.is_deleted) {
@@ -2394,7 +2400,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             {/* Inline Meta (Time & Status) */}
             <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
               <span>{formatTime(message.created_at)}</span>
-              {getStatusIcon()}
+              {isOwn && <MessageStatus message={message} />}
             </div>
           </div>
 
