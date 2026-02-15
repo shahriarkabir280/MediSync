@@ -309,7 +309,7 @@ const ChatTab = () => {
 
     // Message deleted
     socket.on('message_deleted', (data) => {
-      if (selectedChat && data.chatId === selectedChat.id) {
+      if (selectedChat && data.chatId == selectedChat.id) {
         setMessages(prev => prev.map(msg =>
           msg.id === data.messageId
             ? { ...msg, is_deleted: true, delete_for_everyone: data.deleteForEveryone }
@@ -748,10 +748,13 @@ const ChatTab = () => {
     const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
     if (!isOwn) return;
 
-    // Check if within 1 hour for "Delete for Everyone"
-    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    // Check if within 24 hours for "Delete for Everyone"
+    const timeLimit = 24 * 60 * 60 * 1000;
+    const limitTime = Date.now() - timeLimit;
     const messageTime = new Date(message.created_at).getTime();
-    const canDelete = messageTime > oneHourAgo;
+
+    // Allow delete if within time limit OR if it's the very last message (optional leniency)
+    const canDelete = messageTime > limitTime;
 
     setMessageToDelete(message);
     setCanDeleteForEveryone(canDelete);
@@ -762,10 +765,17 @@ const ChatTab = () => {
     if (!messageToDelete) return;
 
     try {
-      await chatApi.deleteMessage(messageToDelete.id, currentUser.userId, currentUser.userType);
+      await chatApi.deleteMessage(messageToDelete.id, currentUser.userId, currentUser.userType, deleteForEveryone);
 
-      // Remove message from local state
-      setMessages(prev => prev.filter(msg => msg.id !== messageToDelete.id));
+      // Update local state
+      if (deleteForEveryone) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageToDelete.id ? { ...msg, is_deleted: true } : msg
+        ));
+      } else {
+        // Delete for Me: Remove from view
+        setMessages(prev => prev.filter(msg => msg.id !== messageToDelete.id));
+      }
 
       // Show success message
       showToast('Message deleted successfully', 'success');
@@ -1798,7 +1808,7 @@ const ChatTab = () => {
                     </div>
                     <div className="text-left flex-1">
                       <h4 className="font-bold text-muted-foreground text-sm italic">Delete for Everyone</h4>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-1">Only available within 1 hour of sending.</p>
+                      <p className="text-[11px] text-muted-foreground font-medium mt-1">Only available within 24 hours of sending.</p>
                     </div>
                   </div>
                 )}

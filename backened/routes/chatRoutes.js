@@ -30,7 +30,7 @@ const upload = multer({
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm|mp3|wav|m4a|ogg|pdf|doc|docx|txt|zip|rar/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -85,7 +85,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
     }
 
     const fileUrl = `/uploads/chat-files/${req.file.filename}`;
-    
+
     res.json({
       success: true,
       file: {
@@ -119,7 +119,6 @@ router.put('/chats/:chatId/archive', chatController.archiveChat);
 // Clear all messages in a chat
 router.delete('/chats/:chatId/clear', chatController.clearChat);
 
-// Delete a specific message
-router.delete('/messages/:messageId', chatController.deleteMessage);
+
 
 export default router;

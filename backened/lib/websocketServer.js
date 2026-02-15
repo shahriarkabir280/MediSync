@@ -12,8 +12,17 @@ const onlineUsers = new Map();
 // Store user to socket mapping: { `${userId}_${userType}`: Set of socketIds }
 const userSockets = new Map();
 
+let io;
+
+export function getIO() {
+  if (!io) {
+    throw new Error('Socket.io not initialized!');
+  }
+  return io;
+}
+
 export function initializeWebSocket(httpServer) {
-  const io = new Server(httpServer, {
+  io = new Server(httpServer, {
     cors: {
       origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"],
       credentials: true

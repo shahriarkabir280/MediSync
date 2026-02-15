@@ -1,4 +1,5 @@
 import { supabase } from '../config/db.js';
+import { getIO } from '../lib/websocketServer.js';
 
 /**
  * Modern Chat Controller
@@ -310,7 +311,7 @@ export const chatController = {
 
       // SQL had: AND (m.is_deleted = FALSE OR m.sender_id = userId)
       // Supabase supports OR? .or(`is_deleted.eq.false,sender_id.eq.${userId}`)
-      query = query.or(`is_deleted.eq.false,sender_id.eq.${userId}`);
+      query = query.or(`is_deleted.eq.false,sender_id.eq.${userId},delete_for_everyone.eq.true`);
 
       const { data: messages, error: msgError } = await query;
       if (msgError) throw msgError;
@@ -509,12 +510,23 @@ export const chatController = {
       const updateData = { is_deleted: true, deleted_at: new Date().toISOString() };
 
       if (deleteForEveryone) {
-        const oneHour = 60 * 60 * 1000;
-        if (new Date() - new Date(message.created_at) > oneHour) {
+        const timeLimit = 24 * 60 * 60 * 1000;
+        if (new Date() - new Date(message.created_at) > timeLimit) {
           return res.status(400).json({ error: 'Too late to unsend' });
         }
         updateData.delete_for_everyone = true;
-        // Emit socket event here if needed
+
+        // Emit socket event
+        try {
+          const io = getIO();
+          io.to(`chat_${message.chat_id}`).emit('message_deleted', {
+            messageId,
+            chatId: message.chat_id,
+            deleteForEveryone: true
+          });
+        } catch (err) {
+          console.error('Socket emit error:', err);
+        }
       }
 
       await supabase.from('messages').update(updateData).eq('id', messageId);

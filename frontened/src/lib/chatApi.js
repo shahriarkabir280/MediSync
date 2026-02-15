@@ -149,7 +149,7 @@ export const chatApi = {
    */
   async uploadFile(file) {
     const formData = new FormData();
-    
+
     // If it's a Blob without a name property, add filename
     if (file instanceof Blob && !file.name) {
       formData.append('file', file, file.name || `file-${Date.now()}`);
@@ -269,16 +269,5 @@ export const chatApi = {
     return response;
   },
 
-  /**
-   * Delete a specific message
-   */
-  async deleteMessage(messageId, userId, userType) {
-    const response = await api.delete(`/chat/messages/${messageId}`, {
-      data: {
-        userId,
-        userType
-      }
-    });
-    return response;
-  }
+
 };

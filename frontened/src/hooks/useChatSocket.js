@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -33,14 +33,14 @@ export function useChatSocket(user) {
       console.log('✅ Socket connected:', socket.id);
       console.log('👤 User info:', { userId: user.userId, userType: user.userType, userName: user.userName });
       setIsConnected(true);
-      
+
       // Announce user online
       socket.emit('user_online', {
         userId: user.userId,
         userType: user.userType,
         userName: user.userName
       });
-      
+
       console.log('📡 Emitted user_online event');
     });
 
@@ -113,81 +113,81 @@ export function useChatSocket(user) {
   }, [user?.userId, user?.userType, user?.userName]);
 
   // Join a chat room
-  const joinChat = (chatId) => {
+  const joinChat = useCallback((chatId) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('join_chat', chatId);
     }
-  };
+  }, [isConnected]);
 
   // Leave a chat room
-  const leaveChat = (chatId) => {
+  const leaveChat = useCallback((chatId) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('leave_chat', chatId);
     }
-  };
+  }, [isConnected]);
 
   // Send message through WebSocket
-  const sendMessage = (chatId, message) => {
+  const sendMessage = useCallback((chatId, message) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('send_message', { chatId, message });
     }
-  };
+  }, [isConnected]);
 
   // Mark messages as read
-  const markAsRead = (chatId, messageIds, userId, userType) => {
+  const markAsRead = useCallback((chatId, messageIds, userId, userType) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('mark_read', { chatId, messageIds, userId, userType });
     }
-  };
+  }, [isConnected]);
 
   // Start typing indicator
-  const startTyping = (chatId, userId, userType, userName) => {
+  const startTyping = useCallback((chatId, userId, userType, userName) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('typing_start', { chatId, userId, userType, userName });
     }
-  };
+  }, [isConnected]);
 
   // Stop typing indicator
-  const stopTyping = (chatId, userId, userType) => {
+  const stopTyping = useCallback((chatId, userId, userType) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('typing_stop', { chatId, userId, userType });
     }
-  };
+  }, [isConnected]);
 
   // Add reaction
-  const addReaction = (chatId, messageId, userId, userType, reaction) => {
+  const addReaction = useCallback((chatId, messageId, userId, userType, reaction) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit('add_reaction', { chatId, messageId, userId, userType, reaction });
     }
-  };
+  }, [isConnected]);
 
   // Subscribe to events
-  const on = (event, handler) => {
+  const on = useCallback((event, handler) => {
     if (socketRef.current) {
       socketRef.current.on(event, handler);
     }
-  };
+  }, [socketRef.current]); // socketRef is stable
 
   // Unsubscribe from events
-  const off = (event, handler) => {
+  const off = useCallback((event, handler) => {
     if (socketRef.current) {
       socketRef.current.off(event, handler);
     }
-  };
+  }, [socketRef.current]);
 
   // Check if a user is online
-  const isUserOnline = (userId, userType) => {
+  const isUserOnline = useCallback((userId, userType) => {
     return onlineUsers.has(`${userId}_${userType}`);
-  };
+  }, [onlineUsers]);
 
   // Get user activity status (active, away, or offline)
-  const getUserActivityStatus = (userId, userType) => {
+  const getUserActivityStatus = useCallback((userId, userType) => {
     const userKey = `${userId}_${userType}`;
     if (!onlineUsers.has(userKey)) return 'offline';
     return userActivityStatus.get(userKey) || 'active';
-  };
+  }, [onlineUsers, userActivityStatus]);
 
-  return {
+  return useMemo(() => ({
     socket: socketRef.current,
     isConnected,
     onlineUsers,
@@ -203,5 +203,20 @@ export function useChatSocket(user) {
     addReaction,
     on,
     off
-  };
+  }), [
+    isConnected,
+    onlineUsers,
+    userActivityStatus,
+    isUserOnline,
+    getUserActivityStatus,
+    joinChat,
+    leaveChat,
+    sendMessage,
+    markAsRead,
+    startTyping,
+    stopTyping,
+    addReaction,
+    on,
+    off
+  ]);
 }
