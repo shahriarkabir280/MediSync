@@ -2117,8 +2117,13 @@ const ChatTab = () => {
 
       {/* Forward Message Modal - Modern Messenger Style */}
       {showForwardModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-          <div className="bg-card rounded-3xl shadow-2xl w-full max-w-[420px] h-[600px] max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border/50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 animate-in fade-in duration-300">
+          <div className="bg-card rounded-[32px] sm:rounded-3xl shadow-2xl w-[88%] sm:w-full sm:max-w-[420px] h-[50vh] sm:h-[600px] mb-8 sm:mb-0 flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 border border-border/50">
+            {/* Mobile Drag Handle */}
+            <div className="flex sm:hidden justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-muted-foreground/20 rounded-full" />
+            </div>
+
             {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between border-b border-border/50 bg-card">
               <h3 className="text-lg font-bold text-foreground font-outfit">Forward</h3>
@@ -2151,13 +2156,13 @@ const ChatTab = () => {
                     setForwardSearchQuery(val);
                     debouncedForwardSearchUsers(val);
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-muted/50 hover:bg-muted focus:bg-card border-transparent focus:border-indigo-500/50 rounded-2xl text-sm font-medium transition-all outline-none border focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full pl-10 pr-4 py-2.5 bg-muted/50 hover:bg-muted focus:bg-card border-transparent focus:border-indigo-500/50 rounded-2xl sm:text-sm text-base font-medium transition-all outline-none border focus:ring-4 focus:ring-indigo-500/10"
                 />
               </div>
             </div>
 
             {/* Recipients List */}
-            <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-3 space-y-4 scrollbar-hide pb-20">
               {/* Existing Chats Section */}
               <div className="space-y-1">
                 <div className="px-3 py-1 flex items-center justify-between">
