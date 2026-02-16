@@ -1731,7 +1731,6 @@ const ChatTab = () => {
                         {selectedChat.other_user?.user_name?.charAt(0)}
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-emerald-500 border-4 border-background rounded-full z-20 shadow-lg" title="Active now" />
                   </div>
 
                   <h2 className="text-2xl font-black text-foreground mb-1 font-outfit tracking-tight">
