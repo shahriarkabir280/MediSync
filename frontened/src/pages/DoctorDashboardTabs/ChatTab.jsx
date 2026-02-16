@@ -76,7 +76,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
         <div className="flex flex-col relative group/bubble">
           {/* Reaction Bar (Hover) */}
-          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/bubble:translate-y-0 flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
+          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 ${!showActionsMenu ? 'group-hover/bubble:opacity-100' : ''} transition-all duration-300 transform translate-y-2 ${!showActionsMenu ? 'group-hover/bubble:translate-y-0' : ''} flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
             {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
               <button
                 key={emoji}
