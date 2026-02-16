@@ -7,11 +7,11 @@ export const measureRender = (componentName, callback) => {
   const start = performance.now();
   const result = callback();
   const end = performance.now();
-  
-  if (process.env.NODE_ENV === 'development') {
+
+  if (import.meta.env.DEV) {
     console.log(`[Performance] ${componentName} rendered in ${(end - start).toFixed(2)}ms`);
   }
-  
+
   return result;
 };
 
@@ -31,7 +31,7 @@ export const debounce = (func, wait = 300) => {
 // Throttle function for frequent events
 export const throttle = (func, limit = 300) => {
   let inThrottle;
-  return function(...args) {
+  return function (...args) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
@@ -55,7 +55,7 @@ export const lazyLoadImage = (imgElement) => {
       }
     });
   });
-  
+
   observer.observe(imgElement);
 };
 
@@ -65,7 +65,7 @@ export const reportWebVitals = (onPerfEntry) => {
   if (!onPerfEntry || !(onPerfEntry instanceof Function)) {
     return;
   }
-  
+
   // Try to use Performance Observer API instead
   try {
     if ('PerformanceObserver' in window) {
@@ -88,13 +88,13 @@ export const reportWebVitals = (onPerfEntry) => {
 };
 
 // Log performance metrics
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.addEventListener('load', () => {
     const perfData = window.performance.timing;
     const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
     const connectTime = perfData.responseEnd - perfData.requestStart;
     const renderTime = perfData.domComplete - perfData.domLoading;
-    
+
     console.log('📊 Performance Metrics:');
     console.log(`  Page Load Time: ${pageLoadTime}ms`);
     console.log(`  Connection Time: ${connectTime}ms`);

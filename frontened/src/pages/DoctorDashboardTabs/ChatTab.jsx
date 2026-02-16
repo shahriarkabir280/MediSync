@@ -12,6 +12,212 @@ import { useAuth } from '../../contexts/AuthContext';
 import VideoCall from '../../components/VideoCall';
 import { debounce } from '../../utils/performance';
 
+// Message Bubble Component
+const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick }) => {
+  const [showActionsMenu, setShowActionsMenu] = React.useState(false);
+
+  // Close actions menu when clicking anywhere else
+  React.useEffect(() => {
+    if (!showActionsMenu) return;
+    const handleClick = () => setShowActionsMenu(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [showActionsMenu]);
+
+  const formatTime = (date) => {
+
+    if (!date) return '';
+    try {
+      let utcDate = date;
+      if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
+        utcDate = date.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(utcDate);
+      const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
+      return finalDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const MessageStatus = ({ message }) => {
+    const status = message.my_status?.status;
+    if (!status) return null;
+    if (status === 'read') return <CheckCheck size={12} className="text-blue-400" />;
+    if (status === 'delivered') return <CheckCheck size={12} className="text-white/60" />;
+    if (status === 'sent') return <Check size={12} className="text-white/60" />;
+    return null;
+  };
+
+  if (message.is_deleted) {
+    return (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 px-4`}>
+        <div className="max-w-[85%] px-4 py-2 rounded-2xl bg-muted/30 border border-border/50 text-muted-foreground italic text-[11px]">
+          Message deleted
+        </div>
+      </div>
+    );
+  }
+
+  const getCorners = () => {
+    if (isOwn) {
+      return `rounded-[20px] ${isFirst ? 'rounded-tr-lg' : 'rounded-tr-[4px]'} ${isLast ? 'rounded-br-lg' : 'rounded-br-[4px]'}`;
+    }
+    return `rounded-[20px] ${isFirst ? 'rounded-tl-lg' : 'rounded-tl-[4px]'} ${isLast ? 'rounded-bl-lg' : 'rounded-bl-[4px]'}`;
+  };
+
+  return (
+    <div id={`message-${message.id}`} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
+      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] md:max-w-[80%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
+
+        <div className="flex flex-col relative group/bubble">
+          {/* Reaction Bar (Hover) */}
+          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/bubble:translate-y-0 flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
+            {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
+              <button
+                key={emoji}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReact(message.id, emoji);
+                }}
+                className="hover:scale-125 transition-transform px-0.5 text-base"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+
+          {message.reply_to && message.reply_to_id && (
+            <div
+              onClick={() => onReplyClick && message.reply_to.id && onReplyClick(message.reply_to.id)}
+              className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] cursor-pointer hover:bg-muted/50 transition-colors ${isOwn ? 'ml-1 mr-1' : 'ml-1 mr-1'
+                }`}
+            >
+              <p className="font-bold text-indigo-600 truncate">↩ {message.reply_to.sender_name}</p>
+              <p className="text-muted-foreground line-clamp-2 italic break-words">{message.reply_to.content}</p>
+            </div>
+          )}
+
+          <div
+            className={`relative p-2.5 transition-all duration-300 shadow-sm ${getCorners()} ${isOwn
+              ? 'bg-indigo-600 text-white'
+              : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
+              } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''}`}
+          >
+            {/* Media Content */}
+            {message.media_url && (
+              <div className="mb-1.5 -mx-0.5 -mt-0.5 overflow-hidden rounded-[14px]">
+                {message.media_type?.startsWith('image/') ? (
+                  <img
+                    src={`http://localhost:3001${message.media_url}`}
+                    alt="Media"
+                    className="max-w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
+                  />
+                ) : message.media_type?.startsWith('video/') ? (
+                  <video controls className="max-w-full">
+                    <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
+                  </video>
+                ) : (
+                  <div className={`flex items-center gap-2.5 p-2.5 ${isOwn ? 'bg-white/10' : 'bg-black/5'}`}>
+                    <div className={`p-2 rounded-xl ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
+                      <FileText size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className={`text-[11px] font-bold truncate ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
+                      <p className={`text-[9px] opacity-70 font-bold ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
+                        {(message.media_size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <a href={`http://localhost:3001${message.media_url}`} download className={`p-1.5 rounded-lg transition-colors ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+                      <Download size={14} className={isOwn ? 'text-white' : 'text-muted-foreground'} />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Message Content */}
+            {message.content && message.content !== message.media_name && (
+              <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+                {message.content}
+              </p>
+            )}
+
+            {/* Reactions Display */}
+            {message.reactions && message.reactions.length > 0 && (
+              <div className={`absolute -bottom-2 ${isOwn ? 'left-0' : 'right-0'} flex -space-x-1`}>
+                {message.reactions.map((r, idx) => (
+                  <div key={idx} className="bg-card shadow-sm border border-border/50 rounded-full px-1 py-0.5 text-[10px] transform hover:scale-110 transition-transform">
+                    {r.reaction || r.emoji}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Inline Meta (Time & Status) */}
+            <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
+              <span>{formatTime(message.created_at)}</span>
+              {isOwn && <MessageStatus message={message} />}
+            </div>
+          </div>
+
+          {/* Quick Actions Menu - Outside bubble on all devices */}
+          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 flex items-center gap-1 ${isOwn ? '-left-6 md:-left-10 pr-1 md:pr-2' : '-right-6 md:-right-10 pl-1 md:pl-2'}`}>
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowActionsMenu(!showActionsMenu);
+                }}
+                className={`p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-all duration-300 ${showActionsMenu ? 'bg-muted rotate-90' : ''}`}
+                title="More"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+
+              {showActionsMenu && (
+                <div className={`absolute bottom-full mb-2 ${isOwn ? 'right-0' : 'left-0'} w-24 md:w-28 bg-card border border-border/50 shadow-2xl rounded-xl py-0.5 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onReply(message); setShowActionsMenu(false); }}
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
+                  >
+                    <RotateCcw size={14} className="text-indigo-500" /> Reply
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onForward(message); setShowActionsMenu(false); }}
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
+                  >
+                    <Forward size={14} className="text-emerald-500" /> Forward
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onCopy(message.content); setShowActionsMenu(false); }}
+                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
+                  >
+                    <Copy size={14} className="text-amber-500" /> Copy
+                  </button>
+                  {isOwn && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(message.id); setShowActionsMenu(false); }}
+                      className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted text-rose-500 flex items-center gap-2 transition-colors"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /**
  * Modern Chat Component - WhatsApp/Telegram Style
  * Full-featured messaging interface with real-time updates
@@ -336,9 +542,21 @@ const ChatTab = () => {
       if (scrollTargetId) {
         const element = document.getElementById(`message-${scrollTargetId}`);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Scroll with better positioning
+          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+          // Add highlight effect to make it obvious which message we scrolled to
+          element.style.transition = 'background-color 0.3s ease';
+          element.style.backgroundColor = 'rgba(99, 102, 241, 0.1)'; // indigo highlight
+
+          setTimeout(() => {
+            element.style.backgroundColor = '';
+          }, 2000);
+
           // After finding and scrolling, we reset so future messages scroll to bottom
-          setScrollTargetId(null);
+          setTimeout(() => {
+            setScrollTargetId(null);
+          }, 500);
           return;
         }
       }
@@ -354,9 +572,33 @@ const ChatTab = () => {
     }, 100);
   };
 
+  // Scroll to a specific message (used by reply click)
+  const handleScrollToMessage = (messageId) => {
+    if (!messageId) return;
+
+    // Set the target and wait a bit longer for rendering
+    setScrollTargetId(messageId);
+
+    // Trigger scroll with a slightly longer delay to ensure DOM is ready
+    setTimeout(() => {
+      const element = document.getElementById(`message-${messageId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+        // Add highlight effect
+        element.style.transition = 'background-color 0.3s ease';
+        element.style.backgroundColor = 'rgba(99, 102, 241, 0.15)';
+
+        setTimeout(() => {
+          element.style.backgroundColor = '';
+        }, 2000);
+      }
+    }, 200);
+  };
+
   useEffect(() => {
     handleSmartScroll();
-  }, [messages, scrollTargetId]);
+  }, [messages]); // Removed scrollTargetId to prevent auto-scroll after manual navigation
 
   // Load all chats
   const loadChats = async () => {
@@ -1451,6 +1693,7 @@ const ChatTab = () => {
                     onForward={() => handleForwardMessage(message)}
                     onCopy={() => handleCopyMessage(message)}
                     onReact={(emoji) => handleAddReaction(message, emoji)}
+                    onReplyClick={handleScrollToMessage}
                     onCallBack={(type) => {
                       setCallType(type);
                       setIsIncomingCall(false);
@@ -2252,217 +2495,5 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
   );
 };
 
-// Message Bubble Component
-const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onCallBack }) => {
-  const [showActionsMenu, setShowActionsMenu] = React.useState(false);
-
-  // Close actions menu when clicking anywhere else
-  React.useEffect(() => {
-    if (!showActionsMenu) return;
-    const handleClick = () => setShowActionsMenu(false);
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, [showActionsMenu]);
-
-  const formatTime = (date) => {
-    if (!date) return '';
-    try {
-      // If the date string doesn't include a timezone, assume UTC
-      let utcDate = date;
-      if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
-        // Handle 'YYYY-MM-DD HH:MM:SS' or similar formats by converting to ISO and adding Z
-        utcDate = date.replace(' ', 'T') + 'Z';
-      }
-
-      const d = new Date(utcDate);
-      // Fallback if the above conversion failed
-      const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
-
-      return finalDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch (e) {
-      return '';
-    }
-  };
-
-  // Message status indicator (for sender's messages)
-  const MessageStatus = ({ message }) => {
-    const status = message.my_status?.status;
-    if (!status) return null;
-
-    // Read: Blue double check (WhatsApp style)
-    if (status === 'read') return <CheckCheck size={12} className="text-blue-400" />;
-    // Delivered: Gray double check
-    if (status === 'delivered') return <CheckCheck size={12} className="text-white/60" />;
-    // Sent: Single gray check
-    if (status === 'sent') return <Check size={12} className="text-white/60" />;
-    return null;
-  };
-
-  if (message.is_deleted) {
-    return (
-      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 px-4`}>
-        <div className="max-w-[85%] px-4 py-2 rounded-2xl bg-muted/30 border border-border/50 text-muted-foreground italic text-[11px]">
-          Message deleted
-        </div>
-      </div>
-    );
-  }
-
-  // Border Radius Logic for modern grouping
-  const getCorners = () => {
-    if (isOwn) {
-      return `rounded-[20px] ${isFirst ? 'rounded-tr-lg' : 'rounded-tr-[4px]'} ${isLast ? 'rounded-br-lg' : 'rounded-br-[4px]'}`;
-    }
-    return `rounded-[20px] ${isFirst ? 'rounded-tl-lg' : 'rounded-tl-[4px]'} ${isLast ? 'rounded-bl-lg' : 'rounded-bl-[4px]'}`;
-  };
-
-  return (
-    <div id={`message-${message.id}`} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
-      <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] md:max-w-[80%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
-
-        <div className="flex flex-col relative group/bubble">
-          {/* Reaction Bar (Hover) */}
-          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/bubble:translate-y-0 flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
-            {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
-              <button
-                key={emoji}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onReact(message.id, emoji);
-                }}
-                className="hover:scale-125 transition-transform px-0.5 text-base"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-
-          {message.reply_to && (
-            <div className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] mx-1 opacity-80`}>
-              <p className="font-bold text-indigo-600 truncate">{message.reply_to.sender_name}</p>
-              <p className="text-muted-foreground truncate italic">{message.reply_to.content}</p>
-            </div>
-          )}
-
-          <div
-            className={`relative p-2.5 transition-all duration-300 shadow-sm ${getCorners()} ${isOwn
-              ? 'bg-indigo-600 text-white'
-              : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
-              } ${message.reply_to ? 'rounded-t-none' : ''}`}
-          >
-            {/* Media Content */}
-            {message.media_url && (
-              <div className="mb-1.5 -mx-0.5 -mt-0.5 overflow-hidden rounded-[14px]">
-                {message.media_type?.startsWith('image/') ? (
-                  <img
-                    src={`http://localhost:3001${message.media_url}`}
-                    alt="Media"
-                    className="max-w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
-                  />
-                ) : message.media_type?.startsWith('video/') ? (
-                  <video controls className="max-w-full">
-                    <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
-                  </video>
-                ) : (
-                  <div className={`flex items-center gap-2.5 p-2.5 ${isOwn ? 'bg-white/10' : 'bg-black/5'}`}>
-                    <div className={`p-2 rounded-xl ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
-                      <FileText size={18} />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className={`text-[11px] font-bold truncate ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
-                      <p className={`text-[9px] opacity-70 font-bold ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
-                        {(message.media_size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
-                    <a href={`http://localhost:3001${message.media_url}`} download className={`p-1.5 rounded-lg transition-colors ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
-                      <Download size={14} className={isOwn ? 'text-white' : 'text-muted-foreground'} />
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Message Content */}
-            {message.content && message.content !== message.media_name && (
-              <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
-                {message.content}
-              </p>
-            )}
-
-            {/* Reactions Display */}
-            {/* Reactions Display */}
-            {message.reactions && message.reactions.length > 0 && (
-              <div className={`absolute -bottom-2 ${isOwn ? 'left-0' : 'right-0'} flex -space-x-1`}>
-                {message.reactions.map((r, idx) => (
-                  <div key={idx} className="bg-card shadow-sm border border-border/50 rounded-full px-1 py-0.5 text-[10px] transform hover:scale-110 transition-transform">
-                    {r.reaction || r.emoji}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Inline Meta (Time & Status) */}
-            <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
-              <span>{formatTime(message.created_at)}</span>
-              {isOwn && <MessageStatus message={message} />}
-            </div>
-          </div>
-
-          {/* Quick Actions Menu - Outside bubble on all devices */}
-          <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-all duration-300 flex items-center ${isOwn ? '-left-6 md:-left-10 pr-1 md:pr-2' : '-right-6 md:-right-10 pl-1 md:pl-2'}`}>
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowActionsMenu(!showActionsMenu);
-                }}
-                className={`p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-all duration-300 ${showActionsMenu ? 'bg-muted rotate-90' : ''}`}
-                title="More"
-              >
-                <MoreHorizontal size={16} />
-              </button>
-
-              {showActionsMenu && (
-                <div className={`absolute bottom-full mb-2 ${isOwn ? 'right-0' : 'left-0'} w-24 md:w-28 bg-card border border-border/50 shadow-2xl rounded-xl py-0.5 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onReply(message); setShowActionsMenu(false); }}
-                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
-                  >
-                    <RotateCcw size={14} className="text-indigo-500" /> Reply
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onForward(message); setShowActionsMenu(false); }}
-                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
-                  >
-                    <Forward size={14} className="text-emerald-500" /> Forward
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onCopy(message.content); setShowActionsMenu(false); }}
-                    className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted flex items-center gap-2 transition-colors"
-                  >
-                    <Copy size={14} className="text-amber-500" /> Copy
-                  </button>
-                  {isOwn && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDelete(message.id); setShowActionsMenu(false); }}
-                      className="w-full px-2 py-1.5 text-left text-[10px] md:text-[11px] font-bold hover:bg-muted text-rose-500 flex items-center gap-2 transition-colors"
-                    >
-                      <Trash2 size={14} /> Delete
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
+// End of ChatTab component
 export default ChatTab;

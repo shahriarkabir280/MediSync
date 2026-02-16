@@ -295,7 +295,7 @@ export const chatController = {
         .from('messages')
         .select(`
             *,
-            reply_to:messages!reply_to_id(id, content, sender_name),
+            reply_to:reply_to_id(id, content, sender_name),
             message_status(user_id, status, delivered_at, read_at),
             message_reactions(user_id, user_type, reaction)
           `)
@@ -322,9 +322,15 @@ export const chatController = {
         .filter(m => !m.deleted_by || !m.deleted_by.includes(userId))
         .map(m => {
           const myStatus = m.message_status?.find(s => s.user_id == userId); // Assuming userId matching type too implicitly or unique userId
+
+          // Fix: Supabase returns reply_to as an array, but we need an object or null
+          const replyTo = Array.isArray(m.reply_to)
+            ? (m.reply_to.length > 0 ? m.reply_to[0] : null)
+            : m.reply_to;
+
           return {
             ...m,
-            reply_to: m.reply_to, // Supabase returns single object usually for foreign key
+            reply_to: replyTo, // Now it's an object or null, not an array
             my_status: myStatus,
             reactions: m.message_reactions
           };
