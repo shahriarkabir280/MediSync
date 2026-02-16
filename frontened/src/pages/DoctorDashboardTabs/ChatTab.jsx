@@ -108,6 +108,13 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
               : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
               } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''}`}
           >
+            {/* Forwarded Tag */}
+            {message.is_forwarded && (
+              <div className={`flex items-center gap-1 mb-1 opacity-60 ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
+                <Forward size={10} className="stroke-[3]" />
+                <span className="text-[9px] font-black uppercase tracking-tighter">Forwarded</span>
+              </div>
+            )}
             {/* Media Content */}
             {message.media_url && (
               <div className="mb-1.5 -mx-0.5 -mt-0.5 overflow-hidden rounded-[14px]">
@@ -1133,6 +1140,9 @@ const ChatTab = () => {
 
   // Forward message
   const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardSearchQuery, setForwardSearchQuery] = useState('');
+  const [forwardSearchResults, setForwardSearchResults] = useState([]);
+  const [isForwardSearching, setIsForwardSearching] = useState(false);
   const [messageToForward, setMessageToForward] = useState(null);
   const [selectedChatsForForward, setSelectedChatsForForward] = useState([]);
 
@@ -1146,22 +1156,41 @@ const ChatTab = () => {
     if (!messageToForward || selectedChatsForForward.length === 0) return;
 
     try {
-      await chatApi.forwardMessage(
+      setLoading(true);
+      const response = await chatApi.forwardMessage(
         messageToForward.id,
         selectedChatsForForward,
         currentUser.userId,
         currentUser.userType
       );
 
+      const forwardedMessages = response.messages || [];
+
+      // Broadcast each created message via socket and update chat list
+      forwardedMessages.forEach(msg => {
+        socket.sendMessage(msg.chat_id, msg);
+        updateChatListWithMessage(msg.chat_id, msg);
+      });
+
       setShowForwardModal(false);
       setMessageToForward(null);
       setSelectedChatsForForward([]);
+      setForwardSearchQuery('');
 
-      alert(`Message forwarded to ${selectedChatsForForward.length} chat(s)`);
+      // If current chat was one of the recipients, append it locally
+      const myForwardedMsg = forwardedMessages.find(m => m.chat_id === selectedChat?.id);
+      if (myForwardedMsg) {
+        setMessages(prev => [...prev, myForwardedMsg]);
+        scrollToBottom();
+      }
+
+      alert(`Successfully forwarded to ${response.forwardedCount} chat(s)`);
       loadChats();
     } catch (error) {
       console.error('Error forwarding message:', error);
       alert('Failed to forward message: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1207,6 +1236,29 @@ const ChatTab = () => {
       }
     }, 300),
     [currentUser.userId, currentUser.userType, isSearchFocused]
+  );
+
+  const debouncedForwardSearchUsers = useMemo(
+    () => debounce(async (query) => {
+      if (!query.trim() || query.length < 2) {
+        setForwardSearchResults([]);
+        return;
+      }
+
+      try {
+        setIsForwardSearching(true);
+        const data = await chatApi.searchUsers(query, currentUser.userId, currentUser.userType);
+        // Exclude self if they appear
+        const filteredUsers = (data.users || []).filter(u => u.user_id !== currentUser.userId);
+        setForwardSearchResults(filteredUsers);
+      } catch (error) {
+        console.error('Error searching users for forward:', error);
+        setForwardSearchResults([]);
+      } finally {
+        setIsForwardSearching(false);
+      }
+    }, 500),
+    [currentUser.userId]
   );
 
   // Search users and chats
@@ -2063,94 +2115,230 @@ const ChatTab = () => {
         </div>
       )}
 
-      {/* Forward Message Modal */}
+      {/* Forward Message Modal - Modern Messenger Style */}
       {showForwardModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-border">
-            {/* Modal Header */}
-            <div className="px-8 py-6 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white relative">
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-md">
-                  <ArrowRight size={24} className="rotate-[-45deg]" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black font-outfit">Forward to...</h3>
-                  <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-0.5">Select recipients</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl shadow-2xl w-full max-w-[420px] h-[600px] max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border/50">
+            {/* Header */}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-border/50 bg-card">
+              <h3 className="text-lg font-bold text-foreground font-outfit">Forward</h3>
               <button
-                onClick={() => setShowForwardModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
+                onClick={() => {
+                  setShowForwardModal(false);
+                  setForwardSearchQuery('');
+                  setForwardSearchResults([]);
+                }}
+                className="p-2 hover:bg-muted rounded-full text-muted-foreground transition-all"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* User List */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-muted/20">
-              {chats.filter(chat => chat.id !== selectedChat?.id).map(chat => (
-                <button
-                  key={chat.id}
-                  onClick={() => toggleChatForForward(chat.id)}
-                  className={`w-full p-2.5 rounded-2xl border-2 transition-all duration-300 flex items-center space-x-3 group ${selectedChatsForForward.includes(chat.id)
-                    ? 'border-indigo-500 bg-indigo-500/10 shadow-md'
-                    : 'border-transparent bg-card hover:bg-muted/50 hover:shadow-lg hover:shadow-indigo-500/5'
-                    }`}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${selectedChatsForForward.includes(chat.id)
-                    ? 'border-indigo-600 bg-indigo-600 scale-110'
-                    : 'border-border bg-card group-hover:border-indigo-500/30'
-                    }`}>
-                    {selectedChatsForForward.includes(chat.id) && (
-                      <Check size={14} className="text-white" strokeWidth={3} />
-                    )}
-                  </div>
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg shadow-sm group-hover:scale-105 transition-transform ${selectedChatsForForward.includes(chat.id)
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-indigo-50 text-indigo-600'
-                    }`}>
-                    {chat.other_user?.user_name?.charAt(0) || '?'}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-bold text-foreground">{chat.other_user?.user_name || 'System User'}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
-                      {chat.other_user?.user_type}
-                    </p>
-                  </div>
-                </button>
-              ))}
-
-              {chats.filter(chat => chat.id !== selectedChat?.id).length === 0 && (
-                <div className="text-center py-12 px-6">
-                  <div className="w-16 h-16 bg-muted rounded-[1.5rem] flex items-center justify-center mx-auto mb-4">
-                    <MessageCircle size={32} className="text-muted-foreground/30" />
-                  </div>
-                  <p className="text-muted-foreground font-bold text-sm">No other active chats found</p>
-                </div>
-              )}
+            {/* Search Bar */}
+            <div className="px-4 py-3 border-b border-border/50 bg-card/50">
+              <div className="relative group">
+                {isForwardSearching ? (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                ) : (
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-500 transition-colors" />
+                )}
+                <input
+                  type="text"
+                  placeholder="Search people to forward..."
+                  value={forwardSearchQuery}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForwardSearchQuery(val);
+                    debouncedForwardSearchUsers(val);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 bg-muted/50 hover:bg-muted focus:bg-card border-transparent focus:border-indigo-500/50 rounded-2xl text-sm font-medium transition-all outline-none border focus:ring-4 focus:ring-indigo-500/10"
+                />
+              </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-8 py-6 bg-card border-t border-border flex items-center justify-between space-x-4">
-              <button
-                onClick={() => setShowForwardModal(false)}
-                className="flex-1 px-6 py-3.5 text-muted-foreground font-bold text-sm hover:bg-muted rounded-2xl transition-all"
-              >
-                Cancel
-              </button>
+            {/* Recipients List */}
+            <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-hide">
+              {/* Existing Chats Section */}
+              <div className="space-y-1">
+                <div className="px-3 py-1 flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Recent Chats</h4>
+                  <span className="text-[10px] font-bold text-indigo-500/60 bg-indigo-500/5 px-2 py-0.5 rounded-full">
+                    {chats.filter(c => c.id !== selectedChat?.id).length} Active
+                  </span>
+                </div>
+                {chats
+                  .filter(chat => {
+                    if (chat.id === selectedChat?.id) return false;
+                    if (!forwardSearchQuery) return true;
+                    const name = chat.other_user?.user_name?.toLowerCase() || '';
+                    return name.includes(forwardSearchQuery.toLowerCase());
+                  })
+                  .map(chat => {
+                    const isSelected = selectedChatsForForward.includes(chat.id);
+                    return (
+                      <button
+                        key={chat.id}
+                        onClick={() => toggleChatForForward(chat.id)}
+                        className={`w-full p-2.5 rounded-2xl transition-all duration-200 flex items-center gap-3 group ${isSelected
+                          ? 'bg-indigo-500/10'
+                          : 'hover:bg-muted/50'
+                          }`}
+                      >
+                        {/* Avatar */}
+                        <div className="relative">
+                          <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-sm transition-all duration-300 ${isSelected
+                            ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-card'
+                            : 'group-hover:scale-105'
+                            } ${chat.other_user?.user_avatar
+                              ? 'bg-transparent'
+                              : 'bg-indigo-50 text-indigo-600'
+                            }`}>
+                            {chat.other_user?.user_avatar ? (
+                              <img src={chat.other_user.user_avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              chat.other_user?.user_name?.charAt(0) || '?'
+                            )}
+                          </div>
+                          {isSelected && (
+                            <div className="absolute -bottom-1 -right-1 bg-indigo-600 rounded-full p-1 border-2 border-card shadow-lg animate-in zoom-in duration-200">
+                              <Check size={10} className="text-white" strokeWidth={4} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 text-left min-w-0">
+                          <p className={`font-bold text-sm truncate ${isSelected ? 'text-indigo-600' : 'text-foreground'}`}>
+                            {chat.other_user?.user_name || 'System User'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
+                            {chat.other_user?.user_type || 'User'}
+                          </p>
+                        </div>
+
+                        {/* Selection Badge */}
+                        {!isSelected && (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 bg-indigo-500 text-white text-[10px] font-black uppercase rounded-full">
+                            Select
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Global Results Section */}
+              {forwardSearchQuery.length >= 2 && (
+                <div className="space-y-1">
+                  <div className="px-3 py-1 flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500/60">Other Results</h4>
+                    {isForwardSearching && <div className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>}
+                  </div>
+                  {forwardSearchResults
+                    .filter(user => {
+                      // Don't show users who already have an active chat shown above
+                      return !chats.some(c => c.other_user?.user_id === user.user_id);
+                    })
+                    .map(user => {
+                      // Check if already selected by looking at the chats list (after auto-creating)
+                      const existingChat = chats.find(c => c.other_user?.user_id === user.user_id);
+                      const isSelected = existingChat ? selectedChatsForForward.includes(existingChat.id) : false;
+
+                      return (
+                        <button
+                          key={`${user.user_id}_${user.user_type}`}
+                          onClick={async () => {
+                            if (existingChat) {
+                              toggleChatForForward(existingChat.id);
+                            } else {
+                              // Auto-create chat
+                              try {
+                                const payload = {
+                                  userId: user.user_id,
+                                  userType: user.user_type,
+                                  userName: user.user_name,
+                                  userEmail: user.user_email || '',
+                                  userAvatar: user.user_avatar || ''
+                                };
+                                const startRes = await chatApi.startChat(currentUser, payload);
+                                await loadChats();
+                                toggleChatForForward(startRes.chat.id);
+                              } catch (err) {
+                                console.error('Failed to auto-start chat for forward:', err);
+                              }
+                            }
+                          }}
+                          className={`w-full p-2.5 rounded-2xl transition-all duration-200 flex items-center gap-3 group ${isSelected
+                            ? 'bg-indigo-500/10'
+                            : 'hover:bg-muted/50'
+                            }`}
+                        >
+                          <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shadow-sm transition-all duration-300 ${user.user_type === 'doctor'
+                            ? 'bg-indigo-50 text-indigo-600'
+                            : 'bg-emerald-50 text-emerald-600'
+                            } group-hover:scale-105`}>
+                            {user.user_avatar ? (
+                              <img src={user.user_avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              user.user_name?.charAt(0) || '?'
+                            )}
+                          </div>
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="font-bold text-sm truncate text-foreground">
+                              {user.user_name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
+                              {user.user_type === 'doctor' ? 'Provider' : 'Patient'}
+                              {user.specialization && ` • ${user.specialization}`}
+                            </p>
+                          </div>
+                          <div className="px-3 py-1 border border-border rounded-full text-[9px] font-black uppercase text-muted-foreground group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
+                            New Chat
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                  {forwardSearchResults.length === 0 && !isForwardSearching && (
+                    <div className="px-3 py-4 text-center rounded-2xl bg-muted/30 border border-dashed border-border/50">
+                      <p className="text-[11px] font-bold text-muted-foreground/50 italic tracking-tight">No additional users found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* General Empty State */}
+              {chats.filter(chat => {
+                if (chat.id === selectedChat?.id) return false;
+                if (!forwardSearchQuery) return true;
+                const name = chat.other_user?.user_name?.toLowerCase() || '';
+                return name.includes(forwardSearchQuery.toLowerCase());
+              }).length === 0 && forwardSearchResults.length === 0 && !isForwardSearching && (
+                  <div className="text-center py-10">
+                    <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Search size={28} className="text-muted-foreground/30" />
+                    </div>
+                    <p className="text-muted-foreground font-bold text-sm">No results found</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Try a different name</p>
+                  </div>
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className={`px-6 py-4 border-t border-border/50 bg-card transition-all duration-300 ${selectedChatsForForward.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 h-0 p-0 pointer-events-none'
+              }`}>
               <button
                 onClick={handleForwardConfirm}
-                disabled={selectedChatsForForward.length === 0}
-                className={`flex-[1.5] px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center space-x-2 transition-all transform active:scale-95 shadow-xl ${selectedChatsForForward.length > 0
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                  }`}
+                disabled={loading}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span>Forward</span>
-                {selectedChatsForForward.length > 0 && (
-                  <span className="bg-white/20 px-2 py-0.5 rounded-lg text-[10px]">
-                    {selectedChatsForForward.length}
-                  </span>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <span>Send to {selectedChatsForForward.length} {selectedChatsForForward.length === 1 ? 'chat' : 'chats'}</span>
+                    <Send size={16} />
+                  </>
                 )}
               </button>
             </div>

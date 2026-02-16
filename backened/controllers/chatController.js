@@ -559,13 +559,24 @@ export const chatController = {
   /**
    * Forward a message
    */
+  /**
+   * Forward a message
+   */
   forwardMessage: async (req, res) => {
-    // Implementation simplifies: Fetch original, insert new copies loop
     try {
       const { messageId, toChatIds, userId, userType } = req.body;
+      console.log(`⏩ Forwarding message ${messageId} to ${toChatIds.length} chats`);
 
-      const { data: original } = await supabase.from('messages').select('*').eq('id', messageId).single();
-      if (!original) return res.status(404).json({ error: 'Message not found' });
+      const { data: original, error: origError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('id', messageId)
+        .single();
+
+      if (origError || !original) {
+        console.error('❌ Original message not found:', origError);
+        return res.status(404).json({ error: 'Message not found' });
+      }
 
       // Sender Name lookup
       let senderName = 'User';
@@ -577,46 +588,88 @@ export const chatController = {
         if (p) senderName = `${p.first_name} ${p.last_name}`;
       }
 
-      const forwarded = [];
+      const forwardedMessages = [];
+      const errors = [];
+
       for (const chatId of toChatIds) {
-        // Check access
-        const { data: access } = await supabase.from('chat_participants').select('id').eq('chat_id', chatId).eq('user_id', userId).maybeSingle();
-        if (!access) continue;
+        try {
+          // Check access
+          const { data: access } = await supabase
+            .from('chat_participants')
+            .select('id')
+            .eq('chat_id', chatId)
+            .eq('user_id', userId)
+            .maybeSingle();
 
-        const { data: newMsg } = await supabase.from('messages').insert({
-          chat_id: chatId,
-          sender_id: userId,
-          sender_type: userType,
-          sender_name: senderName,
-          content: original.content,
-          message_type: original.message_type,
-          media_url: original.media_url,
-          media_name: original.media_name,
-          media_type: original.media_type,
-          is_forwarded: true,
-          forwarded_from_message_id: messageId,
-          created_at: new Date().toISOString()
-        }).select().single();
+          if (!access) {
+            console.warn(`⚠️ User ${userId} is not a participant in chat ${chatId}`);
+            continue;
+          }
 
-        if (newMsg) {
-          forwarded.push(newMsg);
-          // Create statuses
-          const { data: parts } = await supabase.from('chat_participants').select('*').eq('chat_id', chatId);
-          const statuses = parts.map(p => ({
-            message_id: newMsg.id,
-            user_id: p.user_id,
-            user_type: p.user_type,
-            status: (p.user_id == userId) ? 'read' : 'sent',
-            read_at: (p.user_id == userId) ? new Date().toISOString() : null
-          }));
-          await supabase.from('message_status').insert(statuses);
-          await supabase.from('chats').update({ last_message_at: new Date().toISOString() }).eq('id', chatId);
+          const { data: newMsg, error: insertError } = await supabase
+            .from('messages')
+            .insert({
+              chat_id: chatId,
+              sender_id: userId,
+              sender_type: userType,
+              sender_name: senderName,
+              content: original.content,
+              message_type: original.message_type,
+              media_url: original.media_url,
+              media_name: original.media_name,
+              media_size: original.media_size,
+              media_type: original.media_type,
+              thumbnail_url: original.thumbnail_url,
+              is_forwarded: true,
+              forward_from_message_id: messageId,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+
+          if (newMsg) {
+            // Create statuses for all participants
+            const { data: participants } = await supabase
+              .from('chat_participants')
+              .select('user_id, user_type')
+              .eq('chat_id', chatId);
+
+            const statuses = participants.map(p => ({
+              message_id: newMsg.id,
+              user_id: p.user_id,
+              user_type: p.user_type,
+              status: (p.user_id == userId && p.user_type == userType) ? 'read' : 'sent',
+              read_at: (p.user_id == userId && p.user_type == userType) ? new Date().toISOString() : null
+            }));
+
+            await supabase.from('message_status').insert(statuses);
+
+            // Update chat last message time
+            await supabase.from('chats').update({ last_message_at: new Date().toISOString() }).eq('id', chatId);
+
+            forwardedMessages.push({
+              ...newMsg,
+              reply_to: null,
+              reactions: []
+            });
+          }
+        } catch (chatError) {
+          console.error(`❌ Error forwarding to chat ${chatId}:`, chatError);
+          errors.push({ chatId, error: chatError.message });
         }
       }
 
-      res.json({ success: true, forwardedCount: forwarded.length });
+      console.log(`✅ Successfully forwarded to ${forwardedMessages.length} chats`);
+      res.json({
+        success: true,
+        forwardedCount: forwardedMessages.length,
+        messages: forwardedMessages,
+        errors: errors.length > 0 ? errors : undefined
+      });
     } catch (error) {
-      console.error('Error forwarding:', error);
+      console.error('❌ Critical error in forwardMessage:', error);
       res.status(500).json({ error: 'Failed' });
     }
   },
