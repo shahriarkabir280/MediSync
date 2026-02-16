@@ -1714,46 +1714,77 @@ const ChatTab = () => {
                   </p>
                 </div>
               </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full max-w-sm mx-auto text-center px-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-indigo-200 mb-6 transform hover:rotate-6 transition-transform duration-500">
-                  <MessageCircle size={40} className="text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">No messages yet</h3>
-                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                  Send your first message to start the consultation with <span className="text-indigo-500 font-bold">{selectedChat.other_user?.user_name}</span>.
-                </p>
-              </div>
             ) : (
-              messages.map((message, index) => {
-                const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
-                const prevMessage = messages[index - 1];
-                const nextMessage = messages[index + 1];
+              <div className="flex flex-col">
+                {/* Messenger-style Chat Introduction */}
+                <div className="flex flex-col items-center justify-center py-12 px-6 mb-4 text-center border-b border-border/30 bg-gradient-to-b from-indigo-50/20 to-transparent dark:from-indigo-500/5">
+                  <div className="relative mb-4 group">
+                    <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2.5rem] opacity-20 group-hover:opacity-30 blur-sm transition-opacity" />
+                    {selectedChat.other_user?.user_avatar ? (
+                      <img
+                        src={`http://localhost:3001${selectedChat.other_user.user_avatar}`}
+                        alt={selectedChat.other_user.user_name}
+                        className="w-24 h-24 rounded-[2.2rem] object-cover border-2 border-background shadow-2xl relative z-10"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-[2.2rem] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
+                        {selectedChat.other_user?.user_name?.charAt(0)}
+                      </div>
+                    )}
+                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-emerald-500 border-4 border-background rounded-full z-20 shadow-lg" title="Active now" />
+                  </div>
 
-                const isFirst = !prevMessage || prevMessage.sender_id !== message.sender_id;
-                const isLast = !nextMessage || nextMessage.sender_id !== message.sender_id;
+                  <h2 className="text-2xl font-black text-foreground mb-1 font-outfit tracking-tight">
+                    {selectedChat.other_user?.user_name}
+                  </h2>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/20 shadow-sm">
+                      {selectedChat.other_user?.user_type || 'User'}
+                    </span>
+                    <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">•</span>
+                    <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">Connected</span>
+                  </div>
 
-                return (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isOwn={isOwn}
-                    isFirst={isFirst}
-                    isLast={isLast}
-                    onReply={() => setReplyTo(message)}
-                    onDelete={() => handleDeleteMessage(message)}
-                    onForward={() => handleForwardMessage(message)}
-                    onCopy={() => handleCopyMessage(message)}
-                    onReact={(emoji) => handleAddReaction(message, emoji)}
-                    onReplyClick={handleScrollToMessage}
-                    onCallBack={(type) => {
-                      setCallType(type);
-                      setIsIncomingCall(false);
-                      setShowVideoCall(true);
-                    }}
-                  />
-                );
-              })
+                  <p className="max-w-xs text-[11px] font-medium text-muted-foreground/70 leading-relaxed uppercase tracking-wider">
+                    This is the very beginning of your consultation history with <span className="text-foreground font-bold">{selectedChat.other_user?.user_name}</span>.
+                  </p>
+                </div>
+
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                    <div className="w-16 h-16 bg-muted/30 rounded-3xl flex items-center justify-center mb-4 text-muted-foreground/40 border border-border/50">
+                      <MessageCircle size={32} />
+                    </div>
+                    <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-[0.2em]">No messages yet</p>
+                    <p className="mt-2 text-[11px] font-medium text-muted-foreground/40 max-w-[200px]">Send a message to start the secure conversation.</p>
+                  </div>
+                ) : (
+                  messages.map((message, index) => {
+                    const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
+                    const prevMessage = messages[index - 1];
+                    const nextMessage = messages[index + 1];
+
+                    const isFirst = !prevMessage || prevMessage.sender_id !== message.sender_id;
+                    const isLast = !nextMessage || nextMessage.sender_id !== message.sender_id;
+
+                    return (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        isOwn={isOwn}
+                        isFirst={isFirst}
+                        isLast={isLast}
+                        onReply={() => setReplyTo(message)}
+                        onDelete={() => handleDeleteMessage(message)}
+                        onForward={() => handleForwardMessage(message)}
+                        onCopy={() => handleCopyMessage(message.content)}
+                        onReact={(messageId, emoji) => handleAddReaction(messageId, emoji)}
+                        onReplyClick={handleScrollToMessage}
+                      />
+                    );
+                  })
+                )}
+              </div>
             )}
 
             {/* Typing indicator */}
