@@ -4,7 +4,7 @@ import {
   Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
-  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2
+  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2, Play, Pause
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -122,6 +122,134 @@ const LinkPreview = ({ content, isOwn }) => {
             {preview.description}
           </p>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Modern Voice Message Component
+const VoiceMessage = ({ url, isOwn }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const setAudioData = () => {
+      // Some browsers return Infinity if duration isn't loaded yet
+      if (isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const setAudioTime = () => setCurrentTime(audio.currentTime);
+    const onEnded = () => setIsPlaying(false);
+
+    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('ended', onEnded);
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('timeupdate', setAudioTime);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, []);
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleSpeedToggle = (e) => {
+    e.stopPropagation();
+    const speeds = [1, 1.5, 2];
+    const currentIndex = speeds.indexOf(playbackSpeed);
+    const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
+    setPlaybackSpeed(nextSpeed);
+    audioRef.current.playbackRate = nextSpeed;
+  };
+
+  const handleWaveformClick = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = x / width;
+    if (duration > 0) {
+      audioRef.current.currentTime = percentage * duration;
+    }
+  };
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Generate a mock waveform
+  const waveformBars = useMemo(() => {
+    return Array.from({ length: 35 }, (_, i) => ({
+      height: 20 + Math.random() * 60, // 20% to 80% height
+      id: i
+    }));
+  }, []);
+
+  return (
+    <div className="flex items-center gap-3 py-1 px-0.5 w-full">
+      <button
+        onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center transition-all transform active:scale-90 hover:scale-105 ${isOwn ? 'bg-white text-indigo-600 shadow-md' : 'bg-indigo-600 text-white shadow-lg'
+          }`}
+      >
+        {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} className="ml-1" fill="currentColor" />}
+      </button>
+
+      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        <div
+          className="flex items-end gap-[2px] h-8 relative cursor-pointer group/wave"
+          onClick={handleWaveformClick}
+        >
+          {waveformBars.map((bar, i) => {
+            const progress = (currentTime / (duration || 1)) * 100;
+            const barProgress = (i / waveformBars.length) * 100;
+            const isActive = barProgress <= progress;
+
+            return (
+              <div
+                key={bar.id}
+                className={`w-[3px] rounded-full transition-all duration-200 group-hover/wave:w-[4px] ${isActive
+                  ? (isOwn ? 'bg-white' : 'bg-indigo-600')
+                  : (isOwn ? 'bg-white/30' : 'bg-gray-300 dark:bg-white/10')
+                  }`}
+                style={{ height: `${bar.height}%` }}
+              />
+            );
+          })}
+        </div>
+        <div className="flex justify-between items-center text-[10px] font-black tracking-widest uppercase opacity-80">
+          <span className={isOwn ? 'text-indigo-50' : 'text-muted-foreground'}>
+            {isPlaying ? formatTime(currentTime) : (duration ? formatTime(duration) : '0:00')}
+          </span>
+          <audio ref={audioRef} src={getMediaUrl(url)} preload="metadata" />
+          <button
+            onClick={handleSpeedToggle}
+            className={`px-1.5 py-0.5 rounded-full text-[9px] font-black transition-all border ${isOwn
+              ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+              : 'bg-black/5 border-black/10 hover:bg-black/10 text-indigo-600'
+              }`}
+          >
+            {playbackSpeed}x
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -282,6 +410,10 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
                   <video controls className="w-full max-h-[300px]">
                     <source src={getMediaUrl(message.media_url)} type={message.media_type} />
                   </video>
+                ) : (message.message_type === 'voice' || message.media_type?.startsWith('audio/')) ? (
+                  <div className="p-2 w-full">
+                    <VoiceMessage url={message.media_url} isOwn={isOwn} />
+                  </div>
                 ) : (
                   <div className="p-3">
                     <div className="flex items-start gap-3">
@@ -2190,42 +2322,51 @@ const ChatTab = () => {
           {/* Message Input */}
           <div className="bg-card border-t border-border px-2 md:px-6 py-3 md:py-4">
             {isRecording ? (
-              // Recording UI
-              <div className="flex items-center space-x-4 p-2 bg-rose-50 rounded-2xl border border-rose-100/50 animate-in zoom-in-95 duration-300">
-                <div className="flex-1 flex items-center space-x-4 px-4">
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-25"></div>
-                    <div className="w-3 h-3 bg-rose-600 rounded-full shadow-lg z-10"></div>
+              // Modern Recording UI - Telegram & Messenger inspired
+              <div className="flex items-center gap-3 p-1.5 bg-rose-500/5 dark:bg-rose-500/10 backdrop-blur-md rounded-[24px] border border-rose-500/20 animate-in slide-in-from-bottom-2 duration-300">
+                <div className="flex-1 flex items-center px-4 gap-4">
+                  {/* Blinking Indicator */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-2.5 h-2.5">
+                      <div className="absolute inset-0 bg-rose-500 rounded-full animate-ping opacity-40"></div>
+                      <div className="relative w-full h-full bg-rose-600 rounded-full shadow-[0_0_10px_rgba(225,29,72,0.4)]"></div>
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-rose-600 font-outfit tabular-nums">
+                      {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-rose-600 font-outfit">
-                    {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-                  </span>
-                  <div className="flex-1 flex items-center space-x-1 h-6">
+
+                  {/* Consistent Waveform Animation */}
+                  <div className="flex-1 flex items-center justify-center gap-[2px] h-8">
                     {[...Array(24)].map((_, i) => (
                       <div
                         key={i}
-                        className="w-1 bg-rose-400/40 rounded-full animate-pulse"
+                        className="w-[3px] bg-rose-500/30 rounded-full animate-[pulse_1.5s_infinite]"
                         style={{
-                          height: `${Math.random() * 80 + 20}%`,
-                          animationDelay: `${i * 0.05}s`
+                          height: `${Math.random() * 60 + 20}%`,
+                          animationDelay: `${i * 0.1}s`
                         }}
                       ></div>
                     ))}
                   </div>
                 </div>
-                <button
-                  onClick={cancelRecording}
-                  className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-rose-600 transition-all shadow-sm"
-                >
-                  <X size={16} />
-                </button>
-                <button
-                  onClick={stopRecording}
-                  className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all transform hover:scale-105 active:scale-95"
-                  title="Send Recording"
-                >
-                  <Send size={16} />
-                </button>
+
+                <div className="flex items-center gap-2 pr-1.5">
+                  <button
+                    onClick={cancelRecording}
+                    className="group flex items-center gap-1.5 px-3 py-2 rounded-2xl hover:bg-rose-500/10 text-rose-600/60 hover:text-rose-600 transition-all font-black text-[10px] uppercase tracking-widest"
+                  >
+                    <X size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="hidden sm:inline">Cancel</span>
+                  </button>
+                  <button
+                    onClick={stopRecording}
+                    className="w-10 h-10 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all transform hover:scale-110 active:scale-90 flex items-center justify-center"
+                    title="Send Voice Message"
+                  >
+                    <Send size={18} fill="currentColor" />
+                  </button>
+                </div>
               </div>
             ) : (
               // Normal input UI
@@ -2419,7 +2560,7 @@ const ChatTab = () => {
                 ) : (
                   <button
                     onClick={startRecording}
-                    className="p-2.5 bg-muted/50 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all transform hover:scale-105 active:scale-95 border border-transparent hover:border-indigo-100"
+                    className="p-2.5 bg-indigo-50 text-indigo-600/70 hover:bg-indigo-600 hover:text-white rounded-xl transition-all transform hover:rotate-12 hover:scale-110 active:scale-90 border border-indigo-100/50 shadow-sm"
                     title="Voice Message"
                   >
                     <Mic size={16} />
