@@ -890,19 +890,24 @@ export const chatController = {
 
       console.log(`🔍 Fetching link preview for: ${url}`);
 
+      // Specialized handling for Google Maps
+      const isGoogleMaps = url.includes('google.com/maps') || url.includes('maps.app.goo.gl');
+
       // Use native fetch (available in Node 18+)
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'CareConnect-Bot/1.0 (LinkPreviewService)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html'
         },
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000)
       });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch URL: ${response.statusText}`);
       }
 
+      const finalUrl = response.url;
       const html = await response.text();
 
       // Extract metadata using regex (simple and doesn't require extra heavy libraries)
@@ -927,10 +932,24 @@ export const chatController = {
       const result = {
         title: getTitle(),
         description: getMeta('description'),
-        image: getMeta('image'),
-        siteName: getMeta('site_name'),
+        image: getMeta('image') || getMeta('image:secure_url'),
+        siteName: getMeta('site_name') || (isGoogleMaps ? 'Google Maps' : null),
         url: url
       };
+
+      // Special handling if image is missing for Google Maps
+      if (isGoogleMaps && !result.image) {
+        // Try to extract coordinates from the final URL
+        const geoMatch = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (geoMatch) {
+          const [_, lat, lng] = geoMatch;
+          // Use Yandex Static Maps as a high-quality fallback (no key required)
+          result.image = `https://static-maps.yandex.ru/1.x/?l=map&z=14&size=600,300&pt=${lng},${lat},pm2rdm`;
+          if (!result.title || result.title === 'Google Maps') {
+            result.title = `Location: ${lat}, ${lng}`;
+          }
+        }
+      }
 
       // Clean up title/description (un-escape HTML entities if needed, but basic strings are fine for now)
       if (result.title) result.title = result.title.trim();
