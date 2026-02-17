@@ -42,21 +42,13 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3000; // Default to port 3000 if not specified in .env 
 
-
-// Middleware setup
-app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-// Serve uploaded files statically with absolute path
-const uploadsPath = path.join(__dirname, 'uploads');
-app.use('/uploads', express.static(uploadsPath));
-
 // Configure CORS to allow frontend requests
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5175'
@@ -87,18 +79,31 @@ app.use(cors({
   credentials: true
 }));
 
-// Configure helmet with CSP to allow iframe embedding from frontend
+// Configure helmet with CSP
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "frame-ancestors": ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://localhost:3000"],
-      "img-src": ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:5173"],
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      "frame-ancestors": ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://localhost:3001"],
+      "img-src": ["'self'", "data:", "blob:", "http://localhost:3001", "http://localhost:5173"],
+      "font-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:5173"],
+      "connect-src": ["'self'", "http://localhost:3001", "ws://localhost:3001", "wss://localhost:3001", "http://localhost:5173", "ws://localhost:5173"],
     },
   },
 }));
+
 app.use(morgan('dev'));
+
+// Middleware setup
+app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve uploaded files statically with absolute path
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
 
 //apply arcjet rate limiting to all routes - DISABLED FOR DEVELOPMENT
 /*

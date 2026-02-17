@@ -145,37 +145,61 @@ export const chatApi = {
   },
 
   /**
-   * Upload file (image, voice, document)
+   * Upload file (image, voice, document) with progress tracking
    */
-  async uploadFile(file) {
-    const formData = new FormData();
+  async uploadFile(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
 
-    // If it's a Blob without a name property, add filename
-    if (file instanceof Blob && !file.name) {
-      formData.append('file', file, file.name || `file-${Date.now()}`);
-    } else {
-      formData.append('file', file, file.name);
-    }
+      // If it's a Blob without a name property, add filename
+      if (file instanceof Blob && !file.name) {
+        formData.append('file', file, file.name || `file-${Date.now()}`);
+      } else {
+        formData.append('file', file, file.name);
+      }
 
-    const token = localStorage.getItem('authToken');
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+      const xhr = new XMLHttpRequest();
+      const token = localStorage.getItem('authToken');
 
-    const response = await fetch('http://localhost:3001/api/chat/upload', {
-      method: 'POST',
-      headers,
-      body: formData
-      // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
+      xhr.open('POST', 'http://localhost:3001/api/chat/upload', true);
+
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      // Track upload progress
+      if (onProgress && xhr.upload) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            onProgress(percentComplete);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (e) {
+            reject(new Error('Failed to parse upload response'));
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new Error(errorData.error || 'Upload failed'));
+          } catch (e) {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.onabort = () => reject(new Error('Upload aborted'));
+
+      xhr.send(formData);
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-      throw new Error(errorData.error || 'Failed to upload file');
-    }
-
-    return response.json();
   },
 
   /**

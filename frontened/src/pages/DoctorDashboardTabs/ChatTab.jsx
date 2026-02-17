@@ -4,7 +4,7 @@ import {
   Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
-  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle
+  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -12,8 +12,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import VideoCall from '../../components/VideoCall';
 import { debounce } from '../../utils/performance';
 
+const getMediaUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('blob:') || url.startsWith('http')) return url;
+  return `http://localhost:3001${url}`;
+};
+
 // Message Bubble Component
-const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick }) => {
+const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick, onPreview }) => {
   const [showActionsMenu, setShowActionsMenu] = React.useState(false);
 
   // Close actions menu when clicking anywhere else
@@ -106,7 +112,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             className={`relative p-2.5 transition-all duration-300 shadow-sm ${getCorners()} ${isOwn
               ? 'bg-indigo-600 text-white'
               : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
-              } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''}`}
+              } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''} w-[240px] md:w-[280px] lg:w-[300px]`}
           >
             {/* Forwarded Tag */}
             {message.is_forwarded && (
@@ -117,32 +123,53 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             )}
             {/* Media Content */}
             {message.media_url && (
-              <div className="mb-1.5 -mx-0.5 -mt-0.5 overflow-hidden rounded-[14px]">
+              <div className={`overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 ${message.content ? 'mb-2' : ''
+                } w-full`}>
                 {message.media_type?.startsWith('image/') ? (
-                  <img
-                    src={`http://localhost:3001${message.media_url}`}
-                    alt="Media"
-                    className="max-w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(`http://localhost:3001${message.media_url}`, '_blank')}
-                  />
+                  <div className="relative group/media">
+                    <img
+                      src={getMediaUrl(message.media_url)}
+                      alt="Media"
+                      className="w-full h-auto max-h-[300px] object-cover cursor-pointer hover:opacity-95 transition-all duration-300"
+                      onClick={() => onPreview({ url: message.media_url, type: 'image', name: message.media_name })}
+                    />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/media:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="p-2 bg-white/20 backdrop-blur-md rounded-full">
+                        <Maximize2 size={18} className="text-white" />
+                      </div>
+                    </div>
+                  </div>
                 ) : message.media_type?.startsWith('video/') ? (
-                  <video controls className="max-w-full">
-                    <source src={`http://localhost:3001${message.media_url}`} type={message.media_type} />
+                  <video controls className="w-full max-h-[300px]">
+                    <source src={getMediaUrl(message.media_url)} type={message.media_type} />
                   </video>
                 ) : (
-                  <div className={`flex items-center gap-2.5 p-2.5 ${isOwn ? 'bg-white/10' : 'bg-black/5'}`}>
-                    <div className={`p-2 rounded-xl ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
-                      <FileText size={18} />
+                  <div className="flex items-center gap-3 p-3">
+                    <div className={`p-2.5 rounded-xl flex-shrink-0 ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
+                      <FileText size={20} />
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className={`text-[11px] font-bold truncate ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
-                      <p className={`text-[9px] opacity-70 font-bold ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
+                      <p className={`text-[11px] font-black truncate leading-tight ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
+                      <p className={`text-[9px] opacity-70 font-bold mt-0.5 ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
                         {(message.media_size / 1024).toFixed(1)} KB
                       </p>
                     </div>
-                    <a href={`http://localhost:3001${message.media_url}`} download className={`p-1.5 rounded-lg transition-colors ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
-                      <Download size={14} className={isOwn ? 'text-white' : 'text-muted-foreground'} />
-                    </a>
+                    <div className="flex items-center gap-1.5 ml-1">
+                      <button
+                        onClick={() => onPreview({ url: message.media_url, type: 'file', name: message.media_name })}
+                        className={`p-2 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-90'}`}
+                        title="Quick Preview"
+                      >
+                        <Eye size={16} className={isOwn ? 'text-white' : 'text-indigo-600'} />
+                      </button>
+                      <a
+                        href={getMediaUrl(message.media_url)}
+                        download
+                        className={`p-2 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-90'}`}
+                      >
+                        <Download size={16} className={isOwn ? 'text-white' : 'text-indigo-600'} />
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
@@ -168,8 +195,17 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
             {/* Inline Meta (Time & Status) */}
             <div className={`flex items-center justify-end gap-1.5 mt-1 opacity-70 text-[9px] font-bold ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
-              <span>{formatTime(message.created_at)}</span>
-              {isOwn && <MessageStatus message={message} />}
+              {message.isUploading ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>{message.progress}%</span>
+                </div>
+              ) : (
+                <>
+                  <span>{formatTime(message.created_at)}</span>
+                  {isOwn && <MessageStatus message={message} />}
+                </>
+              )}
             </div>
           </div>
 
@@ -263,12 +299,29 @@ const ChatTab = () => {
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [scrollTargetId, setScrollTargetId] = useState(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState(null); // { url, type, name }
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState(new Map()); // Map of temporary message ID to upload progress
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+
+  // Body scroll lock for previews
+  useEffect(() => {
+    if (previewMedia) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [previewMedia]);
 
   // Global Chat Settings State (Centralized)
   const [chatSettings, setChatSettings] = useState({
@@ -313,6 +366,7 @@ const ChatTab = () => {
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
   const activityTimeoutRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   // WebSocket
   const socket = useChatSocket(currentUser);
@@ -579,8 +633,15 @@ const ChatTab = () => {
     }, 100);
   };
 
+  // Handle opening media previews
+  const handleOpenPreview = (media) => {
+    setShowAttachMenu(false);
+    setShowEmojiPicker(false);
+    setPreviewMedia(media);
+  };
+
   // Scroll to a specific message (used by reply click)
-  const handleScrollToMessage = (messageId) => {
+  const scrollToMessage = (messageId) => {
     if (!messageId) return;
 
     // Set the target and wait a bit longer for rendering
@@ -786,24 +847,55 @@ const ChatTab = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handle file upload
+  // Handle optimistic file upload
   const handleFileUpload = async (file, messageType = 'file') => {
     if (!selectedChat || !file) return;
 
-    try {
-      setUploadingFile(true);
+    // Create a temporary ID for optimistic rendering
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Upload file
-      const uploadResponse = await chatApi.uploadFile(file);
+    // Create optimistic message
+    const tempMessage = {
+      id: tempId,
+      chat_id: selectedChat.id,
+      sender_id: currentUser.userId,
+      sender_type: currentUser.userType,
+      sender_name: currentUser.userName,
+      content: '',
+      message_type: messageType,
+      media_url: URL.createObjectURL(file), // Local preview URL
+      media_name: file.name,
+      media_size: file.size,
+      media_type: file.type,
+      created_at: new Date().toISOString(),
+      isUploading: true,
+      progress: 0,
+      my_status: { status: 'sent' }
+    };
+
+    // Add to messages list optimistically
+    setMessages(prev => [...prev, tempMessage]);
+    setUploadQueue(prev => new Map(prev).set(tempId, 0));
+    scrollToBottom();
+
+    try {
+      // Upload file with progress tracking
+      const uploadResponse = await chatApi.uploadFile(file, (progress) => {
+        setMessages(prev => prev.map(msg =>
+          msg.id === tempId ? { ...msg, progress } : msg
+        ));
+        setUploadQueue(prev => new Map(prev).set(tempId, progress));
+      });
+
       const fileData = uploadResponse.file;
 
-      // Send message with file (use file.name or fileData.name)
+      // Send the actual message
       const response = await chatApi.sendMessage(
         selectedChat.id,
         currentUser,
         file.name || fileData.name || 'File',
         {
-          messageType,
+          messageType: messageType === 'voice' ? 'voice' : (file.type?.startsWith('image/') ? 'image' : 'file'),
           mediaUrl: fileData.url,
           mediaName: fileData.name,
           mediaSize: fileData.size,
@@ -811,24 +903,108 @@ const ChatTab = () => {
         }
       );
 
-      const newMessage = response.message;
-      setMessages(prev => [...prev, newMessage]);
+      // Replace temp message with real one
+      setMessages(prev => prev.map(msg =>
+        msg.id === tempId ? response.message : msg
+      ));
+
+      // Cleanup local preview URL
+      if (tempMessage.media_url.startsWith('blob:')) {
+        URL.revokeObjectURL(tempMessage.media_url);
+      }
+
+      // Cleanup
+      setUploadQueue(prev => {
+        const next = new Map(prev);
+        next.delete(tempId);
+        return next;
+      });
 
       // Broadcast via WebSocket
-      socket.sendMessage(selectedChat.id, newMessage);
+      socket.sendMessage(selectedChat.id, response.message);
 
       // Update chat list
-      loadChats();
-      scrollToBottom();
+      updateChatListWithMessage(selectedChat.id, response.message);
 
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file');
+      // Cleanup local preview URL on error
+      if (tempMessage.media_url.startsWith('blob:')) {
+        URL.revokeObjectURL(tempMessage.media_url);
+      }
+      // Mark as failed or remove
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      alert(`Failed to upload ${file.name}: ${error.message}`);
     } finally {
-      setUploadingFile(false);
       setShowAttachMenu(false);
     }
   };
+
+  // Drag and Drop Handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => prev + 1);
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => prev - 1);
+    if (dragCounter === 1) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    setDragCounter(0);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      Array.from(files).forEach(file => {
+        const MAX_SIZE = 25 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+          alert(`File ${file.name} exceeds 25MB limit`);
+          return;
+        }
+        handleFileUpload(file);
+      });
+    }
+  };
+
+  // Clipboard Paste Handler
+  useEffect(() => {
+    const handlePaste = (e) => {
+      if (!selectedChat) return;
+
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file') {
+          const blob = item.getAsFile();
+          if (blob) {
+            // Give it a name if it's a screenshot
+            const file = new File([blob], `screenshot-${Date.now()}.png`, { type: blob.type });
+            handleFileUpload(file, file.type.startsWith('image/') ? 'image' : 'file');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [selectedChat, currentUser]);
 
   // Handle file selection
   const handleFileSelect = (e, type = 'file') => {
@@ -1480,7 +1656,42 @@ const ChatTab = () => {
 
       {/* Right Side - Chat Window */}
       {selectedChat ? (
-        <div className="flex-1 min-w-0 flex flex-col bg-background relative z-30 animate-in slide-in-from-right-4 duration-300">
+        <div
+          ref={chatContainerRef}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="flex-1 min-w-0 flex flex-col bg-background relative z-30 animate-in slide-in-from-right-4 duration-300"
+        >
+          {/* Drag & Drop Overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 z-[60] bg-indigo-600/95 backdrop-blur-md flex flex-col items-center justify-center p-6 md:p-12 transition-all animate-in fade-in zoom-in duration-300 pointer-events-none">
+              <div className="w-full h-full border-4 border-dashed border-white/30 rounded-[40px] flex flex-col items-center justify-center space-y-6 md:space-y-8 animate-pulse text-center">
+                <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-white/5 animate-ping"></div>
+                  <Plus size={48} className="text-white relative z-10" />
+                </div>
+                <div className="space-y-2 px-4">
+                  <h2 className="text-2xl md:text-4xl font-black text-white drop-shadow-lg">Drop to Send</h2>
+                  <p className="text-sm md:text-lg font-bold text-white/80 max-w-md mx-auto">
+                    Share images, documents, and media seamlessly. Maximum file size: 25MB
+                  </p>
+                </div>
+                <div className="flex gap-4 md:gap-6 pt-4">
+                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                    <Image size={24} className="text-white" />
+                  </div>
+                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                    <FileText size={24} className="text-white" />
+                  </div>
+                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                    <Zap size={24} className="text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Chat Header */}
           {/* Modern Chat Header */}
           <div className="h-16 bg-card/80 backdrop-blur-xl border-b border-border pl-4 pr-1.5 md:pl-6 md:pr-4 flex items-center justify-between sticky top-0 z-20">
@@ -1722,7 +1933,7 @@ const ChatTab = () => {
                     <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2.5rem] opacity-20 group-hover:opacity-30 blur-sm transition-opacity" />
                     {selectedChat.other_user?.user_avatar ? (
                       <img
-                        src={`http://localhost:3001${selectedChat.other_user.user_avatar}`}
+                        src={getMediaUrl(selectedChat.other_user.user_avatar)}
                         alt={selectedChat.other_user.user_name}
                         className="w-24 h-24 rounded-[2.2rem] object-cover border-2 border-background shadow-2xl relative z-10"
                       />
@@ -1778,7 +1989,8 @@ const ChatTab = () => {
                         onForward={() => handleForwardMessage(message)}
                         onCopy={() => handleCopyMessage(message.content)}
                         onReact={(messageId, emoji) => handleAddReaction(messageId, emoji)}
-                        onReplyClick={handleScrollToMessage}
+                        onReplyClick={scrollToMessage}
+                        onPreview={handleOpenPreview}
                       />
                     );
                   })
@@ -1851,7 +2063,6 @@ const ChatTab = () => {
                 <button
                   onClick={cancelRecording}
                   className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-rose-600 transition-all shadow-sm"
-                  title="Cancel Recording"
                 >
                   <X size={16} />
                 </button>
@@ -1866,66 +2077,75 @@ const ChatTab = () => {
             ) : (
               // Normal input UI
               <div className="flex items-center space-x-2">
-                {/* Attachment Menu */}
+                {/* Modern Attachment Menu - Telegram Inspired */}
                 <div className="relative">
                   <button
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`p-2 rounded-xl transition-all duration-300 border ${showAttachMenu ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-inner' : 'bg-muted/50 border-transparent text-slate-500 hover:bg-muted hover:text-slate-700'}`}
+                    className={`p-2.5 rounded-2xl transition-all duration-500 flex items-center justify-center ${showAttachMenu
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-45 scale-110'
+                      : 'bg-muted/50 text-slate-500 hover:bg-muted hover:text-indigo-600 hover:rotate-12'
+                      }`}
                     disabled={uploadingFile}
                   >
-                    <Paperclip size={18} className={showAttachMenu ? 'rotate-45 transition-transform' : ''} />
+                    <Plus size={22} className="transition-transform duration-500" />
                   </button>
 
                   {showAttachMenu && (
-                    <div className="absolute bottom-full mb-4 left-0 w-64 bg-card/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-border p-3 space-y-1.5 animate-in slide-in-from-bottom-4 zoom-in-95 duration-300 z-50">
-                      <div className="px-5 py-2 mb-1">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 font-outfit">Share content</p>
+                    <div className="absolute bottom-full mb-5 left-0 w-72 max-w-[calc(100vw-40px)] bg-card/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 p-4 space-y-2 animate-in slide-in-from-bottom-6 zoom-in-95 duration-500 z-50 overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
+                      <div className="px-4 py-2 mb-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60 font-outfit">Share Attachment</p>
                       </div>
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full flex items-center space-x-4 px-5 py-3.5 hover:bg-slate-50 rounded-3xl text-left transition-all duration-300 group"
-                      >
-                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl shadow-lg shadow-indigo-100 group-hover:scale-110 group-hover:rotate-6 transition-all">
-                          <Image size={18} className="text-white" />
-                        </div>
-                        <div>
-                          <span className="text-xs font-black text-slate-800">Media</span>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Photos & GIFs</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar';
-                          input.onchange = (e) => handleFileSelect(e, 'document');
-                          input.click();
-                        }}
-                        className="w-full flex items-center space-x-4 px-5 py-3.5 hover:bg-slate-50 rounded-3xl text-left transition-all duration-300 group"
-                      >
-                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl shadow-lg shadow-emerald-100 group-hover:scale-110 group-hover:-rotate-6 transition-all">
-                          <FileText size={18} className="text-white" />
-                        </div>
-                        <div>
-                          <span className="text-sm font-bold text-slate-800">Files</span>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">PDF, DOC, ZIP</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={handleShareLocation}
-                        className="w-full flex items-center space-x-4 px-5 py-3.5 hover:bg-slate-50 rounded-3xl text-left transition-all duration-300 group border-t border-slate-50 mt-1"
-                      >
-                        <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg shadow-amber-100 group-hover:scale-110 transition-all">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                          </svg>
-                        </div>
-                        <div>
-                          <span className="text-sm font-bold text-slate-800">Location</span>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Google Maps</p>
-                        </div>
-                      </button>
+
+                      <div className="grid grid-cols-1 gap-1.5">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-indigo-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
+                        >
+                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-lg shadow-indigo-100 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 relative z-10">
+                            <Image size={20} className="text-white" />
+                          </div>
+                          <div className="flex-1 relative z-10">
+                            <span className="text-sm font-black text-slate-800 block">Gallery</span>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Photos & Videos</p>
+                          </div>
+                          <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/5 transition-colors duration-300"></div>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar';
+                            input.onchange = (e) => handleFileSelect(e, 'document');
+                            input.click();
+                          }}
+                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-emerald-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
+                        >
+                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg shadow-emerald-100 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300 relative z-10">
+                            <FileText size={20} className="text-white" />
+                          </div>
+                          <div className="flex-1 relative z-10">
+                            <span className="text-sm font-black text-slate-800 block">Document</span>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">PDF, DOC, ZIP</p>
+                          </div>
+                          <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors duration-300"></div>
+                        </button>
+
+                        <button
+                          onClick={handleShareLocation}
+                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-amber-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
+                        >
+                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg shadow-amber-100 group-hover:scale-110 transition-all duration-300 relative z-10">
+                            <MapPin size={20} className="text-white" />
+                          </div>
+                          <div className="flex-1 relative z-10">
+                            <span className="text-sm font-black text-slate-800 block">Location</span>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Live Location</p>
+                          </div>
+                          <div className="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/5 transition-colors duration-300"></div>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2619,6 +2839,96 @@ const ChatTab = () => {
                 className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all transform active:scale-95 text-sm"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Full View Modal */}
+      {previewMedia && previewMedia.type === 'image' && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col animate-in fade-in duration-300"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <div className="flex items-center justify-between p-4 md:p-6 text-white border-b border-white/10">
+            <div className="min-w-0 flex-1 mr-4">
+              <h3 className="text-sm md:text-lg font-black font-outfit tracking-tight truncate">{previewMedia.name}</h3>
+              <p className="text-[8px] md:text-[10px] font-bold opacity-60 uppercase tracking-widest">Full Quality Preview</p>
+            </div>
+            <button
+              onClick={() => setPreviewMedia(null)}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors flex-shrink-0"
+            >
+              <X size={20} className="md:w-6 md:h-6" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-4">
+            <img
+              src={getMediaUrl(previewMedia.url)}
+              alt={previewMedia.name}
+              className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-2xl animate-in zoom-in duration-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="p-4 md:p-8 flex justify-center gap-3 md:gap-6">
+            <a
+              href={getMediaUrl(previewMedia.url)}
+              download
+              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all hover:scale-105"
+            >
+              <Download size={16} /> Download
+            </a>
+            <button
+              onClick={() => window.open(getMediaUrl(previewMedia.url), '_blank')}
+              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all"
+            >
+              <ExternalLink size={16} /> Open Original
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Half-Page File Preview (PDF/Doc) */}
+      {previewMedia && previewMedia.type === 'file' && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex justify-end animate-in fade-in duration-300" onClick={() => setPreviewMedia(null)}>
+          <div
+            className="w-full md:w-3/5 lg:w-1/2 bg-card h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-500"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b flex items-center justify-between bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/10 text-indigo-600 rounded-xl">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black truncate max-w-[200px] md:max-w-md">{previewMedia.name}</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Document Preview</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={getMediaUrl(previewMedia.url)} download className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground" title="Download">
+                  <Download size={18} />
+                </a>
+                <button onClick={() => setPreviewMedia(null)} className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-muted/30 relative overflow-hidden">
+              <iframe
+                src={getMediaUrl(previewMedia.url)}
+                className="w-full h-full border-none"
+                title="File Preview"
+              />
+            </div>
+            <div className="p-4 border-t bg-card flex justify-between items-center">
+              <p className="text-[10px] text-muted-foreground font-medium">Quick Preview Mode</p>
+              <button
+                onClick={() => window.open(getMediaUrl(previewMedia.url), '_blank')}
+                className="text-[10px] text-indigo-600 font-black uppercase tracking-widest hover:underline"
+              >
+                Open in Full Window
               </button>
             </div>
           </div>
