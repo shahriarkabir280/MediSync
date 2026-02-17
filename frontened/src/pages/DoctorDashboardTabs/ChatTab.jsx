@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Search, Plus, Send, Paperclip, Smile, MoreVertical, MoreHorizontal, MapPin, RotateCcw,
-  Phone, Video, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
+  Phone, Video, PhoneMissed, PhoneOff, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
   Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2, Play, Pause
@@ -16,6 +16,26 @@ const getMediaUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('blob:') || url.startsWith('http')) return url;
   return `http://localhost:3001${url}`;
+};
+
+// Helper to format date strings consistently
+const formatAppTime = (date) => {
+  if (!date) return '';
+  try {
+    let utcDate = date;
+    if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
+      utcDate = date.replace(' ', 'T') + 'Z';
+    }
+    const d = new Date(utcDate);
+    const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
+    return finalDate.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return '';
+  }
 };
 
 // URL regex to find links in text
@@ -255,6 +275,85 @@ const VoiceMessage = ({ url, isOwn }) => {
   );
 };
 
+// Modern Call Summary Component
+const CallSummary = ({ content, isOwn, timestamp }) => {
+  const [type, direction, status, duration] = content.split('|');
+  const isVideo = type === 'video';
+  const viewerDirection = isOwn ? direction : (direction === 'incoming' ? 'outgoing' : 'incoming');
+  const isViewerIncoming = viewerDirection === 'incoming';
+  const timeStr = formatAppTime(timestamp);
+
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'completed':
+        return {
+          icon: isVideo ? <Video size={16} /> : <Phone size={16} />,
+          text: isVideo ? 'Video Call' : 'Audio Call',
+          detail: duration !== '0' ? duration : '',
+          color: isOwn ? 'text-indigo-100' : 'text-indigo-600',
+          bg: isOwn ? 'bg-white/10' : 'bg-indigo-50'
+        };
+      case 'missed':
+        return {
+          icon: isViewerIncoming ? <PhoneMissed size={16} /> : <PhoneOff size={16} />,
+          text: isViewerIncoming ? 'Missed Call' : 'No Answer',
+          detail: '',
+          color: 'text-rose-500',
+          bg: 'bg-rose-50'
+        };
+      case 'declined':
+        return {
+          icon: <PhoneOff size={16} />,
+          text: isViewerIncoming ? 'Call Declined' : 'Declined Call',
+          detail: '',
+          color: 'text-rose-500',
+          bg: 'bg-rose-50'
+        };
+      case 'not_answered':
+        return {
+          icon: isViewerIncoming ? <PhoneMissed size={16} /> : <PhoneOff size={16} />,
+          text: isViewerIncoming ? 'Missed Call' : 'No Answer',
+          detail: '',
+          color: 'text-rose-500',
+          bg: 'bg-rose-50'
+        };
+      default:
+        return {
+          icon: <Phone size={16} />,
+          text: isVideo ? 'Video Call' : 'Audio Call',
+          detail: '',
+          color: 'text-muted-foreground',
+          bg: 'bg-muted/50'
+        };
+    }
+  };
+
+  const config = getStatusConfig();
+
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isOwn ? 'border-white/10 bg-white/5' : 'border-border/50 bg-muted/20'} min-w-[200px]`}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.bg} ${config.color} shadow-sm transition-transform hover:scale-105`}>
+        {config.icon}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className={`text-[11px] font-black uppercase tracking-widest ${isOwn ? 'text-white' : 'text-foreground'}`}>
+            {config.text}
+          </p>
+          {timeStr && (
+            <span className={`text-[8px] font-black opacity-40 uppercase tracking-tighter ${isOwn ? 'text-white' : 'text-muted-foreground'}`}>
+              {timeStr}
+            </span>
+          )}
+        </div>
+        <p className={`text-[9px] font-bold mt-0.5 ${isOwn ? 'text-indigo-100/70' : 'text-muted-foreground'}`}>
+          {isViewerIncoming ? 'Incoming' : 'Outgoing'} {config.detail && `• ${config.detail}`}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Message Bubble Component
 const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick, onPreview }) => {
   const [showActionsMenu, setShowActionsMenu] = React.useState(false);
@@ -267,25 +366,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
     return () => window.removeEventListener('click', handleClick);
   }, [showActionsMenu]);
 
-  const formatTime = (date) => {
-
-    if (!date) return '';
-    try {
-      let utcDate = date;
-      if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
-        utcDate = date.replace(' ', 'T') + 'Z';
-      }
-      const d = new Date(utcDate);
-      const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
-      return finalDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch (e) {
-      return '';
-    }
-  };
+  const formatTime = (date) => formatAppTime(date);
 
   const MessageStatus = ({ message }) => {
     const status = message.my_status?.status;
@@ -465,10 +546,16 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             )}
 
             {/* Message Content */}
-            {message.content && message.content !== message.media_name && (
+            {message.content && (
               <div className="space-y-2">
-                <LinkifiedText content={message.content} isOwn={isOwn} />
-                <LinkPreview content={message.content} isOwn={isOwn} />
+                {message.message_type === 'call' ? (
+                  <CallSummary content={message.content} isOwn={isOwn} timestamp={message.created_at} />
+                ) : message.content !== message.media_name && (
+                  <>
+                    <LinkifiedText content={message.content} isOwn={isOwn} />
+                    <LinkPreview content={message.content} isOwn={isOwn} />
+                  </>
+                )}
               </div>
             )}
 
