@@ -31,6 +31,7 @@ const VideoCall = ({
   const peerConnectionRef = useRef(null);
   const callTimerRef = useRef(null);
   const incomingOfferRef = useRef(incomingOffer);
+  const hasLoggedStatus = useRef(false);
 
   // WebRTC Configuration with STUN/TURN servers
   const rtcConfig = {
@@ -87,17 +88,7 @@ const VideoCall = ({
 
     const handleCallRejected = () => {
       console.log('📞 Call rejected');
-
-      // Send call message - Rejected/Not answered
-      if (onCallStatusChange && callStatus === 'calling') {
-        onCallStatusChange({
-          type: callType,
-          status: 'not_answered',
-          duration: 0,
-          isIncoming: false
-        });
-      }
-
+      // No log here - the rejector (receiver) logs it
       setCallStatus('ended');
       setTimeout(() => onClose(), 2000);
     };
@@ -106,17 +97,11 @@ const VideoCall = ({
       console.log('📞 Call ended by remote user');
 
       // Send call message
-      if (onCallStatusChange) {
-        if (callStatus === 'connected') {
-          onCallStatusChange({
-            type: callType,
-            status: 'completed',
-            duration: callDuration,
-            isIncoming: isIncoming
-          });
-        } else if (callStatus === 'incoming') {
+      if (onCallStatusChange && !hasLoggedStatus.current) {
+        if (callStatus === 'incoming') {
           // If receiver sees call ended while status is incoming, it's a missed call
-          console.log('📞 Missed call recorded');
+          console.log('📞 Missed call recorded by receiver');
+          hasLoggedStatus.current = true;
           onCallStatusChange({
             type: callType,
             status: 'missed',
@@ -124,6 +109,8 @@ const VideoCall = ({
             isIncoming: true
           });
         }
+        // Note: We don't log 'completed' here because the person who clicked 
+        // 'End Call' is responsible for logging the completion.
       }
 
       setCallStatus('ended');
@@ -173,32 +160,25 @@ const VideoCall = ({
               to: otherUser.user_id,
               toType: otherUser.user_type
             });
+            // Note: We don't log 'not_answered' here anymore. 
+            // The receiver will log 'missed' when they get 'end_call'.
           } else if (callStatus === 'incoming') {
             // Receiver side timeout - tell caller I'm not answering
             socket.socket.emit('reject_call', {
               to: otherUser.user_id,
               toType: otherUser.user_type
             });
-          }
-        }
 
-        if (onCallStatusChange) {
-          if (callStatus === 'calling') {
-            // Caller side timeout - not answered
-            onCallStatusChange({
-              type: callType,
-              status: 'not_answered',
-              duration: 0,
-              isIncoming: false
-            });
-          } else if (callStatus === 'incoming') {
-            // Receiver side timeout - missed
-            onCallStatusChange({
-              type: callType,
-              status: 'missed',
-              duration: 0,
-              isIncoming: true
-            });
+            // Log missed call (Receiver's responsibility)
+            if (onCallStatusChange && !hasLoggedStatus.current) {
+              hasLoggedStatus.current = true;
+              onCallStatusChange({
+                type: callType,
+                status: 'missed',
+                duration: 0,
+                isIncoming: true
+              });
+            }
           }
         }
 
@@ -354,8 +334,9 @@ const VideoCall = ({
       toType: otherUser.user_type
     });
 
-    // Send call message - Declined
-    if (onCallStatusChange) {
+    // Send call message - Declined (Rejector's responsibility)
+    if (onCallStatusChange && !hasLoggedStatus.current) {
+      hasLoggedStatus.current = true;
       onCallStatusChange({
         type: callType,
         status: 'declined',
@@ -375,8 +356,9 @@ const VideoCall = ({
       });
     }
 
-    // Send call message with duration
-    if (onCallStatusChange && callStatus === 'connected') {
+    // Send call message with duration (Hangupper's responsibility)
+    if (onCallStatusChange && callStatus === 'connected' && !hasLoggedStatus.current) {
+      hasLoggedStatus.current = true;
       onCallStatusChange({
         type: callType,
         status: 'completed',
