@@ -2013,6 +2013,7 @@ const ChatTab = () => {
                 <ChatListItem
                   key={chat.id}
                   chat={chat}
+                  currentUser={currentUser}
                   isSelected={selectedChat?.id === chat.id}
                   onClick={() => handleSelectChat(chat)}
                   isOnline={socket.isUserOnline(chat.other_user?.user_id, chat.other_user?.user_type)}
@@ -3318,7 +3319,7 @@ const ChatTab = () => {
 
 // Chat List Item Component
 // Modern Chat List Item
-const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
+const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
   const formatTime = (date) => {
     if (!date) return '';
     try {
@@ -3343,6 +3344,36 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
     } catch (e) {
       return '';
     }
+  };
+
+  const renderLastMessage = () => {
+    if (!chat.last_message) return 'Click to start chatting';
+    if (chat.last_message.is_deleted) return 'Message was deleted';
+
+    // Handle call messages
+    if (chat.last_message.message_type === 'call') {
+      const [type, direction, status] = chat.last_message.content.split('|');
+      const isVideo = type === 'video';
+      const isOwn = chat.last_message.sender_id === currentUser?.userId;
+
+      // Determine viewer-relative direction
+      const viewerDirection = isOwn ? direction : (direction === 'incoming' ? 'outgoing' : 'incoming');
+      const isViewerIncoming = viewerDirection === 'incoming';
+
+      switch (status) {
+        case 'completed':
+          return isVideo ? 'Video Call' : 'Audio Call';
+        case 'missed':
+        case 'not_answered':
+          return isViewerIncoming ? 'Missed Call' : 'No Answer';
+        case 'declined':
+          return isViewerIncoming ? 'Call Declined' : 'Declined Call';
+        default:
+          return isVideo ? 'Video Call' : 'Audio Call';
+      }
+    }
+
+    return chat.last_message.content;
   };
 
   const isArchived = chat.is_archived || false;
@@ -3387,9 +3418,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline }) => {
 
           <div className="flex items-center justify-between">
             <p className={`text-[10px] truncate font-bold flex-1 ${isSelected ? 'text-indigo-500' : 'text-muted-foreground'}`}>
-              {chat.last_message?.is_deleted
-                ? 'Message was deleted'
-                : chat.last_message?.content || 'Click to start chatting'}
+              {renderLastMessage()}
             </p>
             <div className="flex items-center ml-2">
               {chat.unread_count > 0 && (
