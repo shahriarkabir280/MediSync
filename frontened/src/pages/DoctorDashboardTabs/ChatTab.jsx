@@ -90,8 +90,8 @@ const LinkPreview = ({ content, isOwn }) => {
   return (
     <div
       className={`mt-2 overflow-hidden rounded-xl border transition-all hover:scale-[1.01] cursor-pointer ${isOwn
-          ? 'bg-white/10 border-white/20 hover:bg-white/20'
-          : 'bg-black/5 border-black/5 hover:bg-black/10'
+        ? 'bg-white/10 border-white/20 hover:bg-white/20'
+        : 'bg-black/5 border-black/5 hover:bg-black/10'
         }`}
       onClick={(e) => {
         e.stopPropagation();
@@ -186,7 +186,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   };
 
   return (
-    <div id={`message-${message.id}`} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-0.5'} px-0.5 md:px-4 group relative`}>
+    <div id={`message-${message.id}`} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isLast ? 'mb-4' : 'mb-2'} px-0.5 md:px-4 group relative`}>
       <div className={`flex items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] md:max-w-[80%] lg:max-w-[75%] gap-1 transition-all duration-300`}>
 
         <div className="flex flex-col relative group/bubble">
@@ -197,7 +197,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
                 key={emoji}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onReact(message.id, emoji);
+                  onReact(message, emoji);
                 }}
                 className="hover:scale-125 transition-transform px-0.5 text-base"
               >
@@ -819,9 +819,6 @@ const ChatTab = () => {
     }, 200);
   };
 
-  useEffect(() => {
-    handleSmartScroll();
-  }, [messages]); // Removed scrollTargetId to prevent auto-scroll after manual navigation
 
   // Load all chats
   const loadChats = async () => {
@@ -893,6 +890,7 @@ const ChatTab = () => {
           await chatApi.markAsRead(chatId, currentUser.userId, currentUser.userType, unreadIds);
           socket.markAsRead(chatId, unreadIds, currentUser.userId, currentUser.userType);
         }
+        handleSmartScroll();
       }
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -2143,7 +2141,7 @@ const ChatTab = () => {
                         onDelete={() => handleDeleteMessage(message)}
                         onForward={() => handleForwardMessage(message)}
                         onCopy={() => handleCopyMessage(message.content)}
-                        onReact={(messageId, emoji) => handleAddReaction(messageId, emoji)}
+                        onReact={(msg, emoji) => handleAddReaction(msg, emoji)}
                         onReplyClick={scrollToMessage}
                         onPreview={handleOpenPreview}
                       />
