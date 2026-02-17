@@ -166,6 +166,22 @@ const VideoCall = ({
       timeoutId = setTimeout(() => {
         console.log('📞 Call timed out (no answer)');
 
+        if (socket?.socket) {
+          if (callStatus === 'calling') {
+            // Caller side timeout - tell receiver to stop ringing
+            socket.socket.emit('end_call', {
+              to: otherUser.user_id,
+              toType: otherUser.user_type
+            });
+          } else if (callStatus === 'incoming') {
+            // Receiver side timeout - tell caller I'm not answering
+            socket.socket.emit('reject_call', {
+              to: otherUser.user_id,
+              toType: otherUser.user_type
+            });
+          }
+        }
+
         if (onCallStatusChange) {
           if (callStatus === 'calling') {
             // Caller side timeout - not answered
@@ -194,7 +210,7 @@ const VideoCall = ({
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [callStatus, callType, onCallStatusChange, onClose]);
+  }, [callStatus, callType, onCallStatusChange, onClose, socket?.socket, otherUser]);
 
   const initializeMedia = async () => {
     try {
