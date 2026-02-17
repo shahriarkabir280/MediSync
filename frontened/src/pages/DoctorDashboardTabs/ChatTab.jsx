@@ -338,6 +338,9 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             <div
               onClick={() => onReplyClick && message.reply_to.id && onReplyClick(message.reply_to.id)}
               className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] cursor-pointer hover:bg-muted/50 transition-colors ${isOwn ? 'ml-1 mr-1' : 'ml-1 mr-1'
+                } ${message.media_url
+                  ? 'w-[200px] md:w-[240px] lg:w-[260px]'
+                  : 'w-[240px] md:w-[280px] lg:w-[300px]'
                 }`}
             >
               <p className="font-bold text-indigo-600 truncate">↩ {message.reply_to.sender_name}</p>
