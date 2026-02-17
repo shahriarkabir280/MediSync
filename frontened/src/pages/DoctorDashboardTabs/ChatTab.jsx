@@ -276,12 +276,11 @@ const VoiceMessage = ({ url, isOwn }) => {
 };
 
 // Modern Call Summary Component
-const CallSummary = ({ content, isOwn, timestamp }) => {
+const CallSummary = ({ content, isOwn }) => {
   const [type, direction, status, duration] = content.split('|');
   const isVideo = type === 'video';
   const viewerDirection = isOwn ? direction : (direction === 'incoming' ? 'outgoing' : 'incoming');
   const isViewerIncoming = viewerDirection === 'incoming';
-  const timeStr = formatAppTime(timestamp);
 
   const getStatusConfig = () => {
     switch (status) {
@@ -340,11 +339,6 @@ const CallSummary = ({ content, isOwn, timestamp }) => {
           <p className={`text-[11px] font-black uppercase tracking-widest ${isOwn ? 'text-white' : 'text-foreground'}`}>
             {config.text}
           </p>
-          {timeStr && (
-            <span className={`text-[8px] font-black opacity-40 uppercase tracking-tighter ${isOwn ? 'text-white' : 'text-muted-foreground'}`}>
-              {timeStr}
-            </span>
-          )}
         </div>
         <p className={`text-[9px] font-bold mt-0.5 ${isOwn ? 'text-indigo-100/70' : 'text-muted-foreground'}`}>
           {isViewerIncoming ? 'Incoming' : 'Outgoing'} {config.detail && `• ${config.detail}`}
@@ -549,7 +543,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             {message.content && (
               <div className="space-y-2">
                 {message.message_type === 'call' ? (
-                  <CallSummary content={message.content} isOwn={isOwn} timestamp={message.created_at} />
+                  <CallSummary content={message.content} isOwn={isOwn} />
                 ) : message.content !== message.media_name && (
                   <>
                     <LinkifiedText content={message.content} isOwn={isOwn} />
