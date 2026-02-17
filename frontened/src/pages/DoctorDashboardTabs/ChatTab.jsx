@@ -351,6 +351,7 @@ const CallSummary = ({ content, isOwn }) => {
 // Message Bubble Component
 const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick, onPreview }) => {
   const [showActionsMenu, setShowActionsMenu] = React.useState(false);
+  const [isHoverDisabled, setIsHoverDisabled] = React.useState(false);
 
   // Close actions menu when clicking anywhere else
   React.useEffect(() => {
@@ -359,6 +360,17 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, [showActionsMenu]);
+
+  const handleReplyClick = (e, replyId) => {
+    e.stopPropagation();
+    // Temporarily disable hover effect to hide reaction bar during scroll
+    setIsHoverDisabled(true);
+    setTimeout(() => setIsHoverDisabled(false), 1000);
+
+    if (onReplyClick && replyId) {
+      onReplyClick(replyId);
+    }
+  };
 
   const formatTime = (date) => formatAppTime(date);
 
@@ -394,7 +406,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
         <div className="flex flex-col relative group/bubble">
           {/* Reaction Bar (Hover) */}
-          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 ${!showActionsMenu ? 'group-hover/bubble:opacity-100' : ''} transition-all duration-300 transform translate-y-2 ${!showActionsMenu ? 'group-hover/bubble:translate-y-0' : ''} flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
+          <div className={`absolute -top-7 ${isOwn ? 'right-0' : 'left-0'} opacity-0 ${!showActionsMenu && !isHoverDisabled ? 'group-hover/bubble:opacity-100' : ''} transition-all duration-300 transform translate-y-2 ${!showActionsMenu && !isHoverDisabled ? 'group-hover/bubble:translate-y-0' : ''} flex items-center bg-card shadow-xl border border-border/50 rounded-full px-2 py-0.5 z-20 gap-1`}>
             {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
               <button
                 key={emoji}
@@ -411,7 +423,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
           {message.reply_to && message.reply_to_id && (
             <div
-              onClick={() => onReplyClick && message.reply_to.id && onReplyClick(message.reply_to.id)}
+              onClick={(e) => handleReplyClick(e, message.reply_to.id)}
               className={`mb-px px-3 py-1.5 bg-muted/30 rounded-t-2xl text-[10px] cursor-pointer hover:bg-muted/50 transition-colors ${isOwn ? 'ml-1 mr-1' : 'ml-1 mr-1'
                 } ${message.media_url
                   ? 'w-[200px] md:w-[240px] lg:w-[260px]'
