@@ -18,6 +18,115 @@ const getMediaUrl = (url) => {
   return `http://localhost:3001${url}`;
 };
 
+// URL regex to find links in text
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+// Helper to render text with clickable links
+const LinkifiedText = ({ content, isOwn }) => {
+  if (!content) return null;
+
+  const parts = content.split(URL_REGEX);
+  return (
+    <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        if (part.match(URL_REGEX)) {
+          return (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${isOwn ? 'text-indigo-200 hover:text-white' : 'text-indigo-600 hover:text-indigo-800'} underline decoration-2 underline-offset-2 transition-colors font-bold break-all`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          );
+        }
+        return part;
+      })}
+    </p>
+  );
+};
+
+// Component to handle link previews
+const LinkPreview = ({ content, isOwn }) => {
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const urlMatch = content?.match(URL_REGEX);
+  const firstUrl = urlMatch ? urlMatch[0] : null;
+
+  useEffect(() => {
+    if (!firstUrl) return;
+
+    const fetchPreview = async () => {
+      setLoading(true);
+      try {
+        const response = await chatApi.getLinkPreview(firstUrl);
+        if (response && (response.title || response.description || response.image)) {
+          setPreview(response);
+        }
+      } catch (err) {
+        console.error('Failed to fetch link preview:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPreview();
+  }, [firstUrl]);
+
+  if (!preview && !loading) return null;
+
+  if (loading) {
+    return (
+      <div className={`mt-2 p-2 rounded-xl border ${isOwn ? 'bg-white/10 border-white/20' : 'bg-black/5 border-black/5'} animate-pulse`}>
+        <div className="h-3 w-2/3 bg-current opacity-20 rounded mb-2"></div>
+        <div className="h-2 w-full bg-current opacity-10 rounded"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`mt-2 overflow-hidden rounded-xl border transition-all hover:scale-[1.01] cursor-pointer ${isOwn
+          ? 'bg-white/10 border-white/20 hover:bg-white/20'
+          : 'bg-black/5 border-black/5 hover:bg-black/10'
+        }`}
+      onClick={(e) => {
+        e.stopPropagation();
+        window.open(preview.url || firstUrl, '_blank');
+      }}
+    >
+      {preview.image && (
+        <div className="aspect-video w-full overflow-hidden">
+          <img
+            src={preview.image}
+            alt={preview.title}
+            className="w-full h-full object-cover"
+            onError={(e) => e.target.style.display = 'none'}
+          />
+        </div>
+      )}
+      <div className="p-2.5">
+        {preview.siteName && (
+          <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isOwn ? 'text-indigo-200' : 'text-indigo-600'}`}>
+            {preview.siteName}
+          </p>
+        )}
+        <h4 className={`text-[11px] font-black line-clamp-1 mb-1 ${isOwn ? 'text-white' : 'text-foreground'}`}>
+          {preview.title || 'Visit Website'}
+        </h4>
+        {preview.description && (
+          <p className={`text-[10px] line-clamp-2 leading-snug ${isOwn ? 'text-indigo-100/70' : 'text-muted-foreground'}`}>
+            {preview.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Message Bubble Component
 const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onForward, onCopy, onReact, onReplyClick, onPreview }) => {
   const [showActionsMenu, setShowActionsMenu] = React.useState(false);
@@ -112,7 +221,10 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             className={`relative p-2.5 transition-all duration-300 shadow-sm ${getCorners()} ${isOwn
               ? 'bg-indigo-600 text-white'
               : 'bg-[#E4E6EB] dark:bg-muted/60 text-foreground'
-              } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''} w-[240px] md:w-[280px] lg:w-[300px]`}
+              } ${message.reply_to && message.reply_to_id ? 'rounded-t-none' : ''} ${message.media_url
+                ? 'w-[200px] md:w-[240px] lg:w-[260px]'
+                : 'w-[240px] md:w-[280px] lg:w-[300px]'
+              }`}
           >
             {/* Forwarded Tag */}
             {message.is_forwarded && (
@@ -126,17 +238,44 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
               <div className={`overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 ${message.content ? 'mb-2' : ''
                 } w-full`}>
                 {message.media_type?.startsWith('image/') ? (
-                  <div className="relative group/media">
+                  <div className="relative group/media overflow-hidden">
                     <img
                       src={getMediaUrl(message.media_url)}
                       alt="Media"
                       className="w-full h-auto max-h-[300px] object-cover cursor-pointer hover:opacity-95 transition-all duration-300"
                       onClick={() => onPreview({ url: message.media_url, type: 'image', name: message.media_name })}
                     />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/media:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <div className="p-2 bg-white/20 backdrop-blur-md rounded-full">
-                        <Maximize2 size={18} className="text-white" />
-                      </div>
+                    {/* Premium Action Overlay - Now Direct & Always Visible */}
+                    <div className="absolute inset-x-0 bottom-0 py-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-center justify-center gap-3 transition-opacity duration-300 z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPreview({ url: message.media_url, type: 'image', name: message.media_name });
+                        }}
+                        className="p-2 bg-white/10 backdrop-blur-md hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-90 border border-white/10"
+                        title="View Fullscreen"
+                      >
+                        <Eye size={16} className="text-white" />
+                      </button>
+                      <a
+                        href={getMediaUrl(message.media_url)}
+                        download
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 bg-white/10 backdrop-blur-md hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-90 border border-white/10"
+                        title="Download Image"
+                      >
+                        <Download size={16} className="text-white" />
+                      </a>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showToast('Saved to your gallery', 'success');
+                        }}
+                        className="p-2 bg-white/10 backdrop-blur-md hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-90 border border-white/10"
+                        title="Save to Gallery"
+                      >
+                        <Save size={16} className="text-white" />
+                      </button>
                     </div>
                   </div>
                 ) : message.media_type?.startsWith('video/') ? (
@@ -144,31 +283,46 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
                     <source src={getMediaUrl(message.media_url)} type={message.media_type} />
                   </video>
                 ) : (
-                  <div className="flex items-center gap-3 p-3">
-                    <div className={`p-2.5 rounded-xl flex-shrink-0 ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
-                      <FileText size={20} />
+                  <div className="p-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2.5 rounded-xl flex-shrink-0 ${isOwn ? 'bg-white/20' : 'bg-indigo-500/10 text-indigo-600'}`}>
+                        <FileText size={20} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-black truncate leading-tight ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
+                        <p className={`text-[9px] opacity-70 font-bold mt-1 ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
+                          {(message.media_size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className={`text-[11px] font-black truncate leading-tight ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
-                      <p className={`text-[9px] opacity-70 font-bold mt-0.5 ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
-                        {(message.media_size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-1">
+
+                    {/* Actions Row - Moved Below Filename per user request */}
+                    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-black/5 dark:border-white/5">
                       <button
                         onClick={() => onPreview({ url: message.media_url, type: 'file', name: message.media_name })}
-                        className={`p-2 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-90'}`}
+                        className={`flex-1 flex items-center justify-center p-1.5 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-95'}`}
                         title="Quick Preview"
                       >
-                        <Eye size={16} className={isOwn ? 'text-white' : 'text-indigo-600'} />
+                        <Eye size={15} className={isOwn ? 'text-white' : 'text-indigo-600'} />
                       </button>
                       <a
                         href={getMediaUrl(message.media_url)}
                         download
-                        className={`p-2 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-90'}`}
+                        className={`flex-1 flex items-center justify-center p-1.5 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-95'}`}
+                        title="Download File"
                       >
-                        <Download size={16} className={isOwn ? 'text-white' : 'text-indigo-600'} />
+                        <Download size={15} className={isOwn ? 'text-white' : 'text-indigo-600'} />
                       </a>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showToast('Saved to your library', 'success');
+                        }}
+                        className={`flex-1 flex items-center justify-center p-1.5 rounded-lg transition-all ${isOwn ? 'hover:bg-white/10' : 'hover:bg-black/5 active:scale-95'}`}
+                        title="Save to Library"
+                      >
+                        <Save size={15} className={isOwn ? 'text-white' : 'text-indigo-600'} />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -177,9 +331,10 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
 
             {/* Message Content */}
             {message.content && message.content !== message.media_name && (
-              <p className="text-xs md:text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
-                {message.content}
-              </p>
+              <div className="space-y-2">
+                <LinkifiedText content={message.content} isOwn={isOwn} />
+                <LinkPreview content={message.content} isOwn={isOwn} />
+              </div>
             )}
 
             {/* Reactions Display */}

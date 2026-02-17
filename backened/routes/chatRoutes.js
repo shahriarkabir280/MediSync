@@ -119,6 +119,9 @@ router.put('/chats/:chatId/archive', chatController.archiveChat);
 // Clear all messages in a chat
 router.delete('/chats/:chatId/clear', chatController.clearChat);
 
+// Fetch link preview metadata
+router.get('/link-preview', chatController.getLinkPreview);
+
 
 
 export default router;

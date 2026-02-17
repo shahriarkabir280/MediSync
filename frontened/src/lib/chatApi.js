@@ -293,5 +293,13 @@ export const chatApi = {
     return response;
   },
 
+  /**
+   * Get link preview metadata for a URL
+   */
+  async getLinkPreview(url) {
+    const response = await api.get(`/chat/link-preview?url=${encodeURIComponent(url)}`);
+    return response;
+  }
+
 
 };

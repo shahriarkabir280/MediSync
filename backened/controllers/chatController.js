@@ -866,5 +866,81 @@ export const chatController = {
   updatePerChatSettings: async (req, res) => {
     // Reuse logic or mock
     return chatController.updateChatSettings(req, res);
+  },
+
+  /**
+   * Get Link Preview metadata
+   * Fetches Open Graph tags and basic meta info for a URL
+   */
+  getLinkPreview: async (req, res) => {
+    try {
+      const { url } = req.query;
+
+      if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+
+      // Basic validation for URL
+      let validUrl;
+      try {
+        validUrl = new URL(url);
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid URL format' });
+      }
+
+      console.log(`🔍 Fetching link preview for: ${url}`);
+
+      // Use native fetch (available in Node 18+)
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'CareConnect-Bot/1.0 (LinkPreviewService)',
+          'Accept': 'text/html'
+        },
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch URL: ${response.statusText}`);
+      }
+
+      const html = await response.text();
+
+      // Extract metadata using regex (simple and doesn't require extra heavy libraries)
+      const getMeta = (tag) => {
+        const regex = new RegExp(`<meta[^>]+(?:property|name)=["'](?:og:)?${tag}["'][^>]+content=["']([^"']+)["']`, 'i');
+        const match = html.match(regex);
+        if (match) return match[1];
+
+        // Try reverse order (content then property)
+        const reverseRegex = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:)?${tag}["']`, 'i');
+        const reverseMatch = html.match(reverseRegex);
+        return reverseMatch ? reverseMatch[1] : null;
+      };
+
+      const getTitle = () => {
+        const ogTitle = getMeta('title');
+        if (ogTitle) return ogTitle;
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        return titleMatch ? titleMatch[1] : null;
+      };
+
+      const result = {
+        title: getTitle(),
+        description: getMeta('description'),
+        image: getMeta('image'),
+        siteName: getMeta('site_name'),
+        url: url
+      };
+
+      // Clean up title/description (un-escape HTML entities if needed, but basic strings are fine for now)
+      if (result.title) result.title = result.title.trim();
+      if (result.description) result.description = result.description.trim();
+
+      res.json(result);
+
+    } catch (error) {
+      console.error('❌ Link Preview Error:', error.message);
+      res.status(500).json({ error: 'Failed to fetch link preview', details: error.message });
+    }
   }
 };
