@@ -4,7 +4,8 @@ import {
   Phone, Video, PhoneMissed, PhoneOff, ArrowLeft, ArrowRight, Check, CheckCheck, X, Reply, Trash2, Pin, BellOff, Archive,
   Mic, Image, File, StopCircle, Download, Share2, Save, FileText, FileImage, FileVideo, FileAudio,
   ExternalLink, Eye, MessageCircle, Forward, Settings, Info, Lock, Bell, Volume2, Monitor, Moon, Sun,
-  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2, Play, Pause
+  Type, Zap, Shield, Users, Copy, Clock, Keyboard, Palette, Circle, Maximize2, Play, Pause,
+  LogOut, UserMinus, Edit2
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -686,6 +687,8 @@ const ChatTab = () => {
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedNewMembers, setSelectedNewMembers] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -693,6 +696,11 @@ const ChatTab = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
   const [showFilePreview, setShowFilePreview] = useState(false);
+  // Group creation state
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [availableForGroup, setAvailableForGroup] = useState([]); // List of users to add to group
 
   // Body scroll lock for previews
   useEffect(() => {
@@ -969,6 +977,49 @@ const ChatTab = () => {
       loadChats();
     });
 
+    // Group events
+    socket.on('participants_added', (data) => {
+      if (selectedChat && data.chatId == selectedChat.id) {
+        fetchGroupParticipants(data.chatId);
+      }
+      loadChats();
+    });
+
+    socket.on('participant_removed', (data) => {
+      console.log('📡 [participant_removed] socket event received:', data);
+      if (selectedChat && data.chatId == selectedChat.id) {
+        if (data.userId === currentUser.userId && data.userType === currentUser.userType) {
+          console.log('❌ I was removed from the group');
+          setSelectedChat(null);
+          alert('You have been removed from the group');
+        } else {
+          console.log('🔄 Refreshing participants list after another member removal');
+          fetchGroupParticipants(data.chatId);
+        }
+      }
+      loadChats();
+    });
+
+    socket.on('role_updated', (data) => {
+      if (selectedChat && data.chatId == selectedChat.id) {
+        fetchGroupParticipants(data.chatId);
+      }
+    });
+
+    socket.on('participant_left', (data) => {
+      if (selectedChat && data.chatId == selectedChat.id) {
+        fetchGroupParticipants(data.chatId);
+      }
+      loadChats();
+    });
+
+    socket.on('group_info_updated', (data) => {
+      if (selectedChat && data.chatId == selectedChat.id) {
+        setSelectedChat(prev => ({ ...prev, ...data.updates }));
+      }
+      loadChats();
+    });
+
     return () => {
       socket.off('new_message');
       socket.off('message_delivered');
@@ -977,6 +1028,11 @@ const ChatTab = () => {
       socket.off('message_deleted');
       socket.off('user_stopped_typing');
       socket.off('reaction_added');
+      socket.off('participants_added');
+      socket.off('participant_removed');
+      socket.off('role_updated');
+      socket.off('participant_left');
+      socket.off('group_info_updated');
     };
   }, [socket.socket, selectedChat, currentUser]);
 
@@ -1138,6 +1194,42 @@ const ChatTab = () => {
     setReplyTo(null);
     loadMessages(chat.id);
     socket.joinChat(chat.id);
+  };
+
+  // Create a new group chat
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedParticipants.length === 0) {
+      alert('Please enter a group name and select at least one participant');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await chatApi.createGroupChat(
+        groupName,
+        selectedParticipants,
+        currentUser
+      );
+
+      const newChat = response.chat;
+
+      // Update local chats list
+      setChats(prev => [newChat, ...prev]);
+
+      // Select the new group chat
+      handleSelectChat(newChat);
+
+      // Reset state and close modal
+      setShowCreateGroupModal(false);
+      setGroupName('');
+      setSelectedParticipants([]);
+
+    } catch (error) {
+      console.error('Failed to create group:', error);
+      alert('Failed to create group. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Send message
@@ -1443,6 +1535,87 @@ const ChatTab = () => {
       alert('Failed to share location');
     }
   };
+
+  // Group Info Panel State
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [groupParticipants, setGroupParticipants] = useState([]);
+  const [isUpdatingGroup, setIsUpdatingGroup] = useState(false);
+
+  const fetchGroupParticipants = useCallback(async (chatId) => {
+    if (!chatId) return;
+    try {
+      const response = await chatApi.getParticipants(chatId);
+      setGroupParticipants(response.participants || []);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedChat?.type === 'group') {
+      fetchGroupParticipants(selectedChat.id);
+    } else {
+      setShowGroupInfo(false);
+      setGroupParticipants([]);
+    }
+  }, [selectedChat?.id, fetchGroupParticipants]);
+  const handleUpdateGroupInfo = async (data) => {
+    if (!selectedChat?.id) return;
+    setIsUpdatingGroup(true);
+    try {
+      await chatApi.updateGroupInfo(selectedChat.id, data, currentUser.userId, currentUser.userType);
+      setSelectedChat(prev => ({ ...prev, ...data }));
+    } catch (error) {
+      console.error('Failed to update group info:', error);
+    } finally {
+      setIsUpdatingGroup(false);
+    }
+  };
+
+  const handleUpdateMemberRole = async (userId, userType, role) => {
+    if (!selectedChat?.id) return;
+    try {
+      await chatApi.updateParticipantRole(selectedChat.id, userId, userType, { role }, currentUser.userId, currentUser.userType);
+      fetchGroupParticipants(selectedChat.id);
+    } catch (error) {
+      console.error('Failed to update member role:', error);
+    }
+  };
+
+  const handleRemoveMember = async (userId, userType) => {
+    if (!selectedChat?.id || !window.confirm('Remove this member?')) return;
+    console.log('📤 [handleRemoveMember] requesting removal for:', userId, 'type:', userType);
+    try {
+      await chatApi.removeParticipant(selectedChat.id, userId, userType, currentUser.userId, currentUser.userType);
+      fetchGroupParticipants(selectedChat.id);
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+      const errorMsg = error.response?.data?.error || 'Failed to remove member. Please try again.';
+      alert(errorMsg);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!selectedChat?.id || !window.confirm('Leave this group?')) return;
+    try {
+      await chatApi.leaveGroup(selectedChat.id, currentUser.userId, currentUser.userType);
+      setSelectedChat(null);
+      loadChats();
+    } catch (error) {
+      console.error('Failed to leave group:', error);
+    }
+  };
+
+  const handleAddMembers = async (members) => {
+    if (!selectedChat?.id) return;
+    try {
+      await chatApi.addParticipants(selectedChat.id, members);
+      fetchGroupParticipants(selectedChat.id);
+    } catch (error) {
+      console.error('Failed to add members:', error);
+    }
+  };
+
 
   // Detect URLs in message content
   const detectUrls = (text) => {
@@ -1891,6 +2064,26 @@ const ChatTab = () => {
               >
                 <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
+
+              <button
+                onClick={() => {
+                  setShowCreateGroupModal(true);
+                  // Load available users for group creation
+                  const loadAvailableUsers = async () => {
+                    try {
+                      const data = await chatApi.searchUsers('', currentUser.userId, currentUser.userType);
+                      setAvailableForGroup(data.users || []);
+                    } catch (error) {
+                      console.error('Failed to load users for group:', error);
+                    }
+                  };
+                  loadAvailableUsers();
+                }}
+                className="p-2 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-xl transition-all border border-teal-200 shadow-sm group"
+                title="Create Group"
+              >
+                <Users size={16} className="group-hover:scale-110 transition-transform duration-300" />
+              </button>
               <button
                 onClick={() => setShowSettings(true)}
                 className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-all border border-slate-200 shadow-sm group"
@@ -2087,49 +2280,59 @@ const ChatTab = () => {
               </button>
 
               <div className="relative group">
-                <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-[10px] md:text-xs shadow-lg shadow-indigo-100 transform group-hover:scale-105 transition-all duration-300">
-                  {selectedChat.other_user?.user_name?.charAt(0) || '?'}
+                <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white font-black text-[10px] md:text-xs shadow-lg transform group-hover:scale-105 transition-all duration-300 ${selectedChat.type === 'group'
+                  ? 'bg-teal-600'
+                  : 'bg-indigo-600'
+                  }`}>
+                  {selectedChat.type === 'group'
+                    ? <Users size={16} strokeWidth={3} />
+                    : (selectedChat.other_user?.user_name?.charAt(0) || '?')
+                  }
                 </div>
-                {socket.isUserOnline(selectedChat.other_user?.user_id, selectedChat.other_user?.user_type) && (
+                {selectedChat.type !== 'group' && socket.isUserOnline(selectedChat.other_user?.user_id, selectedChat.other_user?.user_type) && (
                   <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[3px] border-card"></div>
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <h3 className="font-black text-foreground text-sm md:text-base font-outfit leading-tight">
-                  {selectedChat.other_user?.user_name || 'System User'}
+                  {selectedChat.type === 'group' ? selectedChat.name : (selectedChat.other_user?.user_name || 'System User')}
                 </h3>
-                <p className="text-[10px] md:text-xs flex items-center space-x-1.5 truncate">
-                  {(() => {
-                    const activityStatus = socket.getUserActivityStatus(
-                      selectedChat.other_user?.user_id,
-                      selectedChat.other_user?.user_type
-                    );
+                <div className="text-[10px] md:text-xs flex items-center space-x-1.5 truncate">
+                  {selectedChat.type === 'group' ? (
+                    <span className="text-muted-foreground font-bold uppercase tracking-wider opacity-80">Group Chat</span>
+                  ) : (
+                    (() => {
+                      const activityStatus = socket.getUserActivityStatus(
+                        selectedChat.other_user?.user_id,
+                        selectedChat.other_user?.user_type
+                      );
 
-                    if (activityStatus === 'active') {
-                      return (
-                        <>
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                          <span className="text-emerald-600 font-bold uppercase tracking-wider opacity-80">Online</span>
-                        </>
-                      );
-                    } else if (activityStatus === 'away') {
-                      return (
-                        <>
-                          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                          <span className="text-amber-600 font-bold uppercase tracking-wider opacity-80">Away</span>
-                        </>
-                      );
-                    } else {
-                      return (
-                        <>
-                          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
-                          <span className="text-slate-500 font-bold uppercase tracking-wider opacity-80">Offline</span>
-                        </>
-                      );
-                    }
-                  })()}
-                </p>
+                      if (activityStatus === 'active') {
+                        return (
+                          <>
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            <span className="text-emerald-600 font-bold uppercase tracking-wider opacity-80">Online</span>
+                          </>
+                        );
+                      } else if (activityStatus === 'away') {
+                        return (
+                          <>
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                            <span className="text-amber-600 font-bold uppercase tracking-wider opacity-80">Away</span>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                            <span className="text-slate-500 font-bold uppercase tracking-wider opacity-80">Offline</span>
+                          </>
+                        );
+                      }
+                    })()
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2156,153 +2359,185 @@ const ChatTab = () => {
               >
                 <Video size={16} />
               </button>
+              {selectedChat.type === 'group' && (
+                <button
+                  onClick={() => setShowGroupInfo(!showGroupInfo)}
+                  className={`p-2 rounded-xl transition-all duration-300 border ${showGroupInfo
+                    ? 'bg-teal-50 text-teal-600 border-teal-100'
+                    : 'hover:bg-slate-50 text-slate-600 border-transparent hover:border-slate-100'
+                    }`}
+                  title="Group Info"
+                >
+                  <Info size={16} />
+                </button>
+              )}
+              <div className="relative">
+              </div>
             </div>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 bg-muted/20">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-full space-y-6">
-                <div className="relative group">
-                  {/* Decorative Glow */}
-                  <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full group-hover:bg-indigo-500/30 transition-all duration-700 animate-pulse"></div>
-
-                  {/* Outer Pulsing Container */}
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/20 transform animate-in zoom-in-50 duration-500">
-                    <div className="absolute inset-0 rounded-[2rem] border-2 border-white/20 animate-ping opacity-20"></div>
-                    <div className="absolute inset-2 rounded-[1.6rem] border-2 border-white/10 animate-pulse"></div>
-
-                    {/* Brand Icon */}
-                    <MessageCircle size={36} className="text-white animate-bounce [animation-duration:2s]" />
-                  </div>
-                </div>
-
-                {/* Refined Text */}
-                <div className="flex flex-col items-center space-y-1">
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 animate-pulse">
-                    Synchronizing
-                  </h3>
-                  <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                    Preparing your secure workspace
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {/* Messenger-style Chat Introduction */}
-                <div className="flex flex-col items-center justify-center py-12 px-6 mb-4 text-center border-b border-border/30 bg-gradient-to-b from-indigo-50/20 to-transparent dark:from-indigo-500/5">
-                  <div className="relative mb-4 group">
-                    <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2.5rem] opacity-20 group-hover:opacity-30 blur-sm transition-opacity" />
-                    {selectedChat.other_user?.user_avatar ? (
-                      <img
-                        src={getMediaUrl(selectedChat.other_user.user_avatar)}
-                        alt={selectedChat.other_user.user_name}
-                        className="w-24 h-24 rounded-[2.2rem] object-cover border-2 border-background shadow-2xl relative z-10"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 rounded-[2.2rem] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
-                        {selectedChat.other_user?.user_name?.charAt(0)}
+          <div className="flex-1 flex flex-row overflow-hidden relative">
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 bg-muted/20">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-6">
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full group-hover:bg-indigo-500/30 transition-all duration-700 animate-pulse"></div>
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/20 transform animate-in zoom-in-50 duration-500">
+                        <div className="absolute inset-0 rounded-[2rem] border-2 border-white/20 animate-ping opacity-20"></div>
+                        <div className="absolute inset-2 rounded-[1.6rem] border-2 border-white/10 animate-pulse"></div>
+                        <MessageCircle size={36} className="text-white animate-bounce [animation-duration:2s]" />
                       </div>
-                    )}
-                  </div>
-
-                  <h2 className="text-2xl font-black text-foreground mb-1 font-outfit tracking-tight">
-                    {selectedChat.other_user?.user_name}
-                  </h2>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/20 shadow-sm">
-                      {selectedChat.other_user?.user_type || 'User'}
-                    </span>
-                    <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">•</span>
-                    <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">Connected</span>
-                  </div>
-
-                  <p className="max-w-xs text-[11px] font-medium text-muted-foreground/70 leading-relaxed uppercase tracking-wider">
-                    This is the very beginning of your consultation history with <span className="text-foreground font-bold">{selectedChat.other_user?.user_name}</span>.
-                  </p>
-                </div>
-
-                {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                    <div className="w-16 h-16 bg-muted/30 rounded-3xl flex items-center justify-center mb-4 text-muted-foreground/40 border border-border/50">
-                      <MessageCircle size={32} />
                     </div>
-                    <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-[0.2em]">No messages yet</p>
-                    <p className="mt-2 text-[11px] font-medium text-muted-foreground/40 max-w-[200px]">Send a message to start the secure conversation.</p>
+                    <div className="flex flex-col items-center space-y-1">
+                      <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 animate-pulse">Synchronizing</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Preparing your secure workspace</p>
+                    </div>
                   </div>
                 ) : (
-                  messages.map((message, index) => {
-                    const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
-                    const prevMessage = messages[index - 1];
-                    const nextMessage = messages[index + 1];
+                  <div className="flex flex-col">
+                    {/* Messenger-style Chat Introduction */}
+                    <div className="flex flex-col items-center justify-center py-12 px-6 mb-4 text-center border-b border-border/30 bg-gradient-to-b from-indigo-50/20 to-transparent dark:from-indigo-500/5">
+                      <div className="relative mb-4 group">
+                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full opacity-20 group-hover:opacity-30 blur-sm transition-opacity" />
+                        {selectedChat.type === 'group' ? (
+                          <div className="w-24 h-24 rounded-full bg-teal-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
+                            <Users size={40} strokeWidth={3} />
+                          </div>
+                        ) : selectedChat.other_user?.user_avatar ? (
+                          <img
+                            src={getMediaUrl(selectedChat.other_user.user_avatar)}
+                            alt={selectedChat.other_user.user_name}
+                            className="w-24 h-24 rounded-full object-cover border-2 border-background shadow-2xl relative z-10"
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
+                            {selectedChat.other_user?.user_name?.charAt(0)}
+                          </div>
+                        )}
+                      </div>
 
-                    const isFirst = !prevMessage || prevMessage.sender_id !== message.sender_id;
-                    const isLast = !nextMessage || nextMessage.sender_id !== message.sender_id;
+                      <h2 className="text-2xl font-black text-foreground mb-1 font-outfit tracking-tight">
+                        {selectedChat.type === 'group' ? selectedChat.name : selectedChat.other_user?.user_name}
+                      </h2>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/20 shadow-sm">
+                          {selectedChat.type === 'group' ? 'Group' : (selectedChat.other_user?.user_type || 'User')}
+                        </span>
+                        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">•</span>
+                        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">Connected</span>
+                      </div>
 
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isOwn={isOwn}
-                        isFirst={isFirst}
-                        isLast={isLast}
-                        onReply={() => setReplyTo(message)}
-                        onDelete={() => handleDeleteMessage(message)}
-                        onForward={() => handleForwardMessage(message)}
-                        onCopy={() => handleCopyMessage(message.content)}
-                        onReact={(msg, emoji) => handleAddReaction(msg, emoji)}
-                        onReplyClick={scrollToMessage}
-                        onPreview={handleOpenPreview}
-                      />
-                    );
-                  })
+                      <p className="max-w-xs text-[11px] font-medium text-muted-foreground/70 leading-relaxed uppercase tracking-wider">
+                        This is the very beginning of your conversation history {selectedChat.type === 'group' ? 'in ' : 'with '}
+                        <span className="text-foreground font-bold">{selectedChat.type === 'group' ? selectedChat.name : selectedChat.other_user?.user_name}</span>.
+                      </p>
+                    </div>
+
+                    {messages.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                        <div className="w-16 h-16 bg-muted/30 rounded-3xl flex items-center justify-center mb-4 text-muted-foreground/40 border border-border/50">
+                          <MessageCircle size={32} />
+                        </div>
+                        <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-[0.2em]">No messages yet</p>
+                        <p className="mt-2 text-[11px] font-medium text-muted-foreground/40 max-w-[200px]">Send a message to start the secure conversation.</p>
+                      </div>
+                    ) : (
+                      messages.map((message, index) => {
+                        const isOwn = message.sender_id === currentUser.userId && message.sender_type === currentUser.userType;
+                        const prevMessage = messages[index - 1];
+                        const nextMessage = messages[index + 1];
+
+                        const isFirst = !prevMessage || prevMessage.sender_id !== message.sender_id;
+                        const isLast = !nextMessage || nextMessage.sender_id !== message.sender_id;
+
+                        return (
+                          <MessageBubble
+                            key={message.id}
+                            message={message}
+                            isOwn={isOwn}
+                            isFirst={isFirst}
+                            isLast={isLast}
+                            onReply={() => setReplyTo(message)}
+                            onDelete={() => handleDeleteMessage(message)}
+                            onForward={() => handleForwardMessage(message)}
+                            onCopy={() => handleCopyMessage(message.content)}
+                            onReact={(msg, emoji) => handleAddReaction(msg, emoji)}
+                            onReplyClick={scrollToMessage}
+                            onPreview={handleOpenPreview}
+                          />
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndRef} className="h-4" />
+                  </div>
                 )}
               </div>
-            )}
 
-            {/* Typing indicator */}
-            {typingUsers.size > 0 && (
-              <div className="flex items-center space-x-3 px-6 py-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                <div className="flex space-x-1 bg-card px-3 py-2 rounded-2xl shadow-sm border border-border">
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce"></div>
+              {/* Typing indicator */}
+              {typingUsers.size > 0 && (
+                <div className="flex items-center space-x-3 px-6 py-4 animate-in fade-in slide-in-from-left-4 duration-500 border-t border-border/50 bg-card/30">
+                  <div className="flex space-x-1 bg-card px-3 py-2 rounded-2xl shadow-sm border border-border">
+                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce"></div>
+                  </div>
+                  <span className="text-[11px] italic text-muted-foreground">
+                    {Array.from(typingUsers.values()).join(', ')} is typing...
+                  </span>
                 </div>
-                <span className="text-[11px] italic text-muted-foreground">
-                  {Array.from(typingUsers.values()).join(', ')} is typing...
-                </span>
-              </div>
-            )}
+              )}
 
-            {/* Scroll Target */}
-            <div ref={messagesEndRef} className="h-4" />
-          </div>
-          {/* Reply Preview */}
-          {replyTo && (
-            <div className="px-6 py-4 bg-card/80 backdrop-blur-xl border-t border-border flex items-center justify-between animate-in slide-in-from-bottom-full duration-300">
-              <div className="flex-1 pl-4 border-l-4 border-indigo-500 rounded-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">
-                  Replying to <span className="font-outfit">{replyTo.sender_name}</span>
-                </p>
-                <p className="text-sm text-foreground/80 font-medium truncate italic px-1">"{replyTo.content}"</p>
-              </div>
-              <button
-                onClick={() => setReplyTo(null)}
-                className="ml-4 p-2.5 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all duration-300 group"
-                title="Cancel Reply"
-              >
-                <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-              </button>
+              {/* Reply Preview */}
+              {replyTo && (
+                <div className="px-6 py-4 bg-card/80 backdrop-blur-xl border-t border-border flex items-center justify-between animate-in slide-in-from-bottom-full duration-300">
+                  <div className="flex-1 pl-4 border-l-4 border-indigo-500 rounded-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">
+                      Replying to <span className="font-outfit">{replyTo.sender_name}</span>
+                    </p>
+                    <p className="text-sm text-foreground/80 font-medium truncate italic px-1">"{replyTo.content}"</p>
+                  </div>
+                  <button
+                    onClick={() => setReplyTo(null)}
+                    className="ml-4 p-2.5 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all duration-300 group"
+                    title="Cancel Reply"
+                  >
+                    <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+            {/* Group Info Drawer */}
+            {selectedChat.type === 'group' && showGroupInfo && (
+              <GroupInfoDrawer
+                chat={selectedChat}
+                participants={groupParticipants}
+                onClose={() => setShowGroupInfo(false)}
+                currentUser={currentUser}
+                isUpdating={isUpdatingGroup}
+                onUpdateInfo={handleUpdateGroupInfo}
+                onUpdateRole={handleUpdateMemberRole}
+                onRemoveMember={handleRemoveMember}
+                onAddMember={async () => {
+                  try {
+                    const data = await chatApi.searchUsers('', currentUser.userId, currentUser.userType);
+                    setAvailableForGroup(data.users || []);
+                  } catch (error) {
+                    console.error('Failed to load users for adding:', error);
+                  }
+                  setShowAddMemberModal(true);
+                }}
+                onLeave={handleLeaveGroup}
+              />
+            )}
+          </div>
 
           {/* Message Input */}
           <div className="bg-card border-t border-border px-2 md:px-6 py-3 md:py-4">
             {isRecording ? (
-              // Modern Recording UI - Telegram & Messenger inspired
               <div className="flex items-center gap-3 p-1.5 bg-rose-500/5 dark:bg-rose-500/10 backdrop-blur-md rounded-[24px] border border-rose-500/20 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="flex-1 flex items-center px-4 gap-4">
-                  {/* Blinking Indicator */}
                   <div className="flex items-center gap-2">
                     <div className="relative w-2.5 h-2.5">
                       <div className="absolute inset-0 bg-rose-500 rounded-full animate-ping opacity-40"></div>
@@ -2312,217 +2547,81 @@ const ChatTab = () => {
                       {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
-
-                  {/* Consistent Waveform Animation */}
                   <div className="flex-1 flex items-center justify-center gap-[2px] h-8">
                     {[...Array(24)].map((_, i) => (
                       <div
                         key={i}
                         className="w-[3px] bg-rose-500/30 rounded-full animate-[pulse_1.5s_infinite]"
-                        style={{
-                          height: `${Math.random() * 60 + 20}%`,
-                          animationDelay: `${i * 0.1}s`
-                        }}
+                        style={{ height: `${Math.random() * 60 + 20}%`, animationDelay: `${i * 0.1}s` }}
                       ></div>
                     ))}
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2 pr-1.5">
-                  <button
-                    onClick={cancelRecording}
-                    className="group flex items-center gap-1.5 px-3 py-2 rounded-2xl hover:bg-rose-500/10 text-rose-600/60 hover:text-rose-600 transition-all font-black text-[10px] uppercase tracking-widest"
-                  >
+                  <button onClick={cancelRecording} className="group flex items-center gap-1.5 px-3 py-2 rounded-2xl hover:bg-rose-500/10 text-rose-600/60 hover:text-rose-600 transition-all font-black text-[10px] uppercase tracking-widest">
                     <X size={14} className="group-hover:rotate-90 transition-transform duration-300" />
                     <span className="hidden sm:inline">Cancel</span>
                   </button>
-                  <button
-                    onClick={stopRecording}
-                    className="w-10 h-10 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all transform hover:scale-110 active:scale-90 flex items-center justify-center"
-                    title="Send Voice Message"
-                  >
+                  <button onClick={stopRecording} className="w-10 h-10 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all transform hover:scale-110 active:scale-90 flex items-center justify-center">
                     <Send size={18} fill="currentColor" />
                   </button>
                 </div>
               </div>
             ) : (
-              // Normal input UI
               <div className="flex items-center space-x-2">
-                {/* Modern Attachment Menu - Telegram Inspired */}
                 <div className="relative">
                   <button
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`p-2.5 rounded-2xl transition-all duration-500 flex items-center justify-center ${showAttachMenu
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-45 scale-110'
-                      : 'bg-muted/50 text-slate-500 hover:bg-muted hover:text-indigo-600 hover:rotate-12'
-                      }`}
+                    className={`p-2.5 rounded-2xl transition-all duration-500 flex items-center justify-center ${showAttachMenu ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-45 scale-110' : 'bg-muted/50 text-slate-500 hover:bg-muted hover:text-indigo-600 hover:rotate-12'}`}
                     disabled={uploadingFile}
                   >
                     <Plus size={22} className="transition-transform duration-500" />
                   </button>
-
                   {showAttachMenu && (
                     <div className="absolute bottom-full mb-5 left-0 w-72 max-w-[calc(100vw-40px)] bg-card/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 p-4 space-y-2 animate-in slide-in-from-bottom-6 zoom-in-95 duration-500 z-50 overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
-                      <div className="px-4 py-2 mb-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60 font-outfit">Share Attachment</p>
-                      </div>
-
+                      <div className="px-4 py-2 mb-1"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60 font-outfit">Share Attachment</p></div>
                       <div className="grid grid-cols-1 gap-1.5">
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-indigo-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
-                        >
-                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-lg shadow-indigo-100 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 relative z-10">
-                            <Image size={20} className="text-white" />
-                          </div>
-                          <div className="flex-1 relative z-10">
-                            <span className="text-sm font-black text-slate-800 block">Gallery</span>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Photos & Videos</p>
-                          </div>
-                          <div className="absolute inset-0 bg-indigo-500/0 group-hover:bg-indigo-500/5 transition-colors duration-300"></div>
+                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-indigo-50/50 rounded-3xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl text-white shadow-lg"><Image size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Gallery</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Photos & Videos</p></div>
                         </button>
-
-                        <button
-                          onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar';
-                            input.onchange = (e) => handleFileSelect(e, 'document');
-                            input.click();
-                          }}
-                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-emerald-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
-                        >
-                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg shadow-emerald-100 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300 relative z-10">
-                            <FileText size={20} className="text-white" />
-                          </div>
-                          <div className="flex-1 relative z-10">
-                            <span className="text-sm font-black text-slate-800 block">Document</span>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">PDF, DOC, ZIP</p>
-                          </div>
-                          <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors duration-300"></div>
+                        <button onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar'; input.onchange = (e) => handleFileSelect(e, 'document'); input.click(); }} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-emerald-50/50 rounded-3xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg"><FileText size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Document</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">PDF, DOC, ZIP</p></div>
                         </button>
-
-                        <button
-                          onClick={handleShareLocation}
-                          className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-amber-50/50 rounded-3xl text-left transition-all duration-300 group relative overflow-hidden"
-                        >
-                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg shadow-amber-100 group-hover:scale-110 transition-all duration-300 relative z-10">
-                            <MapPin size={20} className="text-white" />
-                          </div>
-                          <div className="flex-1 relative z-10">
-                            <span className="text-sm font-black text-slate-800 block">Location</span>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Live Location</p>
-                          </div>
-                          <div className="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/5 transition-colors duration-300"></div>
+                        <button onClick={handleShareLocation} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-amber-50/50 rounded-3xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg"><MapPin size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Location</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Live Location</p></div>
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Hidden file inputs */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => handleFileSelect(e, 'image')}
-                  className="hidden"
-                />
-
-                {/* Emoji Picker */}
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={(e) => handleFileSelect(e, 'image')} className="hidden" />
                 <div className="relative">
-                  <button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-2.5 hover:bg-gradient-to-br hover:from-yellow-50 hover:to-amber-50 rounded-full transition-all duration-200"
-                    disabled={uploadingFile}
-                  >
-                    <Smile size={20} className="text-gray-600 hover:text-amber-500" />
-                  </button>
-
+                  <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2.5 hover:bg-yellow-50 rounded-full transition-all" disabled={uploadingFile}><Smile size={20} className="text-gray-600" /></button>
                   {showEmojiPicker && (
                     <div className="absolute bottom-full mb-2 left-0 bg-card rounded-2xl shadow-2xl border border-border p-3 w-80 max-h-96 overflow-y-auto z-50">
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b">
-                        <h4 className="font-outfit font-black text-foreground text-sm flex-1">Emoji Library</h4>
-                        <button
-                          onClick={() => setShowEmojiPicker(false)}
-                          className="p-1 hover:bg-muted rounded-full"
-                        >
-                          <X size={16} className="text-muted-foreground" />
-                        </button>
-                      </div>
-
-                      {/* Emoji Grid */}
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b"><h4 className="font-outfit font-black text-foreground text-sm flex-1">Emoji Library</h4><button onClick={() => setShowEmojiPicker(false)} className="p-1 hover:bg-muted rounded-full"><X size={16} /></button></div>
                       <div className="grid grid-cols-8 gap-1">
-                        {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
-                          '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒',
-                          '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
-                          '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶',
-                          '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴',
-                          '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀',
-                          '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾',
-                          '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆',
-                          '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️',
-                          '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀',
-                          '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
-                          '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
-                          '🔥', '💯', '💢', '💬', '👁️‍🗨️', '💭', '💤', '👋', '🎉', '🎊', '🎁', '🎈', '🎂', '🎀', '🏆', '🥇'].map((emoji) => (
-                            <button
-                              key={emoji}
-                              onClick={() => {
-                                setMessageInput(prev => prev + emoji);
-                                messageInputRef.current?.focus();
-                              }}
-                              className="text-2xl hover:bg-muted rounded p-1 transition-all hover:scale-125"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                      </div>
-
-                      {/* GIF Note */}
-                      <div className="mt-3 pt-3 border-t border-border">
-                        <p className="text-xs text-muted-foreground text-center">
-                          💡 Tip: You can also paste GIF links directly in your message
-                        </p>
+                        {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '🔥', '💯', '💢', '💬', '👁️‍🗨️', '💭', '💤', '👋', '🎉', '🎊', '🎁', '🎈', '🎂', '🎀', '🏆', '🥇'].map((emoji) => (
+                          <button key={emoji} onClick={() => { setMessageInput(prev => prev + emoji); messageInputRef.current?.focus(); }} className="text-2xl hover:bg-muted rounded p-1 transition-all hover:scale-125">{emoji}</button>
+                        ))}
                       </div>
                     </div>
                   )}
                 </div>
-
                 <div className="flex-1 relative group">
                   <textarea
-                    ref={messageInputRef}
-                    rows="1"
-                    placeholder={uploadingFile ? "Uploading..." : "Type a message..."}
-                    value={messageInput}
-                    onChange={(e) => {
-                      const val = e.target.value.slice(0, 2500);
-                      setMessageInput(val);
-                      handleTyping();
-
-                      // Auto-grow height
-                      e.target.style.height = 'auto';
-                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey && !uploadingFile) {
-                        e.preventDefault();
-                        handleSendMessage();
-                        e.target.style.height = 'auto';
-                      }
-                    }}
+                    ref={messageInputRef} rows="1" placeholder={uploadingFile ? "Uploading..." : "Type a message..."} value={messageInput}
+                    onChange={(e) => { const val = e.target.value.slice(0, 2500); setMessageInput(val); handleTyping(); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !uploadingFile) { e.preventDefault(); handleSendMessage(); e.target.style.height = 'auto'; } }}
                     disabled={uploadingFile}
                     className="w-full bg-muted/30 hover:bg-muted/40 border border-border/50 focus:border-indigo-500/30 focus:bg-card px-4 py-3 rounded-2xl text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 text-foreground resize-none scrollbar-none min-h-[46px] max-h-[160px] shadow-sm"
                   />
-                  {messageInput.length >= 2400 && (
-                    <div className={`absolute -top-6 right-2 text-[9px] font-black uppercase tracking-widest ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'
-                      }`}>
-                      {messageInput.length}/2500
-                    </div>
-                  )}
+                  {messageInput.length >= 2400 && <div className={`absolute -top-6 right-2 text-[9px] font-black uppercase tracking-widest ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'}`}>{messageInput.length}/2500</div>}
                 </div>
-
                 {messageInput.trim() || uploadingFile ? (
                   <button
                     onClick={() => {
@@ -2530,15 +2629,14 @@ const ChatTab = () => {
                       if (messageInputRef.current) messageInputRef.current.style.height = 'auto';
                     }}
                     disabled={!messageInput.trim() || messageInput.length > 2500 || uploadingFile}
-                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 flex-shrink-0"
+                    className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 flex-shrink-0"
                   >
                     <Send size={16} />
                   </button>
                 ) : (
                   <button
                     onClick={startRecording}
-                    className="p-2.5 bg-indigo-50 text-indigo-600/70 hover:bg-indigo-600 hover:text-white rounded-xl transition-all transform hover:rotate-12 hover:scale-110 active:scale-90 border border-indigo-100/50 shadow-sm"
-                    title="Voice Message"
+                    className="p-2.5 bg-indigo-50 text-indigo-600/70 hover:bg-indigo-600 hover:text-white rounded-xl transition-all border border-indigo-100/50 shadow-sm"
                   >
                     <Mic size={16} />
                   </button>
@@ -2873,29 +2971,27 @@ const ChatTab = () => {
       )}
 
       {/* Video/Audio Call Component */}
-      {
-        showVideoCall && selectedChat && (
-          <VideoCall
-            socket={socket}
-            currentUser={currentUser}
-            otherUser={isIncomingCall && incomingCallData ? {
-              user_id: incomingCallData.from,
-              user_type: incomingCallData.fromType,
-              user_name: incomingCallData.fromName
-            } : selectedChat.other_user}
-            isIncoming={isIncomingCall}
-            callType={callType}
-            incomingOffer={incomingCallData?.offer}
-            chatId={selectedChat.id}
-            onCallStatusChange={handleCallStatusChange}
-            onClose={() => {
-              setShowVideoCall(false);
-              setIsIncomingCall(false);
-              setIncomingCallData(null);
-            }}
-          />
-        )
-      }
+      {showVideoCall && selectedChat && (
+        <VideoCall
+          socket={socket}
+          currentUser={currentUser}
+          otherUser={isIncomingCall && incomingCallData ? {
+            user_id: incomingCallData.from,
+            user_type: incomingCallData.fromType,
+            user_name: incomingCallData.fromName
+          } : selectedChat.other_user}
+          isIncoming={isIncomingCall}
+          callType={callType}
+          incomingOffer={incomingCallData?.offer}
+          chatId={selectedChat.id}
+          onCallStatusChange={handleCallStatusChange}
+          onClose={() => {
+            setShowVideoCall(false);
+            setIsIncomingCall(false);
+            setIncomingCallData(null);
+          }}
+        />
+      )}
 
       {/* Global Chat Settings Modal (Centralized) */}
       {showSettings && (
@@ -2984,7 +3080,7 @@ const ChatTab = () => {
                           <item.icon size={20} className="text-muted-foreground group-hover:text-emerald-500 transition-colors" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground">{item.label}</p>
+                          <p className="text-sm font-bold text-foreground"> {item.label}</p>
                           <p className="text-[11px] text-muted-foreground font-medium">{item.desc}</p>
                         </div>
                       </div>
@@ -3181,96 +3277,78 @@ const ChatTab = () => {
                 <a href={getMediaUrl(previewMedia.url)} download className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground" title="Download">
                   <Download size={18} />
                 </a>
-                <button onClick={() => setPreviewMedia(null)} className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground">
-                  <X size={20} />
-                </button>
               </div>
-            </div>
-            <div className="flex-1 bg-muted/30 relative overflow-hidden">
-              <iframe
-                src={getMediaUrl(previewMedia.url)}
-                className="w-full h-full border-none"
-                title="File Preview"
-              />
-            </div>
-            <div className="p-4 border-t bg-card flex justify-between items-center">
-              <p className="text-[10px] text-muted-foreground font-medium">Quick Preview Mode</p>
-              <button
-                onClick={() => window.open(getMediaUrl(previewMedia.url), '_blank')}
-                className="text-[10px] text-indigo-600 font-black uppercase tracking-widest hover:underline"
-              >
-                Open in Full Window
-              </button>
             </div>
           </div>
         </div>
       )}
+
+      <GroupCreationModal
+        isOpen={showCreateGroupModal}
+        onClose={() => setShowCreateGroupModal(false)}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        participants={availableForGroup}
+        selectedParticipants={selectedParticipants}
+        setSelectedParticipants={setSelectedParticipants}
+        onCreate={handleCreateGroup}
+        mode="create"
+      />
+
+      <GroupCreationModal
+        isOpen={showAddMemberModal}
+        onClose={() => setShowAddMemberModal(false)}
+        participants={availableForGroup.filter(p => !groupParticipants.some(gp => gp.user_id === p.user_id && gp.user_type === p.user_type))}
+        selectedParticipants={selectedNewMembers}
+        setSelectedParticipants={setSelectedNewMembers}
+        onCreate={() => { handleAddMembers(selectedNewMembers); setShowAddMemberModal(false); setSelectedNewMembers([]); }}
+        mode="add"
+      />
     </div>
   );
 };
 
-// Chat List Item Component
-// Modern Chat List Item
+// Helper components
+
 const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
   const formatTime = (date) => {
     if (!date) return '';
     try {
-      // If the date string doesn't include a timezone, assume UTC
       let utcDate = date;
       if (typeof date === 'string' && !date.includes('Z') && !date.includes('+')) {
         utcDate = date.replace(' ', 'T') + 'Z';
       }
-
       const d = new Date(utcDate);
       const finalDate = isNaN(d.getTime()) ? new Date(date) : d;
       const now = new Date();
       const diff = now - finalDate;
-
-      if (diff < 86400000) { // Less than 24 hours
-        return finalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-      } else if (diff < 604800000) { // Less than 7 days
-        return finalDate.toLocaleDateString([], { weekday: 'short' });
-      } else {
-        return finalDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
-      }
-    } catch (e) {
-      return '';
-    }
+      if (diff < 86400000) return finalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      if (diff < 604800000) return finalDate.toLocaleDateString([], { weekday: 'short' });
+      return finalDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } catch (e) { return ''; }
   };
 
   const renderLastMessage = () => {
     if (!chat.last_message) return 'Click to start chatting';
     if (chat.last_message.is_deleted) return 'Message was deleted';
-
-    // Handle call messages
     if (chat.last_message.message_type === 'call') {
       const [type, direction, status] = chat.last_message.content.split('|');
-      const isVideo = type === 'video';
       const isOwn = chat.last_message.sender_id === currentUser?.userId;
-
-      // Determine viewer-relative direction
       const viewerDirection = isOwn ? direction : (direction === 'incoming' ? 'outgoing' : 'incoming');
       const isViewerIncoming = viewerDirection === 'incoming';
-
       switch (status) {
-        case 'completed':
-          return isVideo ? 'Video Call' : 'Audio Call';
+        case 'completed': return type === 'video' ? 'Video Call' : 'Audio Call';
         case 'missed':
-        case 'not_answered':
-          return isViewerIncoming ? 'Missed Call' : 'No Answer';
-        case 'declined':
-          return isViewerIncoming ? 'Call Declined' : 'Declined Call';
-        default:
-          return isVideo ? 'Video Call' : 'Audio Call';
+        case 'not_answered': return isViewerIncoming ? 'Missed Call' : 'No Answer';
+        case 'declined': return isViewerIncoming ? 'Call Declined' : 'Declined Call';
+        default: return type === 'video' ? 'Video Call' : 'Audio Call';
       }
     }
-
     return chat.last_message.content;
   };
 
   const isArchived = chat.is_archived || false;
-  const isMuted = chat.is_muted || false;
-  const isPinned = chat.is_pinned || false;
+  const isGroup = chat.type === 'group';
 
   return (
     <div
@@ -3281,45 +3359,35 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
           : 'bg-transparent border-transparent hover:bg-card hover:border-border hover:shadow-xl hover:shadow-slate-500/5 hover:translate-x-1'
         } ${isArchived ? 'opacity-60' : ''}`}
     >
-      {isSelected && (
-        <div className="absolute left-0 top-3 bottom-3 w-1 bg-indigo-500 rounded-r-xl"></div>
-      )}
+      {isSelected && <div className="absolute left-0 top-3 bottom-3 w-1 bg-indigo-500 rounded-r-xl"></div>}
       <div className="flex items-center space-x-3">
         <div className="relative flex-shrink-0">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] shadow-sm transition-transform group-hover:scale-105 duration-300
-            ${isSelected
-              ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white'
-              : 'bg-indigo-50 text-indigo-600'
-            }`}>
-            {chat.other_user?.user_name?.charAt(0) || '?'}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-transform group-hover:scale-105 duration-300
+            ${isSelected ? (isGroup ? 'bg-teal-600 text-white' : 'bg-indigo-600 text-white') : (isGroup ? 'bg-teal-50 text-teal-600' : 'bg-indigo-50 text-indigo-600')}`}>
+            {isGroup ? <Users size={14} strokeWidth={3} /> : (chat.other_user?.user_name?.charAt(0) || '?')}
           </div>
-          {isOnline && (
+          {isOnline && !isGroup && (
             <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
           )}
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <h4 className={`font-black truncate text-xs tracking-tight ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground'}`}>
-              {chat.other_user?.user_name || 'System User'}
+            <h4 className={`font-black truncate text-xs tracking-tight ${isSelected ? (isGroup ? 'text-teal-600 dark:text-teal-400' : 'text-indigo-600 dark:text-indigo-400') : 'text-foreground'}`}>
+              {isGroup ? chat.name : (chat.other_user?.user_name || 'System User')}
             </h4>
             <span className={`text-[8px] font-bold uppercase tracking-wider ${isSelected ? 'text-indigo-400' : 'text-muted-foreground'}`}>
               {formatTime(chat.last_message_at || chat.created_at)}
             </span>
           </div>
-
           <div className="flex items-center justify-between">
             <p className={`text-[10px] truncate font-bold flex-1 ${isSelected ? 'text-indigo-500' : 'text-muted-foreground'}`}>
               {renderLastMessage()}
             </p>
-            <div className="flex items-center ml-2">
-              {chat.unread_count > 0 && (
-                <span className={`min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-black rounded-full shadow-lg
-                  ${isMuted ? 'bg-slate-300 text-white' : 'bg-indigo-600 text-white animate-pulse'}`}>
-                  {chat.unread_count}
-                </span>
-              )}
-            </div>
+            {chat.unread_count > 0 && (
+              <span className={`min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-black rounded-full shadow-lg ${chat.is_muted ? 'bg-slate-300 text-white' : 'bg-indigo-600 text-white animate-pulse'}`}>
+                {chat.unread_count}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -3327,5 +3395,183 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
   );
 };
 
-// End of ChatTab component
+const GroupCreationModal = ({ isOpen, onClose, groupName, setGroupName, participants, selectedParticipants, setSelectedParticipants, onCreate, mode = 'create' }) => {
+  if (!isOpen) return null;
+  const isAddMode = mode === 'add';
+
+  const toggleParticipant = (user) => {
+    const isSelected = selectedParticipants.some(p => p.user_id === user.user_id && p.user_type === user.user_type);
+    if (isSelected) {
+      setSelectedParticipants(prev => prev.filter(p => !(p.user_id === user.user_id && p.user_type === user.user_type)));
+    } else {
+      setSelectedParticipants(prev => [...prev, user]);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="px-4 py-3 border-b flex items-center justify-between">
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} className="text-slate-500" /></button>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{isAddMode ? 'Add Members' : 'New Group'}</h2>
+          <button
+            onClick={onCreate}
+            disabled={(!isAddMode && !groupName?.trim()) || selectedParticipants.length === 0}
+            className="text-sm font-bold text-indigo-600 disabled:opacity-40 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {isAddMode ? 'Add' : 'Create'}
+          </button>
+        </div>
+        <div className="flex flex-col max-h-[80vh]">
+          {!isAddMode && (
+            <div className="p-4 border-b">
+              <input type="text" placeholder="Name your group chat" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-base placeholder-slate-400 font-medium" autoFocus />
+            </div>
+          )}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Suggested</p>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {participants.length === 0 ? (
+              <div className="p-10 text-center"><p className="text-sm text-slate-400">No contacts found</p></div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {participants.map(user => {
+                  const isSelected = selectedParticipants.some(p => p.user_id === user.user_id && p.user_type === user.user_type);
+                  return (
+                    <div key={`${user.user_id}_${user.user_type}`} onClick={() => toggleParticipant(user)} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group">
+                      <div className="relative">
+                        {user.user_avatar ? <img src={getMediaUrl(user.user_avatar)} alt={user.user_name} className="w-12 h-12 rounded-full object-cover border border-slate-200" /> : <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">{user.user_name?.charAt(0)}</div>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900 dark:text-white truncate">{user.user_name}</p>
+                        <p className="text-xs text-slate-500 truncate capitalize">{user.user_type === 'doctor' ? 'Provider' : 'Patient'}</p>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 dark:border-slate-700'}`}>{isSelected && <Check size={14} strokeWidth={4} />}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {selectedParticipants.length > 0 && (
+            <div className="p-3 border-t bg-white dark:bg-slate-900 flex items-center gap-2 overflow-x-auto no-scrollbar">
+              {selectedParticipants.map(user => (
+                <div key={`sel_${user.user_id}`} className="flex-shrink-0 relative group">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold overflow-hidden border border-slate-200">
+                    {user.user_avatar ? <img src={getMediaUrl(user.user_avatar)} alt="" className="w-full h-full object-cover" /> : user.user_name?.charAt(0)}
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); toggleParticipant(user); }} className="absolute -top-1 -right-1 w-5 h-5 bg-slate-800 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-900 hover:bg-rose-500 transition-colors"><X size={10} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating, onUpdateInfo, onUpdateRole, onRemoveMember, onAddMember, onLeave }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(chat.name || '');
+  const [newDesc, setNewDesc] = useState(chat.description || '');
+  const isAdmin = participants.find(p => p.user_id === currentUser.userId && p.user_type === currentUser.userType)?.role === 'admin';
+
+  return (
+    <div className="w-[320px] h-full bg-card border-l border-border flex flex-col animate-in slide-in-from-right duration-300 relative z-40">
+      <div className="p-4 border-b flex items-center justify-between bg-muted/30">
+        <h2 className="text-[13px] font-black uppercase tracking-widest text-foreground font-outfit">Group Info</h2>
+        <button onClick={onClose} className="p-1.5 hover:bg-muted rounded-xl transition-all"><X size={18} /></button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="w-24 h-24 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl">
+            <Users size={40} strokeWidth={3} />
+          </div>
+          <div className="w-full">
+            {isEditing ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground text-left px-1">Group Name</p>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-center font-bold outline-none focus:ring-2 ring-indigo-500/20"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground text-left px-1">Description</p>
+                  <textarea
+                    value={newDesc}
+                    onChange={(e) => setNewDesc(e.target.value)}
+                    placeholder="Add a group description..."
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 min-h-[80px] resize-none"
+                  />
+                </div>
+                <div className="flex justify-center gap-2">
+                  <button onClick={() => { onUpdateInfo({ name: newName, description: newDesc }); setIsEditing(false); }} className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600">Save Changes</button>
+                  <button onClick={() => { setIsEditing(false); setNewName(chat.name); setNewDesc(chat.description || ''); }} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-500">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="group relative space-y-1">
+                <h3 className="text-lg font-black text-foreground font-outfit">{chat.name}</h3>
+                {chat.description && <p className="text-xs text-muted-foreground font-medium px-4">{chat.description}</p>}
+                {isAdmin && (
+                  <button onClick={() => setIsEditing(true)} className="absolute -top-1 -right-4 opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-500 transition-all">
+                    <Edit2 size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">{participants.length} Members</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Members</h4>
+            {isAdmin && <button onClick={onAddMember} className="p-1 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"><Plus size={16} /></button>}
+          </div>
+          <div className="space-y-1">
+            {participants.map(p => (
+              <div key={`${p.user_id}_${p.user_type}`} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-2xl transition-all group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                    {p.user_name?.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground truncate">{p.user_name}</p>
+                    <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">{p.role}</p>
+                  </div>
+                </div>
+                {isAdmin && p.user_id !== currentUser.userId && (
+                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all">
+                    <button onClick={() => onUpdateRole(p.user_id, p.user_type, p.role === 'admin' ? 'member' : 'admin')} className="p-1.5 hover:bg-indigo-50 text-indigo-500 rounded-lg" title="Toggle Admin">
+                      <Shield size={14} />
+                    </button>
+                    <button onClick={() => onRemoveMember(p.user_id, p.user_type)} className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg" title="Remove Member">
+                      <UserMinus size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-border space-y-2">
+          <button onClick={onLeave} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-rose-500 hover:bg-rose-50 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all">
+            <LogOut size={16} /> Leave Group
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default ChatTab;

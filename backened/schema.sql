@@ -241,6 +241,9 @@ CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(sta
 CREATE TABLE IF NOT EXISTS chats (
   id SERIAL PRIMARY KEY,
   type VARCHAR(20) NOT NULL DEFAULT 'private',
+  name VARCHAR(255),
+  avatar VARCHAR(500),
+  description TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   last_message_at TIMESTAMP,
@@ -263,6 +266,7 @@ CREATE TABLE IF NOT EXISTS chat_participants (
   is_blocked BOOLEAN DEFAULT FALSE,
   is_archived BOOLEAN DEFAULT FALSE,
   custom_nickname VARCHAR(255),
+  role VARCHAR(20) DEFAULT 'member',
   UNIQUE(chat_id, user_id, user_type),
   CONSTRAINT chk_user_type CHECK (user_type IN ('doctor', 'patient', 'admin'))
 );

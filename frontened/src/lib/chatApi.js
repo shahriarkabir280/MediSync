@@ -26,6 +26,80 @@ export const chatApi = {
   },
 
   /**
+   * Create a new group chat
+   */
+  async createGroupChat(name, participants, creator, options = {}) {
+    const response = await api.post('/chat/groups', {
+      name,
+      participants,
+      creator,
+      avatar: options.avatar || null,
+      description: options.description || null
+    });
+    return response;
+  },
+
+  /**
+   * Add participants to group
+   */
+  async addParticipants(chatId, participants) {
+    const response = await api.post(`/chat/groups/${chatId}/participants`, {
+      participants
+    });
+    return response;
+  },
+
+  /**
+   * Get participants of a group
+   */
+  async getParticipants(chatId) {
+    const response = await api.get(`/chat/groups/${chatId}/participants`);
+    return response;
+  },
+
+  /**
+   * Remove participant from group
+   */
+  async removeParticipant(chatId, userId, userType, adminId, adminType) {
+    const response = await api.delete(`/chat/groups/${chatId}/participants/${userId}/${userType}`, {
+      data: { adminId, adminType }
+    });
+    return response;
+  },
+
+  /**
+   * Update a participant's role
+   */
+  async updateParticipantRole(chatId, userId, userType, data, adminId, adminType) {
+    const response = await api.put(`/chat/groups/${chatId}/participants/${userId}/${userType}/role`, {
+      ...data,
+      adminId,
+      adminType
+    });
+    return response;
+  },
+
+  /**
+   * Leave a group
+   */
+  async leaveGroup(chatId, userId, userType) {
+    const response = await api.delete(`/chat/groups/${chatId}/leave/${userId}/${userType}`);
+    return response;
+  },
+
+  /**
+   * Update group information
+   */
+  async updateGroupInfo(chatId, data, adminId, adminType) {
+    const response = await api.put(`/chat/groups/${chatId}/info`, {
+      ...data,
+      adminId,
+      adminType
+    });
+    return response;
+  },
+
+  /**
    * Get all my chats (inbox)
    */
   async getMyChats(userId, userType) {

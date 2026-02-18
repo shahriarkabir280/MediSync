@@ -50,6 +50,15 @@ router.post('/chats/start', chatController.getOrCreateChat);
 // Get all my chats (inbox)
 router.get('/chats', chatController.getMyChats);
 
+// Group Chat Routes
+router.post('/groups', chatController.createGroupChat);
+router.post('/groups/:chatId/participants', chatController.addParticipants);
+router.get('/groups/:chatId/participants', chatController.getChatParticipants);
+router.delete('/groups/:chatId/participants/:userId/:userType', chatController.removeParticipant);
+router.put('/groups/:chatId/participants/:userId/:userType/role', chatController.updateParticipantRole);
+router.delete('/groups/:chatId/leave/:userId/:userType', chatController.leaveGroup);
+router.put('/groups/:chatId/info', chatController.updateGroupInfo);
+
 // Get messages for a specific chat
 router.get('/chats/:chatId/messages', chatController.getMessages);
 

@@ -33,19 +33,18 @@ export const chatController = {
       let existingChatId = null;
 
       if (myChatIds.length > 0) {
+        // Find if any of these common chats are 'private'
         const { data: common } = await supabase
           .from('chat_participants')
-          .select('chat_id')
+          .select('chat_id, chats!inner(type)')
           .eq('user_id', otherUserId)
           .eq('user_type', otherUserType)
           .in('chat_id', myChatIds)
-          .limit(1); // Private chat should be unique pair? Or just find one.
+          .eq('chats.type', 'private')
+          .limit(1);
 
         if (common && common.length > 0) {
           existingChatId = common[0].chat_id;
-
-          // Verify it's a private chat (optional equality check if group chats exist separately)
-          // Assuming 'private' type enforcement
         }
       }
 
@@ -62,22 +61,7 @@ export const chatController = {
 
         if (chatError) throw chatError;
 
-        // Unread count
-        const { count: unreadCount } = await supabase
-          .from('message_status')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', myUserId)
-          .eq('user_type', myUserType)
-          .neq('status', 'read')
-          .in('message_id', (
-            await supabase.from('messages').select('id').eq('chat_id', existingChatId).neq('sender_id', myUserId)
-          ).data?.map(m => m.id) || []);
-        // The unread logic is: messages in this chat, sent by NOT me, where my status is not read.
-        // Optimized query: Join messages and message_status? Supabase join filtering is tricky.
-        // Better: select count from message_status where user=me and status!=read and message_id in (select id from messages where chat_id=...)
-
-        // Simplified Unread Count (Approximate or 2-step)
-        // Let's do a direct count on message_status joined with messages filtering
+        // Simplified Unread Count
         const { count: realUnread } = await supabase
           .from('message_status')
           .select('id, messages!inner(chat_id, sender_id)', { count: 'exact', head: true })
@@ -86,7 +70,6 @@ export const chatController = {
           .neq('status', 'read')
           .eq('messages.chat_id', existingChatId)
           .neq('messages.sender_id', myUserId);
-
 
         // Helper to format other user
         const allParts = chatData.chat_participants;
@@ -147,6 +130,388 @@ export const chatController = {
     }
   },
 
+  // Create a new group chat
+  createGroupChat: async (req, res) => {
+    try {
+      console.log('🚀 [createGroupChat] called with body:', req.body ? JSON.stringify(req.body, null, 2) : 'undefined');
+      const { name, avatar, description, participants, creator } = req.body || {};
+
+      if (!name || !participants || participants.length === 0 || !creator) {
+        return res.status(400).json({ error: 'Missing required group information' });
+      }
+
+      const { data: newChat, error: createError } = await supabase
+        .from('chats')
+        .insert({
+          type: 'group',
+          name,
+          avatar,
+          description,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Add participants
+      const participantRows = [
+        {
+          chat_id: newChat.id,
+          user_id: creator.userId,
+          user_type: creator.userType,
+          user_name: creator.userName,
+          user_email: creator.userEmail || '',
+          user_avatar: creator.userAvatar || '',
+          role: 'admin' // Creator is admin
+        },
+        ...participants.map(p => ({
+          chat_id: newChat.id,
+          user_id: p.user_id,
+          user_type: p.user_type,
+          user_name: p.user_name,
+          user_email: p.user_email || '',
+          user_avatar: p.user_avatar || '',
+          role: 'member'
+        }))
+      ];
+
+      const { error: partError } = await supabase
+        .from('chat_participants')
+        .insert(participantRows);
+
+      if (partError) throw partError;
+
+      // Notify via Socket
+      const io = getIO();
+      if (io) {
+        participantRows.forEach(p => {
+          io.to(`user_${p.user_id}_${p.user_type}`).emit('new_chat', {
+            chat: {
+              ...newChat,
+              participants: participantRows,
+              isNew: true
+            }
+          });
+        });
+      }
+
+      res.json({ chat: newChat });
+    } catch (error) {
+      console.error('Error creating group chat:', error);
+      res.status(500).json({ error: 'Failed to create group chat' });
+    }
+  },
+
+  // Add participants to an existing group
+  addParticipants: async (req, res) => {
+    try {
+      console.log('🚀 [addParticipants] called for chat:', req.params.chatId, 'with participants:', req.body?.participants);
+      const { chatId } = req.params;
+      const { participants } = req.body || {};
+
+      if (!chatId || !participants || participants.length === 0) {
+        return res.status(400).json({ error: 'Chat ID and participants required' });
+      }
+
+      const formattedParticipants = participants.map(p => ({
+        chat_id: chatId,
+        user_id: p.user_id,
+        user_type: p.user_type,
+        user_name: p.user_name,
+        user_email: p.user_email || '',
+        user_avatar: p.user_avatar || '',
+        role: 'member'
+      }));
+
+      const { error: partError } = await supabase
+        .from('chat_participants')
+        .insert(formattedParticipants);
+
+      if (partError) throw partError;
+
+      // Notify group members
+      const io = getIO();
+      if (io) {
+        // Get all current participants to notify everyone
+        const { data: allParticipants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
+
+        if (allParticipants) {
+          allParticipants.forEach(p => {
+            io.to(`user_${p.user_id}_${p.user_type}`).emit('participants_added', {
+              chatId,
+              participants: formattedParticipants
+            });
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error adding participants:', error);
+      res.status(500).json({ error: 'Failed to add participants' });
+    }
+  },
+
+  // Remove a participant from a group
+  removeParticipant: async (req, res) => {
+    try {
+      const { chatId: rawChatId, userId, userType } = req.params;
+      const { adminId, adminType } = req.body || {};
+      const chatId = parseInt(rawChatId);
+
+      console.log(`🚀 [removeParticipant] chat: ${chatId} (${rawChatId}), target: ${userId}_${userType}, admin: ${adminId}_${adminType}`);
+      if (!chatId || !userId || !userType) {
+        return res.status(400).json({ error: 'Missing information to remove participant' });
+      }
+
+      // Check if requester is admin (if not removing themselves)
+      if (adminId && (adminId !== userId || adminType !== userType)) {
+        const { data: adminPart, error: adminCheckError } = await supabase
+          .from('chat_participants')
+          .select('role')
+          .match({ chat_id: chatId, user_id: adminId, user_type: adminType })
+          .maybeSingle();
+
+        if (adminCheckError) {
+          console.error('❌ [removeParticipant] admin check error:', adminCheckError);
+        }
+
+        if (!adminPart || adminPart.role !== 'admin') {
+          console.warn(`🚫 [removeParticipant] Access denied: user ${adminId} is not an admin in chat ${chatId}`);
+          return res.status(403).json({ error: 'Only admins can remove other members' });
+        }
+      }
+
+      const { error: deleteError, count } = await supabase
+        .from('chat_participants')
+        .delete({ count: 'exact' })
+        .match({ chat_id: chatId, user_id: userId, user_type: userType });
+
+      console.log(`📝 [removeParticipant] deletion result - rows affected: ${count}, error: ${deleteError ? JSON.stringify(deleteError) : 'none'}`);
+
+      if (deleteError) throw deleteError;
+      if (count === 0) {
+        console.warn('⚠️ [removeParticipant] No rows were deleted. Filter did not match any participant.');
+      }
+
+      // Notify group members
+      const io = getIO();
+      if (io) {
+        // Get all participants including the one being removed (before they are gone from list)
+        // But since we already deleted them, we should have fetched them earlier or just add them back specifically 
+        // Let's just fetch remaining and also send to the removed user.
+        const { data: remainingParticipants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
+
+        console.log('📡 [removeParticipant] notifying personal rooms. Removed user:', userId, 'Remaining count:', remainingParticipants?.length || 0);
+
+        // Notify the removed user
+        io.to(`user_${userId}_${userType}`).emit('participant_removed', {
+          chatId,
+          userId,
+          userType
+        });
+
+        // Notify others
+        if (remainingParticipants) {
+          remainingParticipants.forEach(p => {
+            if (p.user_id && p.user_type) {
+              const personalRoom = `user_${p.user_id}_${p.user_type}`;
+              io.to(personalRoom).emit('participant_removed', {
+                chatId,
+                userId,
+                userType
+              });
+            }
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing participant:', error);
+      res.status(500).json({ error: 'Failed to remove participant' });
+    }
+  },
+
+  // Update a participant's role
+  updateParticipantRole: async (req, res) => {
+    try {
+      const { chatId: rawChatId, userId, userType } = req.params;
+      const { role, adminId, adminType } = req.body || {};
+      const chatId = parseInt(rawChatId);
+
+      console.log(`🚀 [updateParticipantRole] chat: ${chatId}, target: ${userId}_${userType}, newRole: ${role}, admin: ${adminId}_${adminType}`);
+      if (!chatId || !userId || !userType || !role) {
+        return res.status(400).json({ error: 'Missing information' });
+      }
+
+      // Check admin permissions
+      const { data: adminPart, error: adminCheckError } = await supabase
+        .from('chat_participants')
+        .select('role')
+        .match({ chat_id: chatId, user_id: adminId, user_type: adminType })
+        .maybeSingle();
+
+      if (adminCheckError) {
+        console.error('❌ [updateParticipantRole] admin check error:', adminCheckError);
+      }
+
+      if (!adminPart || adminPart.role !== 'admin') {
+        console.warn(`🚫 [updateParticipantRole] Access denied for user ${adminId} in chat ${chatId}`);
+        return res.status(403).json({ error: 'Only admins can change roles' });
+      }
+
+      const { error: updateError } = await supabase
+        .from('chat_participants')
+        .update({ role })
+        .match({ chat_id: chatId, user_id: userId, user_type: userType });
+
+      if (updateError) throw updateError;
+
+      // Notify members
+      const io = getIO();
+      if (io) {
+        const { data: allParticipants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
+
+        if (allParticipants) {
+          allParticipants.forEach(p => {
+            io.to(`user_${p.user_id}_${p.user_type}`).emit('role_updated', { chatId, userId, userType, role });
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating role:', error);
+      res.status(500).json({ error: 'Failed' });
+    }
+  },
+
+  // Leave a group
+  leaveGroup: async (req, res) => {
+    try {
+      const { chatId, userId, userType } = req.params;
+
+      const { error: deleteError } = await supabase
+        .from('chat_participants')
+        .delete()
+        .match({ chat_id: chatId, user_id: userId, user_type: userType });
+
+      if (deleteError) throw deleteError;
+
+      // Notify others
+      const io = getIO();
+      if (io) {
+        const { data: allParticipants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
+
+        // Notify the person who left
+        io.to(`user_${userId}_${userType}`).emit('participant_left', { chatId, userId, userType });
+
+        // Notify others
+        if (allParticipants) {
+          allParticipants.forEach(p => {
+            io.to(`user_${p.user_id}_${p.user_type}`).emit('participant_left', { chatId, userId, userType });
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error leaving group:', error);
+      res.status(500).json({ error: 'Failed' });
+    }
+  },
+
+  // Update group info (name, avatar, description)
+  updateGroupInfo: async (req, res) => {
+    try {
+      const { chatId: rawChatId } = req.params;
+      const { name, avatar, description, adminId, adminType } = req.body || {};
+      const chatId = parseInt(rawChatId);
+
+      console.log(`🚀 [updateGroupInfo] chat: ${chatId}, admin: ${adminId}_${adminType}`);
+      // Check admin permissions
+      const { data: adminPart, error: adminCheckError } = await supabase
+        .from('chat_participants')
+        .select('role')
+        .match({ chat_id: chatId, user_id: adminId, user_type: adminType })
+        .maybeSingle();
+
+      if (adminCheckError) {
+        console.error('❌ [updateGroupInfo] admin check error:', adminCheckError);
+      }
+
+      if (!adminPart || adminPart.role !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can edit group info' });
+      }
+
+      const updates = { updated_at: new Date().toISOString() };
+      if (name) updates.name = name;
+      if (avatar) updates.avatar = avatar;
+      if (description) updates.description = description;
+
+      const { error: updateError } = await supabase
+        .from('chats')
+        .update(updates)
+        .eq('id', chatId);
+
+      if (updateError) throw updateError;
+
+      // Notify members
+      const io = getIO();
+      if (io) {
+        const { data: allParticipants } = await supabase
+          .from('chat_participants')
+          .select('user_id, user_type')
+          .eq('chat_id', chatId);
+
+        if (allParticipants) {
+          allParticipants.forEach(p => {
+            io.to(`user_${p.user_id}_${p.user_type}`).emit('group_info_updated', { chatId, updates });
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating group:', error);
+      res.status(500).json({ error: 'Failed' });
+    }
+  },
+
+  // Get all participants of a chat
+  getChatParticipants: async (req, res) => {
+    try {
+      const { chatId } = req.params;
+
+      const { data: participants, error: partError } = await supabase
+        .from('chat_participants')
+        .select('*')
+        .eq('chat_id', chatId);
+
+      if (partError) throw partError;
+
+      res.json({ participants });
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      res.status(500).json({ error: 'Failed' });
+    }
+  },
+
   /**
    * Get all chats for a user (their inbox)
    */
@@ -163,9 +528,10 @@ export const chatController = {
         .from('chat_participants')
         .select(`
             chat_id,
+            role,
             is_muted, is_pinned, is_blocked, last_read_at,
             chats (
-                id, type, created_at, updated_at, last_message_at, is_archived
+                id, type, name, avatar, description, created_at, updated_at, last_message_at, is_archived
             )
           `)
         .eq('user_id', userId)
@@ -174,47 +540,35 @@ export const chatController = {
       if (myChatsError) throw myChatsError;
 
       // Filter and Format
-      const filteredChats = myChats.filter(Item => Item.chats && !Item.chats.is_archived); // Client side archive filter or SQL?
-      // "AND c.is_archived = FALSE" was in SQL. Supabase query above fetches joined chat.
+      const filteredChats = myChats.filter(Item => Item.chats && !Item.chats.is_archived);
       const activeChats = filteredChats.filter(c => !c.chats.is_archived);
-
-      // We need to fetch:
-      // 1. Other participant
-      // 2. Last message
-      // 3. Unread count
-      // Doing this in loop is N+1, but Supabase might be fast enough for typical inbox list (20-50 chats).
-      // Optimization: Fetch all needed data in parallel batches or single big queries?
-      // Complex single query via Supabase is hard.
-      // Let's iterate for now.
 
       const enrichedChats = await Promise.all(activeChats.map(async (item) => {
         const chatId = item.chat_id;
         const chatDetails = item.chats;
 
-        // 1. Other Participant
-        // Fetch one participant that is NOT me
-        const { data: otherPart } = await supabase
-          .from('chat_participants')
-          .select('user_id, user_type, user_name, user_email, user_avatar')
-          .eq('chat_id', chatId)
-          .neq('user_id', userId)
-          // Note: using != userId might be issue if same userId but different type? 
-          // SQL used: NOT (cp2.user_id = userId AND cp2.user_type = userType)
-          // Supabase doesn't easily support composite NOT EQ.
-          // Logic check in JS after fetch?
-          // Or just fetch all participants and find the other one.
-          .limit(1); // Random other if group? Logic implies Private mostly.
-
-        // Better: fetch all participants for chat
-        const { data: allParts } = await supabase.from('chat_participants').select('*').eq('chat_id', chatId);
-        const otherUser = allParts.find(p => !(p.user_id == userId && p.user_type == userType)) || allParts[0]; // Fallback
+        // For private chats, we need the other user. 
+        let otherUser = null;
+        if (chatDetails.type === 'private') {
+          const { data: allParts } = await supabase.from('chat_participants').select('*').eq('chat_id', chatId);
+          const other = allParts?.find(p => !(p.user_id == userId && p.user_type == userType)) || allParts?.[0];
+          if (other) {
+            otherUser = {
+              user_id: other.user_id,
+              user_type: other.user_type,
+              user_name: other.user_name,
+              user_email: other.user_email,
+              user_avatar: other.user_avatar
+            };
+          }
+        }
 
         // 2. Last Message
         const { data: lastMsg } = await supabase
           .from('messages')
           .select('id, content, message_type, sender_id, sender_name, created_at, is_deleted')
           .eq('chat_id', chatId)
-          .eq('is_deleted', false) // Check deleted logic
+          .eq('is_deleted', false)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -232,6 +586,9 @@ export const chatController = {
         return {
           id: chatDetails.id,
           type: chatDetails.type,
+          name: chatDetails.name,
+          avatar: chatDetails.avatar,
+          description: chatDetails.description,
           created_at: chatDetails.created_at,
           updated_at: chatDetails.updated_at,
           last_message_at: chatDetails.last_message_at,
@@ -240,19 +597,13 @@ export const chatController = {
           is_pinned: item.is_pinned,
           is_blocked: item.is_blocked,
           last_read_at: item.last_read_at,
-          other_user: otherUser ? {
-            user_id: otherUser.user_id,
-            user_type: otherUser.user_type,
-            user_name: otherUser.user_name,
-            user_email: otherUser.user_email,
-            user_avatar: otherUser.user_avatar
-          } : null,
+          other_user: otherUser,
           last_message: lastMsg,
           unread_count: unread || 0
         };
       }));
 
-      // Sort: Pinned first? Original SQL: ORDER BY c.last_message_at DESC
+      // Sort
       enrichedChats.sort((a, b) => {
         const timeA = new Date(a.last_message_at || a.created_at).getTime();
         const timeB = new Date(b.last_message_at || b.created_at).getTime();
@@ -262,7 +613,7 @@ export const chatController = {
       res.json({ chats: enrichedChats });
 
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error('[getMyChats] Fatal Error:', error);
       res.status(500).json({ error: 'Failed to fetch chats' });
     }
   },
@@ -681,26 +1032,35 @@ export const chatController = {
     try {
       const { query = '', currentUserId } = req.query;
 
-      if (!query) return res.json({ users: [] });
+      const term = query ? `%${query}%` : '%';
 
-      const term = `%${query}%`;
       // Search doctors
-      const { data: doctors } = await supabase
+      let doctorQuery = supabase
         .from('doctors')
         .select('unique_id, first_name, last_name, email, profile_image_url, specialization')
-        .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`)
         .neq('unique_id', currentUserId)
         .not('unique_id', 'ilike', 'DOC-00%')
         .limit(20);
 
+      if (query) {
+        doctorQuery = doctorQuery.or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`);
+      }
+
+      const { data: doctors } = await doctorQuery;
+
       // Search patients
-      const { data: patients } = await supabase
+      let patientQuery = supabase
         .from('patients')
         .select('unique_id, first_name, last_name, email')
-        .or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`)
         .neq('unique_id', currentUserId)
         .not('unique_id', 'ilike', 'PAT-00%')
         .limit(20);
+
+      if (query) {
+        patientQuery = patientQuery.or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term}`);
+      }
+
+      const { data: patients } = await patientQuery;
 
       const formatDocs = (doctors || []).map(d => ({
         user_id: d.unique_id,
