@@ -2182,13 +2182,7 @@ const ChatTab = () => {
               >
                 <Users size={16} className="group-hover:scale-110 transition-transform duration-300" />
               </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-all border border-slate-200 shadow-sm group"
-                title="Settings"
-              >
-                <Settings size={16} className="group-hover:rotate-45 transition-transform duration-500" />
-              </button>
+
             </div>
           </div>
 
