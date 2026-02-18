@@ -3458,7 +3458,14 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
         default: return type === 'video' ? 'Video Call' : 'Audio Call';
       }
     }
-    return chat.last_message.content;
+    switch (chat.last_message.message_type) {
+      case 'voice': return '🎤 Voice message';
+      case 'image': return '📷 Photo';
+      case 'video': return '🎥 Video';
+      case 'audio': return '🎵 Audio';
+      case 'document': return `📄 ${chat.last_message.media_name || 'Document'}`;
+      default: return chat.last_message.content;
+    }
   };
 
   const isArchived = chat.is_archived || false;
