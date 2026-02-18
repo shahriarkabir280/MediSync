@@ -8,6 +8,7 @@ import {
   LogOut, UserMinus, Edit2
 } from 'lucide-react';
 import { chatApi } from '../../lib/chatApi';
+import * as chatCache from '../../lib/chatCache';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { useAuth } from '../../contexts/AuthContext';
 import VideoCall from '../../components/VideoCall';
@@ -701,6 +702,8 @@ const ChatTab = () => {
   const [groupName, setGroupName] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [availableForGroup, setAvailableForGroup] = useState([]); // List of users to add to group
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Body scroll lock for previews
   useEffect(() => {
@@ -869,6 +872,28 @@ const ChatTab = () => {
     }
   }, [currentUser.userId]);
 
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Silently re-sync when connection is restored
+      if (currentUser.userId) {
+        loadChats(true);
+        if (selectedChat?.id) {
+          loadMessages(selectedChat.id, true);
+        }
+      }
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [currentUser.userId, selectedChat?.id]);
+
   // Handle socket reconnection to re-join active room
   useEffect(() => {
     if (socket.socket && socket.isConnected && selectedChat?.id) {
@@ -896,7 +921,12 @@ const ChatTab = () => {
           data.message.sender_type === currentUser.userType;
 
         if (!isMyMessage) {
-          setMessages(prev => [...prev, data.message]);
+          setMessages(prev => {
+            const updated = [...prev, data.message];
+            // Persist to cache in background
+            chatCache.saveMessages(data.chatId, updated);
+            return updated;
+          });
           scrollToBottom();
 
           // Mark as read
@@ -906,6 +936,13 @@ const ChatTab = () => {
 
       // Update chat list optimistically
       updateChatListWithMessage(data.chatId, data.message);
+      // Update chat list cache
+      chatCache.updateCachedChat(currentUser.userId, currentUser.userType, {
+        id: data.chatId,
+        last_message: data.message,
+        last_message_at: data.message.created_at,
+        updated_at: data.message.created_at
+      });
       setIsSearchFocused(false);
       setSearchQuery('');
       setSearchResults([]);
@@ -1105,12 +1142,43 @@ const ChatTab = () => {
 
 
   // Load all chats
-  const loadChats = async () => {
+  const loadChats = async (isBackgroundSync = false) => {
     try {
+      // STEP 1: Show cached data INSTANTLY (cache-first)
+      if (!isBackgroundSync) {
+        const cached = await chatCache.getCachedChats(currentUser.userId, currentUser.userType);
+        if (cached && cached.chats.length > 0) {
+          setChats(cached.chats);
+          // If cache is fresh enough, don't show loading state
+        }
+      }
+
+      // STEP 2: Fetch fresh data from server in background
+      if (!isOnline && !navigator.onLine) {
+        // Offline — use cache only, don't attempt fetch
+        return;
+      }
+
+      setIsSyncing(true);
       const data = await chatApi.getMyChats(currentUser.userId, currentUser.userType);
-      setChats(data.chats || []);
+      const freshChats = data.chats || [];
+
+      // Update UI with fresh data
+      setChats(freshChats);
+
+      // Persist to cache for next time
+      await chatCache.saveChats(currentUser.userId, currentUser.userType, freshChats);
     } catch (error) {
       console.error('Error loading chats:', error);
+      // On error, try to show cached data as fallback
+      if (!isBackgroundSync) {
+        const cached = await chatCache.getCachedChats(currentUser.userId, currentUser.userType);
+        if (cached) {
+          setChats(cached.chats);
+        }
+      }
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1147,15 +1215,38 @@ const ChatTab = () => {
   };
 
   // Load messages for a chat
-  const loadMessages = async (chatId) => {
+  const loadMessages = async (chatId, isBackgroundSync = false) => {
     try {
-      setLoading(true);
+      // STEP 1: Show cached messages INSTANTLY
+      if (!isBackgroundSync) {
+        const cached = await chatCache.getCachedMessages(chatId);
+        if (cached && cached.messages.length > 0) {
+          setMessages(cached.messages);
+          setLoading(false); // Don't show spinner if we have cached data
+          // Scroll to bottom of cached messages
+          setTimeout(() => handleSmartScroll(), 50);
+        } else {
+          setLoading(true); // Only show spinner if no cache
+        }
+      }
+
+      // STEP 2: Fetch fresh data from server
+      if (!isOnline && !navigator.onLine) {
+        setLoading(false);
+        return; // Offline — use cache only
+      }
+
       const data = await chatApi.getMessages(chatId, currentUser.userId, currentUser.userType);
-      setMessages(data.messages || []);
+      const freshMessages = data.messages || [];
+
+      setMessages(freshMessages);
+
+      // Persist to cache
+      await chatCache.saveMessages(chatId, freshMessages);
 
       // Find first unread message to scroll to
-      if (data.messages && data.messages.length > 0) {
-        const firstUnread = data.messages.find(m =>
+      if (freshMessages.length > 0) {
+        const firstUnread = freshMessages.find(m =>
           m.sender_id !== currentUser.userId && m.my_status?.status !== 'read'
         );
 
@@ -1166,7 +1257,7 @@ const ChatTab = () => {
         }
 
         // Mark as read
-        const unreadIds = data.messages
+        const unreadIds = freshMessages
           .filter(m => m.sender_id !== currentUser.userId && m.my_status?.status !== 'read')
           .map(m => m.id);
 
@@ -1178,6 +1269,7 @@ const ChatTab = () => {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+      // On error, keep showing cached messages (already set above)
     } finally {
       setLoading(false);
     }
@@ -1237,11 +1329,6 @@ const ChatTab = () => {
     if (!messageInput.trim() || !selectedChat) return;
 
     try {
-      const messageData = {
-        content: messageInput,
-        replyToId: replyTo?.id || null
-      };
-
       const response = await chatApi.sendMessage(
         selectedChat.id,
         currentUser,
@@ -1250,15 +1337,26 @@ const ChatTab = () => {
       );
 
       const newMessage = response.message;
-      setMessages(prev => [...prev, newMessage]);
+      setMessages(prev => {
+        const updated = [...prev, newMessage];
+        // Persist to cache immediately
+        chatCache.saveMessages(selectedChat.id, updated);
+        return updated;
+      });
       setMessageInput('');
       setReplyTo(null);
 
       // Broadcast via WebSocket
       socket.sendMessage(selectedChat.id, newMessage);
 
-      // Update chat list optimistically
+      // Update chat list optimistically + cache
       updateChatListWithMessage(selectedChat.id, newMessage);
+      chatCache.updateCachedChat(currentUser.userId, currentUser.userType, {
+        id: selectedChat.id,
+        last_message: newMessage,
+        last_message_at: newMessage.created_at,
+        updated_at: newMessage.created_at
+      });
 
       scrollToBottom();
     } catch (error) {
@@ -2094,6 +2192,14 @@ const ChatTab = () => {
             </div>
           </div>
 
+          {/* Offline / Syncing Banner */}
+          {!isOnline && (
+            <div className="mx-3 mb-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700 text-xs font-medium">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              You're offline — showing cached chats
+            </div>
+          )}
+
           {/* Floating Search Bar */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2532,6 +2638,14 @@ const ChatTab = () => {
               />
             )}
           </div>
+
+          {/* Offline Banner in Message Area */}
+          {!isOnline && (
+            <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-800 flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-medium">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              You're offline — messages will be sent when reconnected
+            </div>
+          )}
 
           {/* Message Input */}
           <div className="bg-card border-t border-border px-2 md:px-6 py-3 md:py-4">
