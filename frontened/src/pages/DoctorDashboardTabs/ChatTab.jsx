@@ -1074,13 +1074,13 @@ const ChatTab = () => {
   }, [socket.socket, selectedChat, currentUser]);
 
   // Smart scroll: to unread or bottom
-  const handleSmartScroll = () => {
+  const handleSmartScroll = (behavior = 'smooth') => {
     setTimeout(() => {
       if (scrollTargetId) {
         const element = document.getElementById(`message-${scrollTargetId}`);
         if (element) {
           // Scroll with better positioning
-          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          element.scrollIntoView({ behavior, block: 'center', inline: 'nearest' });
 
           // Add highlight effect to make it obvious which message we scrolled to
           element.style.transition = 'background-color 0.3s ease';
@@ -1098,14 +1098,14 @@ const ChatTab = () => {
         }
       }
       // Default: scroll to bottom
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }, 100);
   };
 
   // Simple scroll to bottom (used by sendMessage etc)
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior = 'smooth') => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }, 100);
   };
 
@@ -1223,8 +1223,8 @@ const ChatTab = () => {
         if (cached && cached.messages.length > 0) {
           setMessages(cached.messages);
           setLoading(false); // Don't show spinner if we have cached data
-          // Scroll to bottom of cached messages
-          setTimeout(() => handleSmartScroll(), 50);
+          // Scroll to bottom of cached messages - use instant jump for UX
+          setTimeout(() => handleSmartScroll('auto'), 50);
         } else {
           setLoading(true); // Only show spinner if no cache
         }
@@ -1265,7 +1265,11 @@ const ChatTab = () => {
           await chatApi.markAsRead(chatId, currentUser.userId, currentUser.userType, unreadIds);
           socket.markAsRead(chatId, unreadIds, currentUser.userId, currentUser.userType);
         }
-        handleSmartScroll();
+
+        // If we already scrolled from cache, use smooth for the "adjustment" 
+        // otherwise use instant for the first visual load
+        const scrollBehavior = (!isBackgroundSync && freshMessages.length > 0) ? 'auto' : 'smooth';
+        handleSmartScroll(scrollBehavior);
       }
     } catch (error) {
       console.error('Error loading messages:', error);
