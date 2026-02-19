@@ -74,7 +74,7 @@ export const FolderSidebar = ({ folders, selectedFolder, setSelectedFolder, onCo
     );
 };
 
-export const EmailListItem = ({ email, isSelected, onClick, onToggleStar, onDelete, formatDate }) => {
+export const EmailListItem = ({ email, isSelected, onClick, onToggleStar, onDelete, onMoveToFolder, formatDate }) => {
     return (
         <div
             onClick={onClick}
@@ -129,6 +129,7 @@ export const EmailListItem = ({ email, isSelected, onClick, onToggleStar, onDele
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
+                            onMoveToFolder(email.id, 'archived');
                         }}
                         className="p-1.5 sm:p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-indigo-600 transition-colors"
                     >
@@ -146,7 +147,7 @@ export const EmailListItem = ({ email, isSelected, onClick, onToggleStar, onDele
     );
 };
 
-export const EmailPreview = ({ email, onBack, onToggleStar, onDelete, onReply, onForward, onEditDraft, selectedFolder }) => {
+export const EmailPreview = ({ email, onBack, onToggleStar, onDelete, onMoveToFolder, onReply, onForward, onEditDraft, selectedFolder }) => {
     if (!email) return (
         <div className="flex-1 flex flex-col items-center justify-center bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
             <div className="w-32 h-32 bg-muted/30 rounded-[3rem] flex items-center justify-center mb-8 shadow-inner transform -rotate-3 border border-border/50">
@@ -187,9 +188,19 @@ export const EmailPreview = ({ email, onBack, onToggleStar, onDelete, onReply, o
                     </div>
                 </div>
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                    <button className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hidden sm:block"><Archive className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+                    <button
+                        onClick={() => onMoveToFolder(email.id, 'archived')}
+                        className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hidden sm:block"
+                    >
+                        <Archive className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
                     <div className="h-6 w-px bg-border/50 hidden sm:block" />
-                    <button className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground"><AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+                    <button
+                        onClick={() => onMoveToFolder(email.id, 'spam')}
+                        className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground"
+                    >
+                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
                 </div>
             </div>
 
@@ -496,7 +507,7 @@ export const ComposeWindow = ({
     );
 };
 
-export const Toolbar = ({ searchQuery, setSearchQuery, selectedFolder, filteredEmails, onEmptyTrash }) => {
+export const Toolbar = ({ searchQuery, setSearchQuery, selectedFolder, filteredEmails, onEmptyTrash, unreadOnly, onToggleUnread, onShowHistory }) => {
     return (
         <div className="p-3 sm:p-4 border-b border-border flex flex-wrap items-center justify-between bg-card gap-3 sm:gap-4">
             <div className="flex items-center space-x-3 flex-1 min-w-[200px]">
@@ -527,10 +538,19 @@ export const Toolbar = ({ searchQuery, setSearchQuery, selectedFolder, filteredE
                     </button>
                 )}
                 <div className="flex items-center space-x-1.5">
-                    <button className="p-2 hover:bg-muted rounded-lg transition-colors border border-border/30 text-muted-foreground">
+                    <button
+                        onClick={onToggleUnread}
+                        className={`p-2 rounded-lg transition-all border border-border/30 flex items-center space-x-2 ${unreadOnly ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20' : 'hover:bg-muted text-muted-foreground'}`}
+                        title="Filter Unread"
+                    >
                         <Filter className="w-3.5 h-3.5" />
+                        {unreadOnly && <span className="text-[9px] font-black uppercase tracking-tighter">Unread</span>}
                     </button>
-                    <button className="p-2 hover:bg-muted rounded-lg transition-colors border border-border/30 text-muted-foreground">
+                    <button
+                        onClick={onShowHistory}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors border border-border/30 text-muted-foreground"
+                        title="Activity History"
+                    >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
                 </div>

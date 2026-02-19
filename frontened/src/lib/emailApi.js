@@ -52,5 +52,10 @@ export const emailApi = {
   // Get recipients list
   getRecipients: async (search = '') => {
     return api.get(`${API_BASE}/recipients?search=${encodeURIComponent(search)}`);
+  },
+
+  // Move email to folder
+  moveToFolder: async (id, folder) => {
+    return api.put(`${API_BASE}/${id}/folder`, { folder });
   }
 };

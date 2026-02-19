@@ -5,7 +5,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import {
   Inbox, FileText, ChevronLeft,
   Mail, MailOpen, Reply, Forward, Plus, Filter,
-  Star, Send, Trash2, Menu, X
+  Star, Send, Trash2, Menu, X, Archive, AlertCircle,
+  Clock
 } from 'lucide-react';
 import {
   FolderSidebar,
@@ -29,6 +30,7 @@ const EmailTab = () => {
   const [showSuggestionsCC, setShowSuggestionsCC] = useState(false);
   const [showSuggestionsBCC, setShowSuggestionsBCC] = useState(false);
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   const [stats, setStats] = useState(null);
   const [recipients, setRecipients] = useState([]);
@@ -55,7 +57,7 @@ const EmailTab = () => {
   // Load emails when folder changes
   useEffect(() => {
     loadEmails();
-  }, [selectedFolder, searchQuery]);
+  }, [selectedFolder, searchQuery, unreadOnly]);
 
   // Auto-save draft effect
   useEffect(() => {
@@ -88,6 +90,7 @@ const EmailTab = () => {
       const params = {
         folder: selectedFolder,
         search: searchQuery || '',
+        unread_only: unreadOnly,
         limit: 50
       };
       console.log('Fetching emails with params:', params);
@@ -157,6 +160,19 @@ const EmailTab = () => {
     } catch (error) {
       console.error('Failed to toggle star:', error);
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleMoveToFolder = async (id, folder) => {
+    try {
+      await emailApi.moveToFolder(id, folder);
+      toast.success(`Moved to ${folder}`);
+      if (selectedEmail?.id === id) setSelectedEmail(null);
+      loadEmails(true);
+      loadStats();
+    } catch (error) {
+      console.error('Failed to move email:', error);
+      toast.error('Failed to move email');
     }
   };
 
@@ -366,11 +382,13 @@ const EmailTab = () => {
   };
 
   const folders = [
-    { id: 'inbox', name: 'Inbox', icon: Inbox, count: stats?.inbox || 0 },
-    { id: 'starred', name: 'Starred', icon: Star, count: stats?.starred || 0 },
-    { id: 'sent', name: 'Sent', icon: Send, count: stats?.sent || 0 },
-    { id: 'drafts', name: 'Drafts', icon: FileText, count: stats?.drafts || 0 },
-    { id: 'trash', name: 'Trash', icon: Trash2, count: stats?.trash || 0 }
+    { id: 'inbox', name: 'Inbox', icon: Inbox, count: stats?.inbox_count || 0 },
+    { id: 'starred', name: 'Starred', icon: Star, count: stats?.starred_count || 0 },
+    { id: 'sent', name: 'Sent', icon: Send, count: stats?.sent_count || 0 },
+    { id: 'archived', name: 'Archived', icon: Archive, count: stats?.archived_count || 0 },
+    { id: 'spam', name: 'Spam', icon: AlertCircle, count: stats?.spam_count || 0 },
+    { id: 'drafts', name: 'Drafts', icon: FileText, count: stats?.drafts_count || 0 },
+    { id: 'trash', name: 'Trash', icon: Trash2, count: stats?.trash_count || 0 }
   ];
 
   const filteredEmails = useMemo(() => {
@@ -454,6 +472,9 @@ const EmailTab = () => {
                 }
               }
             }}
+            unreadOnly={unreadOnly}
+            onToggleUnread={() => setUnreadOnly(!unreadOnly)}
+            onShowHistory={() => toast('Recent Activity: All caught up! 🎉', { icon: '🕰️' })}
           />
 
           {loading ? (
@@ -491,6 +512,7 @@ const EmailTab = () => {
                   onClick={() => handleSelectEmail(email)}
                   onToggleStar={handleToggleStar}
                   onDelete={handleDelete}
+                  onMoveToFolder={handleMoveToFolder}
                   formatDate={formatDate}
                 />
               ))}
@@ -506,6 +528,7 @@ const EmailTab = () => {
             onBack={() => setSelectedEmail(null)}
             onToggleStar={handleToggleStar}
             onDelete={handleDelete}
+            onMoveToFolder={handleMoveToFolder}
             onReply={handleReply}
             onForward={handleForward}
             onEditDraft={(email) => {

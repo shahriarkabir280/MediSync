@@ -15,7 +15,8 @@ import {
   toggleStar,
   getStats,
   getRecipients,
-  emptyTrash
+  emptyTrash,
+  moveToFolder
 } from '../controllers/emailController.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,5 +77,8 @@ router.put('/:id/read', markAsRead);
 
 // Star/unstar email
 router.put('/:id/star', toggleStar);
+
+// Move email to folder
+router.put('/:id/folder', moveToFolder);
 
 export default router;
