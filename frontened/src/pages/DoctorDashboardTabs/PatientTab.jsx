@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { patientApi, appointmentApi } from "../../lib/api";
+import * as dashboardCache from "../../lib/dashboardCache";
 import { API_CONFIG } from "../../config/api";
+
+
 import { useDoctor } from "../../hooks/useDoctor";
 import {
     User, Phone, Mail, Calendar, Heart, AlertCircle, AlertTriangle, Plus, Edit2, Edit, Edit3, Eye, X, Save,
@@ -461,9 +464,24 @@ const PatientTab = memo(() => {
     const fetchPatients = useCallback(async () => {
         if (!doctorId) return;
         try {
-            setLoading(true);
+            // STEP 1: Load from cache INSTANTLY
+            const cacheKey = `patient_list_${doctorId}`;
+            const cached = await dashboardCache.getCachedData(cacheKey);
+            if (cached) {
+                setPatients(cached);
+                setLoading(false); // Hide spinner if we have cache
+            } else {
+                setLoading(true);
+            }
+
+            // STEP 2: Fetch fresh data
             const data = await patientApi.getAll(doctorId);
-            setPatients(data.data || []);
+            const freshPatients = data.data || [];
+            setPatients(freshPatients);
+
+            // Persist to cache
+            await dashboardCache.saveData(cacheKey, freshPatients);
+
             setError(null);
         } catch (err) {
             setError(err.message);
@@ -720,17 +738,40 @@ const PatientTab = memo(() => {
         setActionLoading('loading-details');
 
         try {
-            // Fetch comprehensive patient information
+            // STEP 1: Load from cache
+            const cacheKey = `patient_details_${patient.id}`;
+            const cached = await dashboardCache.getCachedData(cacheKey);
+            if (cached) {
+                setPatientDetails(cached.details || null);
+                setPatientAppointments(cached.appointments || []);
+                setMedicalRecords(cached.records || []);
+                setShowPatientModal(true); // Show modal immediately with cached data
+                setDetailsLoading(false); // Hide spinner
+            }
+
+            // STEP 2: Fetch comprehensive patient information
             const [detailsResult, appointmentsResult, medicalHistoryResult] = await Promise.all([
                 patientApi.getById(patient.id),
                 appointmentApi.getByPatient(patient.id),
                 patientApi.getMedicalHistory(patient.id)
             ]);
 
-            setPatientDetails(detailsResult.data);
-            setPatientAppointments(appointmentsResult.data || []);
-            setMedicalRecords(medicalHistoryResult.data || []);
-            setShowPatientModal(true);
+            const freshDetails = detailsResult.data;
+            const freshAppointments = appointmentsResult.data || [];
+            const freshRecords = medicalHistoryResult.data || [];
+
+            setPatientDetails(freshDetails);
+            setPatientAppointments(freshAppointments);
+            setMedicalRecords(freshRecords);
+
+            // Persist to cache
+            await dashboardCache.saveData(cacheKey, {
+                details: freshDetails,
+                appointments: freshAppointments,
+                records: freshRecords
+            });
+
+            if (!cached) setShowPatientModal(true);
             setError(null);
         } catch (err) {
             setError(err.message);

@@ -11,6 +11,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { API_URLS } from "../../config/api";
 import { debounce } from "../../utils/performance";
 import { toast } from "react-hot-toast";
+import * as dashboardCache from "../../lib/dashboardCache";
+
 
 const Skeleton = ({ className }) => (
     <div className={`animate-pulse bg-muted rounded-xl ${className}`}></div>
@@ -173,11 +175,24 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
         if (!doctorId) return;
 
         try {
-            setLoading(true);
+            // STEP 1: Load from cache INSTANTLY
+            const cacheKey = `appointments_data_${doctorId}`;
+            const cached = await dashboardCache.getCachedData(cacheKey);
+            if (cached) {
+                setAllAppointments(cached.appointments || []);
+                setStats(cached.stats || null);
+                setSettings(cached.settings || null);
+                setTempSettings(cached.settings || null);
+                setLoading(false); // Hide spinner if we have cache
+            } else {
+                setLoading(true);
+            }
+
             const token = localStorage.getItem('authToken');
 
             if (!token) {
-                throw new Error('Authentication required');
+                if (!cached) throw new Error('Authentication required');
+                return; // Use cache if offline/unauth
             }
 
             const headers = {
@@ -203,10 +218,22 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 }
             };
 
-            setAllAppointments(appointmentsData.data || appointmentsData || []);
-            setStats(statsData.data || statsData);
-            setSettings(settingsData.data || settingsData);
-            setTempSettings(settingsData.data || settingsData);
+            const freshAppointments = appointmentsData.data || appointmentsData || [];
+            const freshStats = statsData.data || statsData;
+            const freshSettings = settingsData.data || settingsData;
+
+            setAllAppointments(freshAppointments);
+            setStats(freshStats);
+            setSettings(freshSettings);
+            setTempSettings(freshSettings);
+
+            // STEP 2: Persist to cache
+            await dashboardCache.saveData(cacheKey, {
+                appointments: freshAppointments,
+                stats: freshStats,
+                settings: freshSettings
+            });
+
             setError(null);
         } catch (err) {
             setError(err.message);
@@ -219,8 +246,17 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
 
     const fetchPatients = useCallback(async () => {
         try {
+            if (!doctorId) return;
+
+            // STEP 1: Load from cache
+            const cacheKey = `appointment_patients_${doctorId}`;
+            const cached = await dashboardCache.getCachedData(cacheKey);
+            if (cached) {
+                setPatients(cached);
+            }
+
             const token = localStorage.getItem('authToken');
-            if (!doctorId || !token) return;
+            if (!token) return;
 
             const response = await fetch(API_URLS.PATIENTS.BY_DOCTOR(doctorId), {
                 headers: {
@@ -231,7 +267,11 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
 
             if (response.ok) {
                 const patientsData = await response.json();
-                setPatients(patientsData.data || patientsData || []);
+                const freshPatients = patientsData.data || patientsData || [];
+                setPatients(freshPatients);
+
+                // STEP 2: Persist to cache
+                await dashboardCache.saveData(cacheKey, freshPatients);
             }
         } catch (err) {
             console.error('Error fetching patients:', err);
