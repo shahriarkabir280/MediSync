@@ -242,7 +242,7 @@ export const EmailPreview = ({ email, onBack, onToggleStar, onDelete, onReply, o
                                 <Paperclip className="w-4 h-4 text-indigo-600" />
                                 <span>{email.attachments.length} Attachments</span>
                             </h4>
-                            <button className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:underline">Download All</button>
+
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {email.attachments.map((att, i) => {

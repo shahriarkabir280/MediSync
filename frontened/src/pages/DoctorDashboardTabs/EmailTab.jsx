@@ -36,6 +36,7 @@ const EmailTab = () => {
 
   // Compose email form state
   const [composeForm, setComposeForm] = useState({
+    id: null,
     to: '',
     cc: '',
     bcc: '',
@@ -56,6 +57,22 @@ const EmailTab = () => {
     loadEmails();
   }, [selectedFolder, searchQuery]);
 
+  // Auto-save draft effect
+  useEffect(() => {
+    if (!isComposing || sending || savingDraft) return;
+
+    // Check if there's anything to save
+    const hasContent = composeForm.to || composeForm.subject || composeForm.body;
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      console.log('Auto-saving draft...');
+      handleSendEmail(true, true); // true for isDraft, true for isSilent
+    }, 3000); // 3 seconds debounce
+
+    return () => clearTimeout(timer);
+  }, [composeForm.to, composeForm.subject, composeForm.body, isComposing]);
+
   const loadStats = async () => {
     try {
       const response = await emailApi.getStats();
@@ -65,8 +82,8 @@ const EmailTab = () => {
     }
   };
 
-  const loadEmails = async () => {
-    setLoading(true);
+  const loadEmails = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const params = {
         folder: selectedFolder,
@@ -178,15 +195,20 @@ const EmailTab = () => {
     }));
   };
 
-  const handleSendEmail = async (isDraft = false) => {
+  const handleSendEmail = async (isDraft = false, isSilent = false) => {
     if (!isDraft && (!composeForm.to || !composeForm.subject || !composeForm.body)) {
-      toast.error('Please fill in recipient, subject, and message');
+      if (!isSilent) toast.error('Please fill in recipient, subject, and message');
+      return;
+    }
+
+    // Don't auto-save if everything is empty
+    if (isSilent && !composeForm.to && !composeForm.subject && !composeForm.body) {
       return;
     }
 
     try {
       if (isDraft) {
-        setSavingDraft(true);
+        if (!isSilent) setSavingDraft(true);
       } else {
         setSending(true);
       }
@@ -196,6 +218,7 @@ const EmailTab = () => {
 
       if (hasAttachments) {
         const formData = new FormData();
+        if (composeForm.id) formData.append('id', composeForm.id);
         formData.append('recipient_email', composeForm.to);
         formData.append('subject', composeForm.subject);
         formData.append('body', composeForm.body);
@@ -224,6 +247,7 @@ const EmailTab = () => {
         payload = formData;
       } else {
         payload = {
+          id: composeForm.id || undefined,
           recipient_email: composeForm.to,
           subject: composeForm.subject,
           body: composeForm.body,
@@ -233,28 +257,53 @@ const EmailTab = () => {
       }
 
       if (isDraft) {
-        await emailApi.saveDraft(payload);
-        toast.success('Draft saved successfully');
+        const response = await emailApi.saveDraft(payload);
+        if (response?.data?.id) {
+          setComposeForm(prev => ({ ...prev, id: response.data.id }));
+        }
+        if (!isSilent) toast.success('Draft saved successfully');
       } else {
         await emailApi.sendEmail(payload);
         toast.success('Email sent successfully');
       }
 
-      setIsComposing(false);
-      resetComposeForm();
-      loadEmails();
+      if (!isSilent) {
+        setIsComposing(false);
+        resetComposeForm();
+      }
+
+      // Always refresh to show new draft/sent mail
+      loadEmails(isSilent);
       loadStats();
     } catch (error) {
       console.error('Failed to send email:', error);
-      toast.error('Failed to send email: ' + (error.response?.data?.error || error.message));
+      if (!isSilent) {
+        toast.error('Failed to send email: ' + (error.response?.data?.error || error.message));
+      }
     } finally {
-      setSending(false);
-      setSavingDraft(false);
+      if (isDraft) {
+        setSavingDraft(false);
+      } else {
+        setSending(false);
+      }
     }
+  };
+
+  const handleCloseCompose = () => {
+    const hasContent = composeForm.to || composeForm.subject || composeForm.body || composeForm.attachments.length > 0;
+    if (hasContent) {
+      toast.success('Message saved as draft', {
+        icon: '📁',
+        duration: 3000
+      });
+    }
+    setIsComposing(false);
+    resetComposeForm();
   };
 
   const resetComposeForm = () => {
     setComposeForm({
+      id: null,
       to: '',
       cc: '',
       bcc: '',
@@ -461,6 +510,7 @@ const EmailTab = () => {
             onForward={handleForward}
             onEditDraft={(email) => {
               setComposeForm({
+                id: email.id,
                 to: email.recipient_email || '',
                 cc: email.cc || '',
                 bcc: email.bcc || '',
@@ -481,7 +531,7 @@ const EmailTab = () => {
         <ComposeWindow
           form={composeForm}
           setForm={setComposeForm}
-          onClose={() => setIsComposing(false)}
+          onClose={handleCloseCompose}
           onSend={() => handleSendEmail(false)}
           onSaveDraft={() => handleSendEmail(true)}
           recipients={recipients}
