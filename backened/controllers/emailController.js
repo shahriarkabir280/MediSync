@@ -455,20 +455,18 @@ export const getStats = async (req, res) => {
       { count: sentCount },
       { count: draftsCount },
       { count: starredCount },
-      { count: trashCountSender },
-      { count: trashCountRecipient },
+      { count: trashCount },
       { count: archivedCount },
       { count: spamCount }
     ] = await Promise.all([
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('folder', 'inbox').eq('deleted_by_recipient', false),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_read', false).eq('deleted_by_recipient', false),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('deleted_by_sender', false).eq('is_draft', false),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('is_draft', true).eq('deleted_by_sender', false),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_starred', true).eq('deleted_by_recipient', false),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('deleted_by_sender', true),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('deleted_by_recipient', true),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`).eq('folder', 'archived'),
-      supabase.from('emails').select('*', { count: 'exact', head: true }).or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`).eq('folder', 'spam'),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('folder', 'inbox').eq('deleted_by_recipient', false).eq('purged_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_read', false).eq('deleted_by_recipient', false).eq('purged_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('deleted_by_sender', false).eq('is_draft', false).eq('purged_by_sender', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('sender_id', doctorId).eq('is_draft', true).eq('deleted_by_sender', false).eq('purged_by_sender', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('recipient_id', doctorId).eq('is_starred', true).eq('deleted_by_recipient', false).eq('purged_by_recipient', false),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).or(`and(sender_id.eq.${doctorId},deleted_by_sender.eq.true,purged_by_sender.eq.false),and(recipient_id.eq.${doctorId},deleted_by_recipient.eq.true,purged_by_recipient.eq.false)`),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('folder', 'archived').eq('purged_by_sender', false).eq('purged_by_recipient', false).or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`),
+      supabase.from('emails').select('*', { count: 'exact', head: true }).eq('folder', 'spam').eq('purged_by_sender', false).eq('purged_by_recipient', false).or(`sender_id.eq.${doctorId},recipient_id.eq.${doctorId}`),
     ]);
 
     res.json({
@@ -478,7 +476,7 @@ export const getStats = async (req, res) => {
         sent_count: sentCount || 0,
         drafts_count: draftsCount || 0,
         starred_count: starredCount || 0,
-        trash_count: (trashCountSender || 0) + (trashCountRecipient || 0),
+        trash_count: trashCount || 0,
         archived_count: archivedCount || 0,
         spam_count: spamCount || 0
       }
