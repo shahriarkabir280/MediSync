@@ -3,16 +3,24 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { emailApi } from '../../lib/emailApi';
 import toast, { Toaster } from 'react-hot-toast';
 import {
-  Search, Star, StarOff, Trash2, Send, Inbox, FileText,
-  Archive, RefreshCw, ChevronLeft, X, Paperclip, MoreVertical,
-  Mail, MailOpen, Clock, Users, Reply, Forward, AlertCircle, Check, Edit3, Plus
+  Inbox, FileText, ChevronLeft,
+  Mail, MailOpen, Reply, Forward, Plus, Filter,
+  Star, Send, Trash2, Menu, X
 } from 'lucide-react';
+import {
+  FolderSidebar,
+  EmailListItem,
+  EmailPreview,
+  ComposeWindow,
+  Toolbar
+} from './EmailComponents';
 
 const EmailTab = () => {
   const [emails, setEmails] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -20,14 +28,7 @@ const EmailTab = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showSuggestionsCC, setShowSuggestionsCC] = useState(false);
   const [showSuggestionsBCC, setShowSuggestionsBCC] = useState(false);
-
-  // Resizable columns state
-  const [folderWidth, setFolderWidth] = useState(240); // Default 240px
-  const [listWidth, setListWidth] = useState(320); // Default 320px
-  const isResizingFolder = useRef(false);
-  const isResizingList = useRef(false);
-  const resizeStartX = useRef(0);
-  const resizeStartWidth = useRef(0);
+  const [isComposeMinimized, setIsComposeMinimized] = useState(false);
 
   const [stats, setStats] = useState(null);
   const [recipients, setRecipients] = useState([]);
@@ -49,35 +50,6 @@ const EmailTab = () => {
     loadRecipients();
   }, []);
 
-  // Global resize handlers
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (isResizingFolder.current) {
-        const delta = e.clientX - resizeStartX.current;
-        const newWidth = Math.max(160, Math.min(400, resizeStartWidth.current + delta));
-        setFolderWidth(newWidth);
-      }
-      if (isResizingList.current) {
-        const delta = e.clientX - resizeStartX.current;
-        const newWidth = Math.max(250, Math.min(600, resizeStartWidth.current + delta));
-        setListWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      isResizingFolder.current = false;
-      isResizingList.current = false;
-      document.body.style.cursor = 'default';
-      document.body.style.userSelect = 'auto';
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [folderWidth]); // Dependency on folderWidth for list calc might be needed or use refs for absolute positions
 
   // Load emails when folder changes
   useEffect(() => {
@@ -295,12 +267,14 @@ const EmailTab = () => {
 
   const handleCompose = () => {
     setIsComposing(true);
+    setIsComposeMinimized(false);
     // don't clear selected email behind modal
     resetComposeForm();
   };
 
   const handleReply = (email) => {
     setIsComposing(true);
+    setIsComposeMinimized(false);
     // Don't clear selected email, just open compose
     setComposeForm({
       to: email.sender_email,
@@ -314,6 +288,7 @@ const EmailTab = () => {
 
   const handleForward = (email) => {
     setIsComposing(true);
+    setIsComposeMinimized(false);
     setComposeForm({
       to: '',
       cc: '',
@@ -361,639 +336,163 @@ const EmailTab = () => {
   }, [emails, searchQuery]);
 
   return (
-    <div className="h-full flex flex-col bg-card rounded-xl shadow-sm border border-border overflow-hidden relative">
+    <div className="flex h-[calc(100vh-5rem)] lg:h-[calc(100vh-6rem)] bg-background overflow-hidden relative font-sans antialiased text-foreground">
       <Toaster />
 
-      {/* Top Bar */}
-      <div className="bg-card border-b border-border p-4 px-6 flex items-center justify-between z-10 transition-colors duration-300">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Messages</h1>
-          <p className="text-sm text-muted-foreground">Manage your communications and updates</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block group">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-500 transition-colors w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search emails..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-muted border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-64 transition-all text-foreground"
-            />
-          </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-[60] lg:hidden backdrop-blur-sm transition-all duration-300"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
-
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Folders Sidebar */}
+        {/* Folder Sidebar - Responsive Drawer on Mobile, Fixed on Desktop */}
         <div
-          className="bg-muted flex flex-col border-r border-border transition-colors duration-300"
-          style={{ width: folderWidth, minWidth: 160 }}
+          className={`fixed inset-y-0 left-0 z-[70] lg:relative lg:z-10 bg-card border-r border-border/50 transition-all duration-300 transform w-64 md:w-56 lg:w-64 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}
         >
-          <div className="p-4">
+          <FolderSidebar
+            folders={folders}
+            selectedFolder={selectedFolder}
+            setSelectedFolder={(f) => {
+              setSelectedFolder(f);
+              setSelectedEmail(null);
+              setIsSidebarOpen(false); // Close drawer on selection
+            }}
+            onCompose={handleCompose}
+            stats={stats}
+            onClose={() => setIsSidebarOpen(false)}
+            isMobile={true}
+          />
+        </div>
+
+
+        {/* List Section - Stacked on Mobile, Width restricted on Desktop */}
+        <div
+          className={`bg-card md:border-r border-border/50 flex flex-col transition-all duration-300 w-full md:w-80 lg:w-[400px] ${selectedEmail ? 'hidden md:flex' : 'flex'
+            }`}
+        >
+          <div className="lg:hidden p-4 border-b border-border/50 flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20">
             <button
-              onClick={() => {
-                setComposeForm({ to: '', cc: '', bcc: '', subject: '', body: '', attachments: [] });
-                setIsComposing(true);
-              }}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-indigo-500/10 active:scale-95"
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 rounded-xl hover:bg-muted text-foreground transition-all"
             >
-              <Plus className="w-5 h-5" />
-              <span>Compose</span>
+              <Menu className="w-6 h-6" />
             </button>
+            <h2 className="text-lg font-black tracking-tight capitalize">{selectedFolder}</h2>
+            <div className="w-10" /> {/* Spacer */}
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-2 space-y-1">
-            {folders.map((folder) => {
-              const Icon = folder.icon;
-              const isActive = selectedFolder === folder.id;
-
-              return (
-                <button
-                  key={folder.id}
-                  onClick={() => {
-                    setSelectedFolder(folder.id);
-                    setSelectedEmail(null);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all group ${isActive
-                    ? 'bg-card text-indigo-500 shadow-sm border border-border'
-                    : 'hover:bg-card/50 text-muted-foreground hover:text-foreground'
-                    }`}
-                  title={folder.name}
-                >
-                  <div className="flex items-center space-x-3 overflow-hidden">
-                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'fill-indigo-500/10 text-indigo-500' : 'opacity-60'}`} />
-                    <span className="truncate">{folder.name}</span>
-                  </div>
-                  {folder.count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-lg flex-shrink-0 ${isActive ? 'bg-indigo-500 text-white' : 'bg-background text-muted-foreground/60 border border-border'
-                      }`}>
-                      {folder.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Folder Resizer */}
-        <div
-          className="w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 bg-transparent transition-colors z-10"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            isResizingFolder.current = true;
-            resizeStartX.current = e.clientX;
-            resizeStartWidth.current = folderWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-          }}
-        />
-
-        {/* Email List */}
-        <div
-          className={`bg-card border-r border-border flex flex-col transition-colors duration-300 ${selectedEmail ? 'hidden lg:flex' : 'flex'}`}
-          style={{ width: listWidth, minWidth: 250 }}
-        >
-          {/* List Header */}
-          <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
-            <h3 className="font-semibold text-foreground capitalize">{selectedFolder.replace('_', ' ')}</h3>
-            {selectedFolder === 'trash' && filteredEmails.length > 0 && (
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (window.confirm('Are you sure you want to permanently delete all items in Trash?')) {
-                    try {
-                      setLoading(true);
-                      await emailApi.emptyTrash();
-                      toast.success('Trash emptied');
-                      loadEmails();
-                      loadStats();
-                    } catch (err) {
-                      toast.error('Failed to empty trash');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }
-                }}
-                className="text-xs px-3 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500/20 font-medium transition-colors border border-rose-500/20"
-              >
-                Empty Trash
-              </button>
-            )}
-          </div>
+          <Toolbar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedFolder={selectedFolder}
+            filteredEmails={filteredEmails}
+            onEmptyTrash={async () => {
+              if (window.confirm('Are you sure you want to permanently delete all items in Trash?')) {
+                try {
+                  setLoading(true);
+                  await emailApi.emptyTrash();
+                  toast.success('Trash emptied');
+                  loadEmails();
+                  loadStats();
+                } catch (err) {
+                  toast.error('Failed to empty trash');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
+          />
 
           {loading ? (
-            <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 rounded-xl border-4 border-muted"></div>
-                <div className="absolute inset-0 rounded-xl border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+            <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-[1.5rem] border-4 border-indigo-600/10"></div>
+                <div className="absolute inset-0 rounded-[1.5rem] border-4 border-indigo-600 border-t-transparent animate-spin"></div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 animate-pulse">Loading messages</p>
+              <div className="flex flex-col items-center space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/40 animate-pulse">Syncing Encrypted Inbox</p>
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce"></div>
+                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                </div>
+              </div>
             </div>
           ) : filteredEmails.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
-              <div className="w-24 h-24 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mb-6 transform rotate-3 shadow-inner">
-                <Mail className="w-10 h-10 text-muted-foreground/30" />
+            <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 text-center animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-20 h-20 md:w-28 md:h-28 bg-muted/20 rounded-[2.5rem] md:rounded-[3rem] flex items-center justify-center mb-6 md:mb-8 transform rotate-6 shadow-inner border border-border/50">
+                <Inbox className="w-8 h-8 md:w-12 md:h-12 text-muted-foreground/20" />
               </div>
-              <h3 className="text-xl font-black text-foreground tracking-tight mb-2">No emails found</h3>
-              <p className="text-sm font-medium text-muted-foreground/60 max-w-[200px] leading-relaxed">Your {selectedFolder.replace('_', ' ')} is currently empty</p>
+              <h3 className="text-lg md:text-xl font-black text-foreground tracking-tight mb-2 md:mb-3">No messages yet</h3>
+              <p className="text-xs md:text-sm font-medium text-muted-foreground/40 max-w-[200px] leading-relaxed mx-auto italic">
+                "{searchQuery ? 'No matches found.' : 'Your inbox is clear.'}"
+              </p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/30">
-              {filteredEmails.map((email) => {
-                // Get initials for avatar
-                const name = email.sender_name || email.sender_email;
-                const initials = name ? name[0].toUpperCase() : '?';
-                const isSelected = selectedEmail?.id === email.id;
-
-                return (
-                  <div
-                    key={email.id}
-                    onClick={() => handleSelectEmail(email)}
-                    className={`group relative p-4 cursor-pointer transition-all border-b border-border hover:bg-muted/50 
-                    ${isSelected ? 'bg-indigo-500/10 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'} 
-                    ${!email.is_read ? 'bg-card' : 'bg-card/50'}`}
-                  >
-                    <div className="flex items-start space-x-4">
-                      {/* Avatar */}
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm flex-shrink-0
-                      ${isSelected ? 'bg-indigo-500 text-white shadow-indigo-500/20' : 'bg-muted text-muted-foreground group-hover:bg-indigo-500/10 group-hover:text-indigo-500 transition-colors'}`}>
-                        {initials}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <h3 className={`text-sm tracking-tight truncate pr-2 ${!email.is_read ? 'font-black text-foreground' : 'font-bold text-muted-foreground'}`}>
-                            {name}
-                          </h3>
-                          <span className={`text-[10px] uppercase font-black tracking-widest whitespace-nowrap flex-shrink-0 ${!email.is_read ? 'text-indigo-500' : 'text-muted-foreground/60'}`}>
-                            {formatDate(email.created_at)}
-                          </span>
-                        </div>
-
-                        <h4 className={`text-sm mt-0.5 truncate ${!email.is_read ? 'font-bold text-foreground' : 'text-muted-foreground/80'}`}>
-                          {email.subject || '(No Subject)'}
-                        </h4>
-
-                        <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-2 leading-relaxed">
-                          {email.body}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Hover Actions */}
-                    <div className="absolute right-4 bottom-4 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm rounded-lg shadow-sm border border-border p-1">
-                      <button
-                        onClick={(e) => handleToggleStar(email.id, email.is_starred, e)}
-                        className={`p-1.5 rounded-md hover:bg-muted transition-colors ${email.is_starred ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`}
-                        title={email.is_starred ? "Unstar" : "Star"}
-                      >
-                        {email.is_starred ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(email.id, e)}
-                        className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Unread Dot */}
-                    {!email.is_read && !isSelected && (
-                      <div className="absolute top-4 right-4 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-background shadow-lg"></div>
-                    )}
-                  </div>
-                )
-              })}
+            <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/20">
+              {filteredEmails.map((email) => (
+                <EmailListItem
+                  key={email.id}
+                  email={email}
+                  isSelected={selectedEmail?.id === email.id}
+                  onClick={() => handleSelectEmail(email)}
+                  onToggleStar={handleToggleStar}
+                  onDelete={handleDelete}
+                  formatDate={formatDate}
+                />
+              ))}
             </div>
           )}
         </div>
 
-        {/* List Resizer */}
-        <div
-          className="w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 bg-transparent transition-colors z-10"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            isResizingList.current = true;
-            resizeStartX.current = e.clientX;
-            resizeStartWidth.current = listWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-          }}
-        />
 
-        {/* Email Preview */}
-        <div className={`flex-1 bg-card flex flex-col transition-colors duration-300 ${!selectedEmail ? 'hidden lg:flex' : 'flex absolute lg:static inset-0 z-20'}`}>
-          {selectedEmail ? (
-            <>
-              {/* Preview Header - Mobile Back Button */}
-              <div className="lg:hidden border-b border-gray-200 p-2">
-                <button
-                  onClick={() => setSelectedEmail(null)}
-                  className="flex items-center space-x-2 text-gray-600 px-2 py-1"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  <span>Back</span>
-                </button>
-              </div>
-
-              {/* Email Content Header */}
-              <div className="p-6 border-b border-border bg-card">
-                <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-foreground leading-tight">
-                    {selectedEmail.subject || '(No Subject)'}
-                  </h2>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={(e) => handleToggleStar(selectedEmail.id, selectedEmail.is_starred, e)}
-                      className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
-                      title={selectedEmail.is_starred ? "Unstar" : "Star"}
-                    >
-                      <Star className={`w-5 h-5 ${selectedEmail.is_starred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(selectedEmail.id, e)}
-                      className="p-2 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 rounded-full transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg transform rotate-3">
-                      {selectedEmail.sender_name?.[0]?.toUpperCase() || selectedEmail.sender_email?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-black text-foreground tracking-tight">{selectedEmail.sender_name}</span>
-                        <span className="text-muted-foreground/60 text-xs font-bold font-mono">/ {selectedEmail.sender_email}</span>
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 mt-1">
-                        To: <span className="text-indigo-500/60">{selectedEmail.recipient_name || 'Me'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{new Date(selectedEmail.created_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-                    <p className="text-xs font-black text-indigo-500 mt-0.5">{new Date(selectedEmail.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 p-8 overflow-y-auto bg-muted/20 transition-colors duration-300">
-                <div className="prose max-w-none text-foreground leading-relaxed whitespace-pre-wrap font-sans">
-                  {selectedEmail.body}
-                </div>
-
-                {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
-                  <div className="mt-8 pt-6 border-t border-border">
-                    <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center space-x-2">
-                      <Paperclip className="w-4 h-4" />
-                      <span>{selectedEmail.attachments.length} Attachments</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {selectedEmail.attachments.map((att, i) => {
-                        const fileName = typeof att === 'object' ? att.name : att;
-                        const fileUrl = typeof att === 'object' ? (att.url ? `http://localhost:3001${att.url}` : '#') : '#';
-
-                        return (
-                          <a
-                            key={i}
-                            href={fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center p-3 bg-card border border-border rounded-lg hover:shadow-md transition-shadow cursor-pointer text-left group"
-                          >
-                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center mr-3 text-muted-foreground group-hover:bg-indigo-500/10 group-hover:text-indigo-500 transition-colors">
-                              <FileText className="w-6 h-6" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-foreground truncate group-hover:text-indigo-500 transition-colors">{fileName}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {typeof att === 'object' && att.size ? `${Math.round(att.size / 1024)} KB` : 'Attachment'}
-                              </p>
-                            </div>
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Reply/Action Bar */}
-              <div className="p-4 border-t border-border bg-card flex items-center space-x-3 transition-colors duration-300">
-                {selectedFolder === 'drafts' ? (
-                  <button
-                    onClick={() => {
-                      setComposeForm({
-                        to: selectedEmail.recipient_email || '',
-                        cc: selectedEmail.cc || '',
-                        bcc: selectedEmail.bcc || '',
-                        subject: selectedEmail.subject || '',
-                        body: selectedEmail.body || '',
-                        attachments: selectedEmail.attachments || []
-                      });
-                      setIsComposing(true);
-                      // Ideally we'd track this is a draft to delete it after sending, but basic flow first
-                    }}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center space-x-2 shadow-sm"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    <span>Edit & Send</span>
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleReply(selectedEmail)}
-                      className="px-6 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted hover:border-border transition-colors flex items-center space-x-2"
-                    >
-                      <Reply className="w-4 h-4" />
-                      <span>Reply</span>
-                    </button>
-                    <button
-                      onClick={() => handleForward(selectedEmail)}
-                      className="px-6 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-muted hover:border-border transition-colors flex items-center space-x-2"
-                    >
-                      <Forward className="w-4 h-4" />
-                      <span>Forward</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-muted/10 text-muted-foreground transition-colors duration-300">
-              <div className="w-24 h-24 bg-muted/50 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-inner transform -rotate-6">
-                <MailOpen className="w-10 h-10 text-muted-foreground/30" />
-              </div>
-              <h3 className="text-xl font-black text-foreground tracking-tight mb-2">Select a conversation</h3>
-              <p className="text-sm font-medium text-muted-foreground/60 max-w-[200px] text-center leading-relaxed">Choose an email to view its full contents</p>
-            </div>
-          )}
+        {/* Email Preview Section - Full Screen on Mobile */}
+        <div className={`flex-1 flex flex-col min-w-0 bg-background ${selectedEmail ? 'flex' : 'hidden md:flex'}`}>
+          <EmailPreview
+            email={selectedEmail}
+            onBack={() => setSelectedEmail(null)}
+            onToggleStar={handleToggleStar}
+            onDelete={handleDelete}
+            onReply={handleReply}
+            onForward={handleForward}
+            onEditDraft={(email) => {
+              setComposeForm({
+                to: email.recipient_email || '',
+                cc: email.cc || '',
+                bcc: email.bcc || '',
+                subject: email.subject || '',
+                body: email.body || '',
+                attachments: email.attachments || []
+              });
+              setIsComposing(true);
+              setIsComposeMinimized(false);
+            }}
+            selectedFolder={selectedFolder}
+          />
         </div>
       </div>
 
+      {/* Compose Window */}
       {isComposing && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-border overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-border bg-muted/20">
-              <div>
-                <h2 className="text-xl font-black text-foreground tracking-tight">New Message</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 mt-1">Send a secure consultation update</p>
-              </div>
-              <button
-                onClick={() => setIsComposing(false)}
-                className="w-10 h-10 flex items-center justify-center bg-muted/50 hover:bg-rose-500/10 hover:text-rose-500 rounded-full transition-all text-muted-foreground border border-border"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="space-y-4">
-                {/* To */}
-                {/* To */}
-                <div className="relative group">
-                  <span className="absolute left-0 top-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">To:</span>
-                  <input
-                    type="email"
-                    value={composeForm.to}
-                    onChange={(e) => {
-                      setComposeForm({ ...composeForm, to: e.target.value });
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="Search recipient..."
-                    className="w-full pl-10 py-3 border-b border-border focus:border-indigo-500 focus:ring-0 text-sm font-bold text-foreground placeholder:text-muted-foreground/20 bg-transparent transition-all"
-                    autoComplete="off"
-                  />
-                  {/* Suggestions Dropdown */}
-                  {showSuggestions && composeForm.to && (
-                    <div className="absolute left-0 right-0 top-full mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-[100] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                      {recipients
-                        .filter(r =>
-                          r.email.toLowerCase().includes(composeForm.to.toLowerCase()) ||
-                          r.name.toLowerCase().includes(composeForm.to.toLowerCase())
-                        )
-                        .map((r, i) => (
-                          <div
-                            key={i}
-                            className="px-4 py-3 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border/50 last:border-0 group/item"
-                            onClick={() => {
-                              setComposeForm({ ...composeForm, to: r.email });
-                              setShowSuggestions(false);
-                            }}
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            <span className="text-sm font-black text-foreground group-hover/item:text-indigo-500 transition-colors">{r.name}</span>
-                            <span className="text-[10px] font-bold text-muted-foreground/60">{r.email}</span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  {/* CC Field */}
-                  <div className="relative group">
-                    <span className="absolute left-0 top-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Cc:</span>
-                    <input
-                      type="email"
-                      value={composeForm.cc}
-                      onChange={(e) => {
-                        setComposeForm({ ...composeForm, cc: e.target.value });
-                        setShowSuggestionsCC(true);
-                      }}
-                      onFocus={() => setShowSuggestionsCC(true)}
-                      onBlur={() => setTimeout(() => setShowSuggestionsCC(false), 200)}
-                      placeholder=""
-                      className="w-full pl-10 py-3 border-b border-border focus:border-indigo-500 focus:ring-0 text-sm font-bold text-foreground placeholder-muted-foreground/20 bg-transparent transition-all"
-                      autoComplete="off"
-                    />
-                    {showSuggestionsCC && composeForm.cc && (
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-[100] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                        {recipients
-                          .filter(r =>
-                            r.email.toLowerCase().includes(composeForm.cc.toLowerCase()) ||
-                            r.name.toLowerCase().includes(composeForm.cc.toLowerCase())
-                          )
-                          .map((r, i) => (
-                            <div
-                              key={i}
-                              className="px-4 py-3 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border/50 last:border-0 group/item"
-                              onClick={() => {
-                                setComposeForm({ ...composeForm, cc: r.email });
-                                setShowSuggestionsCC(false);
-                              }}
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <span className="text-sm font-black text-foreground group-hover/item:text-indigo-500 transition-colors">{r.name}</span>
-                              <span className="text-[10px] font-bold text-muted-foreground/60">{r.email}</span>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* BCC Field */}
-                  <div className="relative group">
-                    <span className="absolute left-0 top-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Bcc:</span>
-                    <input
-                      type="email"
-                      value={composeForm.bcc}
-                      onChange={(e) => {
-                        setComposeForm({ ...composeForm, bcc: e.target.value });
-                        setShowSuggestionsBCC(true);
-                      }}
-                      onFocus={() => setShowSuggestionsBCC(true)}
-                      onBlur={() => setTimeout(() => setShowSuggestionsBCC(false), 200)}
-                      placeholder=""
-                      className="w-full pl-10 py-3 border-b border-border focus:border-indigo-500 focus:ring-0 text-sm font-bold text-foreground placeholder-muted-foreground/20 bg-transparent transition-all"
-                      autoComplete="off"
-                    />
-                    {showSuggestionsBCC && composeForm.bcc && (
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-[100] max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                        {recipients
-                          .filter(r =>
-                            r.email.toLowerCase().includes(composeForm.bcc.toLowerCase()) ||
-                            r.name.toLowerCase().includes(composeForm.bcc.toLowerCase())
-                          )
-                          .map((r, i) => (
-                            <div
-                              key={i}
-                              className="px-4 py-3 hover:bg-indigo-500/10 cursor-pointer transition-colors flex flex-col border-b border-border/50 last:border-0 group/item"
-                              onClick={() => {
-                                setComposeForm({ ...composeForm, bcc: r.email });
-                                setShowSuggestionsBCC(false);
-                              }}
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <span className="text-sm font-black text-foreground group-hover/item:text-indigo-500 transition-colors">{r.name}</span>
-                              <span className="text-[10px] font-bold text-muted-foreground/60">{r.email}</span>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <span className="absolute left-0 top-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Subject:</span>
-                  <input
-                    type="text"
-                    value={composeForm.subject}
-                    onChange={(e) => setComposeForm({ ...composeForm, subject: e.target.value })}
-                    placeholder="Enter subject line..."
-                    className="w-full pl-20 py-3 border-b border-border focus:border-indigo-500 focus:ring-0 text-base font-black text-foreground placeholder:text-muted-foreground/20 bg-transparent transition-all"
-                  />
-                </div>
-
-                {/* Body */}
-                <div className="relative">
-                  <textarea
-                    value={composeForm.body}
-                    onChange={(e) => setComposeForm({ ...composeForm, body: e.target.value })}
-                    placeholder="Write your secure message here..."
-                    className="w-full h-48 py-4 resize-none focus:outline-none text-foreground leading-relaxed custom-scrollbar bg-transparent placeholder:text-muted-foreground/20 font-bold"
-                  />
-                  <div className="absolute bottom-0 right-0 p-2 text-[10px] font-black text-muted-foreground/20 uppercase tracking-widest">
-                    AI encryption enabled
-                  </div>
-                </div>
-
-                {/* Attachments List */}
-                {composeForm.attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-3 pt-4 border-t border-border/50">
-                    {composeForm.attachments.map((file, i) => (
-                      <div key={i} className="flex items-center space-x-3 bg-muted/40 hover:bg-muted p-2 rounded-xl border border-border text-[11px] font-black uppercase tracking-wider animate-in fade-in slide-in-from-bottom-2 transition-all group/chip">
-                        <div className="w-8 h-8 flex items-center justify-center bg-card rounded-lg border border-border group-hover/chip:border-indigo-500/50 transition-colors">
-                          <FileText className="w-4 h-4 text-indigo-500" />
-                        </div>
-                        <span className="text-foreground truncate max-w-[150px]">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            removeAttachment(i);
-                          }}
-                          className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-rose-500 bg-card hover:bg-rose-500/10 rounded-full border border-border transition-all"
-                          title="Remove attachment"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-border bg-muted/20 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 text-muted-foreground hover:bg-card hover:text-indigo-500 rounded-xl transition-all border border-border hover:shadow-md active:scale-95"
-                  title="Attach File"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  multiple
-                  onChange={handleFileChange}
-                />
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => handleSendEmail(true)} // Draft
-                  disabled={sending || savingDraft}
-                  className="text-muted-foreground hover:text-foreground font-black uppercase tracking-widest text-[10px] px-4 py-2 transition-colors disabled:opacity-50 flex items-center space-x-2"
-                >
-                  {savingDraft ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent animate-spin rounded-full"></div>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Save Draft</span>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleSendEmail(false)}
-                  disabled={sending || savingDraft}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center space-x-2 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-95"
-                >
-                  {sending ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
-                      <span>Sending...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Send Message</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ComposeWindow
+          form={composeForm}
+          setForm={setComposeForm}
+          onClose={() => setIsComposing(false)}
+          onSend={() => handleSendEmail(false)}
+          onSaveDraft={() => handleSendEmail(true)}
+          recipients={recipients}
+          sending={sending}
+          savingDraft={savingDraft}
+          isMinimized={isComposeMinimized}
+          setIsMinimized={setIsComposeMinimized}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          removeAttachment={removeAttachment}
+        />
       )}
     </div>
   );
