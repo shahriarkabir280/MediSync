@@ -52,8 +52,12 @@ export const getEmails = async (req, res) => {
         .eq('is_starred', true)
         .eq('deleted_by_recipient', false);
     } else if (folder === 'trash') {
-      // (sender_id = ID AND deleted_by_sender = true) OR (recipient_id = ID AND deleted_by_recipient = true)
-      query = query.or(`and(sender_id.eq.${doctorId},deleted_by_sender.eq.true),and(recipient_id.eq.${doctorId},deleted_by_recipient.eq.true)`);
+      // (sender_id = ID AND deleted_by_sender = true AND purged_by_sender = false) OR (recipient_id = ID AND deleted_by_recipient = true AND purged_by_recipient = false)
+      query = query.or(`and(sender_id.eq.${doctorId},deleted_by_sender.eq.true,purged_by_sender.eq.false),and(recipient_id.eq.${doctorId},deleted_by_recipient.eq.true,purged_by_recipient.eq.false)`);
+    } else {
+      // For all other folders, ensure we hide purged items 
+      // This is a safety measure as purged items should only be in trash logic anyway
+      query = query.or(`and(sender_id.eq.${doctorId},purged_by_sender.eq.false),and(recipient_id.eq.${doctorId},purged_by_recipient.eq.false)`);
     }
 
     // Filter by unread
@@ -497,11 +501,15 @@ export const emptyTrash = async (req, res) => {
     const doctorId = req.user?.id;
     if (!doctorId) return res.status(401).json({ error: 'Unauthorized' });
 
-    await Promise.all([
+    const [{ error: senderError }, { error: recipientError }, { error: draftsError }] = await Promise.all([
       supabase.from('emails').update({ purged_by_sender: true }).eq('sender_id', doctorId).eq('deleted_by_sender', true),
       supabase.from('emails').update({ purged_by_recipient: true }).eq('recipient_id', doctorId).eq('deleted_by_recipient', true),
       supabase.from('emails').delete().eq('sender_id', doctorId).eq('is_draft', true).eq('folder', 'drafts')
     ]);
+
+    if (senderError || recipientError || draftsError) {
+      console.error('Errors in emptyTrash:', { senderError, recipientError, draftsError });
+    }
 
     await supabase.from('emails').delete().eq('purged_by_sender', true).eq('purged_by_recipient', true);
     res.json({ success: true, message: 'Trash emptied' });

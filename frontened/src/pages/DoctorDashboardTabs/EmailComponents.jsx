@@ -498,40 +498,40 @@ export const ComposeWindow = ({
 
 export const Toolbar = ({ searchQuery, setSearchQuery, selectedFolder, filteredEmails, onEmptyTrash }) => {
     return (
-        <div className="p-4 border-b border-border flex flex-col md:flex-row justify-between items-center bg-card gap-4">
-            <div className="flex items-center justify-between md:justify-start space-x-4 w-full md:w-auto">
-                <h3 className="font-black text-lg text-foreground capitalize tracking-tight shrink-0">
+        <div className="p-3 sm:p-4 border-b border-border flex flex-wrap items-center justify-between bg-card gap-3 sm:gap-4">
+            <div className="flex items-center space-x-3 flex-1 min-w-[200px]">
+                <h3 className="font-black text-base sm:text-lg text-foreground capitalize tracking-tighter shrink-0 hidden sm:block">
                     {selectedFolder.replace('_', ' ')}
                 </h3>
 
-                {/* Search Bar - Professional Look */}
-                <div className="relative flex-1 md:w-64 group max-w-[280px]">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-600 transition-colors w-4 h-4" />
+                {/* Search Bar - Professional & Responsive */}
+                <div className="relative flex-1 group max-w-full sm:max-w-[240px]">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-600 transition-colors w-3.5 h-3.5" />
                     <input
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-muted/50 border border-border rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-sm font-semibold placeholder:text-muted-foreground/50"
+                        className="w-full pl-9 pr-3 py-2 bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-xs font-semibold placeholder:text-muted-foreground/40"
                     />
                 </div>
             </div>
 
-            <div className="flex items-center space-x-3 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
+            <div className="flex items-center space-x-2 shrink-0">
                 {selectedFolder === 'trash' && filteredEmails.length > 0 && (
                     <button
                         onClick={onEmptyTrash}
-                        className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-all border border-destructive/20 flex-1 md:flex-none justify-center flex"
+                        className="text-[9px] font-black uppercase tracking-widest px-3 py-2 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-all border border-destructive/20 flex items-center justify-center"
                     >
                         Empty Trash
                     </button>
                 )}
-                <div className="flex items-center space-x-2">
-                    <button className="p-2.5 hover:bg-muted rounded-xl transition-colors border border-border/50 text-muted-foreground">
-                        <Filter className="w-4 h-4" />
+                <div className="flex items-center space-x-1.5">
+                    <button className="p-2 hover:bg-muted rounded-lg transition-colors border border-border/30 text-muted-foreground">
+                        <Filter className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-2.5 hover:bg-muted rounded-xl transition-colors border border-border/50 text-muted-foreground">
-                        <Clock className="w-4 h-4" />
+                    <button className="p-2 hover:bg-muted rounded-lg transition-colors border border-border/30 text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
