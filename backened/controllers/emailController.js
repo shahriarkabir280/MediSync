@@ -147,6 +147,7 @@ export const sendEmail = async (req, res) => {
   try {
     const doctorId = req.user?.id;
     const {
+      id,
       recipient_email,
       recipient_name,
       recipient_id,
@@ -249,6 +250,15 @@ export const sendEmail = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // If this was a draft, delete the draft record
+    if (id) {
+      await supabase
+        .from('emails')
+        .delete()
+        .eq('id', id)
+        .eq('sender_id', doctorId);
+    }
 
     // Send via SMTP
     if (process.env.SMTP_ENABLED === 'true') {

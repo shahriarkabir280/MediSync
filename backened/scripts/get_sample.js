@@ -2,12 +2,12 @@ import { sql } from '../config/db.js';
 
 async function getSample() {
     try {
-        const doctors = await sql`SELECT * FROM doctors LIMIT 1`;
-        console.log('Sample Doctor:', doctors);
+        const res = await sql`SELECT * FROM emails ORDER BY created_at DESC LIMIT 5`;
+        console.log('Result rows:', JSON.stringify(res.rows, null, 2));
     } catch (error) {
         console.error('Error getting sample:', error);
     } finally {
-        process.exit();
+        process.exit(0);
     }
 }
 

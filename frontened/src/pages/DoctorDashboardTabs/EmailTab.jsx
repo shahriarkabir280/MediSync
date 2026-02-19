@@ -1,7 +1,8 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { emailApi } from '../../lib/emailApi';
+import * as dashboardCache from '../../lib/dashboardCache';
 import toast, { Toaster } from 'react-hot-toast';
+import { useDoctor } from '../../hooks/useDoctor';
 import {
   Inbox, FileText, ChevronLeft,
   Mail, MailOpen, Reply, Forward, Plus, Filter,
@@ -17,6 +18,8 @@ import {
 } from './EmailComponents';
 
 const EmailTab = () => {
+  const { doctor } = useDoctor();
+  const doctorId = doctor?.id;
   const [emails, setEmails] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedEmail, setSelectedEmail] = useState(null);
@@ -76,9 +79,20 @@ const EmailTab = () => {
   }, [composeForm.to, composeForm.subject, composeForm.body, isComposing]);
 
   const loadStats = async () => {
+    const cacheKey = `email_stats_${doctorId}`;
     try {
+      // 1. Try Cache
+      const cached = await dashboardCache.getCachedData(cacheKey);
+      if (cached) {
+        setStats(cached);
+      }
+
+      // 2. Load Fresh
       const response = await emailApi.getStats();
-      setStats(response.data);
+      if (response && response.data) {
+        setStats(response.data);
+        await dashboardCache.saveData(cacheKey, response.data);
+      }
     } catch (error) {
       console.error('Failed to load email stats:', error);
     }
@@ -86,32 +100,43 @@ const EmailTab = () => {
 
   const loadEmails = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
+    const cacheKey = `emails_${doctorId}_${selectedFolder}_${searchQuery}_${unreadOnly}`;
+
     try {
+      // 1. Try Cache (only if not searching, or always if you want)
+      const cached = await dashboardCache.getCachedData(cacheKey);
+      if (cached && !isSilent) {
+        setEmails(cached);
+      }
+
+      // 2. Load Fresh
       const params = {
         folder: selectedFolder,
         search: searchQuery || '',
         unread_only: unreadOnly,
         limit: 50
       };
-      console.log('Fetching emails with params:', params);
-      const response = await emailApi.getEmails(params);
-      console.log('Email response:', response);
 
+      const response = await emailApi.getEmails(params);
+
+      let freshEmails = [];
       if (response && response.data && Array.isArray(response.data.emails)) {
-        setEmails(response.data.emails || []);
+        freshEmails = response.data.emails;
       } else if (response && Array.isArray(response.emails)) {
-        // Handle potential direct return
-        setEmails(response.emails || []);
-      } else {
-        console.warn('Unexpected email response structure:', response);
-        setEmails([]);
+        freshEmails = response.emails;
+      }
+
+      setEmails(freshEmails);
+
+      // 3. Save to Cache
+      if (freshEmails.length > 0 || !searchQuery) {
+        await dashboardCache.saveData(cacheKey, freshEmails);
       }
     } catch (error) {
       console.error('Failed to load emails:', error);
-      toast.error('Failed to load emails');
-      setEmails([]);
+      if (!isSilent) toast.error('Failed to load emails');
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
@@ -124,7 +149,26 @@ const EmailTab = () => {
     }
   };
 
+  const handleEditDraft = (email) => {
+    setComposeForm({
+      id: email.id,
+      to: email.recipient_email || '',
+      cc: email.cc || '',
+      bcc: email.bcc || '',
+      subject: email.subject || '',
+      body: email.body || '',
+      attachments: email.attachments || []
+    });
+    setIsComposing(true);
+    setIsComposeMinimized(false);
+  };
+
   const handleSelectEmail = async (email) => {
+    if (selectedFolder === 'drafts') {
+      handleEditDraft(email);
+      return;
+    }
+
     setSelectedEmail(email);
 
     // Mark as read if unread
@@ -135,6 +179,7 @@ const EmailTab = () => {
         setEmails(prev => prev.map(e =>
           e.id === email.id ? { ...e, is_read: true } : e
         ));
+        await dashboardCache.clearCache();
         loadStats();
       } catch (error) {
         console.error('Failed to mark as read:', error);
@@ -156,6 +201,7 @@ const EmailTab = () => {
       if (selectedEmail?.id === emailId) {
         setSelectedEmail(prev => ({ ...prev, is_starred: !currentStarred }));
       }
+      await dashboardCache.clearCache();
       loadStats();
     } catch (error) {
       console.error('Failed to toggle star:', error);
@@ -168,6 +214,7 @@ const EmailTab = () => {
       await emailApi.moveToFolder(id, folder);
       toast.success(`Moved to ${folder}`);
       if (selectedEmail?.id === id) setSelectedEmail(null);
+      await dashboardCache.clearCache();
       loadEmails(true);
       loadStats();
     } catch (error) {
@@ -187,6 +234,7 @@ const EmailTab = () => {
       if (selectedEmail?.id === emailId) {
         setSelectedEmail(null);
       }
+      await dashboardCache.clearCache();
       loadStats();
     } catch (error) {
       console.error('Failed to delete email:', error);
@@ -289,6 +337,7 @@ const EmailTab = () => {
       }
 
       // Always refresh to show new draft/sent mail
+      await dashboardCache.clearCache();
       loadEmails(isSilent);
       loadStats();
     } catch (error) {
@@ -365,19 +414,38 @@ const EmailTab = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (!dateString) return '';
 
-    if (diffDays === 0) {
+    // Normalize date string (ensure it's treated as UTC if no offset provided)
+    let normalizedString = dateString;
+    if (typeof dateString === 'string' && !dateString.includes('Z') && !dateString.includes('+')) {
+      // Check if it's already an ISO-like string
+      if (dateString.includes('-') && dateString.includes(':')) {
+        normalizedString = dateString + 'Z';
+      }
+    }
+
+    const date = new Date(normalizedString);
+    const now = new Date();
+
+    if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    } else if (diffDays === 1) {
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+
+    if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 7) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+      } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
     }
   };
 
@@ -531,19 +599,7 @@ const EmailTab = () => {
             onMoveToFolder={handleMoveToFolder}
             onReply={handleReply}
             onForward={handleForward}
-            onEditDraft={(email) => {
-              setComposeForm({
-                id: email.id,
-                to: email.recipient_email || '',
-                cc: email.cc || '',
-                bcc: email.bcc || '',
-                subject: email.subject || '',
-                body: email.body || '',
-                attachments: email.attachments || []
-              });
-              setIsComposing(true);
-              setIsComposeMinimized(false);
-            }}
+            onEditDraft={handleEditDraft}
             selectedFolder={selectedFolder}
           />
         </div>
