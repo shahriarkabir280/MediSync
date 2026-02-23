@@ -116,20 +116,6 @@ const SettingsTab = () => {
         console.log('Notification settings not available yet:', notifyError.message);
       }
 
-      // Load general settings
-      try {
-        const generalResponse = await fetch(API_URLS.DOCTORS.SETTINGS_AUTH, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (generalResponse.ok) {
-          const generalData = await generalResponse.json();
-          // Handle general settings if needed
-        }
-      } catch (generalError) {
-        console.log('General settings not available yet:', generalError.message);
-      }
-
       // Load billing settings
       try {
         const billingResponse = await fetch(API_URLS.BILLING.SETTINGS, {

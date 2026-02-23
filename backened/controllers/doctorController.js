@@ -10,6 +10,7 @@ export const getDoctorProfile = async (req, res) => {
       .select(`
         id, unique_id, first_name, last_name, email, phone, specialization, 
         license_number, years_of_experience, bio, profile_image_url, 
+        smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_enabled,
         created_at, updated_at
       `)
       .eq('id', doctorId)
@@ -65,6 +66,15 @@ export const updateDoctorProfile = async (req, res) => {
     if (years_of_experience !== undefined) updates.years_of_experience = years_of_experience;
     if (bio !== undefined) updates.bio = bio;
     if (profile_image_url !== undefined) updates.profile_image_url = profile_image_url;
+
+    // SMTP Settings
+    if (req.body.smtp_host !== undefined) updates.smtp_host = req.body.smtp_host;
+    if (req.body.smtp_port !== undefined) updates.smtp_port = req.body.smtp_port;
+    if (req.body.smtp_user !== undefined) updates.smtp_user = req.body.smtp_user;
+    if (req.body.smtp_pass !== undefined) updates.smtp_pass = req.body.smtp_pass;
+    if (req.body.smtp_secure !== undefined) updates.smtp_secure = req.body.smtp_secure;
+    if (req.body.smtp_enabled !== undefined) updates.smtp_enabled = req.body.smtp_enabled;
+
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

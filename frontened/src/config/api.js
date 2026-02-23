@@ -97,6 +97,7 @@ export const API_URLS = {
     }
   },
   DOCTORS: {
+    BASE: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS),
     PROFILE: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}`),
     SETTINGS: (doctorId) => buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, `/${doctorId}/settings`),
     SETTINGS_AUTH: buildApiUrl(API_CONFIG.ENDPOINTS.DOCTORS, '/settings'),

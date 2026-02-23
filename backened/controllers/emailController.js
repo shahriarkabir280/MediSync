@@ -1,9 +1,27 @@
 import { supabase } from '../config/db.js';
 import nodemailer from 'nodemailer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Configure email transporter (you'll need to set these in .env)
-const createTransporter = () => {
-  return nodemailer.createTransporter({
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure email transporter
+const createTransporter = (config = null) => {
+  if (config && config.smtp_enabled) {
+    return nodemailer.createTransport({
+      host: config.smtp_host,
+      port: config.smtp_port,
+      secure: config.smtp_secure,
+      auth: {
+        user: config.smtp_user,
+        pass: config.smtp_pass,
+      },
+    });
+  }
+
+  // Fallback to system SMTP
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
     secure: false,
@@ -35,22 +53,26 @@ export const getEmails = async (req, res) => {
       query = query
         .eq('recipient_id', doctorId)
         .eq('deleted_by_recipient', false)
+        .eq('purged_by_recipient', false)
         .eq('folder', 'inbox');
     } else if (folder === 'sent') {
       query = query
         .eq('sender_id', doctorId)
         .eq('deleted_by_sender', false)
+        .eq('purged_by_sender', false)
         .eq('is_draft', false);
     } else if (folder === 'drafts') {
       query = query
         .eq('sender_id', doctorId)
         .eq('is_draft', true)
-        .eq('deleted_by_sender', false);
+        .eq('deleted_by_sender', false)
+        .eq('purged_by_sender', false);
     } else if (folder === 'starred') {
       query = query
         .eq('recipient_id', doctorId)
         .eq('is_starred', true)
-        .eq('deleted_by_recipient', false);
+        .eq('deleted_by_recipient', false)
+        .eq('purged_by_recipient', false);
     } else if (folder === 'trash') {
       // (sender_id = ID AND deleted_by_sender = true AND purged_by_sender = false) OR (recipient_id = ID AND deleted_by_recipient = true AND purged_by_recipient = false)
       query = query.or(`and(sender_id.eq.${doctorId},deleted_by_sender.eq.true,purged_by_sender.eq.false),and(recipient_id.eq.${doctorId},deleted_by_recipient.eq.true,purged_by_recipient.eq.false)`);
@@ -202,10 +224,10 @@ export const sendEmail = async (req, res) => {
       });
     }
 
-    // Get sender info
+    // Get sender info and SMTP settings
     const { data: doctor } = await supabase
       .from('doctors')
-      .select('id, email, first_name, last_name')
+      .select('id, email, first_name, last_name, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_enabled')
       .eq('id', doctorId)
       .single();
 
@@ -260,12 +282,15 @@ export const sendEmail = async (req, res) => {
         .eq('sender_id', doctorId);
     }
 
-    // Send via SMTP
+    // Send via SMTP using organization account with doctor's identity in Reply-To
     if (process.env.SMTP_ENABLED === 'true') {
       try {
-        const transporter = createTransporter();
+        const transporter = createTransporter(); // Always use organization SMTP
         await transporter.sendMail({
-          from: `"${doctor.first_name} ${doctor.last_name}" <${doctor.email}>`,
+          // Display the doctor's name but send from the organization address
+          from: `"${doctor.first_name} ${doctor.last_name}" <${process.env.SMTP_USER}>`,
+          // When recipient hits "Reply", it goes directly to the doctor's inbox
+          replyTo: `"${doctor.first_name} ${doctor.last_name}" <${doctor.email}>`,
           to: recipient_email,
           cc,
           bcc,
@@ -273,7 +298,7 @@ export const sendEmail = async (req, res) => {
           html: body,
           attachments: attachments.map(att => ({
             filename: att.name,
-            path: att.url
+            path: path.join(__dirname, '..', att.url)
           }))
         });
       } catch (smtpError) {
@@ -578,5 +603,3 @@ export const moveToFolder = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to move email', error: error.message });
   }
 };
-
-
