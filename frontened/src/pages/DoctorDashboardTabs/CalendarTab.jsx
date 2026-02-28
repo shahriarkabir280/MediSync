@@ -57,18 +57,15 @@ const CalendarTab = () => {
 
   const loadEvents = async () => {
     try {
-      console.log('[DEBUG] loadEvents started');
       setIsLoading(true);
       // Load custom events + appointment overlay in parallel
       const [customEvents, apptEvents] = await Promise.all([
         calendarApi.getEvents(),
         calendarApi.getAppointmentEvents().catch(() => []), // non-fatal
       ]);
-      console.log(`[DEBUG] loadEvents success: custom=${customEvents.length}, appts=${apptEvents.length}`);
       // Merge: custom events take precedence, appointments fill in the rest
       setEvents([...customEvents, ...apptEvents]);
     } catch (err) {
-      console.error('[DEBUG] loadEvents error:', err);
       toast.error('Failed to load events');
     } finally {
       setIsLoading(false);
@@ -346,6 +343,19 @@ const CalendarTab = () => {
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, 5);
 
+  const counts = useMemo(() => {
+    const consultationKeywords = ['appointment', 'consultation', 'consult', 'consultations'];
+    const surgeryKeywords = ['surgery', 'surgeries', 'operation'];
+    const meetingKeywords = ['meeting', 'meetings', 'conference'];
+
+    return {
+      consultations: events.filter(ev => consultationKeywords.includes(ev.type?.toLowerCase())).length,
+      surgeries: events.filter(ev => surgeryKeywords.includes(ev.type?.toLowerCase())).length,
+      meetings: events.filter(ev => meetingKeywords.includes(ev.type?.toLowerCase())).length,
+      total: events.length
+    };
+  }, [events]);
+
   // ── Header Title ────────────────────────────────────────────────────────────
   const headerTitle = view === 'day'
     ? currentDate.toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -373,17 +383,23 @@ const CalendarTab = () => {
           <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-indigo-600" />
           Overview
         </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border">
-            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Consultations</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
+            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Consults</p>
             <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">
-              {events.filter(ev => ev.type === 'appointment').length}
+              {counts.consultations}
             </p>
           </div>
-          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border">
+          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Surgeries</p>
             <p className="text-xl sm:text-2xl font-black text-red-600 tracking-tighter">
-              {events.filter(ev => ev.type === 'surgery').length}
+              {counts.surgeries}
+            </p>
+          </div>
+          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
+            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Meetings</p>
+            <p className="text-xl sm:text-2xl font-black text-purple-600 tracking-tighter">
+              {counts.meetings}
             </p>
           </div>
         </div>
@@ -539,28 +555,28 @@ const CalendarTab = () => {
           {/* Consultations */}
           <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-indigo-500/10 rounded-xl px-3 py-2.5 border border-indigo-500/20">
             <p className="text-lg sm:text-xl font-black text-indigo-600 leading-none">
-              {events.filter(ev => ev.type === 'appointment').length}
+              {counts.consultations}
             </p>
             <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Consults</p>
           </div>
           {/* Surgeries */}
           <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-red-500/10 rounded-xl px-3 py-2.5 border border-red-500/20">
             <p className="text-lg sm:text-xl font-black text-red-600 leading-none">
-              {events.filter(ev => ev.type === 'surgery').length}
+              {counts.surgeries}
             </p>
             <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Surgeries</p>
           </div>
           {/* Meetings */}
           <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-purple-500/10 rounded-xl px-3 py-2.5 border border-purple-500/20">
             <p className="text-lg sm:text-xl font-black text-purple-600 leading-none">
-              {events.filter(ev => ev.type === 'meeting').length}
+              {counts.meetings}
             </p>
             <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Meetings</p>
           </div>
           {/* Total */}
           <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-muted/40 rounded-xl px-3 py-2.5 border border-border">
             <p className="text-lg sm:text-xl font-black text-foreground leading-none">
-              {events.length}
+              {counts.total}
             </p>
             <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Total</p>
           </div>
@@ -860,33 +876,33 @@ const CalendarTab = () => {
       {/* ── Event Modal (3 modes: custom detail, read-only appointment, edit/create form) ── */}
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-card/90 backdrop-blur-3xl rounded-t-3xl sm:rounded-[2.5rem] shadow-2xl w-full sm:max-w-md overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in duration-200 border border-border">
+          <div className="bg-card/90 backdrop-blur-3xl rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-sm overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in duration-200 border border-border">
 
             {/* Modal Header */}
-            <div className="p-5 sm:p-8 border-b border-border flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                {viewingReadOnly && <Lock className="w-4 h-4 text-muted-foreground" />}
-                <h2 className="text-lg sm:text-2xl font-black text-foreground tracking-tighter">
+            <div className="p-4 sm:p-5 border-b border-border flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {viewingReadOnly && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
+                <h2 className="text-base sm:text-xl font-black text-foreground tracking-tighter">
                   {viewingReadOnly ? 'Appointment Details'
                     : viewingCustomEvent ? 'Event Details'
                       : editingEventId ? 'Edit Event' : 'New Event'}
                 </h2>
               </div>
-              <button onClick={closeModal} className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all active:scale-90">
-                <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              <button onClick={closeModal} className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-all active:scale-90">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* ── Mode 1: Custom Event Detail View ── */}
             {viewingCustomEvent && !editingEventId ? (
-              <div className="p-5 sm:p-8 space-y-4">
+              <div className="p-4 sm:p-6 space-y-3">
                 {/* Title card */}
-                <div className={`flex items-center gap-3 p-4 rounded-2xl border-l-4 ${colorMap[viewingCustomEvent.color]?.bg || 'bg-muted'} ${colorMap[viewingCustomEvent.color]?.border || 'border-border'}`}>
+                <div className={`flex items-center gap-2.5 p-3 rounded-xl border-l-4 ${colorMap[viewingCustomEvent.color]?.bg || 'bg-muted'} ${colorMap[viewingCustomEvent.color]?.border || 'border-border'}`}>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-black text-sm sm:text-base ${colorMap[viewingCustomEvent.color]?.text || 'text-foreground'}`}>{viewingCustomEvent.title}</p>
-                    {viewingCustomEvent.type && <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingCustomEvent.type}</p>}
+                    <p className={`font-black text-sm ${colorMap[viewingCustomEvent.color]?.text || 'text-foreground'}`}>{viewingCustomEvent.title}</p>
+                    {viewingCustomEvent.type && <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingCustomEvent.type}</p>}
                   </div>
-                  <div className={`w-4 h-4 rounded-full shrink-0 ${colorMap[viewingCustomEvent.color]?.dot || 'bg-muted'}`} />
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${colorMap[viewingCustomEvent.color]?.dot || 'bg-muted'}`} />
                 </div>
 
                 {/* Details */}
@@ -915,29 +931,29 @@ const CalendarTab = () => {
                 </div>
 
                 {/* Action buttons */}
-                <div className="pt-2 flex space-x-3">
+                <div className="pt-1 flex space-x-2">
                   <button
                     onClick={() => handleDeleteEvent(viewingCustomEvent.id)}
-                    className="flex-1 px-4 py-3 sm:py-4 border border-red-200 dark:border-red-800 text-red-600 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
+                    className="flex-1 px-3 py-2.5 border border-red-200 dark:border-red-800 text-red-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
                   >
                     Delete
                   </button>
                   <button
                     onClick={() => handleEnterEditMode(viewingCustomEvent)}
-                    className="flex-1 px-4 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95"
+                    className="flex-1 px-3 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
                   >
-                    Edit Event
+                    Edit
                   </button>
                 </div>
               </div>
 
               /* ── Mode 2: Read-only Appointment Detail View ── */
             ) : viewingReadOnly ? (
-              <div className="p-5 sm:p-8 space-y-4">
-                <div className={`flex items-center gap-3 p-4 rounded-2xl border-l-4 ${colorMap[viewingReadOnly.color]?.bg || 'bg-muted'} ${colorMap[viewingReadOnly.color]?.border || 'border-border'}`}>
+              <div className="p-4 sm:p-6 space-y-3">
+                <div className={`flex items-center gap-2.5 p-3 rounded-xl border-l-4 ${colorMap[viewingReadOnly.color]?.bg || 'bg-muted'} ${colorMap[viewingReadOnly.color]?.border || 'border-border'}`}>
                   <div>
-                    <p className={`font-black text-sm sm:text-base ${colorMap[viewingReadOnly.color]?.text || 'text-foreground'}`}>{viewingReadOnly.title}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingReadOnly.type || 'Appointment'}</p>
+                    <p className={`font-black text-sm ${colorMap[viewingReadOnly.color]?.text || 'text-foreground'}`}>{viewingReadOnly.title}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingReadOnly.type || 'Appointment'}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -963,13 +979,13 @@ const CalendarTab = () => {
                     </div>
                   )}
                 </div>
-                <div className="pt-2 flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/20 rounded-xl px-3 py-2 border border-border">
+                <div className="pt-1 flex items-center gap-2 text-[9px] text-muted-foreground bg-muted/20 rounded-lg px-2.5 py-1.5 border border-border">
                   <Lock className="w-3 h-3 shrink-0" />
-                  <span>This appointment is managed from the Appointments tab</span>
+                  <span>Managed from Appointments tab</span>
                 </div>
                 <button
                   onClick={closeModal}
-                  className="w-full px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95"
+                  className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
                 >
                   Close
                 </button>
@@ -977,96 +993,103 @@ const CalendarTab = () => {
 
               /* ── Mode 3: Edit / Create Form ── */
             ) : (
-              <form onSubmit={handleAddEvent} className="p-5 sm:p-8 space-y-4 sm:space-y-5 max-h-[70vh] overflow-y-auto">
+              <form onSubmit={handleAddEvent} className="p-4 sm:p-6 space-y-3.5 max-h-[75vh] overflow-y-auto">
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Event Title</label>
+                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Event Title</label>
                   <input
                     autoFocus
                     type="text"
-                    placeholder="e.g. Patient Consultation"
+                    placeholder="e.g. Consultation"
                     value={newEvent.title}
                     onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/40 text-foreground text-sm font-medium"
+                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Date</label>
+                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Date</label>
                     <input
                       type="date"
                       value={newEvent.date}
                       onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
-                      className="w-full px-3 sm:px-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-sm font-medium"
+                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Time</label>
+                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Time</label>
                     <input
                       type="time"
                       value={newEvent.time}
                       onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
-                      className="w-full px-3 sm:px-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-sm font-medium"
+                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium"
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Event Type</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Meeting, Surgery"
-                      value={newEvent.type}
-                      onChange={e => setNewEvent({ ...newEvent, type: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/40 text-foreground text-sm font-medium"
-                    />
+                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Type</label>
+                    <div className="relative">
+                      <select
+                        value={newEvent.type}
+                        onChange={e => setNewEvent({ ...newEvent, type: e.target.value })}
+                        className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium cursor-pointer appearance-none shadow-inner"
+                      >
+                        <option value="" disabled>Select</option>
+                        <option value="consultation">Consultation</option>
+                        <option value="surgery">Surgery</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="other">Other</option>
+                      </select>
+                      <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rotate-90 text-muted-foreground pointer-events-none" />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Location</label>
+                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Location</label>
                     <input
                       type="text"
                       placeholder="e.g. Room 4B"
                       value={newEvent.location}
                       onChange={e => setNewEvent({ ...newEvent, location: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/40 text-foreground text-sm font-medium"
+                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-1.5 ml-1 tracking-widest">Description (optional)</label>
+                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Description</label>
                   <textarea
                     rows={2}
-                    placeholder="Add any notes or details..."
+                    placeholder="Notes..."
                     value={newEvent.description}
                     onChange={e => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/40 text-foreground text-sm font-medium resize-none"
+                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium resize-none leading-relaxed"
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-widest">Color</label>
-                  <div className="flex space-x-2.5 ml-1">
+                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-2 ml-0.5 tracking-widest">Color</label>
+                  <div className="flex space-x-2">
                     {Object.keys(colorMap).map(color => (
                       <button
                         key={color}
                         type="button"
                         onClick={() => setNewEvent({ ...newEvent, color })}
-                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all hover:scale-110 active:scale-95
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95
                           ${colorMap[color].dot}
-                          ${newEvent.color === color ? 'border-foreground ring-4 ring-border scale-110' : 'border-transparent'}`}
+                          ${newEvent.color === color ? 'border-foreground ring-2 ring-border scale-110' : 'border-transparent'}`}
                       />
                     ))}
                   </div>
                 </div>
-                <div className="pt-2 sm:pt-4 flex space-x-3">
+                <div className="pt-2 flex space-x-3">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 sm:px-6 py-3 sm:py-4 border border-border rounded-xl sm:rounded-2xl text-foreground font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-muted transition-all active:scale-95"
+                    className="flex-1 px-4 py-2.5 border border-border rounded-xl text-foreground font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95"
+                    className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
                   >
                     {editingEventId ? 'Update' : 'Create'}
                   </button>

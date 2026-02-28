@@ -31,7 +31,6 @@ export const getEvents = async (req, res) => {
         const { data: events, error } = await query;
         if (error) throw error;
 
-        console.log(`[DEBUG] getEvents for doctorId: ${doctorId}, found: ${events?.length || 0} events`);
         res.json(events.map(formatEvent));
     } catch (error) {
         console.error('Error fetching calendar events:', error);
