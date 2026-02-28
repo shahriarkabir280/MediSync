@@ -1,40 +1,54 @@
-import { api } from './api';
+import { api, clearCache } from './api';
 
-const API_BASE = '/calendar';
+const BASE = '/calendar';
+
+const toDate = v => (v ? new Date(v) : null);
+
+const formatEvent = (event) => ({
+    ...event,
+    start: toDate(event.start),
+    end: toDate(event.end),
+});
 
 const calendarApi = {
-    getEvents: async () => {
-        const data = await api.get(API_BASE);
-        // Convert date strings back to Date objects
-        return data.map(event => ({
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-        }));
+    // Fetch all custom events — bypass cache so grid is always fresh
+    getEvents: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const url = qs ? `${BASE}?${qs}` : BASE;
+        const data = await api.get(url, { noCache: true });
+        return data.map(formatEvent);
+    },
+
+    // Fetch appointments overlaid as read-only events
+    getAppointmentEvents: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const url = qs ? `${BASE}/appointments?${qs}` : `${BASE}/appointments`;
+        const data = await api.get(url, { noCache: true });
+        return data.map(formatEvent);
+    },
+
+    getEventById: async (id) => {
+        const data = await api.get(`${BASE}/${id}`, { noCache: true });
+        return formatEvent(data);
     },
 
     createEvent: async (eventData) => {
-        const event = await api.post(API_BASE, eventData);
-        return {
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-        };
+        const event = await api.post(BASE, eventData);
+        clearCache(BASE);
+        return formatEvent(event);
     },
 
     updateEvent: async (id, eventData) => {
-        const event = await api.put(`${API_BASE}/${id}`, eventData);
-        return {
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-        };
+        const event = await api.put(`${BASE}/${id}`, eventData);
+        clearCache(BASE);
+        return formatEvent(event);
     },
 
     deleteEvent: async (id) => {
-        await api.delete(`${API_BASE}/${id}`);
+        await api.delete(`${BASE}/${id}`);
+        clearCache(BASE);
         return true;
-    }
+    },
 };
 
 export default calendarApi;

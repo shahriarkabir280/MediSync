@@ -289,7 +289,7 @@ export const sendEmail = async (req, res) => {
         await transporter.sendMail({
           // Display the doctor's name but send from the organization address
           from: `"${doctor.first_name} ${doctor.last_name}" <${process.env.SMTP_USER}>`,
-          // When recipient hits "Reply", it goes directly to the doctor's inbox
+          // When recipient hits "Reply", it goes directly back to the doctor's personal inbox
           replyTo: `"${doctor.first_name} ${doctor.last_name}" <${doctor.email}>`,
           to: recipient_email,
           cc,

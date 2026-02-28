@@ -192,6 +192,7 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log(`[DEBUG] Authenticated request for doctorId: ${decoded.doctorId}`);
     req.user = { id: decoded.doctorId }; // Set user for blog controller
     req.doctorId = decoded.doctorId; // Keep backward compatibility
     next();

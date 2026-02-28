@@ -10,9 +10,7 @@ export const getDoctorProfile = async (req, res) => {
       .select(`
         id, unique_id, first_name, last_name, email, phone, specialization, 
         license_number, years_of_experience, bio, profile_image_url, 
-        smtp_host, smtp_port, smtp_user, smtp_pass, smtp_secure, smtp_enabled,
-        created_at, updated_at
-      `)
+        created_at, updated_at`)
       .eq('id', doctorId)
       .single();
 
