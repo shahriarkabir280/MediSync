@@ -1114,11 +1114,11 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
 
             {/* Modals Strategy - Using a wrapper for professional feel */}
             {(showNewAppointmentModal || (showEditAppointmentModal && editingAppointment)) && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/5 animate-in fade-in duration-300"
+                <div className="fixed inset-0 z-[999] flex items-center justify-center">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
                         onClick={() => { setShowNewAppointmentModal(false); setShowEditAppointmentModal(false); setEditingAppointment(null); resetAppointmentForm(); }}></div>
 
-                    <div className="bg-card/95 backdrop-blur-xl w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border/50 mx-2 sm:mx-0">
+                    <div className="bg-card/95 backdrop-blur-xl w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border/50 mx-2 sm:mx-0 p-0">
                         {/* Modal Header */}
                         <div className="p-3 sm:p-4 pb-2 flex items-center justify-between border-b border-border/50">
                             <div>
