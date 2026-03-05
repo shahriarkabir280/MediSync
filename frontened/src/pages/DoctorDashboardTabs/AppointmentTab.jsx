@@ -1115,17 +1115,17 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
             {/* Modals Strategy - Using a wrapper for professional feel */}
             {(showNewAppointmentModal || (showEditAppointmentModal && editingAppointment)) && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+                    <div className="absolute inset-0 bg-black/5 animate-in fade-in duration-300"
                         onClick={() => { setShowNewAppointmentModal(false); setShowEditAppointmentModal(false); setEditingAppointment(null); resetAppointmentForm(); }}></div>
 
-                    <div className="bg-card w-full max-w-lg rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border mx-2 sm:mx-0">
+                    <div className="bg-card/95 backdrop-blur-xl w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border/50 mx-2 sm:mx-0">
                         {/* Modal Header */}
-                        <div className="p-6 sm:p-8 pb-4 flex items-center justify-between border-b border-border">
+                        <div className="p-3 sm:p-4 pb-2 flex items-center justify-between border-b border-border/50">
                             <div>
-                                <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                                <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">
                                     {showNewAppointmentModal ? "New Appointment" : "Update Appointment"}
                                 </h2>
-                                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-1">
+                                <p className="text-[8px] sm:text-[9px] font-medium text-muted-foreground mt-0.5">
                                     {showNewAppointmentModal ? "Schedule a new clinical session" : "Modify existing schedule details"}
                                 </p>
                             </div>
@@ -1138,19 +1138,19 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                         </div>
 
                         {/* Modal Body */}
-                        <form onSubmit={showNewAppointmentModal ? handleNewAppointment : handleEditAppointment} className="p-6 sm:p-8 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-muted-foreground ml-1">Select Patient</label>
+                        <form onSubmit={showNewAppointmentModal ? handleNewAppointment : handleEditAppointment} className="p-4 sm:p-5 space-y-2.5 sm:space-y-3.5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-muted-foreground ml-1">Select Patient</label>
 
                                 {/* Search Input */}
                                 <div className="relative">
-                                    <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 z-10 pointer-events-none" />
+                                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 z-10 pointer-events-none" />
                                     <input
                                         type="text"
                                         placeholder="Search by name or ID..."
                                         value={patientSearch}
                                         onChange={(e) => setPatientSearch(e.target.value)}
-                                        className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                        className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                     />
                                 </div>
 
@@ -1198,7 +1198,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                         ) : (
                                             // Patient list dropdown
                                             <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
-                                                <User size={18} className="absolute left-5 top-4 text-muted-foreground/50 z-10 pointer-events-none" />
+                                                <User size={16} className="absolute left-4 top-3 text-muted-foreground/50 z-10 pointer-events-none" />
                                                 <select
                                                     value={showNewAppointmentModal ? appointmentForm.patient_id : editingAppointment.patient_id}
                                                     onChange={(e) => {
@@ -1209,7 +1209,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                                         }
                                                     }}
                                                     size="4"
-                                                    className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-2 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none cursor-pointer text-foreground overflow-y-auto custom-scrollbar"
+                                                    className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none cursor-pointer text-foreground overflow-y-auto custom-scrollbar"
                                                 >
                                                     <option value="" disabled>Choose from filtered results</option>
                                                     {patients
@@ -1236,83 +1236,83 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-muted-foreground ml-1">Preferred Date</label>
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-muted-foreground ml-1">Preferred Date</label>
                                     <div className="relative">
-                                        <Calendar size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                                        <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                                         <input
                                             type="date"
                                             value={appointmentForm.appointment_date}
                                             onChange={(e) => setAppointmentForm({ ...appointmentForm, appointment_date: e.target.value })}
-                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                            className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             required
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Arrival Time</label>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-muted-foreground ml-1">Arrival Time</label>
                                     <div className="relative">
-                                        <Clock size={16} className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                                        <Clock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                                         <input
                                             type="time"
                                             value={appointmentForm.appointment_time}
                                             onChange={(e) => setAppointmentForm({ ...appointmentForm, appointment_time: e.target.value })}
-                                            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                            className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             required
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5 sm:space-y-2">
-                                <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Appointment Category</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {["consultation", "follow-up", "check-up", "emergency", "procedure"].map((type) => (
-                                        <button
-                                            key={type}
-                                            type="button"
-                                            onClick={() => setAppointmentForm({ ...appointmentForm, appointment_type: type })}
-                                            className={`px-3 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-bold transition-all border ${appointmentForm.appointment_type === type
-                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20 scale-[1.03]"
-                                                : "bg-muted/50 text-muted-foreground border-border hover:border-indigo-500/30"
-                                                }`}
-                                        >
-                                            {type}
-                                        </button>
-                                    ))}
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-muted-foreground ml-1">Appointment Category</label>
+                                <div className="relative group">
+                                    <Activity className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-indigo-500 transition-colors" size={14} />
+                                    <select
+                                        value={appointmentForm.appointment_type}
+                                        onChange={(e) => setAppointmentForm({ ...appointmentForm, appointment_type: e.target.value })}
+                                        className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
+                                    >
+                                        <option value="consultation">Consultation</option>
+                                        <option value="follow-up">Follow-up</option>
+                                        <option value="check-up">Check-up</option>
+                                        <option value="emergency">Emergency</option>
+                                        <option value="procedure">Procedure</option>
+                                    </select>
+                                    <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 rotate-90" size={12} />
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5 sm:space-y-2">
-                                <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Clinical Notes (Optional)</label>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-muted-foreground ml-1">Clinical Notes (Optional)</label>
                                 <textarea
                                     value={appointmentForm.notes}
                                     onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
-                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-muted/50 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[80px] sm:min-h-[100px] text-foreground"
-                                    placeholder="Enter case summary or specialized requirements..."
+                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-muted/50 border border-border rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[40px] sm:min-h-[45px] text-foreground"
+                                    placeholder="Enter case summary..."
                                 />
                             </div>
 
-                            <div className="space-y-1.5 sm:space-y-2">
-                                <label className="text-[10px] sm:text-[11px] font-bold text-indigo-500 ml-1 flex items-center">
-                                    <Zap size={10} className="mr-1" /> Doctor's Suggestions & Advice
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-indigo-500 ml-1 flex items-center">
+                                    <Zap size={9} className="mr-1" /> Doctor's Advice
                                 </label>
                                 <textarea
                                     value={appointmentForm.suggestions}
                                     onChange={(e) => setAppointmentForm({ ...appointmentForm, suggestions: e.target.value })}
-                                    className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[80px] sm:min-h-[100px] text-foreground placeholder:text-indigo-400/30"
-                                    placeholder="Enter professional advice, exercise regimens, or dietary suggestions..."
+                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-500/5 border border-indigo-500/10 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none min-h-[40px] sm:min-h-[45px] text-foreground placeholder:text-indigo-400/30"
+                                    placeholder="Enter professional advice..."
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={actionLoading === 'create-appointment' || actionLoading === 'edit-appointment'}
-                                className="w-full py-4 sm:py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl sm:rounded-[1.5rem] text-sm sm:text-base font-bold tracking-tight shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2 sm:mt-4"
+                                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold tracking-tight shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-1 sm:mt-2"
                             >
                                 {actionLoading === 'create-appointment' || actionLoading === 'edit-appointment'
-                                    ? <RefreshCw className="animate-spin mx-auto" size={24} />
+                                    ? <RefreshCw className="animate-spin mx-auto" size={20} />
                                     : (showNewAppointmentModal ? "Confirm Schedule" : "Save Changes")
                                 }
                             </button>

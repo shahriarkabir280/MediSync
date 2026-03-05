@@ -160,14 +160,14 @@ const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localh
   const onNewMessage = (conversationId, callback) => {
     try {
       messageCallbacks.current.set(conversationId, callback);
-      
+
       // Return cleanup function
       return () => {
         messageCallbacks.current.delete(conversationId);
       };
     } catch (error) {
       console.error('Error subscribing to messages:', error);
-      return () => {};
+      return () => { };
     }
   };
 
@@ -175,13 +175,13 @@ const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localh
   const onTypingUpdate = (conversationId, callback) => {
     try {
       typingCallbacks.current.set(conversationId, callback);
-      
+
       return () => {
         typingCallbacks.current.delete(conversationId);
       };
     } catch (error) {
       console.error('Error subscribing to typing updates:', error);
-      return () => {};
+      return () => { };
     }
   };
 

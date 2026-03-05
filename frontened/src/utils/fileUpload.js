@@ -9,7 +9,7 @@ export class FileUploader {
     this.maxConcurrentUploads = options.maxConcurrentUploads || 3;
     this.retryAttempts = options.retryAttempts || 3;
     this.compressionQuality = options.compressionQuality || 0.8;
-    
+
     this.activeUploads = new Map();
     this.uploadQueue = [];
     this.runningUploads = 0;
@@ -26,7 +26,7 @@ export class FileUploader {
       // Images
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
       // Documents
-      'application/pdf', 
+      'application/pdf',
       'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -66,7 +66,7 @@ export class FileUploader {
         // Calculate new dimensions (max 1920px width/height)
         const maxDimension = 1920;
         let { width, height } = img;
-        
+
         if (width > maxDimension || height > maxDimension) {
           const ratio = Math.min(maxDimension / width, maxDimension / height);
           width *= ratio;
@@ -75,10 +75,10 @@ export class FileUploader {
 
         canvas.width = width;
         canvas.height = height;
-        
+
         // Draw and compress
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         canvas.toBlob(
           (blob) => {
             const compressedFile = new File([blob], file.name, {
@@ -103,13 +103,13 @@ export class FileUploader {
 
       // Compress if it's an image
       const processedFile = await this.compressImage(file);
-      
+
       // Use chatApi for file upload
       const response = await chatApi.uploadFiles(
-        [processedFile], 
-        conversationId, 
-        senderId, 
-        senderType, 
+        [processedFile],
+        conversationId,
+        senderId,
+        senderType,
         options
       );
 
@@ -183,7 +183,7 @@ export class FileUploader {
               this.activeUploads.delete(fileId);
               throw new Error(`Failed to upload chunk ${chunkIndex} after ${this.retryAttempts} retries: ${error.message}`);
             }
-            
+
             // Wait before retry
             await new Promise(resolve => setTimeout(resolve, 1000 * retries));
           }
@@ -212,13 +212,13 @@ export class FileUploader {
 
         const fileOptions = {
           ...options,
-          onProgress: options.onProgress ? 
-            (progress, uploaded, total) => options.onProgress(index, progress, uploaded, total) : 
+          onProgress: options.onProgress ?
+            (progress, uploaded, total) => options.onProgress(index, progress, uploaded, total) :
             undefined
         };
 
         // Choose upload method based on file size
-        const result = file.size <= this.chunkSize * 3 ? 
+        const result = file.size <= this.chunkSize * 3 ?
           await this.uploadSmallFile(file, conversationId, senderId, senderType, fileOptions) :
           await this.uploadLargeFile(file, conversationId, senderId, senderType, fileOptions);
 
@@ -323,7 +323,7 @@ export const createDropZone = (element, onFileDrop) => {
     e.preventDefault();
     e.stopPropagation();
     element.classList.remove('drag-over');
-    
+
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0 && onFileDrop) {
       onFileDrop(files);

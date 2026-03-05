@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ["abrielle-untrammeled-odessa.ngrok-free.dev"],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
