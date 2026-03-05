@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { createPortal } from "react-dom";
 import { patientApi, appointmentApi } from "../../lib/api";
 import * as dashboardCache from "../../lib/dashboardCache";
 import { API_CONFIG } from "../../config/api";
@@ -1151,100 +1152,100 @@ const PatientTab = memo(() => {
 
             {/* New Patient Modal */}
             {
-                showNewPatientModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[155] p-4 animate-in fade-in duration-300">
-                        <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                            <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                showNewPatientModal && createPortal(
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[999] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border/60 rounded-2xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-4 sm:p-5 border-b border-border/40 flex items-center justify-between bg-muted/20">
                                 <div>
-                                    <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter">Registration Portal</h2>
-                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Initialize new clinical record</p>
+                                    <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">Registration Portal</h2>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest mt-0.5">Initialize new clinical record</p>
                                 </div>
                                 <button
                                     onClick={() => {
                                         setShowNewPatientModal(false);
                                         resetPatientForm();
                                     }}
-                                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border transition-all active:scale-90"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-lg sm:rounded-xl border border-border transition-all active:scale-90"
                                 >
-                                    <X size={20} className="sm:w-6 sm:h-6" />
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 sm:p-10 no-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 no-scrollbar">
                                 {error && (
-                                    <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
-                                        <AlertCircle size={18} />
+                                    <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-600 text-[11px] font-bold flex items-center space-x-2">
+                                        <AlertCircle size={14} />
                                         <span>{error}</span>
                                     </div>
                                 )}
 
-                                <form onSubmit={handleCreatePatient} className="space-y-8">
+                                <form onSubmit={handleCreatePatient} className="space-y-3.5">
                                     {/* Basic Information */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
                                             <input
                                                 type="text"
                                                 value={patientForm.first_name}
                                                 onChange={(e) => setPatientForm({ ...patientForm, first_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 placeholder="e.g. John"
                                                 required
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
                                             <input
                                                 type="text"
                                                 value={patientForm.last_name}
                                                 onChange={(e) => setPatientForm({ ...patientForm, last_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 placeholder="e.g. Doe"
                                                 required
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
                                             <input
                                                 type="email"
                                                 value={patientForm.email}
                                                 onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 placeholder="john.doe@example.com"
                                                 required
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
                                             <input
                                                 type="tel"
                                                 value={patientForm.phone}
                                                 onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 placeholder="+1 (555) 000-0000"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
                                             <input
                                                 type="date"
                                                 value={patientForm.date_of_birth}
                                                 onChange={(e) => setPatientForm({ ...patientForm, date_of_birth: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
                                             <select
                                                 value={patientForm.gender}
                                                 onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select Identity</option>
                                                 <option value="Male">Male</option>
@@ -1252,12 +1253,12 @@ const PatientTab = memo(() => {
                                                 <option value="Other">Other</option>
                                             </select>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
                                             <select
                                                 value={patientForm.blood_group}
                                                 onChange={(e) => setPatientForm({ ...patientForm, blood_group: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select Group</option>
                                                 {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
@@ -1267,43 +1268,43 @@ const PatientTab = memo(() => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
                                         <textarea
                                             value={patientForm.address}
                                             onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                            rows="2"
+                                            className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                            rows="1"
                                             placeholder="Full residential details..."
                                         />
                                     </div>
 
                                     {/* Emergency Contact Section */}
-                                    <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
-                                                <Shield size={16} />
+                                    <div className="bg-muted/30 rounded-xl p-4 border border-border space-y-3.5">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <div className="p-1.5 bg-rose-500/10 text-rose-500 rounded-md">
+                                                <Shield size={14} />
                                             </div>
-                                            <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
+                                            <h3 className="text-[11px] font-black text-foreground tracking-tight">Emergency Contact</h3>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
                                                 <input
                                                     type="text"
                                                     value={patientForm.emergency_contact_name}
                                                     onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_name: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                     placeholder="Legal guardian or relative"
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
                                                 <input
                                                     type="tel"
                                                     value={patientForm.emergency_contact_phone}
                                                     onChange={(e) => setPatientForm({ ...patientForm, emergency_contact_phone: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                     placeholder="Secondary contact line"
                                                 />
                                             </div>
@@ -1311,57 +1312,57 @@ const PatientTab = memo(() => {
                                     </div>
 
                                     {/* Medical Info Section */}
-                                    <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-                                                <Stethoscope size={16} />
+                                    <div className="bg-indigo-500/5 rounded-xl p-4 border border-indigo-500/10 space-y-3.5">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <div className="p-1.5 bg-indigo-500/10 text-indigo-500 rounded-md">
+                                                <Stethoscope size={14} />
                                             </div>
-                                            <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
+                                            <h3 className="text-[11px] font-black text-foreground tracking-tight">Clinical Background</h3>
                                         </div>
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
+                                        <div className="space-y-3.5">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
                                                 <textarea
                                                     value={patientForm.medical_history}
                                                     onChange={(e) => setPatientForm({ ...patientForm, medical_history: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                    rows="3"
-                                                    placeholder="Previous conditions, surgeries, chronic diseases..."
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="2"
+                                                    placeholder="Previous conditions, chronic diseases..."
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
                                                 <textarea
                                                     value={patientForm.allergies}
                                                     onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                    rows="2"
-                                                    placeholder="Drug, food, or environmental allergies..."
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="1"
+                                                    placeholder="Drug, food allergies..."
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 pt-8">
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setShowNewPatientModal(false);
                                                 resetPatientForm();
                                             }}
-                                            className="w-full sm:flex-1 px-10 py-4 sm:py-5 border border-border/60 text-muted-foreground font-black text-[11px] sm:text-[12px] uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-muted transition-all"
+                                            className="w-full sm:flex-1 px-6 py-2.5 sm:py-3 border border-border/60 text-muted-foreground font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-lg sm:rounded-xl hover:bg-muted transition-all"
                                         >
                                             Discard
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={actionLoading === 'create-patient'}
-                                            className="w-full sm:flex-[2] py-4 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                            className="w-full sm:flex-[2] py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg sm:rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
                                         >
                                             {actionLoading === 'create-patient' ? (
-                                                <div className="flex items-center justify-center space-x-3">
-                                                    <RefreshCw size={18} className="animate-spin" />
-                                                    <span>Synchronizing...</span>
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <RefreshCw size={14} className="animate-spin" />
+                                                    <span>Sync...</span>
                                                 </div>
                                             ) : 'Initialize Record'}
                                         </button>
@@ -1369,98 +1370,99 @@ const PatientTab = memo(() => {
                                 </form>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
             {/* Edit Patient Modal */}
             {
-                showEditPatientModal && selectedPatient && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[155] p-4 animate-in fade-in duration-300">
-                        <div className="bg-card border border-border/60 rounded-[2rem] sm:rounded-[3rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
-                            <div className="p-6 sm:p-10 border-b border-border/40 flex items-center justify-between bg-muted/20">
+                showEditPatientModal && selectedPatient && createPortal(
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[999] p-4 animate-in fade-in duration-300">
+                        <div className="bg-card border border-border/60 rounded-2xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-500">
+                            <div className="p-4 sm:p-5 border-b border-border/40 flex items-center justify-between bg-muted/20">
                                 <div>
-                                    <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter">Profile Amendment</h2>
-                                    <p className="text-[10px] sm:text-[11px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mt-1 sm:mt-2">Modify existing clinical registry</p>
+                                    <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">Profile Amendment</h2>
+                                    <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest mt-0.5">Modify existing clinical registry</p>
                                 </div>
                                 <button
                                     onClick={() => setShowEditPatientModal(false)}
-                                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-xl sm:rounded-2xl border border-border transition-all active:scale-90"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-card text-muted-foreground hover:text-rose-500 rounded-lg sm:rounded-xl border border-border transition-all active:scale-90"
                                 >
-                                    <X size={20} className="sm:w-6 sm:h-6" />
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 sm:p-10 no-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 no-scrollbar">
                                 {error && (
-                                    <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center space-x-3">
-                                        <AlertCircle size={18} />
+                                    <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-600 text-[11px] font-bold flex items-center space-x-2">
+                                        <AlertCircle size={14} />
                                         <span>{error}</span>
                                     </div>
                                 )}
 
-                                <form onSubmit={handleEditPatient} className="space-y-8">
+                                <form onSubmit={handleEditPatient} className="space-y-3.5">
                                     {/* Basic Information */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">First Name *</label>
                                             <input
                                                 type="text"
                                                 value={editForm.first_name}
                                                 onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 required
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Last Name *</label>
                                             <input
                                                 type="text"
                                                 value={editForm.last_name}
                                                 onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 required
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Email Address *</label>
                                             <input
                                                 type="email"
                                                 value={editForm.email}
                                                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 required
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
                                             <input
                                                 type="tel"
                                                 value={editForm.phone}
                                                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Date of Birth</label>
                                             <input
                                                 type="date"
                                                 value={editForm.date_of_birth}
                                                 onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Gender Identity</label>
                                             <select
                                                 value={editForm.gender}
                                                 onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select Identity</option>
                                                 <option value="Male">Male</option>
@@ -1468,12 +1470,12 @@ const PatientTab = memo(() => {
                                                 <option value="Other">Other</option>
                                             </select>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Blood Group</label>
                                             <select
                                                 value={editForm.blood_group}
                                                 onChange={(e) => setEditForm({ ...editForm, blood_group: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
+                                                className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select Group</option>
                                                 {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(group => (
@@ -1483,94 +1485,94 @@ const PatientTab = memo(() => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Residential Address</label>
                                         <textarea
                                             value={editForm.address}
                                             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                            rows="2"
+                                            className="w-full px-3.5 py-2 sm:py-2.5 bg-muted/50 border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                            rows="1"
                                         />
                                     </div>
 
                                     {/* Emergency Contact */}
-                                    <div className="bg-muted/30 rounded-[2rem] p-6 border border-border space-y-6">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <div className="p-2 bg-rose-500/10 text-rose-500 rounded-lg">
-                                                <Shield size={16} />
+                                    <div className="bg-muted/30 rounded-xl p-4 border border-border space-y-3.5">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <div className="p-1.5 bg-rose-500/10 text-rose-500 rounded-md">
+                                                <Shield size={14} />
                                             </div>
-                                            <h3 className="text-sm font-black text-foreground tracking-tight">Emergency Contact</h3>
+                                            <h3 className="text-[11px] font-black text-foreground tracking-tight">Emergency Contact</h3>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Name</label>
                                                 <input
                                                     type="text"
                                                     value={editForm.emergency_contact_name}
                                                     onChange={(e) => setEditForm({ ...editForm, emergency_contact_name: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Contact Phone</label>
                                                 <input
                                                     type="tel"
                                                     value={editForm.emergency_contact_phone}
                                                     onChange={(e) => setEditForm({ ...editForm, emergency_contact_phone: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Medical Information */}
-                                    <div className="bg-indigo-500/5 rounded-[2rem] p-6 border border-indigo-500/10 space-y-6">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-                                                <Stethoscope size={16} />
+                                    <div className="bg-indigo-500/5 rounded-xl p-4 border border-indigo-500/10 space-y-3.5">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <div className="p-1.5 bg-indigo-500/10 text-indigo-500 rounded-md">
+                                                <Stethoscope size={14} />
                                             </div>
-                                            <h3 className="text-sm font-black text-foreground tracking-tight">Clinical Background</h3>
+                                            <h3 className="text-[11px] font-black text-foreground tracking-tight">Clinical Background</h3>
                                         </div>
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
+                                        <div className="space-y-3.5">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Medical History</label>
                                                 <textarea
                                                     value={editForm.medical_history}
                                                     onChange={(e) => setEditForm({ ...editForm, medical_history: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                    rows="3"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="2"
                                                     placeholder="Previous conditions, surgeries, chronic diseases..."
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider ml-1">Allergies & Sensitivities</label>
                                                 <textarea
                                                     value={editForm.allergies}
                                                     onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
-                                                    rows="2"
+                                                    className="w-full px-3.5 py-2 sm:py-2.5 bg-card border border-border rounded-lg text-[11px] sm:text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground resize-none"
+                                                    rows="1"
                                                     placeholder="Food allergies, drug allergies, environmental allergies..."
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 pt-8">
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
                                         <button
                                             type="button"
                                             onClick={() => setShowEditPatientModal(false)}
-                                            className="w-full sm:flex-1 px-10 py-4 sm:py-5 border border-border/60 text-muted-foreground font-black text-[11px] sm:text-[12px] uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-muted transition-all"
+                                            className="w-full sm:flex-1 px-6 py-2.5 sm:py-3 border border-border/60 text-muted-foreground font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-lg sm:rounded-xl hover:bg-muted transition-all"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={actionLoading === 'edit-patient'}
-                                            className="w-full sm:flex-[2] py-4 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] sm:text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
+                                            className="w-full sm:flex-[2] py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg sm:rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-2xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all disabled:opacity-50"
                                         >
                                             {actionLoading === 'edit-patient' ? (
-                                                <div className="flex items-center justify-center space-x-3">
-                                                    <RefreshCw size={18} className="animate-spin" />
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <RefreshCw size={14} className="animate-spin" />
                                                     <span>Updating...</span>
                                                 </div>
                                             ) : 'Update Record'}
@@ -1579,7 +1581,8 @@ const PatientTab = memo(() => {
                                 </form>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
 
