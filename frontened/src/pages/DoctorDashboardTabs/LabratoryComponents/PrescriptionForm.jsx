@@ -1,12 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     Plus, Trash2, Save, Printer, Clock, Stethoscope,
     AlertCircle, History, Info, X, Eye, ChevronRight,
-    Activity, Thermometer, Heart, Wind
+    Activity, Thermometer, Heart, Wind, Settings
 } from "lucide-react";
 import { prescriptionApi } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
 import PrescriptionTemplate from './PrescriptionTemplate';
+import PrescriptionSettings from './PrescriptionSettings';
 
 const MED_TYPES = ['Tab.', 'Cap.', 'Syr.', 'Inj.', 'Drop', 'Cream', 'Oint.', 'Spray', 'Supp.', 'Powder', 'Gel'];
 const DOSAGE_SHORTCUTS = ['1+0+0', '0+1+0', '0+0+1', '1+0+1', '1+1+1', '1+1+0', '½+0+½', '0+0+½'];
@@ -46,6 +47,23 @@ const Chip = ({ label, onClick, active }) => (
 const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSaveSuccess, onCancel }) => {
     const [loading, setLoading] = useState(false);
     const [activePanel, setActivePanel] = useState('write'); // 'write' | 'preview'
+    const [showSettings, setShowSettings] = useState(false);
+    const [customLetterhead, setCustomLetterhead] = useState(null);
+
+    // Load custom settings on mount
+    useEffect(() => {
+        const STORAGE_KEY = `prescription_settings_${doctorId || 'default'}`;
+        const savedSettings = localStorage.getItem(STORAGE_KEY);
+        if (savedSettings) {
+            setCustomLetterhead(JSON.parse(savedSettings));
+        }
+    }, [doctorId]);
+
+    const handleSettingsSave = (newSettings) => {
+        setCustomLetterhead(newSettings);
+        setShowSettings(false);
+        toast.success('Letterhead settings updated');
+    };
 
     const [formData, setFormData] = useState({
         chief_complaints: '',
@@ -184,6 +202,15 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                             <Eye className="w-3.5 h-3.5" /> Preview
                         </button>
                     </div>
+
+                    {/* Settings Trigger */}
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        className="p-2 text-muted-foreground hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-xl transition-all"
+                        title="Letterhead Settings"
+                    >
+                        <Settings className="w-5 h-5" />
+                    </button>
                     <button
                         onClick={handlePrint}
                         className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-border text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl transition-all"
@@ -504,6 +531,7 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                 prescription={livePrescription}
                                 doctor={doctor}
                                 patient={patient}
+                                customLetterhead={customLetterhead}
                                 isPreview
                             />
                         </div>
@@ -533,6 +561,14 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                   }
                 }
               `}} />
+            {/* Settings Modal */}
+            {showSettings && (
+                <PrescriptionSettings
+                    doctor={doctor}
+                    onSave={handleSettingsSave}
+                    onCancel={() => setShowSettings(false)}
+                />
+            )}
         </div>
     );
 };

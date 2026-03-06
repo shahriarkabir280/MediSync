@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from '
 import { debounce } from "../../utils/performance";
 import { API_CONFIG } from "../../config/api";
 import { toast } from "react-hot-toast";
-import { doctorApi } from "../../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Import Refactored Components
 import LabratoryHeader from './LabratoryComponents/LabratoryHeader';
@@ -20,9 +20,9 @@ const LabratoryTab = memo(() => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
 
-  // Doctor state
-  const [doctor, setDoctor] = useState(null);
-  const doctorId = localStorage.getItem('doctorId') || localStorage.getItem('userId');
+  // Doctor info from auth context (logged-in user)
+  const { user: doctor } = useAuth();
+  const doctorId = doctor?.id;
 
   const [labStats, setLabStats] = useState({
     today: { total_today: 0, pending_today: 0, processing_today: 0, completed_today: 0 },
@@ -122,12 +122,6 @@ const LabratoryTab = memo(() => {
     fetchLabStats();
     fetchRecentOrders();
     fetchPatients();
-    // Fetch doctor profile for prescription letterhead
-    if (doctorId) {
-      doctorApi.getProfile(doctorId)
-        .then(res => setDoctor(res?.data || res))
-        .catch(() => { });
-    }
   }, [fetchLabStats, fetchRecentOrders, fetchPatients]);
 
   // --- EVENT HANDLERS ---

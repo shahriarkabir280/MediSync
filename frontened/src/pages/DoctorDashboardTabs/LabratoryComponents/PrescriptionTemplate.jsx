@@ -8,7 +8,7 @@ import { Phone, Mail, MapPin, Calendar, Clock } from "lucide-react";
  * Right column: Rx symbol, Diagnosis, Numbered medicines, Advice
  * Footer: Follow-up date, Doctor signature
  */
-const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false }) => {
+const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead = null, isPreview = false }) => {
     if (!prescription) return null;
 
     const formatDate = (dateString) => {
@@ -28,16 +28,42 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
         return age;
     };
 
-    const docName = doctor
-        ? `${doctor.title || 'Dr.'} ${doctor.first_name || ''} ${doctor.last_name || ''}`.trim()
-        : 'Dr. [Doctor Name]';
 
-    const docDegrees = doctor?.qualifications || doctor?.degrees || 'MBBS, FCPS';
-    const docSpec = doctor?.specialization || 'General Physician';
-    const docReg = doctor?.license_number || 'A-XXXXX';
-    const docPhone = doctor?.phone || '+880 1XXX-XXXXXX';
-    const docEmail = doctor?.email || 'doctor@careconnect.health';
-    const docAddress = doctor?.chamber_address || doctor?.address || 'Chamber Address, Dhaka';
+    // Support both AuthContext user shape (name, email, specialization, license_number)
+    // and doctorApi shape (first_name, last_name)
+    const docName = doctor
+        ? (doctor.name || `${doctor.title || 'Dr.'} ${doctor.first_name || ''} ${doctor.last_name || ''}`.trim())
+        : 'Dr. [Doctor Name]';
+    // Ensure name starts with "Dr." if not already
+    const docDisplayName = docName.startsWith('Dr') ? docName : `Dr. ${docName}`;
+
+    // Prefer custom letterhead settings if available
+    const docHospital = customLetterhead?.hospital_name || doctor?.hospital_name || doctor?.clinic_name || '';
+    const docDegrees = customLetterhead?.degrees || doctor?.qualifications || doctor?.degrees || 'MBBS, FCPS';
+    const docSpec = customLetterhead?.specialization || doctor?.specialization || 'General Physician';
+    const docReg = customLetterhead?.bmdc_reg || doctor?.license_number || doctor?.bmdc_reg || 'A-XXXXX';
+    const docPhone = customLetterhead?.phone || doctor?.phone || doctor?.contact_number || '+880 1XXX-XXXXXX';
+    const docEmail = customLetterhead?.email || doctor?.email || 'doctor@careconnect.health';
+    const docAddress = customLetterhead?.address || doctor?.chamber_address || doctor?.address || 'Chamber Address, Dhaka';
+    const docExtraInfo = customLetterhead?.extra_info || '';
+
+    // Helper to format multiline text into bullet points
+    const formatListText = (text) => {
+        if (!text) return null;
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        
+        if (lines.length <= 1) {
+            return <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">{text}</p>;
+        }
+
+        return (
+            <ul className="text-[11px] leading-relaxed text-slate-700 pl-4 list-disc space-y-0.5 marker:text-slate-400">
+                {lines.map((line, i) => (
+                    <li key={i}>{line.trim()}</li>
+                ))}
+            </ul>
+        );
+    };
 
     const hasItems = prescription.prescription_items?.filter(i => i.medicine_name?.trim()).length > 0;
 
@@ -52,11 +78,17 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                     {/* Doctor Info - Left */}
                     <div className="flex-1">
                         <h1 className="text-[26px] font-black tracking-tight text-slate-900 leading-tight" style={{ fontFamily: 'Arial, sans-serif' }}>
-                            {docName}
+                            {docDisplayName}
                         </h1>
+                        {docHospital && (
+                            <p className="text-[14px] font-black text-slate-800 uppercase tracking-tight mt-0.5">{docHospital}</p>
+                        )}
                         <p className="text-[12px] font-bold text-slate-600 mt-0.5">{docDegrees}</p>
                         <p className="text-[13px] font-bold text-blue-800 mt-0.5">{docSpec}</p>
                         <p className="text-[11px] text-slate-500 mt-0.5">BMDC Reg. No: {docReg}</p>
+                        {docExtraInfo && (
+                            <p className="text-[10px] font-bold text-teal-600 mt-1 uppercase tracking-wider">{docExtraInfo}</p>
+                        )}
                     </div>
 
                     {/* Clinic/Contact - Right */}
@@ -119,9 +151,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                                 <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 C/C
                             </h4>
-                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
-                                {prescription.chief_complaints}
-                            </p>
+                            {formatListText(prescription.chief_complaints)}
                         </section>
                     )}
 
@@ -131,9 +161,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                                 <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 Hx
                             </h4>
-                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
-                                {prescription.clinical_history}
-                            </p>
+                            {formatListText(prescription.clinical_history)}
                         </section>
                     )}
 
@@ -143,9 +171,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                                 <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 O/E
                             </h4>
-                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
-                                {prescription.physical_examination}
-                            </p>
+                            {formatListText(prescription.physical_examination)}
                         </section>
                     )}
 
@@ -155,9 +181,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                                 <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 Inv.
                             </h4>
-                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
-                                {prescription.investigations}
-                            </p>
+                            {formatListText(prescription.investigations)}
                         </section>
                     )}
                 </aside>
@@ -253,8 +277,8 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-700 mb-2">
                                 Advice:
                             </h4>
-                            <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap bg-slate-50 border border-slate-100 rounded p-2">
-                                {prescription.advice}
+                            <div className="bg-slate-50 border border-slate-100 rounded p-2 pt-2 pb-2">
+                                {formatListText(prescription.advice)}
                             </div>
                         </div>
                     )}
@@ -283,7 +307,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false
                     {/* Signature */}
                     <div className="text-center">
                         <div className="w-44 h-px bg-slate-400 mb-1" />
-                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-800">{docName}</p>
+                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-800">{docDisplayName}</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Signature</p>
                     </div>
                 </div>
