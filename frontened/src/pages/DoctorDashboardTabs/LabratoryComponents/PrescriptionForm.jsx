@@ -9,19 +9,19 @@ import { toast } from 'react-hot-toast';
 import PrescriptionTemplate from './PrescriptionTemplate';
 import PrescriptionSettings from './PrescriptionSettings';
 
-const MED_TYPES = ['Tab.', 'Cap.', 'Syr.', 'Inj.', 'Drop', 'Cream', 'Oint.', 'Spray', 'Supp.', 'Powder', 'Gel'];
-const DOSAGE_SHORTCUTS = ['1+0+0', '0+1+0', '0+0+1', '1+0+1', '1+1+1', '1+1+0', '½+0+½', '0+0+½'];
-const INSTRUCTION_SHORTCUTS = ['After Meal', 'Before Meal', 'At Bedtime', 'Empty Stomach', 'With Plenty of Water', 'Chew Before Swallow'];
-const DURATION_SHORTCUTS = ['3 days', '5 days', '7 days', '10 days', '14 days', '1 month', '2 months', 'Continuous'];
+const MED_TYPES = ['Tab.', 'Cap.', 'Syr.', 'Inj.', 'Drop', 'Cream', 'Oint.', 'Spray', 'Supp.', 'Powder', 'Gel', 'Inhaler'];
+const DOSAGE_SHORTCUTS = ['১+০+১', '০+০+১', '১+১+১', '১+০+০', '০+১+০', '১/২+০+১/২', 'প্রয়োজন হলে (SOS)'];
+const INSTRUCTION_SHORTCUTS = ['খাবারের পর (PC)', 'খাবারের আগে (AC)', 'খালি পেটে', 'ভরা পেটে', 'ঘুমানোর আগে (HS)', 'চুষে খাবেন', 'পানির সাথে মিশিয়ে'];
+const DURATION_SHORTCUTS = ['৩ দিন', '৫ দিন', '৭ দিন', '১০ দিন', '১৪ দিন', '১ মাস', 'চলবে (Continue)'];
 const COMMON_ADVICE = [
-    'Drink 8-10 glasses of water daily',
-    'Take complete rest',
-    'Avoid cold & spicy food',
-    'Complete the full course of medication',
-    'Monitor blood pressure daily',
-    'Check blood sugar level regularly',
-    'Low salt diet',
-    'Avoid smoking and alcohol',
+    'প্রচুর পরিমাণে পানি পান করবেন (Drink plenty of water)',
+    'সম্পূর্ণ বিশ্রামে থাকবেন (Take complete rest)',
+    'ঠান্ডা ও বাইরের খাবার পরিহার করবেন (Avoid cold/outside food)',
+    'নিয়মিত ওষুধ সেবন করবেন (Take medicine regularly)',
+    'প্রতিদিন ব্লাড প্রেসার মাপবেন (Monitor BP daily)',
+    'নিয়মিত ডায়াবেটিস চেক করবেন (Check blood sugar regularly)',
+    'লবণ ও চর্বিযুক্ত খাবার কম খাবেন (Low salt/fat diet)',
+    'ধূমপান থেকে বিরত থাকবেন (Avoid smoking)',
 ];
 
 const FieldLabel = ({ icon, text, color = 'text-slate-500' }) => (
@@ -93,6 +93,25 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
         setItems(prev => {
             const next = [...prev];
             next[index] = { ...next[index], [field]: value };
+            return next;
+        });
+    }, []);
+
+    const handleChipToggle = useCallback((index, field, value) => {
+        setItems(prev => {
+            const next = [...prev];
+            const currentVal = next[index][field] || '';
+            
+            // If already includes, remove it (toggle off)
+            if (currentVal.includes(value)) {
+                let updated = currentVal.replace(value, '').trim();
+                // Clean up comma if trailing or double
+                updated = updated.replace(/,\s*,/g, ',').replace(/^,\s*/, '').replace(/,\s*$/, '');
+                next[index] = { ...next[index], [field]: updated };
+            } else {
+                // Append (toggle on)
+                next[index] = { ...next[index], [field]: currentVal ? `${currentVal}, ${value}` : value };
+            }
             return next;
         });
     }, []);
@@ -410,7 +429,7 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                                 />
                                                 <div className="mt-1 flex flex-wrap gap-0.5">
                                                     {DOSAGE_SHORTCUTS.map(d => (
-                                                        <Chip key={d} label={d} active={item.dosage === d} onClick={() => handleItemChange(index, 'dosage', d)} />
+                                                        <Chip key={d} label={d} active={item.dosage?.includes(d)} onClick={() => handleChipToggle(index, 'dosage', d)} />
                                                     ))}
                                                 </div>
                                             </div>
@@ -424,7 +443,7 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                                 />
                                                 <div className="mt-1 flex flex-wrap gap-0.5">
                                                     {DURATION_SHORTCUTS.map(d => (
-                                                        <Chip key={d} label={d} active={item.duration === d} onClick={() => handleItemChange(index, 'duration', d)} />
+                                                        <Chip key={d} label={d} active={item.duration?.includes(d)} onClick={() => handleChipToggle(index, 'duration', d)} />
                                                     ))}
                                                 </div>
                                             </div>
@@ -433,12 +452,12 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                                     type="text"
                                                     value={item.instructions}
                                                     onChange={(e) => handleItemChange(index, 'instructions', e.target.value)}
-                                                    placeholder="Instruction"
+                                                    placeholder="Instruction (type freely...)"
                                                     className="w-full bg-background border border-border rounded-lg p-1.5 text-xs outline-none focus:ring-2 focus:ring-teal-500/20"
                                                 />
                                                 <div className="mt-1 flex flex-wrap gap-0.5">
                                                     {INSTRUCTION_SHORTCUTS.map(i => (
-                                                        <Chip key={i} label={i} active={item.instructions === i} onClick={() => handleItemChange(index, 'instructions', i)} />
+                                                        <Chip key={i} label={i} active={item.instructions?.includes(i)} onClick={() => handleChipToggle(index, 'instructions', i)} />
                                                     ))}
                                                 </div>
                                             </div>
