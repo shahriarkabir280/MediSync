@@ -115,7 +115,7 @@ const LoginForm = ({ onLogin, loading, error }) => {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Demo Credentials: john.doe@careconnect.com / password123
+              Demo Credentials: john.doe@cc.com / password123
             </p>
           </div>
         </form>

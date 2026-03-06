@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from '
 import { debounce } from "../../utils/performance";
 import { API_CONFIG } from "../../config/api";
 import { toast } from "react-hot-toast";
+import { doctorApi } from "../../lib/api";
 
 // Import Refactored Components
 import LabratoryHeader from './LabratoryComponents/LabratoryHeader';
@@ -18,6 +19,11 @@ const LabratoryTab = memo(() => {
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
+
+  // Doctor state
+  const [doctor, setDoctor] = useState(null);
+  const doctorId = localStorage.getItem('doctorId') || localStorage.getItem('userId');
+
   const [labStats, setLabStats] = useState({
     today: { total_today: 0, pending_today: 0, processing_today: 0, completed_today: 0 },
     urgent: { urgent_count: 0 },
@@ -116,6 +122,12 @@ const LabratoryTab = memo(() => {
     fetchLabStats();
     fetchRecentOrders();
     fetchPatients();
+    // Fetch doctor profile for prescription letterhead
+    if (doctorId) {
+      doctorApi.getProfile(doctorId)
+        .then(res => setDoctor(res?.data || res))
+        .catch(() => { });
+    }
   }, [fetchLabStats, fetchRecentOrders, fetchPatients]);
 
   // --- EVENT HANDLERS ---
@@ -308,6 +320,8 @@ const LabratoryTab = memo(() => {
             handleViewReport={handleViewReport}
             setSelectedReport={setSelectedReport}
             setShowReportModal={setShowReportModal}
+            doctor={doctor}
+            doctorId={doctorId}
           />
         )}
       </div>

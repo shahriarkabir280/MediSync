@@ -395,6 +395,38 @@ export const billingApi = {
   },
 };
 
+// Prescription API
+export const prescriptionApi = {
+  create: async (payload) => {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}/prescriptions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(response);
+  },
+
+  getByPatient: async (patientId) => {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}/prescriptions/patient/${patientId}`, {
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (prescriptionId) => {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}/prescriptions/${prescriptionId}`, {
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+    });
+    return handleResponse(response);
+  },
+};
+
 export default {
   api,
   doctorApi,
@@ -402,4 +434,5 @@ export default {
   patientApi,
   analyticsApi,
   billingApi,
+  prescriptionApi,
 };

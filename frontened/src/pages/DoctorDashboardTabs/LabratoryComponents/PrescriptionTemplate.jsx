@@ -1,28 +1,20 @@
 import React from 'react';
-import {
-    Phone,
-    Mail,
-    MapPin,
-    Calendar,
-    User,
-    Stethoscope,
-    ChevronRight,
-    Clock
-} from "lucide-react";
+import { Phone, Mail, MapPin, Calendar, Clock } from "lucide-react";
 
 /**
- * Professional Bangladesh-style Prescription Template
- * Optimized for both viewing and printing.
+ * Bangladesh-style Doctor Prescription Template
+ * Follows the standard BD medical prescription pad format.
+ * Left column: C/C, Hx, O/E, Investigations
+ * Right column: Rx symbol, Diagnosis, Numbered medicines, Advice
+ * Footer: Follow-up date, Doctor signature
  */
-const PrescriptionTemplate = ({ prescription, doctor, patient }) => {
+const PrescriptionTemplate = ({ prescription, doctor, patient, isPreview = false }) => {
     if (!prescription) return null;
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
+            day: '2-digit', month: 'short', year: 'numeric'
         });
     };
 
@@ -36,67 +28,98 @@ const PrescriptionTemplate = ({ prescription, doctor, patient }) => {
         return age;
     };
 
+    const docName = doctor
+        ? `${doctor.title || 'Dr.'} ${doctor.first_name || ''} ${doctor.last_name || ''}`.trim()
+        : 'Dr. [Doctor Name]';
+
+    const docDegrees = doctor?.qualifications || doctor?.degrees || 'MBBS, FCPS';
+    const docSpec = doctor?.specialization || 'General Physician';
+    const docReg = doctor?.license_number || 'A-XXXXX';
+    const docPhone = doctor?.phone || '+880 1XXX-XXXXXX';
+    const docEmail = doctor?.email || 'doctor@careconnect.health';
+    const docAddress = doctor?.chamber_address || doctor?.address || 'Chamber Address, Dhaka';
+
+    const hasItems = prescription.prescription_items?.filter(i => i.medicine_name?.trim()).length > 0;
+
     return (
-        <div className="bg-white text-slate-800 p-8 lg:p-12 shadow-2xl max-w-[210mm] mx-auto min-h-[297mm] flex flex-col print:shadow-none print:p-0 print:m-0 animate-in fade-in duration-700">
+        <div
+            className={`bg-white text-slate-900 font-sans ${isPreview ? 'w-[210mm] min-h-[297mm]' : 'max-w-[210mm] min-h-[297mm] mx-auto shadow-2xl'} flex flex-col print:shadow-none`}
+            style={{ fontFamily: "'Times New Roman', serif" }}
+        >
+            {/* ═══ LETTERHEAD ═══ */}
+            <header className="px-8 pt-6 pb-4">
+                <div className="flex justify-between items-start">
+                    {/* Doctor Info - Left */}
+                    <div className="flex-1">
+                        <h1 className="text-[26px] font-black tracking-tight text-slate-900 leading-tight" style={{ fontFamily: 'Arial, sans-serif' }}>
+                            {docName}
+                        </h1>
+                        <p className="text-[12px] font-bold text-slate-600 mt-0.5">{docDegrees}</p>
+                        <p className="text-[13px] font-bold text-blue-800 mt-0.5">{docSpec}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">BMDC Reg. No: {docReg}</p>
+                    </div>
 
-            {/* Header / Doctor Info */}
-            <header className="border-b-4 border-slate-900 pb-6 flex justify-between items-start">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">
-                        {doctor?.first_name} {doctor?.last_name}
-                    </h1>
-                    <p className="text-lg font-bold text-blue-700">{doctor?.specialization}</p>
-                    <div className="flex flex-col text-sm text-slate-500 font-medium">
-                        <span>{doctor?.license_number && `Registration No: ${doctor.license_number}`}</span>
-                        <span>{doctor?.years_of_experience && `${doctor.years_of_experience}+ Years of Experience`}</span>
+                    {/* Clinic/Contact - Right */}
+                    <div className="text-right space-y-0.5 ml-4">
+                        <div className="text-[11px] text-slate-600 flex items-center justify-end gap-1">
+                            <span>{docPhone}</span>
+                            <Phone className="w-3 h-3 flex-shrink-0" />
+                        </div>
+                        <div className="text-[11px] text-slate-600 flex items-center justify-end gap-1">
+                            <span>{docEmail}</span>
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                        </div>
+                        <div className="text-[11px] text-slate-600 flex items-center justify-end gap-1 max-w-[180px]">
+                            <span className="text-right leading-tight">{docAddress}</span>
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="text-right space-y-1">
-                    <div className="flex items-center justify-end gap-2 text-sm text-slate-600">
-                        <span>{doctor?.email || 'doctor@careconnect.com'}</span>
-                        <Mail className="w-4 h-4" />
-                    </div>
-                    <div className="flex items-center justify-end gap-2 text-sm text-slate-600">
-                        <span>{doctor?.phone || '+880 1XXX XXXXXX'}</span>
-                        <Phone className="w-4 h-4" />
-                    </div>
-                </div>
+                {/* Divider */}
+                <div className="mt-3 border-t-[3px] border-slate-900" />
+                <div className="mt-0.5 border-t border-slate-400" />
             </header>
 
-            {/* Patient Stats Bar */}
-            <div className="grid grid-cols-4 bg-slate-50 border-b border-slate-200 py-3 px-4 mt-4 text-sm font-bold uppercase tracking-wider">
-                <div className="flex gap-2 items-center">
-                    <span className="text-slate-400">Name:</span>
-                    <span className="text-slate-900 truncate">{patient?.first_name} {patient?.last_name}</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                    <span className="text-slate-400">Age:</span>
-                    <span className="text-slate-900">{calculateAge(patient?.date_of_birth)}Y</span>
-                </div>
-                <div className="flex gap-2 items-center">
-                    <span className="text-slate-400">Sex:</span>
-                    <span className="text-slate-900">{patient?.gender || 'N/A'}</span>
-                </div>
-                <div className="flex gap-2 items-center justify-end">
-                    <span className="text-slate-400">Date:</span>
-                    <span className="text-slate-900">{formatDate(prescription.created_at)}</span>
+            {/* ═══ PATIENT INFO BAR ═══ */}
+            <div className="px-8 py-2">
+                <div className="flex items-center gap-1 flex-wrap text-[12px]">
+                    <span className="font-bold text-slate-500">Name:</span>
+                    <span className="font-black text-slate-900 min-w-[120px] border-b border-dotted border-slate-400 pb-0.5 mr-4">
+                        {patient?.first_name} {patient?.last_name}
+                    </span>
+                    <span className="font-bold text-slate-500">Age:</span>
+                    <span className="font-black text-slate-900 min-w-[36px] border-b border-dotted border-slate-400 pb-0.5 mr-4 text-center">
+                        {calculateAge(patient?.date_of_birth)}Y
+                    </span>
+                    <span className="font-bold text-slate-500">Sex:</span>
+                    <span className="font-black text-slate-900 min-w-[40px] border-b border-dotted border-slate-400 pb-0.5 mr-4 text-center">
+                        {patient?.gender ? patient.gender.charAt(0).toUpperCase() : 'N/A'}
+                    </span>
+                    <span className="font-bold text-slate-500">Wt:</span>
+                    <span className="font-black text-slate-900 min-w-[40px] border-b border-dotted border-slate-400 pb-0.5 mr-4 text-center">
+                        {prescription.vitals_weight ? `${prescription.vitals_weight}kg` : '____'}
+                    </span>
+                    <span className="font-bold text-slate-500 ml-auto">Date:</span>
+                    <span className="font-black text-slate-900 border-b border-dotted border-slate-400 pb-0.5 ml-1">
+                        {formatDate(prescription.created_at)}
+                    </span>
                 </div>
             </div>
 
-            {/* Main Body */}
-            <main className="flex-1 flex mt-8 gap-8">
+            {/* ═══ MAIN BODY ═══ */}
+            <main className="flex-1 flex px-8 mt-2 gap-0">
 
-                {/* Left Sidebar: Clinical Findings */}
-                <aside className="w-[30%] border-r border-slate-200 pr-6 space-y-8">
+                {/* ── LEFT COLUMN: Clinical Notes (30%) ── */}
+                <aside className="w-[30%] pr-5 border-r-2 border-dotted border-slate-300 space-y-4 py-2">
 
                     {prescription.chief_complaints && (
                         <section>
-                            <h3 className="text-sm font-black uppercase text-slate-900 mb-2 flex items-center gap-2">
-                                <span className="w-1.5 h-4 bg-slate-900"></span>
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-800 mb-1 flex items-center gap-1">
+                                <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 C/C
-                            </h3>
-                            <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-3">
+                            </h4>
+                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
                                 {prescription.chief_complaints}
                             </p>
                         </section>
@@ -104,11 +127,11 @@ const PrescriptionTemplate = ({ prescription, doctor, patient }) => {
 
                     {prescription.clinical_history && (
                         <section>
-                            <h3 className="text-sm font-black uppercase text-slate-900 mb-2 flex items-center gap-2">
-                                <span className="w-1.5 h-4 bg-slate-900"></span>
-                                History
-                            </h3>
-                            <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-800 mb-1 flex items-center gap-1">
+                                <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
+                                Hx
+                            </h4>
+                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
                                 {prescription.clinical_history}
                             </p>
                         </section>
@@ -116,103 +139,167 @@ const PrescriptionTemplate = ({ prescription, doctor, patient }) => {
 
                     {prescription.physical_examination && (
                         <section>
-                            <h3 className="text-sm font-black uppercase text-slate-900 mb-2 flex items-center gap-2">
-                                <span className="w-1.5 h-4 bg-slate-900"></span>
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-800 mb-1 flex items-center gap-1">
+                                <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
                                 O/E
-                            </h3>
-                            <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-3">
+                            </h4>
+                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
                                 {prescription.physical_examination}
+                            </p>
+                        </section>
+                    )}
+
+                    {prescription.investigations && (
+                        <section>
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-800 mb-1 flex items-center gap-1">
+                                <span className="w-1 h-3.5 bg-slate-800 inline-block rounded-sm" />
+                                Inv.
+                            </h4>
+                            <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">
+                                {prescription.investigations}
                             </p>
                         </section>
                     )}
                 </aside>
 
-                {/* Right Section: Rx & Advice */}
-                <section className="flex-1">
-                    <div className="flex items-start gap-4 mb-2">
-                        <span className="text-5xl font-black text-slate-200 italic -mt-2">Rx</span>
-                        <div className="flex-1">
-                            {prescription.diagnosis && (
-                                <h2 className="text-sm font-bold border-b border-slate-100 pb-2 mb-6">
-                                    Diagnosis: <span className="text-blue-700">{prescription.diagnosis}</span>
-                                </h2>
+                {/* ── RIGHT COLUMN: Rx (70%) ── */}
+                <section className="flex-1 pl-5 py-2">
+
+                    {/* Rx Symbol + Diagnosis */}
+                    <div className="flex items-start gap-3 mb-4">
+                        <span
+                            className="text-[52px] font-black italic leading-none text-slate-200 select-none flex-shrink-0"
+                            style={{ fontFamily: 'Times New Roman, serif' }}
+                        >
+                            Rx
+                        </span>
+                        <div className="flex-1 pt-1">
+                            {prescription.diagnosis ? (
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Diagnosis</span>
+                                    <p className="text-[13px] font-black text-blue-800 border-b border-slate-200 pb-1 mt-0.5">
+                                        {prescription.diagnosis}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="border-b border-slate-200 pb-1 mt-4">
+                                    <span className="text-[10px] text-slate-300">No diagnosis entered</span>
+                                </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="space-y-6 pt-4">
-                        {prescription.prescription_items?.map((item, idx) => (
-                            <div key={idx} className="relative pl-6">
-                                <div className="absolute left-0 top-1 text-slate-300 font-bold text-xs">{idx + 1}.</div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-[14px] font-black text-slate-900">
-                                        {item.medicine_type} {item.medicine_name}
-                                    </span>
-                                    <span className="text-slate-400">—</span>
-                                    <span className="text-sm font-bold text-slate-800">{item.dosage}</span>
-                                </div>
-                                <div className="mt-1 flex gap-4 text-[12px] font-medium text-slate-600 italic">
-                                    <span>Duration: {item.duration}</span>
-                                    {item.instructions && (
-                                        <>
-                                            <span className="text-slate-300">|</span>
-                                            <span>{item.instructions}</span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                    {/* Medicine List */}
+                    <div className="space-y-4 mt-2">
+                        {hasItems ? (
+                            prescription.prescription_items
+                                .filter(i => i.medicine_name?.trim())
+                                .map((item, idx) => (
+                                    <div key={idx} className="relative pl-6">
+                                        {/* Number */}
+                                        <span className="absolute left-0 top-0.5 text-[11px] font-bold text-slate-400">
+                                            {idx + 1}.
+                                        </span>
+                                        {/* Medicine name line */}
+                                        <div className="flex items-baseline gap-2 flex-wrap">
+                                            <span className="text-[14px] font-black text-slate-900">
+                                                {item.medicine_type}
+                                            </span>
+                                            <span className="text-[15px] font-black text-slate-900 underline decoration-dotted underline-offset-2">
+                                                {item.medicine_name}
+                                            </span>
+                                            {item.dosage && (
+                                                <>
+                                                    <span className="text-slate-300 text-[12px]">—</span>
+                                                    <span className="text-[13px] font-black text-slate-800">
+                                                        {item.dosage}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                        {/* Duration + Instruction */}
+                                        <div className="mt-0.5 flex items-center gap-3 text-[11px] text-slate-600 italic pl-1">
+                                            {item.duration && (
+                                                <span>× {item.duration}</span>
+                                            )}
+                                            {item.duration && item.instructions && (
+                                                <span className="text-slate-300">|</span>
+                                            )}
+                                            {item.instructions && (
+                                                <span>{item.instructions}</span>
+                                            )}
+                                        </div>
+                                        {/* Separator line */}
+                                        {idx < prescription.prescription_items.filter(i => i.medicine_name?.trim()).length - 1 && (
+                                            <div className="mt-2.5 border-b border-dashed border-slate-100" />
+                                        )}
+                                    </div>
+                                ))
+                        ) : (
+                            <p className="text-[11px] text-slate-300 italic pl-6">No medications prescribed.</p>
+                        )}
+                    </div>
+
+                    {/* Filling lines below medicines (for unused pad space) */}
+                    <div className="mt-6 space-y-4">
+                        {[...Array(Math.max(0, 4 - (prescription.prescription_items?.filter(i => i.medicine_name?.trim()).length || 0)))].map((_, i) => (
+                            <div key={i} className="border-b border-dashed border-slate-100 h-6" />
                         ))}
                     </div>
 
-                    <div className="mt-16 pt-8 border-t border-slate-100">
-                        <h3 className="text-sm font-black uppercase text-slate-900 mb-3 ml-2 italic">Advice:</h3>
-                        <div className="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 leading-relaxed whitespace-pre-wrap min-h-[100px]">
-                            {prescription.advice || 'No specific advice given.'}
+                    {/* Advice */}
+                    {prescription.advice && (
+                        <div className="mt-6 pt-4 border-t border-slate-100">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-700 mb-2">
+                                Advice:
+                            </h4>
+                            <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap bg-slate-50 border border-slate-100 rounded p-2">
+                                {prescription.advice}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </section>
             </main>
 
-            {/* Footer */}
-            <footer className="mt-12 pt-12 border-t border-slate-300 flex justify-between items-end">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-rose-600">
-                        <Calendar className="w-5 h-5" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Follow Up</span>
-                            <span className="text-sm font-bold">{formatDate(prescription.follow_up)}</span>
+            {/* ═══ FOOTER ═══ */}
+            <footer className="px-8 pb-6 mt-6">
+                <div className="border-t-2 border-slate-300 pt-4 flex justify-between items-end">
+                    {/* Follow-up */}
+                    <div>
+                        <div className="flex items-center gap-2 text-rose-600">
+                            <Calendar className="w-4 h-4" />
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next Visit</p>
+                                <p className="text-[13px] font-black text-rose-700">
+                                    {prescription.follow_up ? formatDate(prescription.follow_up) : '___________'}
+                                </p>
+                            </div>
                         </div>
+                        <p className="text-[9px] text-slate-400 mt-3 max-w-[200px] leading-relaxed">
+                            This is a computer-generated prescription. Valid without physical signature unless stated otherwise.
+                        </p>
                     </div>
-                    <p className="text-[10px] text-slate-400 font-medium">This is a computer generated prescription and does not require a physical signature unless otherwise stated.</p>
-                </div>
 
-                <div className="text-center">
-                    <div className="w-48 h-px bg-slate-300 mb-2"></div>
-                    <p className="text-sm font-black uppercase tracking-tight text-slate-900">{doctor?.first_name} {doctor?.last_name}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Digital Signature Area</p>
+                    {/* Signature */}
+                    <div className="text-center">
+                        <div className="w-44 h-px bg-slate-400 mb-1" />
+                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-800">{docName}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Signature</p>
+                    </div>
                 </div>
             </footer>
 
-            {/* Print-specific Styles */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        @media print {
-          body * { visibility: hidden; }
-          .prescription-print-container, .prescription-print-container * {
-            visibility: visible;
-          }
-          .prescription-print-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          @page {
-            size: A4;
-            margin: 0;
-          }
-        }
-      `}} />
+            {/* Print CSS */}
+            {!isPreview && (
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @media print {
+                      body { margin: 0; }
+                      @page { size: A4; margin: 0; }
+                    }
+                  `
+                }} />
+            )}
         </div>
     );
 };

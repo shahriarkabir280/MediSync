@@ -18,7 +18,9 @@ const PatientConsole = ({
     setSelectedSubTab,
     handleViewReport,
     setSelectedReport,
-    setShowReportModal
+    setShowReportModal,
+    doctor,
+    doctorId,
 }) => {
     return (
         <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
@@ -39,6 +41,8 @@ const PatientConsole = ({
                 <div className="flex-1 overflow-y-auto scrollbar-thin bg-background/30 flex flex-col min-w-0">
                     <PatientDetails
                         selectedPatient={selectedPatient}
+                        doctor={doctor}
+                        doctorId={doctorId}
                         setShowNewOrderModal={setShowNewOrderModal}
                         selectedSubTab={selectedSubTab}
                         setSelectedSubTab={setSelectedSubTab}
