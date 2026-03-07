@@ -8,7 +8,7 @@ import { Phone, Mail, MapPin, Calendar, Clock } from "lucide-react";
  * Right column: Rx symbol, Diagnosis, Numbered medicines, Advice
  * Footer: Follow-up date, Doctor signature
  */
-const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead = null, isPreview = false }) => {
+const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead = null, isPreview = false, printId }) => {
     if (!prescription) return null;
 
     const formatDate = (dateString) => {
@@ -69,6 +69,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
 
     return (
         <div
+            id={printId || (!isPreview ? 'prescription-print-area' : undefined)}
             className={`bg-white text-slate-900 font-sans ${isPreview ? 'w-[210mm] min-h-[297mm]' : 'max-w-[210mm] min-h-[297mm] mx-auto shadow-2xl'} flex flex-col print:shadow-none`}
             style={{ fontFamily: "'Times New Roman', serif" }}
         >

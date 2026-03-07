@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect } from 'react';
 import { User, FlaskConical, Clock, Calendar, Plus, Eye, ExternalLink, Activity, Info, FileText, Stethoscope } from "lucide-react";
 import { prescriptionApi } from '../../../lib/api';
+import { printElement } from '../../../lib/printUtils';
 import PrescriptionForm from './PrescriptionForm';
 import PrescriptionTemplate from './PrescriptionTemplate';
 
@@ -79,8 +80,8 @@ const PatientDetails = memo(({
                         <span className="text-sm font-bold text-slate-700">Prescription — {new Date(viewingPrescription.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => window.print()}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-all"
+                                onClick={() => printElement('prescription-print-area')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-all font-print-hide"
                             >
                                 Print
                             </button>

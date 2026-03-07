@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { prescriptionApi } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
+import { printElement } from '../../../lib/printUtils';
 import PrescriptionTemplate from './PrescriptionTemplate';
 import PrescriptionSettings from './PrescriptionSettings';
 
@@ -156,7 +157,7 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
     };
 
     const handlePrint = () => {
-        window.print();
+        printElement('prescription-print-form');
     };
 
     const handleSubmit = async (e) => {
@@ -554,34 +555,13 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                 patient={patient}
                                 customLetterhead={customLetterhead}
                                 isPreview
+                                printId="prescription-print-form"
                             />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Print Styles */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                @media print {
-                  body > * { display: none; }
-                  .prescription-print-container {
-                    display: block !important;
-                    position: fixed;
-                    inset: 0;
-                    z-index: 9999;
-                    background: white;
-                    padding: 0;
-                  }
-                  .prescription-print-container > div {
-                    transform: none !important;
-                  }
-                  @page {
-                    size: A4;
-                    margin: 0;
-                  }
-                }
-              `}} />
             {/* Settings Modal */}
             {showSettings && (
                 <PrescriptionSettings
