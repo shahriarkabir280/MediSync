@@ -4,9 +4,10 @@ import {
     AlertCircle, History, Info, X, Eye, ChevronRight,
     Activity, Thermometer, Heart, Wind, Settings
 } from "lucide-react";
-import { prescriptionApi } from '../../../lib/api';
+import { prescriptionApi, api } from '../../../lib/api';
 import { toast } from 'react-hot-toast';
 import { printElement } from '../../../lib/printUtils';
+import { generatePDFBlob } from '../../../lib/pdfUtils';
 import PrescriptionTemplate from './PrescriptionTemplate';
 import PrescriptionSettings from './PrescriptionSettings';
 
@@ -178,13 +179,27 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                 custom_letterhead: customLetterhead
             };
             await prescriptionApi.create(payload);
-            toast.success('Prescription saved successfully!');
+            
+            try {
+                toast.loading('Generating PDF document...', { id: 'pdf-gen' });
+                const { blob } = await generatePDFBlob('prescription-print-form', `prescription_${patient.id}_${Date.now()}.pdf`);
+                
+                const fileData = new FormData();
+                fileData.append('file', blob, `prescription_${patient.id}_${Date.now()}.pdf`);
+                fileData.append('doctorId', doctorId);
+                fileData.append('fileType', 'prescription');
+
+                await api.post(`/patients/${patient.id}/files`, fileData);
+                toast.success('Prescription saved and attached to file history!', { id: 'pdf-gen' });
+            } catch (pdfErr) {
+                console.error("PDF upload failed:", pdfErr);
+                toast.error('Data saved, but failed to attach PDF to history', { id: 'pdf-gen' });
+            }
+
             if (onSaveSuccess) onSaveSuccess();
         } catch (err) {
             console.error(err);
-            // If API not yet set up, still allow "success" for demo purposes
-            toast.success('Prescription saved (demo mode)');
-            if (onSaveSuccess) onSaveSuccess();
+            toast.error('Failed to save prescription. See console.');
         } finally {
             setLoading(false);
         }

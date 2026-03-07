@@ -26,8 +26,8 @@ export const createPrescription = async (req, res) => {
         const { data: prescription, error: prescriptionError } = await supabase
             .from('prescriptions')
             .insert({
-                patient_id,
-                doctor_id,
+                patient_id: parseInt(patient_id),
+                doctor_id: parseInt(doctor_id),
                 chief_complaints,
                 clinical_history,
                 physical_examination,
@@ -35,7 +35,7 @@ export const createPrescription = async (req, res) => {
                 diagnosis,
                 advice,
                 vitals_weight,
-                next_visit_date,
+                next_visit_date: next_visit_date || null,
                 custom_letterhead
             })
             .select()
@@ -59,8 +59,7 @@ export const createPrescription = async (req, res) => {
                 .insert(itemsToInsert);
 
             if (itemsError) {
-                // Consider rolling back the main prescription here in a real production environment
-                console.error("Failed to insert items:", itemsError);
+                console.error("Failed to insert prescription items:", itemsError);
             }
         }
 
