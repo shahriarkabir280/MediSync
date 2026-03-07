@@ -152,7 +152,7 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
         ].filter(Boolean).join('  |  '),
         prescription_items: items.filter(i => i.medicine_name.trim()),
         created_at: new Date().toISOString(),
-        follow_up: formData.follow_up,
+        next_visit_date: formData.follow_up,
     };
 
     const handlePrint = () => {
@@ -172,7 +172,9 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                 physical_examination: livePrescription.physical_examination,
                 doctor_id: doctorId,
                 patient_id: patient.id,
-                items: items.filter(item => item.medicine_name.trim() !== '')
+                prescription_items: items.filter(item => item.medicine_name.trim() !== ''),
+                next_visit_date: formData.follow_up,
+                custom_letterhead: customLetterhead
             };
             await prescriptionApi.create(payload);
             toast.success('Prescription saved successfully!');

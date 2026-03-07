@@ -295,7 +295,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
                             <div>
                                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next Visit</p>
                                 <p className="text-[13px] font-black text-rose-700">
-                                    {prescription.follow_up ? formatDate(prescription.follow_up) : '___________'}
+                                    {prescription.next_visit_date ? formatDate(prescription.next_visit_date) : '___________'}
                                 </p>
                             </div>
                         </div>
