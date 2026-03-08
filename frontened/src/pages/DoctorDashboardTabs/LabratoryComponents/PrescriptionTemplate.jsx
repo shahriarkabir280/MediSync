@@ -51,7 +51,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
     const formatListText = (text) => {
         if (!text) return null;
         const lines = text.split('\n').filter(line => line.trim().length > 0);
-        
+
         if (lines.length <= 1) {
             return <p className="text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap pl-2">{text}</p>;
         }
@@ -132,10 +132,6 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
                     <span className="font-bold text-slate-500">Wt:</span>
                     <span className="font-black text-slate-900 min-w-[40px] border-b border-dotted border-slate-400 pb-0.5 mr-4 text-center">
                         {prescription.vitals_weight ? `${prescription.vitals_weight}kg` : '____'}
-                    </span>
-                    <span className="font-bold text-slate-500 ml-auto">Date:</span>
-                    <span className="font-black text-slate-900 border-b border-dotted border-slate-400 pb-0.5 ml-1">
-                        {formatDate(prescription.created_at)}
                     </span>
                 </div>
             </div>
@@ -312,19 +308,25 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Signature</p>
                     </div>
                 </div>
+
+                {/* Print Date/Time at the very bottom */}
+                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Prescribed on: {formatDate(prescription.created_at)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>Time: {new Date(prescription.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                        </div>
+                    </div>
+                    <div>
+                        CareConnect
+                    </div>
+                </div>
             </footer>
 
-            {/* Print CSS */}
-            {!isPreview && (
-                <style dangerouslySetInnerHTML={{
-                    __html: `
-                    @media print {
-                      body { margin: 0; }
-                      @page { size: A4; margin: 0; }
-                    }
-                  `
-                }} />
-            )}
         </div>
     );
 };

@@ -158,7 +158,8 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
     };
 
     const handlePrint = () => {
-        printElement('prescription-print-form');
+        const fileName = `${patient?.unique_id || patient?.id}_${patient?.last_name || ''}`;
+        printElement('prescription-print-form', fileName);
     };
 
     const handleSubmit = async (e) => {

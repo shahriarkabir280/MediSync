@@ -80,7 +80,7 @@ const PatientDetails = memo(({
                         <span className="text-sm font-bold text-slate-700">Prescription — {new Date(viewingPrescription.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => printElement('prescription-print-area')}
+                                onClick={() => printElement('prescription-print-area', `${selectedPatient.unique_id || selectedPatient.id}_${selectedPatient.last_name || ''}`)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 transition-all font-print-hide"
                             >
                                 Print
