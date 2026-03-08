@@ -316,21 +316,20 @@ const PrescriptionForm = ({ patient, doctor, doctorId, patientReports = [], onSa
                                 <FieldLabel icon={<Thermometer className="w-3 h-3 text-amber-500" />} text="On Examination (O/E) — Vitals" />
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                     {[
-                                        { name: 'vitals_temp', placeholder: 'Temp (°F)', icon: '🌡' },
-                                        { name: 'vitals_bp', placeholder: 'BP (mmHg)', icon: '💉' },
-                                        { name: 'vitals_pulse', placeholder: 'Pulse (bpm)', icon: '❤️' },
-                                        { name: 'vitals_spo2', placeholder: 'SpO₂ (%)', icon: '💨' },
-                                        { name: 'vitals_weight', placeholder: 'Weight (kg)', icon: '⚖️' },
+                                        { name: 'vitals_temp', placeholder: 'Temp (°F)' },
+                                        { name: 'vitals_bp', placeholder: 'BP (mmHg)' },
+                                        { name: 'vitals_pulse', placeholder: 'Pulse (bpm)' },
+                                        { name: 'vitals_spo2', placeholder: 'SpO₂ (%)' },
+                                        { name: 'vitals_weight', placeholder: 'Weight (kg)' },
                                     ].map(v => (
                                         <div key={v.name} className="relative">
-                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm">{v.icon}</span>
                                             <input
                                                 type="text"
                                                 name={v.name}
                                                 value={formData[v.name]}
                                                 onChange={handleInputChange}
                                                 placeholder={v.placeholder}
-                                                className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-2 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
+                                                className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
                                             />
                                         </div>
                                     ))}
