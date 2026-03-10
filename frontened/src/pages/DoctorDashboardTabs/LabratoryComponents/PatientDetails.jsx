@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import {
-    User, FlaskConical, Clock, Calendar, Plus, Eye, ExternalLink,
+    User, FlaskConical, Clock, Calendar, Plus, Eye,
     Activity, FileText, Stethoscope, ArrowLeft, ChevronRight
 } from "lucide-react";
 import { prescriptionApi } from '../../../lib/api';
@@ -200,9 +200,7 @@ const PatientDetails = memo(({
                             <Plus className="w-3.5 h-3.5 flex-shrink-0" />
                             <span>New Order</span>
                         </button>
-                        <button className="p-1.5 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-all active:scale-90 border border-border flex-shrink-0">
-                            <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
+
                     </div>
                 </div>
 
