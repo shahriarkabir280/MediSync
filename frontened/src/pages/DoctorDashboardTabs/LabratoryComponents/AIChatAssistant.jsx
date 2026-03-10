@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Bot, X, Sparkles, Paperclip, Send } from "lucide-react";
 
 const AIChatAssistant = ({
@@ -20,26 +21,26 @@ const AIChatAssistant = ({
             {/* AI Chat Floating Button */}
             <button
                 onClick={() => setShowAIChatModal(true)}
-                className="fixed bottom-8 right-8 z-40 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center group active:scale-95"
+                className="fixed bottom-8 right-8 z-40 w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center group active:scale-95 border border-white/20"
                 aria-label="Open AI Assistant"
             >
-                <Bot className="w-7 h-7" />
-                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+                <span className="absolute top-0 right-0 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                 </span>
             </button>
 
             {/* AI Chat Modal */}
-            {showAIChatModal && (
-                <div className="fixed inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            {showAIChatModal && ReactDOM.createPortal(
+                <div className="fixed inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
                     <div className="bg-card rounded-2xl w-full max-w-2xl h-[90vh] md:h-[600px] shadow-2xl flex flex-col relative overflow-hidden border border-border">
 
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/20">
                             <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center">
-                                    <Bot className="w-6 h-6" />
+                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl flex items-center justify-center shadow-sm border border-white/20">
+                                    <Sparkles className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-foreground">Clinical Assistant</h3>
@@ -135,7 +136,8 @@ const AIChatAssistant = ({
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

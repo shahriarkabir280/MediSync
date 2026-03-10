@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { FlaskConical, X, FileText, ExternalLink, Check } from "lucide-react";
 import { API_CONFIG } from "../../../config/api";
 
@@ -9,8 +10,8 @@ const LabReportModal = ({ selectedReport, setShowReportModal, handleStatusUpdate
     const fileUrl = `${API_CONFIG.BASE_URL}/api/files/${selectedReport.file_name}`;
     const needsVerification = selectedReport.items.some(item => !item.verified_by);
 
-    return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-3 animate-in fade-in duration-200">
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[9999] p-3 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl h-[88vh] overflow-hidden shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800">
 
                 {/* Header */}
@@ -132,6 +133,7 @@ const LabReportModal = ({ selectedReport, setShowReportModal, handleStatusUpdate
                 </div>
             </div>
         </div>
+        , document.body
     );
 };
 
