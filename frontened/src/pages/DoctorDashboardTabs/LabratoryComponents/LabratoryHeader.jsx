@@ -35,8 +35,8 @@ const LabratoryHeader = memo(({ activeTab, setActiveTab, onNewOrder }) => {
             <div className="max-w-[1600px] mx-auto px-6 flex space-x-1 overflow-x-auto scrollbar-hide">
                 {[
                     { id: 'overview', label: 'Overview', icon: <Sparkles className="w-4 h-4" /> },
-                    { id: 'orders', label: 'Orders', icon: <FlaskConical className="w-4 h-4" /> },
-                    { id: 'patients', label: 'Patients', icon: <User className="w-4 h-4" /> }
+                    { id: 'patients', label: 'Patients', icon: <User className="w-4 h-4" /> },
+                    { id: 'orders', label: 'Orders', icon: <FlaskConical className="w-4 h-4" /> }
                 ].map(tab => (
                     <button
                         key={tab.id}

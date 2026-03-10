@@ -15,7 +15,9 @@ import {
   getPatientLabHistory,
   deleteLabOrder,
   getLabPatients,
-  uploadLabReportFile
+  uploadLabReportFile,
+  getPendingReviews,
+  verifyLabResultsForOrder
 } from '../controllers/labController.js';
 import { upload } from '../controllers/fileController.js';
 
@@ -24,6 +26,7 @@ const router = express.Router();
 // Lab dashboard and statistics
 router.get('/stats', getLabStats);
 router.get('/recent', getRecentLabOrders);
+router.get('/reviews/pending', getPendingReviews);
 
 // Lab search and filtering
 router.get('/search', searchLabOrders);
@@ -42,6 +45,7 @@ router.get('/orders/doctor/:doctorId', getLabOrders);
 router.get('/orders/:orderId', getLabOrderDetails);
 router.put('/orders/:orderId/status', updateLabOrderStatus);
 router.post('/orders/:orderId/report', upload.single('file'), uploadLabReportFile);
+router.put('/orders/:orderId/verify', verifyLabResultsForOrder);
 router.delete('/orders/:orderId', deleteLabOrder);
 
 // Lab results

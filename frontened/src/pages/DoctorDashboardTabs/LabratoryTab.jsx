@@ -14,6 +14,7 @@ import NewOrderModal from './LabratoryComponents/NewOrderModal';
 import LabReportModal from './LabratoryComponents/LabReportModal';
 import AdvancedSearchModal from './LabratoryComponents/AdvancedSearchModal';
 import AIChatAssistant from './LabratoryComponents/AIChatAssistant';
+import { labApi } from '../../lib/api';
 
 const LabratoryTab = memo(() => {
   // --- STATE MANAGEMENT ---
@@ -174,7 +175,6 @@ const LabratoryTab = memo(() => {
       setLoading(false);
     }
   };
-
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       setLoading(true);
@@ -199,6 +199,32 @@ const LabratoryTab = memo(() => {
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyReport = async (orderId) => {
+    try {
+      setLoading(true);
+      if (!doctorId) {
+        toast.error('Doctor authentication required');
+        return;
+      }
+      const result = await labApi.verifyOrder(orderId, doctorId);
+      if (result.success) {
+        toast.success('Report verified and signed off');
+        // Close modal or update its state
+        setShowReportModal(false);
+        // Refresh everything
+        fetchLabStats();
+        fetchRecentOrders();
+      } else {
+        toast.error(result.error || 'Failed to verify report');
+      }
+    } catch (error) {
+      console.error('Error verifying report:', error);
+      toast.error('An error occurred during verification');
     } finally {
       setLoading(false);
     }
@@ -277,7 +303,14 @@ const LabratoryTab = memo(() => {
         {activeTab === 'overview' && (
           <>
             <LabratoryStats labStats={labStats} loading={loading} />
-            <LabratoryOverview onNavigateToPatients={() => setActiveTab('patients')} />
+            <LabratoryOverview 
+              onNavigateToPatients={() => setActiveTab('patients')} 
+              onNavigateToOrders={(filter) => {
+                if (filter) handleQuickFilter(filter);
+                setActiveTab('orders');
+              }}
+              onViewReport={handleViewReport}
+            />
           </>
         )}
 
@@ -327,6 +360,7 @@ const LabratoryTab = memo(() => {
           selectedReport={selectedReport}
           setShowReportModal={setShowReportModal}
           handleStatusUpdate={handleStatusUpdate}
+          onVerify={handleVerifyReport}
         />
       )}
       {showSearchModal && <AdvancedSearchModal setShowSearchModal={setShowSearchModal} />}

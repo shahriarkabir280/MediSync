@@ -34,7 +34,7 @@ export const getLabStats = async (req, res) => {
     // We join lab_results through lab_order_items to check status and verified_by
     const { data: unreviewedResults, error: unreviewedError } = await supabase
       .from('lab_results')
-      .select('lab_order_items!inner(order_id)')
+      .select('lab_order_items!inner(order_id, lab_orders!inner(status))')
       .is('verified_by', null)
       .eq('lab_order_items.lab_orders.status', 'completed');
 
@@ -734,7 +734,6 @@ export const getLabPatients = async (req, res) => {
   }
 };
 
-// Upload lab report file
 export const uploadLabReportFile = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -773,5 +772,94 @@ export const uploadLabReportFile = async (req, res) => {
   } catch (error) {
     console.error('Error uploading lab report:', error);
     res.status(500).json({ error: 'Failed to upload lab report' });
+  }
+};
+
+// Get pending reviews: Completed orders with unverified results
+export const getPendingReviews = async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+
+    // Join lab_results with lab_order_items and lab_orders
+    // and patients for a complete "Review" card
+    const { data: results, error } = await supabase
+      .from('lab_results')
+      .select(`
+            *,
+            item:lab_order_items!inner (
+                order_id,
+                lab_tests (test_name),
+                order:lab_orders!inner (
+                    status,
+                    patient:patients (first_name, last_name, unique_id)
+                )
+            )
+        `)
+      .is('verified_by', null)
+      .eq('item.order.status', 'completed')
+      .order('updated_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (error) throw error;
+
+    const formatted = results.map(r => ({
+      id: r.id,
+      order_id: r.item.order_id,
+      test_name: r.item.lab_tests?.test_name,
+      patient_name: `${r.item.order.patient?.first_name} ${r.item.order.patient?.last_name}`.trim(),
+      patient_id: r.item.order.patient?.unique_id,
+      updated_at: r.updated_at,
+      status: r.status,
+      abnormal: r.abnormal_flag
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    console.error('Error fetching pending reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch pending reviews' });
+  }
+};
+// Verify and sign off all results for an order
+export const verifyLabResultsForOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { doctorId } = req.body;
+
+    if (!doctorId) {
+      return res.status(400).json({ error: 'Doctor ID is required for verification' });
+    }
+
+    // 1. Get all order items for this order
+    const { data: items, error: itemsError } = await supabase
+      .from('lab_order_items')
+      .select('id')
+      .eq('order_id', orderId);
+
+    if (itemsError) throw itemsError;
+    if (!items || items.length === 0) {
+      return res.status(404).json({ error: 'No items found for this order' });
+    }
+
+    const itemIds = items.map(i => i.id);
+
+    // 2. Update all results for these items
+    const { error: verifyError } = await supabase
+      .from('lab_results')
+      .update({
+        verified_by: doctorId,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .in('order_item_id', itemIds);
+
+    if (verifyError) throw verifyError;
+
+    res.json({
+      success: true,
+      message: 'All lab results for this order have been verified and signed off'
+    });
+  } catch (error) {
+    console.error('Error verifying lab results:', error);
+    res.status(500).json({ error: 'Failed to verify lab results' });
   }
 };

@@ -427,6 +427,25 @@ export const prescriptionApi = {
   },
 };
 
+// Laboratory API
+export const labApi = {
+  getStats: async () => {
+    return api.get('/lab/stats');
+  },
+  getRecentOrders: async (limit = 10) => {
+    return api.get(`/lab/recent?limit=${limit}`);
+  },
+  getPendingReviews: async (limit = 10) => {
+    return api.get(`/lab/reviews/pending?limit=${limit}`);
+  },
+  getOrderDetails: async (orderId) => {
+    return api.get(`/lab/orders/${orderId}`);
+  },
+  verifyOrder: async (orderId, doctorId) => {
+    return api.put(`/lab/orders/${orderId}/verify`, { doctorId });
+  }
+};
+
 export default {
   api,
   doctorApi,
@@ -435,4 +454,5 @@ export default {
   analyticsApi,
   billingApi,
   prescriptionApi,
+  labApi,
 };

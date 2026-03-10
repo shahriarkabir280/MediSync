@@ -1,5 +1,7 @@
-import React, { memo } from 'react';
-import { Sparkles, Search, FlaskConical, Calendar, ArrowRight } from "lucide-react";
+import React, { memo, useState, useEffect } from 'react';
+import { Sparkles, Search, FlaskConical, Calendar, ArrowRight, Loader2, BookOpen, AlertCircle } from "lucide-react";
+import { labApi } from '../../../lib/api';
+import { toast } from 'react-hot-toast';
 
 const QuickActionCard = memo(({ title, subtitle, icon: Icon, onClick, colorClass }) => (
     <button
@@ -20,7 +22,7 @@ const QuickActionCard = memo(({ title, subtitle, icon: Icon, onClick, colorClass
     </button>
 ));
 
-const QuickActions = memo(({ onNavigateToPatients }) => {
+const QuickActions = memo(({ onNavigateToPatients, onNavigateToOrders }) => {
     return (
         <div className="space-y-4">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Quick Actions</h3>
@@ -29,7 +31,7 @@ const QuickActions = memo(({ onNavigateToPatients }) => {
                     title="Order Templates"
                     subtitle="Reuse previous lab order configurations"
                     icon={Sparkles}
-                    onClick={() => alert('Order Templates feature coming soon')}
+                    onClick={() => onNavigateToOrders()}
                     colorClass="bg-blue-600"
                 />
                 <QuickActionCard
@@ -40,17 +42,17 @@ const QuickActions = memo(({ onNavigateToPatients }) => {
                     colorClass="bg-indigo-600"
                 />
                 <QuickActionCard
-                    title="Lab Analytics"
-                    subtitle="View trends and diagnostic data"
-                    icon={FlaskConical}
-                    onClick={() => { }}
+                    title="Test Catalog"
+                    subtitle="Browse available tests and requirements"
+                    icon={BookOpen}
+                    onClick={() => onNavigateToOrders()}
                     colorClass="bg-emerald-600"
                 />
                 <QuickActionCard
-                    title="Calendar"
-                    subtitle="Schedule tests and follow-ups"
-                    icon={Calendar}
-                    onClick={() => { }}
+                    title="Urgent Tracking"
+                    subtitle="High-priority active orders"
+                    icon={AlertCircle}
+                    onClick={() => onNavigateToOrders('urgent')}
                     colorClass="bg-rose-600"
                 />
             </div>
@@ -58,7 +60,16 @@ const QuickActions = memo(({ onNavigateToPatients }) => {
     );
 });
 
-const PendingReviews = memo(() => {
+const PendingReviews = memo(({ reviews, loading, onViewReport }) => {
+    if (loading) {
+        return (
+            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col h-full min-h-[300px] items-center justify-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+                <p className="text-sm text-muted-foreground font-medium">Loading pending reviews...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col h-full">
             <div className="flex items-center justify-between mb-6">
@@ -68,37 +79,71 @@ const PendingReviews = memo(() => {
                 </span>
             </div>
             <div className="flex-1 space-y-3">
-                {[
-                    { id: 1, name: 'Lipid Profile Complete', time: '2 mins ago', initial: 'LP' },
-                    { id: 2, name: 'Basic Metabolic Panel', time: '14 mins ago', initial: 'BM' },
-                    { id: 3, name: 'Liver Function Test', time: '1 hr ago', initial: 'LF' },
-                    { id: 4, name: 'Thyroid Panel (TSH)', time: '2 hrs ago', initial: 'TH' }
-                ].map(item => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-xl hover:bg-muted transition-colors cursor-pointer border border-transparent">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-xs">
-                                {item.initial}
+                {reviews.length > 0 ? (
+                    reviews.map(item => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-xl hover:bg-muted transition-colors cursor-pointer border border-transparent">
+                            <div className="flex items-center space-x-3">
+                                <div className={`w-10 h-10 rounded-lg ${item.abnormal ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'} flex items-center justify-center font-bold text-xs`}>
+                                    {(item.test_name || 'LT').substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="max-w-[180px]">
+                                    <p className="text-sm font-semibold text-foreground truncate">{item.test_name}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        {item.patient_name} • {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                                <p className="text-[10px] text-muted-foreground">{item.time}</p>
-                            </div>
+                            <button 
+                                onClick={() => onViewReport?.(item.order_id)} 
+                                className={`text-[10px] font-bold px-3 py-1 rounded-lg border transition-all ${item.abnormal ? 'bg-rose-600 text-white border-rose-700 hover:bg-rose-700' : 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'}`}
+                            >
+                                Review
+                            </button>
                         </div>
-                        <button className="text-[10px] font-bold text-blue-600 hover:underline px-2 py-1">
-                            Review
-                        </button>
+                    ))
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                            <FlaskConical className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-bold text-foreground">All caught up!</p>
+                        <p className="text-xs text-muted-foreground">No results waiting for review.</p>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
 });
 
-const LabratoryOverview = ({ onNavigateToPatients }) => {
+const LabratoryOverview = ({ onNavigateToPatients, onNavigateToOrders, onViewReport }) => {
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                setLoading(true);
+                const response = await labApi.getPendingReviews(5);
+                if (response.success) {
+                    setReviews(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching pending reviews:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReviews();
+    }, []);
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <QuickActions onNavigateToPatients={onNavigateToPatients} />
-            <PendingReviews />
+            <QuickActions 
+                onNavigateToPatients={onNavigateToPatients} 
+                onNavigateToOrders={onNavigateToOrders} 
+            />
+            <PendingReviews reviews={reviews} loading={loading} onViewReport={onViewReport} />
         </div>
     );
 };
