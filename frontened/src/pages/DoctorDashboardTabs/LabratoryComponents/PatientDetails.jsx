@@ -25,6 +25,26 @@ const PatientDetails = memo(({
     const [prescriptionHistory, setPrescriptionHistory] = useState([]);
     const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
+    // Load custom letterhead settings (same key used by PrescriptionForm)
+    const [customLetterhead, setCustomLetterhead] = useState(() => {
+        try {
+            const key = `prescription_settings_${doctorId || 'default'}`;
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : null;
+        } catch { return null; }
+    });
+
+    // Refresh letterhead whenever the viewer opens (settings may have changed)
+    useEffect(() => {
+        if (viewingPrescription) {
+            try {
+                const key = `prescription_settings_${doctorId || 'default'}`;
+                const saved = localStorage.getItem(key);
+                setCustomLetterhead(saved ? JSON.parse(saved) : null);
+            } catch { /* ignore */ }
+        }
+    }, [viewingPrescription, doctorId]);
+
     // Load prescription history when the prescription sub-tab is selected
     useEffect(() => {
         if (selectedSubTab === 'prescription' && selectedPatient) {
@@ -98,6 +118,7 @@ const PatientDetails = memo(({
                         prescription={viewingPrescription}
                         doctor={doctor}
                         patient={selectedPatient}
+                        customLetterhead={customLetterhead}
                     />
                 </div>
             </div>
