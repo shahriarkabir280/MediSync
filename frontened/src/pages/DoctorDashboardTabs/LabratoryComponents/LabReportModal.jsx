@@ -1,7 +1,6 @@
 import React from 'react';
-import { FlaskConical, X, FileText, ExternalLink, Download as DownloadIcon, Check } from "lucide-react";
+import { FlaskConical, X, FileText, ExternalLink, Check } from "lucide-react";
 import { API_CONFIG } from "../../../config/api";
-import { toast } from "react-hot-toast";
 
 const LabReportModal = ({ selectedReport, setShowReportModal, handleStatusUpdate, onVerify }) => {
     if (!selectedReport) return null;
@@ -102,16 +101,6 @@ const LabReportModal = ({ selectedReport, setShowReportModal, handleStatusUpdate
 
                 {/* Footer */}
                 <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 flex items-center justify-end gap-2">
-                    <a
-                        href={fileUrl}
-                        download={selectedReport.file_name}
-                        onClick={() => toast.success('Download started')}
-                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
-                        title="Download"
-                    >
-                        <DownloadIcon className="w-4 h-4" />
-                    </a>
-
                     <a
                         href={fileUrl}
                         target="_blank"
