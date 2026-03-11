@@ -70,10 +70,14 @@ const AIChatAssistant = ({
                                         }`}>
                                         <div className="leading-relaxed">
                                             {msg.sender === 'ai' ? (
-                                                <div className="space-y-2">
-                                                    {msg.text.split('\n').map((line, i) => (
-                                                        <p key={i}>{line}</p>
-                                                    ))}
+                                                <div className="space-y-2 markdown-ai whitespace-pre-wrap">
+                                                    {msg.text.split('\n').map((line, i) => {
+                                                        // Super basic markdown parsing for bold and bullets
+                                                        let parsedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                                           .replace(/\*(.*?)\*/g, '<em>$1</em>');
+                                                        if (parsedLine.trim() === '') return <div key={i} className="h-2"></div>;
+                                                        return <p key={i} dangerouslySetInnerHTML={{ __html: parsedLine }}></p>;
+                                                    })}
                                                 </div>
                                             ) : msg.text}
                                         </div>
@@ -101,13 +105,18 @@ const AIChatAssistant = ({
                             {/* Suggested Actions */}
                             {!isTyping && chatMessages.length < 5 && (
                                 <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-                                    {['Analyze Trends', 'Interactions', 'Summarize'].map(action => (
+                                    {[
+                                        { label: 'Summarize Reports', prompt: 'Please summarize this patient\'s recent lab reports highlighting key findings.' },
+                                        { label: 'Lab Trends', prompt: 'What trends do you see in this patient\'s lab results over time?' },
+                                        { label: 'Clinical Suggestions', prompt: 'Based on the most recent lab results, what clinical actions do you suggest?' },
+                                        { label: 'Critical Alerts', prompt: 'Are there any critical or abnormal values that need immediate attention?' }
+                                    ].map(action => (
                                         <button
-                                            key={action}
-                                            onClick={() => sendQuickMessage(action)}
-                                            className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider bg-background hover:bg-muted border border-border text-muted-foreground px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                                            key={action.label}
+                                            onClick={() => sendQuickMessage(action.prompt)}
+                                            className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider bg-background hover:bg-muted border border-border text-muted-foreground px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm"
                                         >
-                                            <Sparkles className="w-3 h-3 mr-1.5 text-blue-500" /> {action}
+                                            <Sparkles className="w-3 h-3 mr-1.5 text-blue-500" /> {action.label}
                                         </button>
                                     ))}
                                 </div>

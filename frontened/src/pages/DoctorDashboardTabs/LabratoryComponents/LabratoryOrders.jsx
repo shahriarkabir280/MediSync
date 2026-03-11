@@ -17,18 +17,20 @@ const OrderRow = memo(({ order, onViewReport }) => {
                 <div className="text-[10px] text-muted-foreground uppercase font-semibold">ID: {order.patient_unique_id}</div>
             </td>
             <td className="p-4 border-b border-border/50">
-                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${order.priority === 'urgent' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        order.priority === 'high' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-blue-50 text-blue-600 border-blue-100'
+                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                        order.priority === 'urgent' ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/50' :
+                        order.priority === 'high' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/50' :
+                        'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50'
                     }`}>
                     {order.priority}
                 </div>
             </td>
             <td className="p-4 border-b border-border/50">
-                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${order.status === 'completed' ? 'bg-emerald-500 text-white' :
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        order.status === 'confirmed' ? 'bg-emerald-500 text-white dark:bg-emerald-600' :
                         order.status === 'urgent' ? 'bg-rose-600 text-white' :
-                            order.status === 'pending' ? 'bg-amber-500 text-white' :
-                                'bg-blue-600 text-white'
+                        order.status === 'pending' ? 'bg-amber-500 text-white' :
+                        'bg-blue-600 text-white'
                     }`}>
                     {order.status.replace('_', ' ')}
                 </span>
@@ -45,9 +47,9 @@ const OrderRow = memo(({ order, onViewReport }) => {
                     <button
                         onClick={() => onViewReport(order.id)}
                         className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Report"
+                        title="Order Details"
                     >
-                        <Eye className="w-5 h-5" />
+                        <FileText className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => alert(`Review log for ${order.order_number}`)}
@@ -115,7 +117,7 @@ const LabratoryOrders = memo(({
                         { key: 'urgent', label: `Urgent (${labStats.urgent?.urgent_count || 0})`, active: 'bg-rose-600 text-white shadow-sm' },
                         { key: 'pending', label: 'Pending Signature', active: 'bg-amber-500 text-white shadow-sm' },
                         { key: 'today', label: 'Today', active: 'bg-blue-600 text-white shadow-sm' },
-                        { key: 'completed', label: 'Completed', active: 'bg-emerald-600 text-white shadow-sm' }
+                        { key: 'confirmed', label: 'Confirmed', active: 'bg-emerald-600 text-white shadow-sm' }
                     ].map((filter) => (
                         <button
                             key={filter.key}

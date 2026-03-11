@@ -443,6 +443,31 @@ export const labApi = {
   },
   verifyOrder: async (orderId, doctorId) => {
     return api.put(`/lab/orders/${orderId}/verify`, { doctorId });
+  },
+  getTests: async () => {
+    return api.get('/lab/tests');
+  },
+  createOrder: async (orderData) => {
+    return api.post('/lab/orders', orderData);
+  },
+  getAllOrders: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/lab/orders/all${queryString ? `?${queryString}` : ''}`);
+  },
+  updateStatus: async (orderId, statusData) => {
+    return api.put(`/lab/orders/${orderId}/status`, statusData);
+  },
+  updateOrder: async (orderId, orderData) => {
+    return api.put(`/lab/orders/${orderId}`, orderData);
+  },
+  uploadReport: async (orderId, formData) => {
+    return api.post(`/lab/orders/${orderId}/report`, formData);
+  },
+  uploadItemReport: async (orderItemId, formData) => {
+    return api.post(`/lab/orders/item/${orderItemId}/report`, formData);
+  },
+  getHistory: async (patientId) => {
+    return api.get(`/lab/patient/${patientId}/history`);
   }
 };
 

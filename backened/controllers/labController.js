@@ -139,6 +139,41 @@ export const searchLabOrders = async (req, res) => {
   }
 };
 
+// Get all lab orders (For Diagnostic Center Portal)
+export const getAllLabOrders = async (req, res) => {
+  try {
+    const { status, limit = 50 } = req.query;
+
+    let query = supabase
+      .from('lab_orders')
+      .select(`
+            *,
+            patient:patients (first_name, last_name, unique_id, date_of_birth, gender),
+            doctor:doctors (first_name, last_name, specialization),
+            lab_order_items (
+                id,
+                status,
+                lab_tests (test_name, test_code)
+            )
+        `)
+      .order('order_date', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data: orders, error } = await query;
+
+    if (error) throw error;
+
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    console.error('Error fetching all lab orders:', error);
+    res.status(500).json({ error: 'Failed to fetch all lab orders' });
+  }
+};
+
 // Get filtered lab orders by status or priority (legacy helper function, somewhat redundant with search but used by UI likely)
 export const getFilteredLabOrders = async (req, res) => {
   try {
@@ -349,8 +384,20 @@ export const createLabOrder = async (req, res) => {
       sample_collection_date
     } = req.body;
 
+    console.log('Creating lab order with params:', { doctor_id, patient_id, test_ids, priority });
+
     if (!doctor_id || !patient_id || !test_ids || test_ids.length === 0) {
+      console.warn('Validation failed: Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Ensure IDs are integers
+    const doctorIdInt = parseInt(doctor_id);
+    const patientIdInt = parseInt(patient_id);
+
+    if (isNaN(doctorIdInt) || isNaN(patientIdInt)) {
+      console.error('Validation failed: Invalid doctor_id or patient_id');
+      return res.status(400).json({ error: 'Invalid ID formats' });
     }
 
     // Generate order number
@@ -362,27 +409,33 @@ export const createLabOrder = async (req, res) => {
       .select('id, cost')
       .in('id', test_ids);
 
-    if (testError) throw testError;
+    if (testError) {
+      console.error('Supabase error fetching tests:', testError);
+      throw testError;
+    }
 
-    const totalCost = tests.reduce((sum, test) => sum + parseFloat(test.cost || 0), 0);
+    const totalCost = tests?.reduce((sum, test) => sum + parseFloat(test.cost || 0), 0) || 0;
 
     // Create lab order
     const { data: order, error: createError } = await supabase
       .from('lab_orders')
       .insert({
         order_number: orderNumber,
-        doctor_id,
-        patient_id,
+        doctor_id: doctorIdInt,
+        patient_id: patientIdInt,
         priority,
         clinical_notes,
         total_cost: totalCost,
         sample_collection_date,
-        created_by: doctor_id
+        created_by: doctorIdInt
       })
       .select()
       .single();
 
-    if (createError) throw createError;
+    if (createError) {
+      console.error('Supabase error creating order:', createError);
+      throw createError;
+    }
 
     // Create order items
     const orderItemsData = test_ids.map(test_id => ({
@@ -396,18 +449,23 @@ export const createLabOrder = async (req, res) => {
       .select();
 
     if (itemsError) {
-      console.error('Error creating items, should cleanup order', order.id);
+      console.error('Supabase error creating items, should cleanup order', order.id, itemsError);
       throw itemsError;
     }
 
+    console.log('Lab order created successfully:', order.order_number);
     res.status(201).json({
       success: true,
       message: 'Lab order created successfully',
       data: { ...order, items: orderItems }
     });
   } catch (error) {
-    console.error('Error creating lab order:', error);
-    res.status(500).json({ error: 'Failed to create lab order' });
+    console.error('CRITICAL: Error in createLabOrder:', error.message || error);
+    res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create lab order',
+        details: error.message || 'Internal server error'
+    });
   }
 };
 
@@ -654,28 +712,53 @@ export const getPatientLabHistory = async (req, res) => {
     const { data: orders, error } = await supabase
       .from('lab_orders')
       .select(`
-            *,
+            id,
+            order_number,
+            order_date,
+            status,
+            priority,
             doctor:doctors (first_name, last_name),
-            lab_order_items (id, status)
+            lab_order_items (
+              id,
+              status,
+              lab_tests (test_code, test_name),
+              lab_results (id, result_value, result_text, status, file_path, file_name, result_date)
+            )
         `)
-      .eq('patient_id', patientId)
+      .eq('patient_id', parseInt(patientId))
       .order('order_date', { ascending: false })
       .limit(parseInt(limit));
 
     if (error) throw error;
 
-    const formatted = orders.map(o => {
-      const items = o.lab_order_items || [];
-      return {
-        ...o,
-        doctor_first_name: o.doctor?.first_name,
-        doctor_last_name: o.doctor?.last_name,
-        total_tests: items.length,
-        completed_tests: items.filter(i => i.status === 'completed').length
-      };
+    console.log(`Fetched ${orders?.length || 0} orders for patient ${patientId}`);
+    
+    // Flatten into individual test items for easier frontend consumption
+    const allTests = [];
+    orders.forEach(order => {
+      const items = order.lab_order_items || [];
+      items.forEach(item => {
+        const itemStatus = (item.lab_results && item.lab_results.length > 0) || item.status === 'completed' ? 'done' : 
+                          (order.status?.toLowerCase() === 'pending' ? 'new' : 'processing');
+        
+        allTests.push({
+          order_id: order.id,
+          order_number: order.order_number,
+          order_date: order.order_date,
+          order_priority: order.priority,
+          order_status: order.status,
+          doctor_name: `${order.doctor?.first_name || ''} ${order.doctor?.last_name || ''}`.trim(),
+          item_id: item.id,
+          test_code: item.lab_tests?.test_code,
+          test_name: item.lab_tests?.test_name,
+          status: itemStatus,
+          result: item.lab_results?.[0] || null
+        });
+      });
     });
 
-    res.json({ success: true, data: formatted });
+    console.log(`Returning ${allTests.length} tests. Statuses:`, allTests.map(t => t.status));
+    res.json({ success: true, data: allTests });
   } catch (error) {
     console.error('Error fetching patient lab history:', error);
     res.status(500).json({ error: 'Failed to fetch patient lab history' });
@@ -749,8 +832,7 @@ export const uploadLabReportFile = async (req, res) => {
       .insert({
         order_id: orderId,
         file_name: file.filename,
-        file_path: file.path,
-        file_size: file.size
+        file_path: file.path
       })
       .select()
       .single();
@@ -772,6 +854,113 @@ export const uploadLabReportFile = async (req, res) => {
   } catch (error) {
     console.error('Error uploading lab report:', error);
     res.status(500).json({ error: 'Failed to upload lab report' });
+  }
+};
+
+// NEW: Upload report for a specific lab order item
+export const uploadLabOrderItemReport = async (req, res) => {
+  try {
+    const { orderItemId } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // 1. Get the order item to find its order_id
+    const { data: item, error: itemError } = await supabase
+      .from('lab_order_items')
+      .select('order_id')
+      .eq('id', orderItemId)
+      .single();
+
+    if (itemError || !item) {
+      return res.status(404).json({ error: 'Lab order item not found' });
+    }
+
+    // 2. Insert or Update lab_results for this item
+    const { data: existingResult } = await supabase
+      .from('lab_results')
+      .select('id')
+      .eq('order_item_id', orderItemId)
+      .maybeSingle();
+
+    const resultData = {
+      order_item_id: orderItemId,
+      file_name: file.filename,
+      file_path: file.path,
+      status: 'normal',
+      result_date: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    let savedResult;
+    if (existingResult) {
+      const { data, error } = await supabase
+        .from('lab_results')
+        .update(resultData)
+        .eq('id', existingResult.id)
+        .select()
+        .single();
+      if (error) throw error;
+      savedResult = data;
+    } else {
+      const { data, error } = await supabase
+        .from('lab_results')
+        .insert(resultData)
+        .select()
+        .single();
+      if (error) throw error;
+      savedResult = data;
+    }
+
+    // 3. Update order & item status
+    await Promise.all([
+      supabase
+        .from('lab_orders')
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+        .eq('id', item.order_id)
+        .eq('status', 'pending'),
+      supabase
+        .from('lab_order_items')
+        .update({ status: 'completed' })
+        .eq('id', orderItemId)
+    ]);
+
+    // 4. CHECK IF ALL ITEMS HAVE RESULTS -> Auto-Complete Order
+    const { data: allItems } = await supabase
+      .from('lab_order_items')
+      .select('id')
+      .eq('order_id', item.order_id);
+    
+    const itemIds = allItems.map(i => i.id);
+    const { data: resultsCount } = await supabase
+      .from('lab_results')
+      .select('order_item_id')
+      .in('order_item_id', itemIds);
+
+    if (resultsCount && resultsCount.length === itemIds.length) {
+      // All tests are done!
+      await supabase
+        .from('lab_orders')
+        .update({ 
+          status: 'completed', 
+          report_date: new Date().toISOString(),
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', item.order_id);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Test result uploaded successfully',
+      data: savedResult,
+      isOrderCompleted: resultsCount?.length === itemIds.length
+    });
+
+  } catch (error) {
+    console.error('Error uploading item report:', error);
+    res.status(500).json({ error: 'Failed to upload test result' });
   }
 };
 
@@ -861,5 +1050,88 @@ export const verifyLabResultsForOrder = async (req, res) => {
   } catch (error) {
     console.error('Error verifying lab results:', error);
     res.status(500).json({ error: 'Failed to verify lab results' });
+  }
+};
+
+// Update lab order details (clinical notes, priority, etc)
+export const updateLabOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { clinical_notes, priority, status, test_ids } = req.body;
+
+    // 1. Update the main order fields
+    const updates = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (clinical_notes !== undefined) updates.clinical_notes = clinical_notes;
+    if (priority !== undefined) updates.priority = priority;
+    if (status !== undefined) updates.status = status;
+
+    // 2. Handle test list reconciliation if test_ids are provided
+    if (test_ids && Array.isArray(test_ids)) {
+      // Get current items
+      const { data: currentItems, error: itemsFetchError } = await supabase
+        .from('lab_order_items')
+        .select('test_id')
+        .eq('order_id', orderId);
+
+      if (itemsFetchError) throw itemsFetchError;
+
+      const currentTestIds = currentItems.map(item => item.test_id);
+      const incomingTestIds = test_ids.map(id => parseInt(id));
+
+      const toAdd = incomingTestIds.filter(id => !currentTestIds.includes(id));
+      const toRemove = currentTestIds.filter(id => !incomingTestIds.includes(id));
+
+      // Add new tests
+      if (toAdd.length > 0) {
+        const insertData = toAdd.map(test_id => ({
+          order_id: orderId,
+          test_id: test_id
+        }));
+        const { error: insertError } = await supabase.from('lab_order_items').insert(insertData);
+        if (insertError) throw insertError;
+      }
+
+      // Remove tests (only if not already completed/has results, or just remove them?)
+      // For simplicity, we remove them.
+      if (toRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('lab_order_items')
+          .delete()
+          .eq('order_id', orderId)
+          .in('test_id', toRemove);
+        if (deleteError) throw deleteError;
+      }
+
+      // Recalculate total cost
+      const { data: tests, error: testError } = await supabase
+        .from('lab_tests')
+        .select('cost')
+        .in('id', incomingTestIds);
+      
+      if (testError) throw testError;
+      
+      updates.total_cost = tests?.reduce((sum, test) => sum + parseFloat(test.cost || 0), 0) || 0;
+    }
+
+    const { data: updatedOrder, error } = await supabase
+      .from('lab_orders')
+      .update(updates)
+      .eq('id', orderId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Lab order updated successfully',
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Error updating lab order:', error);
+    res.status(500).json({ error: 'Failed to update lab order' });
   }
 };

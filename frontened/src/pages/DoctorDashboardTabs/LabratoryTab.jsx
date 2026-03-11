@@ -11,7 +11,7 @@ import LabratoryOverview from './LabratoryComponents/LabratoryOverview';
 import LabratoryOrders from './LabratoryComponents/LabratoryOrders';
 import PatientConsole from './LabratoryComponents/PatientConsole';
 import NewOrderModal from './LabratoryComponents/NewOrderModal';
-import LabReportModal from './LabratoryComponents/LabReportModal';
+import LabOrderModal from './LabratoryComponents/LabOrderModal';
 import AdvancedSearchModal from './LabratoryComponents/AdvancedSearchModal';
 import AIChatAssistant from './LabratoryComponents/AIChatAssistant';
 import { labApi } from '../../lib/api';
@@ -230,8 +230,17 @@ const LabratoryTab = memo(() => {
     }
   };
 
+  const handleOrderCreated = useCallback(() => {
+    fetchLabStats();
+    fetchRecentOrders();
+    if (selectedPatient) {
+      setSelectedPatient(prev => ({ ...prev }));
+      setSelectedSubTab('processing');
+    }
+  }, [selectedPatient, fetchLabStats, fetchRecentOrders]);
+
   // AI Chat Handlers
-  const processMessage = (text) => {
+  const processMessage = async (text) => {
     const userMsg = {
       id: Date.now(),
       sender: 'user',
@@ -243,22 +252,40 @@ const LabratoryTab = memo(() => {
     setChatInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      let aiText = "I'm analyzing the data based on your query...";
-      const lowerInput = text.toLowerCase();
-      if (lowerInput.includes('trend')) aiText = "Based on the last 3 months, the glucose trend is slightly up (+15%).";
-      else if (lowerInput.includes('recommend')) aiText = "Consider checking HbA1c in 3 months.";
-      else if (lowerInput.includes('critical')) aiText = "⚠️ Critical Alert: Blood Sugar is 185 mg/dL.";
-      else aiText = "I can help you analyze trends, provide recommendations, or check for critical alerts.";
+    try {
+      if (!selectedPatient?.id) {
+        throw new Error("No patient selected");
+      }
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: selectedPatient.id,
+          message: text,
+          history: chatMessages.slice(-10) // Send last 10 messages for context
+        }),
+      });
+
+      const result = await response.json();
 
       setChatMessages(prev => [...prev, {
         id: Date.now() + 1,
         sender: 'ai',
-        text: aiText,
+        text: result.success ? result.reply : (result.error || "I encountered an error analyzing the results."),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
+    } catch (error) {
+      console.error("AI Chat Error:", error);
+      setChatMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: "Sorry, I couldn't connect to the AI service. Please try again later.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleSendMessage = (e) => {
@@ -354,13 +381,28 @@ const LabratoryTab = memo(() => {
       </div>
 
       {/* Modals & Overlays */}
-      {showNewOrderModal && <NewOrderModal setShowNewOrderModal={setShowNewOrderModal} />}
+      {showNewOrderModal && (
+        <NewOrderModal 
+          setShowNewOrderModal={setShowNewOrderModal} 
+          selectedPatient={selectedPatient}
+          doctorId={doctorId}
+          onSuccess={handleOrderCreated}
+        />
+      )}
       {showReportModal && (
-        <LabReportModal
+        <LabOrderModal
           selectedReport={selectedReport}
           setShowReportModal={setShowReportModal}
           handleStatusUpdate={handleStatusUpdate}
           onVerify={handleVerifyReport}
+          onSuccess={() => {
+            fetchLabStats();
+            fetchRecentOrders();
+            // Refresh current report details
+            if (selectedReport?.order?.id) {
+              handleViewReport(selectedReport.order.id);
+            }
+          }}
         />
       )}
       {showSearchModal && <AdvancedSearchModal setShowSearchModal={setShowSearchModal} />}

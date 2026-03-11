@@ -9,6 +9,7 @@ import LoginForm from "./components/LoginForm";
 const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+const DiagnosticDashboard = lazy(() => import("./pages/DiagnosticCenter/DiagnosticDashboard"));
 
 // Loading component
 const PageLoader = () => (
@@ -53,6 +54,7 @@ function App() {
             <Routes>
               <Route path="/doctor/:slug" element={<PublicWebsite />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/diagnostic-center" element={<DiagnosticDashboard />} />
               <Route
                 path="/"
                 element={

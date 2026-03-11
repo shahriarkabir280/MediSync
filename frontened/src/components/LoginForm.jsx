@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, Activity } from 'lucide-react';
 
 const LoginForm = ({ onLogin, loading, error }) => {
   const [formData, setFormData] = useState({
@@ -113,10 +113,16 @@ const LoginForm = ({ onLogin, loading, error }) => {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <p className="text-sm text-gray-600">
               Demo Credentials: john.doe@cc.com / password123
             </p>
+            <div className="border-t border-gray-200 pt-4">
+              <a href="/diagnostic-center" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 flex justify-center items-center gap-2">
+                <span className="bg-indigo-100 p-1.5 rounded-full"><Activity className="w-4 h-4" /></span>
+                Access Diagnostic Center Portal
+              </a>
+            </div>
           </div>
         </form>
       </div>
