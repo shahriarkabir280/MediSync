@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Search, Filter, Eye, Clock, ChevronRight, FileText } from "lucide-react";
+import { Search, FileText } from "lucide-react";
 
 const OrderRow = memo(({ order, onViewReport }) => {
     return (
@@ -51,13 +51,6 @@ const OrderRow = memo(({ order, onViewReport }) => {
                     >
                         <FileText className="w-5 h-5" />
                     </button>
-                    <button
-                        onClick={() => alert(`Review log for ${order.order_number}`)}
-                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                        title="View Logs"
-                    >
-                        <Clock className="w-5 h-5" />
-                    </button>
                 </div>
             </td>
         </tr>
@@ -68,7 +61,6 @@ const LabratoryOrders = memo(({
     searchTerm,
     setSearchTerm,
     handleSearch,
-    setShowSearchModal,
     labStats,
     activeFilter,
     handleQuickFilter,
@@ -100,13 +92,6 @@ const LabratoryOrders = memo(({
                             Search
                         </button>
                     </div>
-                    <button
-                        onClick={setShowSearchModal}
-                        className="px-4 py-2 bg-muted text-foreground rounded-xl hover:bg-muted/80 transition-colors font-semibold text-sm flex items-center justify-center space-x-2 border border-border"
-                    >
-                        <Filter className="w-4 h-4" />
-                        <span>Advanced Search</span>
-                    </button>
                 </div>
 
                 {/* Quick Filters */}

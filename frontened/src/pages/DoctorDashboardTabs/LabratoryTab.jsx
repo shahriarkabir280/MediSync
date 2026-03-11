@@ -12,7 +12,6 @@ import LabratoryOrders from './LabratoryComponents/LabratoryOrders';
 import PatientConsole from './LabratoryComponents/PatientConsole';
 import NewOrderModal from './LabratoryComponents/NewOrderModal';
 import LabOrderModal from './LabratoryComponents/LabOrderModal';
-import AdvancedSearchModal from './LabratoryComponents/AdvancedSearchModal';
 import AIChatAssistant from './LabratoryComponents/AIChatAssistant';
 import { labApi } from '../../lib/api';
 
@@ -48,7 +47,6 @@ const LabratoryTab = memo(() => {
   // Modals Visibility
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
   // AI Chat State
@@ -346,7 +344,6 @@ const LabratoryTab = memo(() => {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             handleSearch={handleSearch}
-            setShowSearchModal={() => setShowSearchModal(true)}
             labStats={labStats}
             activeFilter={activeFilter}
             handleQuickFilter={handleQuickFilter}
@@ -405,7 +402,6 @@ const LabratoryTab = memo(() => {
           }}
         />
       )}
-      {showSearchModal && <AdvancedSearchModal setShowSearchModal={setShowSearchModal} />}
 
       <AIChatAssistant
         selectedPatient={selectedPatient}
