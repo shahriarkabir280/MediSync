@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { 
   Plus, 
   X, 
@@ -88,8 +89,8 @@ const NewOrderModal = ({ setShowNewOrderModal, selectedPatient: preSelectedPatie
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-3 sm:p-6 animate-in fade-in duration-300">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] p-3 sm:p-6 animate-in fade-in duration-300">
       <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl sm:rounded-3xl w-[95%] sm:w-[90%] max-w-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-white/20 dark:border-slate-800/50 max-h-[90vh] sm:max-h-[75vh] relative">
         
         {/* Global Close Button */}
@@ -272,7 +273,8 @@ const NewOrderModal = ({ setShowNewOrderModal, selectedPatient: preSelectedPatie
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
