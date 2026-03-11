@@ -87,8 +87,8 @@ const PatientDetails = memo(({
                 <div className="w-16 h-16 bg-muted rounded-3xl flex items-center justify-center mb-4 text-muted-foreground/30 shadow-inner">
                     <User className="w-8 h-8" />
                 </div>
-                <h3 className="text-sm font-bold text-foreground mb-1">Select A Patient Profile</h3>
-                <p className="text-[10px] text-muted-foreground max-w-[200px] leading-relaxed uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-foreground mb-1">Select a Patient Profile</h3>
+                <p className="text-[10px] text-muted-foreground max-w-[200px] leading-relaxed">
                     Browse the clinical queue to view history and diagnostics.
                 </p>
             </div>
@@ -182,23 +182,23 @@ const PatientDetails = memo(({
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
                     
                     <div className="flex items-center gap-4 mb-4 relative z-10">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-600/20">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-600/20">
                             {initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <div className="flex wrap items-center gap-2 mb-0.5">
-                                <h3 className="text-sm sm:text-base font-black text-foreground leading-tight tracking-tight">
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight tracking-tight">
                                     {selectedPatient.first_name || selectedPatient.name} {selectedPatient.last_name || ''}
                                 </h3>
                                 <div className="flex gap-1.5">
-                                    <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
-                                        selectedPatient.status === 'Urgent' ? 'bg-red-500 text-white shadow-sm shadow-red-500/20' : 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
+                                    <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${
+                                        selectedPatient.status === 'Urgent' ? 'bg-red-500 text-white shadow-sm shadow-red-500/10' : 'bg-blue-600 text-white shadow-sm shadow-blue-600/10'
                                     }`}>
                                         {selectedPatient.status || 'Stable'}
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex wrap gap-x-4 gap-y-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                            <div className="flex gap-x-4 gap-y-1 text-[9px] font-semibold text-muted-foreground/60">
                                 <span>ID: {selectedPatient.unique_id || selectedPatient.id}</span>
                                 <span>Age: {selectedPatient.age || 'N/A'}</span>
                                 <span className={selectedPatient.gender === 'Female' ? 'text-pink-600/70' : 'text-blue-600/70'}>
@@ -211,14 +211,14 @@ const PatientDetails = memo(({
                     <div className="flex gap-2.5 relative z-10">
                          <button
                             onClick={() => setShowPrescriptionForm(true)}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-teal-600/10 transition-all active:scale-95 group"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-teal-600/10 transition-all active:scale-95 group"
                         >
                             <Stethoscope className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                             <span>Prescribe</span>
                         </button>
                         <button
                             onClick={() => setShowNewOrderModal(true)}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/10 transition-all active:scale-95 group"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-blue-600/10 transition-all active:scale-95 group"
                         >
                             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                             <span>New Order</span>
@@ -234,7 +234,7 @@ const PatientDetails = memo(({
                                 <button
                                     key={tab.id}
                                     onClick={() => setSelectedSubTab(tab.id)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-4 transition-all text-[9px] font-black uppercase tracking-widest border-b-2 ${
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 transition-all text-[10px] font-bold border-b-2 ${
                                         selectedSubTab === tab.id
                                             ? 'border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10'
                                             : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -253,8 +253,8 @@ const PatientDetails = memo(({
                         {selectedSubTab === 'new-reports' && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between mb-4 px-1">
-                                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Released Reports</h4>
-                                    <span className="text-[9px] font-black text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">{completedResults.length} ITEMS</span>
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Released Reports</h4>
+                                    <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">{completedResults.length} items</span>
                                 </div>
                                 
                                 {loadingLab ? (
@@ -264,7 +264,7 @@ const PatientDetails = memo(({
                                 ) : completedResults.length === 0 ? (
                                     <div className="py-20 text-center text-muted-foreground/30">
                                          <FlaskConical className="w-10 h-10 mx-auto mb-4 opacity-10" />
-                                         <p className="text-[10px] font-black uppercase tracking-widest">Awaiting lab releases</p>
+                                         <p className="text-[10px] font-bold uppercase tracking-wider">Awaiting lab releases</p>
                                     </div>
                                 ) : (
                                     completedResults.map((test) => (
@@ -294,23 +294,23 @@ const PatientDetails = memo(({
                                                 });
                                                 setShowReportModal(true);
                                             }}
-                                            className="group flex items-center gap-4 p-4 bg-white dark:bg-slate-900/50 border border-border/60 rounded-2xl hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer border-l-4 border-l-emerald-500"
+                                            className="group flex items-center gap-4 p-4 bg-white dark:bg-slate-900/50 border border-border/80 rounded-2xl hover:border-blue-500/30 hover:shadow-lg transition-all cursor-pointer"
                                         >
                                             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 shadow-inner">
                                                 <FileText className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                     <h5 className="font-black text-xs text-foreground truncate">{test.test_name}</h5>
+                                                     <h5 className="font-bold text-xs text-foreground truncate">{test.test_name}</h5>
                                                 </div>
-                                                <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                                                <p className="text-[9px] font-semibold text-muted-foreground/60">
                                                     Order: #{test.order_number} · {new Date(test.order_date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                  <div className="flex flex-col items-end">
-                                                      <span className="text-[8px] font-black text-emerald-600 uppercase">Released</span>
-                                                      <span className="text-[7px] text-muted-foreground/40 font-bold">{new Date(test.result?.result_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                      <span className="text-[8px] font-bold text-emerald-600">Released</span>
+                                                      <span className="text-[7px] text-muted-foreground/40 font-semibold">{new Date(test.result?.result_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                  </div>
                                                  <ChevronRight className="w-4 h-4 text-muted-foreground/20 group-hover:text-blue-600 transition-colors" />
                                             </div>
@@ -324,10 +324,10 @@ const PatientDetails = memo(({
                         {selectedSubTab === 'processing' && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between mb-4 px-1">
-                                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Active Diagnostics Flow</h4>
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Diagnostics</h4>
                                     <div className="flex gap-2">
                                         <span className="text-[8px] text-muted-foreground/30">H:{labHistory.length}</span>
-                                        <span className="text-[9px] font-black text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full">{inProgressTests.length} ACTIVE</span>
+                                        <span className="text-[9px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full">{inProgressTests.length} active</span>
                                     </div>
                                 </div>
 
@@ -338,32 +338,31 @@ const PatientDetails = memo(({
                                 ) : inProgressTests.length === 0 ? (
                                     <div className="py-20 text-center border-2 border-dashed border-muted/20 rounded-3xl">
                                          <Clock className="w-10 h-10 mx-auto mb-4 opacity-10" />
-                                         <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">No active lab runs</p>
+                                         <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-wider">No active lab runs</p>
                                     </div>
                                 ) : (
                                     inProgressTests.map((test) => (
-                                        <div key={test.item_id} className="flex items-center gap-4 p-5 bg-muted/5 border border-border/40 rounded-2xl relative overflow-hidden group">
-                                            <div className={`absolute top-0 left-0 w-1 h-full ${test.status === 'new' ? 'bg-amber-500' : 'bg-blue-500/20'} group-hover:bg-blue-500 transition-colors`} />
+                                        <div key={test.item_id} className="flex items-center gap-4 p-5 bg-muted/5 border border-border/80 rounded-2xl relative overflow-hidden group">
                                             
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${test.status === 'new' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 animate-pulse'} shadow-inner`}>
                                                 <Activity className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <h5 className="font-black text-xs text-foreground leading-none tracking-tight">{test.test_name}</h5>
+                                                    <h5 className="font-bold text-xs text-foreground leading-none">{test.test_name}</h5>
                                                     {test.status === 'new' && (
-                                                        <span className="text-[7px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded-sm animate-pulse tracking-widest">NEW</span>
+                                                        <span className="text-[7px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-sm animate-pulse">NEW</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                     <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest">#{test.order_number}</span>
+                                                     <span className="text-[8px] font-semibold text-muted-foreground/50">#{test.order_number}</span>
                                                      <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-                                                     <span className="text-[8px] font-black text-blue-600/70 uppercase">Sent {new Date(test.order_date).toLocaleDateString()}</span>
+                                                     <span className="text-[8px] font-semibold text-blue-600/70">Sent {new Date(test.order_date).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="flex flex-col items-end">
-                                                    <span className={`text-[9px] font-black ${test.status === 'new' ? 'text-amber-600' : 'text-blue-600'} uppercase tracking-widest flex items-center gap-1.5`}>
+                                                    <span className={`text-[9px] font-bold ${test.status === 'new' ? 'text-amber-600' : 'text-blue-600'} flex items-center gap-1.5`}>
                                                         {test.status === 'new' ? (
                                                             <>Awaiting Queue</>
                                                         ) : (
@@ -373,7 +372,7 @@ const PatientDetails = memo(({
                                                             </>
                                                         )}
                                                     </span>
-                                                    <span className="text-[7px] font-bold text-muted-foreground/40 mt-1 uppercase">
+                                                    <span className="text-[7px] font-semibold text-muted-foreground/40 mt-1">
                                                         {test.status === 'new' ? 'Just Sent' : 'In Lab Queue'}
                                                     </span>
                                                 </div>
@@ -383,7 +382,7 @@ const PatientDetails = memo(({
                                 )}
                                 
                                 {inProgressTests.length > 0 && (
-                                    <p className="text-[8px] text-center text-muted-foreground/40 font-black uppercase tracking-widest mt-6">
+                                    <p className="text-[8px] text-center text-muted-foreground/40 font-bold uppercase tracking-wider mt-6">
                                         Reports will move to Results tab as soon as they are validated.
                                     </p>
                                 )}
@@ -394,8 +393,8 @@ const PatientDetails = memo(({
                         {selectedSubTab === 'history' && (
                             <div className="py-20 text-center">
                                 <Calendar className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                                <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground">Longitudinal Charting</h5>
-                                <p className="text-[10px] max-w-[220px] mx-auto mt-2 text-muted-foreground/60 leading-relaxed font-bold uppercase">
+                                <h5 className="text-[11px] font-bold uppercase tracking-wider text-foreground">Longitudinal Charting</h5>
+                                <p className="text-[10px] max-w-[220px] mx-auto mt-2 text-muted-foreground/60 leading-relaxed font-semibold">
                                     Clinical trends and historical data visualization coming in v2.4
                                 </p>
                             </div>
@@ -405,27 +404,27 @@ const PatientDetails = memo(({
                         {selectedSubTab === 'prescription' && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between mb-4 px-1">
-                                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Medical Script Archive</h4>
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Prescription Archive</h4>
                                     <button
                                         onClick={() => setShowPrescriptionForm(true)}
-                                        className="flex items-center gap-1.5 text-[9px] font-black text-teal-600 hover:text-white hover:bg-teal-600 bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-xl border border-teal-200 dark:border-teal-800 transition-all uppercase tracking-widest"
+                                        className="flex items-center gap-1.5 text-[9px] font-bold text-teal-600 hover:text-white hover:bg-teal-600 bg-teal-50 dark:bg-teal-900/20 px-3 py-2 rounded-xl border border-teal-200 dark:border-teal-800 transition-all uppercase tracking-wider"
                                     >
-                                        <Plus className="w-3.5 h-3.5" /> WRITE NEW
+                                        <Plus className="w-3.5 h-3.5" /> New Script
                                     </button>
                                 </div>
 
                                 {loadingPrescriptions ? (
                                     <div className="py-12 text-center">
                                         <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Syncing Rx Records...</p>
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Syncing Rx Records...</p>
                                     </div>
                                 ) : prescriptionHistory.length === 0 ? (
                                     <div className="py-20 text-center border-2 border-dashed border-muted/20 rounded-3xl">
                                         <FileText className="w-12 h-12 text-muted-foreground/10 mx-auto mb-4" />
-                                        <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-6">No historical scripts found</p>
+                                        <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-wider mb-6">No historical scripts found</p>
                                         <button
                                             onClick={() => setShowPrescriptionForm(true)}
-                                            className="px-6 py-3 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-teal-600/20 transition-all hover:scale-105"
+                                            className="px-6 py-3 bg-teal-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-wider shadow-xl shadow-teal-600/20 transition-all hover:scale-105"
                                         >
                                             Initiate Rx
                                         </button>
@@ -435,17 +434,17 @@ const PatientDetails = memo(({
                                         {prescriptionHistory.map((rx, idx) => (
                                             <div
                                                 key={rx.id || idx}
-                                                className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-border/60 rounded-2xl hover:border-teal-600/50 hover:shadow-lg transition-all cursor-pointer group border-l-4 border-l-teal-600"
+                                                className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-border/80 rounded-2xl hover:border-teal-600/30 hover:shadow-lg transition-all cursor-pointer group"
                                                 onClick={() => setViewingPrescription(rx)}
                                             >
                                                 <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 shrink-0 shadow-inner">
                                                     <FileText className="w-5 h-5 flex-shrink-0" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-black text-foreground truncate uppercase tracking-tight">{rx.diagnosis || 'Active Script'}</p>
-                                                    <p className="text-[9px] font-bold text-muted-foreground/60 mt-1 uppercase tracking-tight">
+                                                    <p className="text-xs font-bold text-foreground truncate">{rx.diagnosis || 'Active Script'}</p>
+                                                    <p className="text-[9px] font-semibold text-muted-foreground/60 mt-1">
                                                         Issued: {new Date(rx.created_at).toLocaleDateString()}
-                                                        {rx.prescription_items?.length ? ` · ${rx.prescription_items.length} MEDICATIONS` : ''}
+                                                        {rx.prescription_items?.length ? ` · ${rx.prescription_items.length} medications` : ''}
                                                     </p>
                                                 </div>
                                                 <div className="w-8 h-8 rounded-full bg-muted/20 flex items-center justify-center text-muted-foreground/30 group-hover:bg-teal-600 group-hover:text-white transition-all">
