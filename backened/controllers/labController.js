@@ -231,7 +231,7 @@ export const getLabReport = async (req, res) => {
             patient:patients (first_name, last_name, unique_id, date_of_birth, gender, phone),
             doctor:doctors (first_name, last_name, specialization)
         `)
-      .eq('id', orderId)
+      .eq('id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .single();
 
     if (orderError || !order) {
@@ -261,7 +261,7 @@ export const getLabReport = async (req, res) => {
             lab_tests (test_code, test_name, description, sample_type, turnaround_time_hours, category_id, lab_test_categories(name)),
             lab_results (*)
         `)
-      .eq('order_id', orderId);
+      .eq('order_id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0);
 
     if (itemsError) throw itemsError;
 
@@ -284,7 +284,9 @@ export const getLabReport = async (req, res) => {
       result_date: item.lab_results?.[0]?.result_date,
       verified_by: item.lab_results?.[0]?.verified_by,
       verified_at: item.lab_results?.[0]?.verified_at,
-      result_notes: item.lab_results?.[0]?.notes
+      result_notes: item.lab_results?.[0]?.notes,
+      file_path: item.lab_results?.[0]?.file_path,
+      file_name: item.lab_results?.[0]?.file_name
     })).sort((a, b) => (a.category_name || '').localeCompare(b.category_name || '') || (a.test_name || '').localeCompare(b.test_name || ''));
 
 
@@ -292,19 +294,65 @@ export const getLabReport = async (req, res) => {
     const { data: reportFiles } = await supabase
       .from('lab_report_files')
       .select('*')
-      .eq('order_id', orderId)
+      .eq('order_id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .order('uploaded_at', { ascending: false })
       .limit(1);
 
-    const latestFile = reportFiles?.[0];
+    let latestFile = reportFiles?.[0];
+
+    // Extreme Fallback: If no lab-specific report file, check medical_records table
+    // (This helps with historical/backfilled data)
+    if (!latestFile) {
+        // Try searching for the Order ID first
+        const { data: medRecordsOrder } = await supabase
+            .from('medical_records')
+            .select('*')
+            .eq('patient_id', order.patient_id)
+            .ilike('notes', `%Order #${orderId}%`)
+            .order('record_date', { ascending: false })
+            .limit(1);
+        
+        if (medRecordsOrder?.[0]) {
+            latestFile = {
+                file_name: medRecordsOrder[0].file_name,
+                file_path: medRecordsOrder[0].file_path
+            };
+        } else {
+            // If still nothing, try searching for ANY of the item IDs associated with this order
+            const itemIds = formattedItems.map(i => i.id);
+            if (itemIds.length > 0) {
+                // We'll just search for the first one that appears in medical_records
+                // Or try searching with OR for all IDs if performance isn't an issue
+                // For simplicity, let's search if notes contains "Item #ID"
+                const { data: medRecordsItems } = await supabase
+                    .from('medical_records')
+                    .select('*')
+                    .eq('patient_id', order.patient_id)
+                    .or(itemIds.map(id => `notes.ilike.%Item #${id}%`).join(','))
+                    .order('record_date', { ascending: false })
+                    .limit(1);
+                
+                if (medRecordsItems?.[0]) {
+                    latestFile = {
+                        file_name: medRecordsItems[0].file_name,
+                        file_path: medRecordsItems[0].file_path
+                    };
+                }
+            }
+        }
+    }
+    
+    // Fallback: If no order-level file, use the first item-level file
+    const effectiveFilePath = latestFile?.file_path || formattedItems.find(i => i.file_path)?.file_path;
+    const effectiveFileName = latestFile?.file_name || formattedItems.find(i => i.file_name)?.file_name;
 
     res.json({
       success: true,
       data: {
         order: flattenedOrder,
         items: formattedItems,
-        file_name: latestFile?.file_name,
-        file_path: latestFile?.file_path,
+        file_name: effectiveFileName,
+        file_path: effectiveFilePath,
         generated_at: new Date().toISOString()
       }
     });
@@ -523,7 +571,7 @@ export const getLabOrderDetails = async (req, res) => {
             patient:patients (first_name, last_name, unique_id, date_of_birth, gender),
             doctor:doctors (first_name, last_name)
         `)
-      .eq('id', orderId)
+      .eq('id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .single();
 
     if (orderError || !order) return res.status(404).json({ error: 'Lab order not found' });
@@ -548,7 +596,7 @@ export const getLabOrderDetails = async (req, res) => {
             lab_tests (test_code, test_name, normal_range_min, normal_range_max, unit, sample_type, category_id, lab_test_categories(name)),
             lab_results (*)
         `)
-      .eq('order_id', orderId);
+      .eq('order_id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0);
 
     if (itemsError) throw itemsError;
 
@@ -580,7 +628,7 @@ export const getLabOrderDetails = async (req, res) => {
     const { data: reportFiles } = await supabase
       .from('lab_report_files')
       .select('*')
-      .eq('order_id', orderId)
+      .eq('order_id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .order('uploaded_at', { ascending: false });
 
     res.json({
@@ -615,7 +663,7 @@ export const updateLabOrderStatus = async (req, res) => {
     const { data: updatedOrder, error } = await supabase
       .from('lab_orders')
       .update(updates)
-      .eq('id', orderId)
+      .eq('id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .select()
       .single();
 
@@ -651,7 +699,7 @@ export const updateLabResult = async (req, res) => {
     } = req.body;
 
     // Check existence
-    const { data: existing } = await supabase.from('lab_results').select('id').eq('order_item_id', orderItemId).maybeSingle();
+    const { data: existing } = await supabase.from('lab_results').select('id').eq('order_item_id', parseInt(orderItemId)).maybeSingle();
     let result;
 
     const resultData = {
@@ -674,7 +722,7 @@ export const updateLabResult = async (req, res) => {
       const { data: upd, error } = await supabase
         .from('lab_results')
         .update(resultData)
-        .eq('id', existing.id)
+        .eq('id', parseInt(existing.id))
         .select()
         .single();
       if (error) throw error;
@@ -690,7 +738,7 @@ export const updateLabResult = async (req, res) => {
     }
 
     // Update item status
-    await supabase.from('lab_order_items').update({ status: 'completed' }).eq('id', orderItemId);
+    await supabase.from('lab_order_items').update({ status: 'completed' }).eq('id', parseInt(orderItemId));
 
     res.json({
       success: true,
@@ -718,6 +766,7 @@ export const getPatientLabHistory = async (req, res) => {
             status,
             priority,
             doctor:doctors (first_name, last_name),
+            lab_report_files (id, file_name, file_path, uploaded_at),
             lab_order_items (
               id,
               status,
@@ -737,10 +786,26 @@ export const getPatientLabHistory = async (req, res) => {
     const allTests = [];
     orders.forEach(order => {
       const items = order.lab_order_items || [];
+      const orderReport = order.lab_report_files?.[0]; // Get the most recent order-level report
+      
       items.forEach(item => {
-        const itemStatus = (item.lab_results && item.lab_results.length > 0) || item.status === 'completed' ? 'done' : 
+        const itemResult = item.lab_results?.[0] || null;
+        
+        // Determine status
+        const itemStatus = itemResult || item.status === 'completed' ? 'done' : 
                           (order.status?.toLowerCase() === 'pending' ? 'new' : 'processing');
         
+        // Enriched result: if item lacks a file but order has one, use the order report
+        const enrichedResult = itemResult ? {
+          ...itemResult,
+          file_name: itemResult.file_name || orderReport?.file_name,
+          file_path: itemResult.file_path || orderReport?.file_path
+        } : (orderReport ? {
+          file_name: orderReport.file_name,
+          file_path: orderReport.file_path,
+          result_date: orderReport.uploaded_at
+        } : null);
+
         allTests.push({
           order_id: order.id,
           order_number: order.order_number,
@@ -752,7 +817,7 @@ export const getPatientLabHistory = async (req, res) => {
           test_code: item.lab_tests?.test_code,
           test_name: item.lab_tests?.test_name,
           status: itemStatus,
-          result: item.lab_results?.[0] || null
+          result: enrichedResult
         });
       });
     });
@@ -771,7 +836,7 @@ export const deleteLabOrder = async (req, res) => {
     const { orderId } = req.params;
 
     // Check status
-    const { data: order } = await supabase.from('lab_orders').select('status').eq('id', orderId).single();
+    const { data: order } = await supabase.from('lab_orders').select('status').eq('id', parseInt(orderId)).single();
 
     if (!order) return res.status(404).json({ error: 'Lab order not found' });
 
@@ -779,7 +844,7 @@ export const deleteLabOrder = async (req, res) => {
       return res.status(400).json({ error: 'Only pending orders can be deleted' });
     }
 
-    const { error } = await supabase.from('lab_orders').delete().eq('id', orderId);
+    const { error } = await supabase.from('lab_orders').delete().eq('id', parseInt(orderId));
     if (error) throw error;
 
     res.json({
@@ -827,23 +892,59 @@ export const uploadLabReportFile = async (req, res) => {
     }
 
     // Insert into lab_report_files
+    console.log('Inserting into lab_report_files:', {
+      order_id: parseInt(orderId),
+      file_name: file.filename,
+      file_path: `/uploads/medical-records/${file.filename}`
+    });
+
     const { data: reportFile, error } = await supabase
       .from('lab_report_files')
       .insert({
-        order_id: orderId,
+        order_id: (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0,
         file_name: file.filename,
-        file_path: file.path
+        file_path: `/uploads/medical-records/${file.filename}`
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error (lab_report_files):', error);
+      throw error;
+    }
+
+    // NEW: Sync with medical_records table so it shows up in frontend history
+    try {
+      const { data: orderData } = await supabase
+        .from('lab_orders')
+        .select('patient_id, doctor_id')
+        .eq('id', parseInt(orderId))
+        .single();
+
+      if (orderData) {
+        await supabase.from('medical_records').insert({
+          patient_id: orderData.patient_id,
+          doctor_id: orderData.doctor_id,
+          file_name: file.filename,
+          file_path: `/uploads/medical-records/${file.filename}`,
+          file_type: file.mimetype || 'application/pdf',
+          file_size: file.size,
+          original_name: file.originalname,
+          record_date: new Date().toISOString(),
+          diagnosis: 'Lab Report',
+          notes: `Uploaded from Diagnostic Lab for Order #${orderId}`
+        });
+      }
+    } catch (syncErr) {
+      console.error('Error syncing lab report to medical_records:', syncErr);
+      // Don't fail the whole request if sync fails, but log it
+    }
 
     // Optional: Update order status to in_progress if it was pending
     await supabase
       .from('lab_orders')
       .update({ status: 'in_progress', updated_at: new Date().toISOString() })
-      .eq('id', orderId)
+      .eq('id', parseInt(orderId))
       .eq('status', 'pending');
 
     res.status(201).json({
@@ -882,13 +983,13 @@ export const uploadLabOrderItemReport = async (req, res) => {
     const { data: existingResult } = await supabase
       .from('lab_results')
       .select('id')
-      .eq('order_item_id', orderItemId)
+      .eq('order_item_id', parseInt(orderItemId))
       .maybeSingle();
 
     const resultData = {
-      order_item_id: orderItemId,
+      order_item_id: parseInt(orderItemId),
       file_name: file.filename,
-      file_path: file.path,
+      file_path: `/uploads/medical-records/${file.filename}`,
       status: 'normal',
       result_date: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -905,13 +1006,44 @@ export const uploadLabOrderItemReport = async (req, res) => {
       if (error) throw error;
       savedResult = data;
     } else {
+      console.log('Inserting into lab_results:', resultData);
       const { data, error } = await supabase
         .from('lab_results')
         .insert(resultData)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error (lab_results):', error);
+        throw error;
+      }
       savedResult = data;
+    }
+
+    // NEW: Sync with medical_records table so it shows up in frontend history
+    try {
+      // We already have item.order_id from earlier in this function
+      const { data: orderData } = await supabase
+        .from('lab_orders')
+        .select('patient_id, doctor_id')
+        .eq('id', parseInt(item.order_id))
+        .single();
+
+      if (orderData) {
+        await supabase.from('medical_records').insert({
+          patient_id: orderData.patient_id,
+          doctor_id: orderData.doctor_id,
+          file_name: file.filename,
+          file_path: `/uploads/medical-records/${file.filename}`,
+          file_type: file.mimetype || 'application/pdf',
+          file_size: file.size,
+          original_name: file.originalname,
+          record_date: new Date().toISOString(),
+          diagnosis: 'Lab Result Report',
+          notes: `Uploaded from Diagnostic Lab for Order Item #${orderItemId}`
+        });
+      }
+    } catch (syncErr) {
+      console.error('Error syncing lab item report to medical_records:', syncErr);
     }
 
     // 3. Update order & item status
@@ -919,19 +1051,19 @@ export const uploadLabOrderItemReport = async (req, res) => {
       supabase
         .from('lab_orders')
         .update({ status: 'in_progress', updated_at: new Date().toISOString() })
-        .eq('id', item.order_id)
+        .eq('id', parseInt(item.order_id))
         .eq('status', 'pending'),
       supabase
         .from('lab_order_items')
         .update({ status: 'completed' })
-        .eq('id', orderItemId)
+        .eq('id', parseInt(orderItemId))
     ]);
 
     // 4. CHECK IF ALL ITEMS HAVE RESULTS -> Auto-Complete Order
     const { data: allItems } = await supabase
       .from('lab_order_items')
       .select('id')
-      .eq('order_id', item.order_id);
+      .eq('order_id', parseInt(item.order_id));
     
     const itemIds = allItems.map(i => i.id);
     const { data: resultsCount } = await supabase
@@ -948,7 +1080,7 @@ export const uploadLabOrderItemReport = async (req, res) => {
           report_date: new Date().toISOString(),
           updated_at: new Date().toISOString() 
         })
-        .eq('id', item.order_id);
+        .eq('id', parseInt(item.order_id));
     }
 
     res.status(201).json({
@@ -1100,7 +1232,7 @@ export const updateLabOrder = async (req, res) => {
         const { error: deleteError } = await supabase
           .from('lab_order_items')
           .delete()
-          .eq('order_id', orderId)
+          .eq('order_id', parseInt(orderId))
           .in('test_id', toRemove);
         if (deleteError) throw deleteError;
       }
@@ -1119,7 +1251,7 @@ export const updateLabOrder = async (req, res) => {
     const { data: updatedOrder, error } = await supabase
       .from('lab_orders')
       .update(updates)
-      .eq('id', orderId)
+      .eq('id', (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0)
       .select()
       .single();
 

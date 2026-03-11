@@ -271,28 +271,9 @@ const PatientDetails = memo(({
                                         <div
                                             key={test.item_id}
                                             onClick={() => {
-                                                setSelectedReport({
-                                                    order: {
-                                                        order_id: test.order_id,
-                                                        order_number: test.order_number,
-                                                        patient_first_name: selectedPatient.first_name,
-                                                        patient_last_name: selectedPatient.last_name,
-                                                        patient_unique_id: selectedPatient.unique_id,
-                                                        order_date: test.order_date,
-                                                        priority: test.order_priority,
-                                                        doctor_name: test.doctor_name
-                                                    },
-                                                    items: [{
-                                                        test_name: test.test_name,
-                                                        test_code: test.test_code,
-                                                        result_text: test.result?.result_text,
-                                                        result_value: test.result?.result_value,
-                                                        status: test.result?.status
-                                                    }],
-                                                    file_name: test.result?.file_name,
-                                                    file_path: test.result?.file_path
-                                                });
-                                                setShowReportModal(true);
+                                                if (test.order_id) {
+                                                    handleViewReport(test.order_id);
+                                                }
                                             }}
                                             className="group flex items-center gap-4 p-4 bg-white dark:bg-slate-900/50 border border-border/80 rounded-2xl hover:border-blue-500/30 hover:shadow-lg transition-all cursor-pointer"
                                         >
@@ -342,7 +323,11 @@ const PatientDetails = memo(({
                                     </div>
                                 ) : (
                                     inProgressTests.map((test) => (
-                                        <div key={test.item_id} className="flex items-center gap-4 p-5 bg-muted/5 border border-border/80 rounded-2xl relative overflow-hidden group">
+                                        <div 
+                                            key={test.item_id} 
+                                            onClick={() => test.order_id && handleViewReport(test.order_id)}
+                                            className="flex items-center gap-4 p-5 bg-muted/5 border border-border/80 rounded-2xl relative overflow-hidden group cursor-pointer hover:border-blue-500/30 hover:bg-white dark:hover:bg-slate-900/50 transition-all"
+                                        >
                                             
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${test.status === 'new' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 animate-pulse'} shadow-inner`}>
                                                 <Activity className="w-5 h-5" />

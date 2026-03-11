@@ -9,14 +9,18 @@ const __dirname = path.dirname(__filename);
 
 // Create uploads directory if it doesn't exist
 const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const medicalRecordsDir = path.join(uploadDir, 'medical-records');
+
+[uploadDir, medicalRecordsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, medicalRecordsDir);
   },
   filename: (req, file, cb) => {
     // Create unique filename: timestamp-originalname
@@ -46,40 +50,51 @@ export const upload = multer({
 export const uploadPatientFile = async (req, res) => {
   try {
     const { patientId } = req.params;
-    const { doctorId, fileType } = req.body;
+    const { doctorId, fileType, record_date, notes, diagnosis } = req.body; // Destructure additional fields
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    console.log('Inserting into medical_records:', {
+      patient_id: parseInt(patientId),
+      fileName: req.file.filename,
+      filePath: `/uploads/medical-records/${req.file.filename}`
+    });
+
     const file = req.file;
     const fileName = file.filename;
-    const filePath = `/uploads/${fileName}`;
+    const filePath = `/uploads/medical-records/${fileName}`;
     const fileSize = file.size;
     const originalName = file.originalname;
 
     // Insert file record into medical_records table
-    const { data, error } = await supabase
+    const { data: record, error } = await supabase
       .from('medical_records')
       .insert({
-        patient_id: patientId,
-        doctor_id: doctorId,
+        patient_id: (patientId && !isNaN(parseInt(patientId))) ? parseInt(patientId) : null,
+        doctor_id: (doctorId && !isNaN(parseInt(doctorId))) ? parseInt(doctorId) : null,
         file_name: fileName,
         file_path: filePath,
-        file_type: fileType,
+        file_type: file.mimetype, // Use file.mimetype for more accurate type
         file_size: fileSize,
         original_name: originalName,
-        record_date: new Date().toISOString()
+        record_date: record_date || new Date().toISOString(),
+        notes: notes || null,
+        diagnosis: diagnosis || null
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error (medical_records):', error);
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
       message: 'File uploaded successfully',
-      data
+      data: record
     });
 
   } catch (error) {
@@ -108,7 +123,7 @@ export const getPatientFiles = async (req, res) => {
             *,
             doctors (first_name, last_name)
         `)
-      .eq('patient_id', patientId)
+      .eq('patient_id', (patientId && !isNaN(parseInt(patientId))) ? parseInt(patientId) : 0)
       .order('record_date', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -157,7 +172,7 @@ const getMimeType = (filename) => {
 export const downloadFile = async (req, res) => {
   try {
     const { filename } = req.params;
-    const filePath = path.join(uploadDir, filename);
+    const filePath = path.join(medicalRecordsDir, filename);
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {
@@ -221,7 +236,7 @@ export const deleteFile = async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const filePath = path.join(uploadDir, fileRecord.file_name);
+    const filePath = path.join(medicalRecordsDir, fileRecord.file_name);
 
     // Delete from database
     const { error: deleteError } = await supabase
