@@ -1,4 +1,10 @@
 import { supabase } from '../config/db.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Get lab dashboard statistics
 export const getLabStats = async (req, res) => {
@@ -891,65 +897,63 @@ export const uploadLabReportFile = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Insert into lab_report_files
-    console.log('Inserting into lab_report_files:', {
-      order_id: parseInt(orderId),
-      file_name: file.filename,
-      file_path: `/uploads/medical-records/${file.filename}`
-    });
+    const oId = (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0;
 
-    const { data: reportFile, error } = await supabase
+    // 1. Insert or Update lab_report_files (Replacement Logic)
+    const { data: existingReport } = await supabase
       .from('lab_report_files')
-      .insert({
-        order_id: (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0,
-        file_name: file.filename,
-        file_path: `/uploads/medical-records/${file.filename}`
-      })
-      .select()
-      .single();
+      .select('id, file_path')
+      .eq('order_id', oId)
+      .limit(1);
+    
+    const existing = existingReport?.[0];
 
-    if (error) {
-      console.error('Supabase insert error (lab_report_files):', error);
-      throw error;
-    }
-
-    // NEW: Sync with medical_records table so it shows up in frontend history
-    try {
-      const { data: orderData } = await supabase
-        .from('lab_orders')
-        .select('patient_id, doctor_id')
-        .eq('id', parseInt(orderId))
-        .single();
-
-      if (orderData) {
-        await supabase.from('medical_records').insert({
-          patient_id: orderData.patient_id,
-          doctor_id: orderData.doctor_id,
+    let reportFile;
+    if (existing) {
+      // Delete old file
+      if (existing.file_path) {
+        const oldPath = path.join(__dirname, '..', existing.file_path);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      const { data, error } = await supabase
+        .from('lab_report_files')
+        .update({
           file_name: file.filename,
           file_path: `/uploads/medical-records/${file.filename}`,
-          file_type: file.mimetype || 'application/pdf',
-          file_size: file.size,
-          original_name: file.originalname,
-          record_date: new Date().toISOString(),
-          diagnosis: 'Lab Report',
-          notes: `Uploaded from Diagnostic Lab for Order #${orderId}`
-        });
-      }
-    } catch (syncErr) {
-      console.error('Error syncing lab report to medical_records:', syncErr);
-      // Don't fail the whole request if sync fails, but log it
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      reportFile = data;
+    } else {
+      const { data, error } = await supabase
+        .from('lab_report_files')
+        .insert({
+          order_id: oId,
+          file_name: file.filename,
+          file_path: `/uploads/medical-records/${file.filename}`
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      reportFile = data;
     }
 
-    // Optional: Update order status to in_progress if it was pending
+    // 2. Sync with medical_records
+    await syncOrderToMedicalRecord(oId, file, 'Lab Report');
+
+    // 3. Update order status
     await supabase
       .from('lab_orders')
       .update({ status: 'in_progress', updated_at: new Date().toISOString() })
-      .eq('id', parseInt(orderId))
+      .eq('id', oId)
       .eq('status', 'pending');
 
     res.status(201).json({
       success: true,
-      message: 'Lab report uploaded successfully',
+      message: 'Lab report uploaded and replaced successfully',
       data: reportFile
     });
   } catch (error) {
@@ -958,7 +962,136 @@ export const uploadLabReportFile = async (req, res) => {
   }
 };
 
-// NEW: Upload report for a specific lab order item
+// Update an existing lab report file (e.g. after annotation)
+// Helper to sync lab report to medical_records with replacement
+const syncOrderToMedicalRecord = async (orderId, file, type = 'Lab Report') => {
+  try {
+    const { data: orderData } = await supabase
+      .from('lab_orders')
+      .select('patient_id, doctor_id')
+      .eq('id', parseInt(orderId))
+      .single();
+
+    if (!orderData) return;
+
+    // Search for ANY record for this order in notes for robust replacement
+    const { data: existingRecords } = await supabase
+      .from('medical_records')
+      .select('id, file_path, diagnosis, notes')
+      .eq('patient_id', orderData.patient_id)
+      .ilike('notes', `%Order #${orderId}%`);
+
+    const recordData = {
+      patient_id: orderData.patient_id,
+      doctor_id: orderData.doctor_id,
+      file_name: file.filename,
+      file_path: `/uploads/medical-records/${file.filename}`,
+      file_type: file.mimetype || 'application/pdf',
+      file_size: file.size,
+      original_name: file.originalname,
+      record_date: new Date().toISOString(),
+      diagnosis: type === 'Lab Report' ? 'Lab Report' : 'Annotated Lab Report',
+      notes: type === 'Lab Report' 
+        ? `Uploaded from Diagnostic Lab for Order #${orderId}`
+        : `Annotated/Signed report for Order #${orderId}`
+    };
+
+    if (existingRecords && existingRecords.length > 0) {
+      // Pick the representative record: Annotated > Lab Report > first found
+      const target = existingRecords.find(r => r.diagnosis === 'Annotated Lab Report') 
+                  || existingRecords.find(r => r.diagnosis === 'Lab Report')
+                  || existingRecords[0];
+
+      // STRICT ENFORCEMENT: Delete all OTHER records for this order to ensure exactly one row exists
+      const otherIds = existingRecords.filter(r => r.id !== target.id).map(r => r.id);
+      if (otherIds.length > 0) {
+        await supabase.from('medical_records').delete().in('id', otherIds);
+      }
+
+      // Cleanup old physical file from storage if different
+      if (target.file_path && target.file_path !== recordData.file_path) {
+        const oldPath = path.join(__dirname, '..', target.file_path);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch(e) {}
+        }
+      }
+      
+      await supabase.from('medical_records').update(recordData).eq('id', target.id);
+    } else {
+      await supabase.from('medical_records').insert(recordData);
+    }
+
+  } catch (err) {
+    console.error('Sync error:', err);
+  }
+};
+
+export const updateLabReportFile = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const oId = (orderId && !isNaN(parseInt(orderId))) ? parseInt(orderId) : 0;
+
+    // 1. Replace in lab_report_files
+    const { data: existingReport } = await supabase
+      .from('lab_report_files')
+      .select('id, file_path')
+      .eq('order_id', oId)
+      .limit(1);
+    
+    const existing = existingReport?.[0];
+
+    let reportFile;
+    if (existing) {
+      if (existing.file_path) {
+        const oldPath = path.join(__dirname, '..', existing.file_path);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      const { data, error } = await supabase
+        .from('lab_report_files')
+        .update({
+          file_name: file.filename,
+          file_path: `/uploads/medical-records/${file.filename}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      reportFile = data;
+    } else {
+      const { data, error } = await supabase
+        .from('lab_report_files')
+        .insert({
+          order_id: oId,
+          file_name: file.filename,
+          file_path: `/uploads/medical-records/${file.filename}`
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      reportFile = data;
+    }
+
+    // 2. sync with medical_records
+    await syncOrderToMedicalRecord(oId, file, 'Annotated Lab Report');
+
+    res.json({
+      success: true,
+      message: 'Report updated and replaced successfully',
+      data: reportFile
+    });
+  } catch (error) {
+    console.error('Error updating lab report:', error);
+    res.status(500).json({ error: 'Failed to update lab report' });
+  }
+};
+
 export const uploadLabOrderItemReport = async (req, res) => {
   try {
     const { orderItemId } = req.params;
@@ -1019,9 +1152,8 @@ export const uploadLabOrderItemReport = async (req, res) => {
       savedResult = data;
     }
 
-    // NEW: Sync with medical_records table so it shows up in frontend history
+    // NEW: Sync with medical_records table - with robust replacement for items
     try {
-      // We already have item.order_id from earlier in this function
       const { data: orderData } = await supabase
         .from('lab_orders')
         .select('patient_id, doctor_id')
@@ -1029,7 +1161,14 @@ export const uploadLabOrderItemReport = async (req, res) => {
         .single();
 
       if (orderData) {
-        await supabase.from('medical_records').insert({
+        const notePattern = `Order Item #${orderItemId}`;
+        const { data: existingRecords } = await supabase
+          .from('medical_records')
+          .select('id, file_path')
+          .eq('patient_id', orderData.patient_id)
+          .ilike('notes', `%${notePattern}%`);
+
+        const recordData = {
           patient_id: orderData.patient_id,
           doctor_id: orderData.doctor_id,
           file_name: file.filename,
@@ -1039,8 +1178,24 @@ export const uploadLabOrderItemReport = async (req, res) => {
           original_name: file.originalname,
           record_date: new Date().toISOString(),
           diagnosis: 'Lab Result Report',
-          notes: `Uploaded from Diagnostic Lab for Order Item #${orderItemId}`
-        });
+          notes: `Uploaded from Diagnostic Lab for ${notePattern}`
+        };
+
+        if (existingRecords && existingRecords.length > 0) {
+          const target = existingRecords[0];
+          // Delete extras if any
+          const otherIds = existingRecords.slice(1).map(r => r.id);
+          if (otherIds.length > 0) await supabase.from('medical_records').delete().in('id', otherIds);
+
+          // Cleanup old file
+          if (target.file_path && target.file_path !== recordData.file_path) {
+            const oldPath = path.join(__dirname, '..', target.file_path);
+            if (fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath); } catch(e) {} }
+          }
+          await supabase.from('medical_records').update(recordData).eq('id', target.id);
+        } else {
+          await supabase.from('medical_records').insert(recordData);
+        }
       }
     } catch (syncErr) {
       console.error('Error syncing lab item report to medical_records:', syncErr);

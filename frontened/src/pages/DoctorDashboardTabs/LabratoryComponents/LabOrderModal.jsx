@@ -22,6 +22,7 @@ import {
 import { labApi } from "../../../lib/api";
 import { toast } from "react-hot-toast";
 import { getImageUrl } from "../../../config/api";
+import ReportViewer from './ReportViewer';
 
 const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate, onVerify, onSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -238,37 +239,15 @@ const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate,
 
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row min-h-0">
                     {viewMode === 'report' && selectedReport.file_path ? (
-                        <div className="flex-1 bg-slate-900 flex flex-col items-center justify-center relative group">
-                            <iframe 
-                                src={getImageUrl(selectedReport.file_path)} 
-                                className="w-full h-full border-none bg-white font-sans text-xs flex items-center justify-center"
-                                title="Lab Report"
-                            >
-                                <div className="p-10 text-center text-white space-y-4">
-                                    <FileText className="w-12 h-12 mx-auto text-slate-500 opacity-20" />
-                                    <p>Your browser does not support PDF viewing.</p>
-                                    <a 
-                                        href={getImageUrl(selectedReport.file_path)} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-block px-4 py-2 bg-indigo-600 rounded-lg text-sm font-bold"
-                                    >
-                                        Download Report
-                                    </a>
-                                </div>
-                            </iframe>
-                            {/* Overlay control to open in new tab */}
-                            <a 
-                                href={getImageUrl(selectedReport.file_path)} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-900 text-white rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all border border-slate-700 backdrop-blur-md flex items-center gap-2"
-                            >
-                                <FileText className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Full View</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
-                            </a>
-                        </div>
+                        <ReportViewer 
+                            pdfUrl={getImageUrl(selectedReport.file_path)}
+                            orderId={order.id}
+                            onSaveSuccess={(newFile) => {
+                                // Refresh the report data or update local state
+                                if (onSuccess) onSuccess();
+                            }}
+                            onClose={() => setShowReportModal(false)}
+                        />
                     ) : (
                         <>
                             {/* Left: Test List */}

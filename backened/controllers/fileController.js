@@ -76,7 +76,7 @@ export const uploadPatientFile = async (req, res) => {
         doctor_id: (doctorId && !isNaN(parseInt(doctorId))) ? parseInt(doctorId) : null,
         file_name: fileName,
         file_path: filePath,
-        file_type: file.mimetype, // Use file.mimetype for more accurate type
+        file_type: fileType || file.mimetype, // Use fileType from body (e.g. 'prescription') if provided, else fallback to mimetype
         file_size: fileSize,
         original_name: originalName,
         record_date: record_date || new Date().toISOString(),

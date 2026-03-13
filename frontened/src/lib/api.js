@@ -107,10 +107,16 @@ export const api = {
       ...options.headers
     };
 
+    // Handle FormData (for file uploads)
+    const isFormData = data instanceof FormData;
+    if (isFormData) {
+      delete headers['Content-Type']; // Let browser set it for FormData
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify(data),
+      body: isFormData ? data : JSON.stringify(data),
       ...options
     });
 
@@ -468,6 +474,9 @@ export const labApi = {
   },
   getHistory: async (patientId) => {
     return api.get(`/lab/patient/${patientId}/history`);
+  },
+  updateReportFile: async (orderId, formData) => {
+    return api.put(`/lab/report/${orderId}/file`, formData);
   }
 };
 

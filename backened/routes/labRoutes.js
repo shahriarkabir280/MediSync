@@ -18,6 +18,7 @@ import {
   getLabPatients,
   uploadLabReportFile,
   uploadLabOrderItemReport,
+  updateLabReportFile,
   getPendingReviews,
   verifyLabResultsForOrder,
   updateLabOrder
@@ -36,8 +37,8 @@ router.get('/reviews/pending', getPendingReviews);
 router.get('/search', searchLabOrders);
 router.get('/filter', getFilteredLabOrders);
 
-// Lab reports
 router.get('/report/:orderId', getLabReport);
+router.put('/report/:orderId/file', upload.single('file'), updateLabReportFile);
 
 // Lab test categories and tests
 router.get('/categories', getLabCategories);
