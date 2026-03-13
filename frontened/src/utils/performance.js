@@ -81,23 +81,29 @@ export const reportWebVitals = (onPerfEntry) => {
       });
       observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint'] });
     }
-  } catch (error) {
+  } catch (err) {
     // Performance Observer not supported
-    console.debug('Performance monitoring not available');
+    console.debug('Performance monitoring not available', err);
   }
 };
 
 // Log performance metrics
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.addEventListener('load', () => {
-    const perfData = window.performance.timing;
-    const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-    const connectTime = perfData.responseEnd - perfData.requestStart;
-    const renderTime = perfData.domComplete - perfData.domLoading;
+    // The load event might fire before the navigation entry update is complete in timing
+    setTimeout(() => {
+      const [navEntry] = performance.getEntriesByType('navigation');
+      if (navEntry) {
+        const pageLoadTime = Math.round(navEntry.loadEventEnd - navEntry.startTime);
+        const connectTime = Math.round(navEntry.responseEnd - navEntry.requestStart);
+        // Using domInteractive as a generic metric point since domLoading is deprecated
+        const renderTime = Math.round(navEntry.domComplete - navEntry.domInteractive);
 
-    console.log('📊 Performance Metrics:');
-    console.log(`  Page Load Time: ${pageLoadTime}ms`);
-    console.log(`  Connection Time: ${connectTime}ms`);
-    console.log(`  Render Time: ${renderTime}ms`);
+        console.log('📊 Performance Metrics:');
+        console.log(`  Page Load Time: ${pageLoadTime}ms`);
+        console.log(`  Connection Time: ${connectTime}ms`);
+        console.log(`  Render Time: ${renderTime > 0 ? renderTime : 0}ms`);
+      }
+    }, 0);
   });
 }
