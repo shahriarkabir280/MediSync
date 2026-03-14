@@ -180,7 +180,7 @@ const DoctorDashboard = () => {
                 return (
                   <li key={tab.id}>
                     <button
-                      onClick={isLogout ? handleLogout : () => setActiveTab(tab.id)}
+                      onClick={() => setActiveTab(tab.id)}
                       className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-2' : 'px-3 py-1.5 lg:px-4 lg:py-2'} rounded-xl transition-all duration-300 ${isActive
                         ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/10'
                         : isLogout

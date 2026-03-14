@@ -37,75 +37,75 @@ const COLOR_THEMES = [
 
 const TRANSLATIONS = {
   en: {
-    pageTitle: "Public Website Configuration",
+    pageTitle: "Public website configuration",
     pageSubtitle: "Manage your professional online presence and patient-facing content",
-    saveChanges: "Publish Changes",
+    saveChanges: "Publish changes",
     saving: "Publishing...",
-    basicInfo: "Basic Information",
+    basicInfo: "Basic information",
     basicInfoSub: "Primary details visible on your public profile",
-    heroSection: "Hero & Welcome",
+    heroSection: "Hero & welcome",
     heroSectionSub: "First impression banner and main headlines",
-    statsSection: "Key Statistics",
+    statsSection: "Key statistics",
     statsSectionSub: "Impact numbers shown on the website",
-    websiteConfig: "Website Configuration",
+    websiteConfig: "Website configuration",
     websiteConfigSub: "SEO, display settings, and branding",
-    education: "Education & Qualifications",
+    education: "Education & qualifications",
     educationSub: "Academic background and certifications",
-    experience: "Clinical Experience",
+    experience: "Clinical experience",
     experienceSub: "Professional history and hospital affiliations",
-    services: "Services & Specialties",
+    services: "Services & specialties",
     servicesSub: "Treatments and procedures you offer",
-    chambers: "Chamber Locations",
+    chambers: "Chamber locations",
     chambersSub: "Physical practice locations and visiting hours",
-    testimonials: "Patient Stories",
+    testimonials: "Patient stories",
     testimonialsSub: "Success stories and reviews",
-    affiliates: "Affiliations & Partners",
+    affiliates: "Affiliations & partners",
     affiliatesSub: "Organizations you work with",
-    social: "Social Connections",
+    social: "Social connections",
     socialSub: "Professional network links",
-    addNew: "Add New",
+    addNew: "Add new",
     noEntries: "No entries found",
-    uploadImage: "Profile Image",
+    uploadImage: "Profile image",
     uploadHint: "Recommended: 400x400px",
     aiAssist: "AI Assist",
     labels: {
-      fullName: "Full Name",
-      experience: "Clinical Experience (Years)",
-      profileUrl: "Profile Image URL",
-      pageTitle: "Page Title",
-      tagline: "Professional Tagline",
-      metaDesc: "Meta Description",
-      degree: "Degree / Certification",
+      fullName: "Full name",
+      experience: "Clinical experience (years)",
+      profileUrl: "Profile image URL",
+      pageTitle: "Page title",
+      tagline: "Professional tagline",
+      metaDesc: "Meta description",
+      degree: "Degree / certification",
       institution: "Institution",
       year: "Year",
       details: "Details",
       role: "Role",
-      organization: "Hospital / Organization",
-      startDate: "Start Date",
-      endDate: "End Date",
-      serviceName: "Service Name",
+      organization: "Hospital / organization",
+      startDate: "Start date",
+      endDate: "End date",
+      serviceName: "Service name",
       icon: "Icon",
       description: "Description",
-      address: "Location Address",
-      visitingHours: "Visiting Hours",
+      address: "Location address",
+      visitingHours: "Visiting hours",
       platformUrl: "Profile URL",
-      heroPrefix: "Title Prefix (e.g., 'Your Heart,')",
-      heroHighlight: "Title Highlight (e.g., 'Our Expertise')",
-      heroTag: "Intro Tag",
-      heroDesc: "Welcome Text",
-      heroImage: "Hero Image URL",
-      patientCount: "Patients Treated",
-      successRate: "Success Rate",
-      consultFee: "Consultation Fee",
-      features: "Features (Comma separated)",
-      color: "Card Theme",
-      type: "Type / Category",
-      patientName: "Patient Name",
+      heroPrefix: "Title prefix (e.g., 'Your heart,')",
+      heroHighlight: "Title highlight (e.g., 'our expertise')",
+      heroTag: "Intro tag",
+      heroDesc: "Welcome text",
+      heroImage: "Hero image URL",
+      patientCount: "Patients treated",
+      successRate: "Success rate",
+      consultFee: "Consultation fee",
+      features: "Features (comma separated)",
+      color: "Card theme",
+      type: "Type / category",
+      patientName: "Patient name",
       location: "Location",
       rating: "Rating (1-5)",
-      message: "Testimonial Message",
-      affiliateName: "Organization Name",
-      affiliateLogo: "Logo / Initials"
+      message: "Testimonial message",
+      affiliateName: "Organization name",
+      affiliateLogo: "Logo / initials"
     }
   },
   bn: {
@@ -212,19 +212,19 @@ const IconPicker = ({ selected, onSelect, onClose }) => {
   );
 
   return (
-    <div className="absolute top-12 left-0 z-50 w-72 bg-white dark:bg-card border border-border rounded-xl shadow-2xl p-4 animate-in fade-in zoom-in duration-200">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Icon</h4>
-        <button onClick={onClose} className="hover:bg-muted p-1 rounded-full"><X className="h-4 w-4" /></button>
+    <div className="absolute top-10 left-0 z-50 w-64 bg-white dark:bg-card border border-border rounded-xl shadow-xl p-3 animate-in fade-in zoom-in duration-200">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-[10px] font-semibold text-muted-foreground ml-1">Select icon</h4>
+        <button onClick={onClose} className="hover:bg-muted p-1 rounded-full"><X className="h-3.5 w-3.5" /></button>
       </div>
-      <div className="relative mb-3">
-        <Search className="h-3 w-3 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative mb-2">
+        <Search className="h-3 w-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Search icons..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full pl-8 pr-3 py-2 text-xs bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full pl-7 pr-2 py-1.5 text-[11px] bg-muted/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
         />
       </div>
       <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
@@ -534,7 +534,7 @@ const PublicWebsiteTab = () => {
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Loading Public Profile...</p>
+          <p className="text-[11px] font-semibold text-muted-foreground animate-pulse">Loading public profile...</p>
         </div>
       </div>
     );
@@ -544,77 +544,74 @@ const PublicWebsiteTab = () => {
     <div className="space-y-10 pb-10">
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 backdrop-blur-xl animate-in slide-in-from-right-10 duration-300 ${notification.type === 'error' ? 'bg-red-500/10 border border-red-500/20 text-red-600' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
+        <div className={`fixed top-4 right-4 px-4 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2.5 backdrop-blur-xl animate-in slide-in-from-right-10 duration-300 ${notification.type === 'error' ? 'bg-red-500/10 border border-red-500/10 text-red-600' : 'bg-emerald-500/10 border border-emerald-500/10 text-emerald-600'
           }`}>
-          {notification.type === 'error' ? <AlertCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
-          <span className="text-[11px] font-black uppercase tracking-widest">{notification.message}</span>
+          {notification.type === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+          <span className="text-[10px] font-semibold">{notification.message}</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-0 bg-background/80 backdrop-blur-xl z-40 py-4 -mx-6 px-6 border-b border-border/40 transition-all">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-500/10 rounded-2xl">
-            <Globe className="h-6 w-6 text-indigo-600" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 bg-background/80 backdrop-blur-xl z-40 py-3 -mx-6 px-6 border-b border-border/40 transition-all">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-500/10 rounded-xl">
+            <Globe className="h-5 w-5 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-foreground tracking-tighter">{t.pageTitle}</h1>
-            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">{t.pageSubtitle}</p>
+            <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">{t.pageTitle}</h1>
+            <p className="text-muted-foreground text-[10px] font-medium mt-0.5">{t.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border">
-            <button onClick={() => setLang('en')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'en' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>EN</button>
-            <button onClick={() => setLang('bn')} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'bn' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>BN</button>
+          <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-border">
+            <button onClick={() => setLang('en')} className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${lang === 'en' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>EN</button>
+            <button onClick={() => setLang('bn')} className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${lang === 'bn' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>BN</button>
           </div>
-          <button onClick={handleSave} disabled={saveLoading} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3">
-            {saveLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save className="h-4 w-4" />} {t.saveChanges}
+          <button onClick={handleSave} disabled={saveLoading} className="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold text-[11px] hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
+            {saveLoading ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save className="h-3.5 w-3.5" />} {t.saveChanges}
           </button>
         </div>
       </div>
 
       {/* Hero Section */}
-      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
-        {/* ... Hero Content ... */}
-        <div className="flex items-center gap-4 mb-10">
+      <section className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-500/10 rounded-xl"><Layout className="h-5 w-5 text-blue-600" /></div>
           <div>
-            <h2 className="text-xl font-black text-foreground tracking-tight">{t.heroSection}</h2>
-            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{t.heroSectionSub}</p>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">{t.heroSection}</h2>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{t.heroSectionSub}</p>
           </div>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroTag}</label>
-              <input type="text" value={formData.hero.intro_tag} onChange={(e) => handleNestedChange('hero', 'intro_tag', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all" />
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.heroTag}</label>
+              <input type="text" value={formData.hero.intro_tag} onChange={(e) => handleNestedChange('hero', 'intro_tag', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-[13px] font-medium transition-all" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroPrefix}</label>
-                <input type="text" value={formData.hero.title_prefix} onChange={(e) => handleNestedChange('hero', 'title_prefix', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.heroPrefix}</label>
+                <input type="text" value={formData.hero.title_prefix} onChange={(e) => handleNestedChange('hero', 'title_prefix', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-[13px] font-medium transition-all" />
               </div>
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroHighlight}</label>
-                <input type="text" value={formData.hero.title_highlight} onChange={(e) => handleNestedChange('hero', 'title_highlight', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-bold text-blue-600 transition-all" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.heroHighlight}</label>
+                <input type="text" value={formData.hero.title_highlight} onChange={(e) => handleNestedChange('hero', 'title_highlight', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-[13px] font-bold text-blue-600 transition-all" />
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroDesc}</label>
-                <button onClick={() => handleAIGenerate('bio', 'welcome', (v) => handleNestedChange('hero', 'description', v))} className="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-0.5">
+                <label className="text-[10px] font-semibold text-muted-foreground">{t.labels.heroDesc}</label>
+                <button onClick={() => handleAIGenerate('bio', 'welcome', (v) => handleNestedChange('hero', 'description', v))} className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
               </div>
-              <textarea value={formData.hero.description} onChange={(e) => handleNestedChange('hero', 'description', e.target.value)} rows={3} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-medium transition-all resize-none" />
+              <textarea value={formData.hero.description} onChange={(e) => handleNestedChange('hero', 'description', e.target.value)} rows={3} className="w-full px-4 py-3 bg-muted/20 border border-border rounded-xl focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-[13px] font-medium transition-all resize-none" />
             </div>
           </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.heroImage}</label>
-            <div className="relative group rounded-2xl overflow-hidden border-4 border-muted aspect-video bg-muted/30">
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.heroImage}</label>
+            <div className="relative group rounded-xl overflow-hidden border-2 border-muted aspect-[5/3] bg-muted/10">
               <img src={formData.hero.image_url} className="w-full h-full object-cover" alt="Hero" />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-[80%]">
-                  <input type="text" value={formData.hero.image_url} onChange={(e) => handleNestedChange('hero', 'image_url', e.target.value)} className="w-full px-4 py-2 bg-white/90 rounded-lg text-xs" placeholder="Image URL" />
-                </div>
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-4">
+                <input type="text" value={formData.hero.image_url} onChange={(e) => handleNestedChange('hero', 'image_url', e.target.value)} className="w-full px-3 py-1.5 bg-white/95 rounded-lg text-[11px] font-medium shadow-lg" placeholder="Enter image URL" />
               </div>
             </div>
           </div>
@@ -622,41 +619,41 @@ const PublicWebsiteTab = () => {
       </section>
 
       {/* About Section Configuration */}
-      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
-        <div className="flex items-center gap-4 mb-10">
+      <section className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-emerald-500/10 rounded-xl"><UserCheck className="h-5 w-5 text-emerald-600" /></div>
           <div>
-            <h2 className="text-xl font-black text-foreground tracking-tight">About Me Configuration</h2>
-            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Professional bio and feature images</p>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">About me configuration</h2>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Professional bio and feature images</p>
           </div>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Profile Subtitle</label>
-              <input type="text" value={formData.about.subtitle} onChange={(e) => handleNestedChange('about', 'subtitle', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-medium" placeholder="E.g., A distinguished cardiologist..." />
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">Profile subtitle</label>
+              <input type="text" value={formData.about.subtitle} onChange={(e) => handleNestedChange('about', 'subtitle', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl font-medium text-[13px]" placeholder="E.g., A distinguished cardiologist..." />
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Professional Bio</label>
-                <button onClick={() => handleAIGenerate('bio', 'about', (v) => handleNestedChange('about', 'bio', v))} className="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-0.5">
+                <label className="text-[10px] font-semibold text-muted-foreground">Professional bio</label>
+                <button onClick={() => handleAIGenerate('bio', 'about', (v) => handleNestedChange('about', 'bio', v))} className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>
               </div>
-              <textarea value={formData.about.bio} onChange={(e) => handleNestedChange('about', 'bio', e.target.value)} rows={4} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-medium transition-all resize-none" />
+              <textarea value={formData.about.bio} onChange={(e) => handleNestedChange('about', 'bio', e.target.value)} rows={4} className="w-full px-4 py-3 bg-muted/20 border border-border rounded-xl focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-[13px] font-medium transition-all resize-none" />
             </div>
           </div>
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Feature Image 1 (Technology)</label>
-              <div className="flex gap-2 items-center">
-                <img src={formData.about.image_1} className="w-12 h-12 rounded-lg object-cover bg-muted" alt="1" />
-                <input type="text" value={formData.about.image_1} onChange={(e) => handleNestedChange('about', 'image_1', e.target.value)} className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-xs" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">Feature image 1 (technology)</label>
+              <div className="flex gap-3 items-center">
+                <img src={formData.about.image_1} className="w-10 h-10 rounded-lg object-cover bg-muted border border-border" alt="1" />
+                <input type="text" value={formData.about.image_1} onChange={(e) => handleNestedChange('about', 'image_1', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl text-[11px] font-medium" />
               </div>
             </div>
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Feature Image 2 (Research)</label>
-              <div className="flex gap-2 items-center">
-                <img src={formData.about.image_2} className="w-12 h-12 rounded-lg object-cover bg-muted" alt="2" />
-                <input type="text" value={formData.about.image_2} onChange={(e) => handleNestedChange('about', 'image_2', e.target.value)} className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-xs" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">Feature image 2 (research)</label>
+              <div className="flex gap-3 items-center">
+                <img src={formData.about.image_2} className="w-10 h-10 rounded-lg object-cover bg-muted border border-border" alt="2" />
+                <input type="text" value={formData.about.image_2} onChange={(e) => handleNestedChange('about', 'image_2', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl text-[11px] font-medium" />
               </div>
             </div>
           </div>
@@ -664,72 +661,72 @@ const PublicWebsiteTab = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl">
-        <div className="flex items-center gap-4 mb-10">
+      <section className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-emerald-500/10 rounded-xl"><TrendingUp className="h-5 w-5 text-emerald-600" /></div>
           <div>
-            <h2 className="text-xl font-black text-foreground tracking-tight">{t.statsSection}</h2>
-            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{t.statsSectionSub}</p>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">{t.statsSection}</h2>
+            <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{t.statsSectionSub}</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.experience}</label>
-            <input type="number" value={formData.years_experience} onChange={(e) => handleInputChange('years_experience', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.experience}</label>
+            <input type="number" value={formData.years_experience} onChange={(e) => handleInputChange('years_experience', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl font-bold text-sm" />
           </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.patientCount}</label>
-            <input type="text" value={formData.stats.patients_count} onChange={(e) => handleNestedChange('stats', 'patients_count', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.patientCount}</label>
+            <input type="text" value={formData.stats.patients_count} onChange={(e) => handleNestedChange('stats', 'patients_count', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl font-bold text-sm" />
           </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.successRate}</label>
-            <input type="text" value={formData.stats.success_rate} onChange={(e) => handleNestedChange('stats', 'success_rate', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.successRate}</label>
+            <input type="text" value={formData.stats.success_rate} onChange={(e) => handleNestedChange('stats', 'success_rate', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl font-bold text-sm" />
           </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.consultFee}</label>
-            <input type="text" value={formData.stats.consultation_fee} onChange={(e) => handleNestedChange('stats', 'consultation_fee', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl font-bold" />
+          <div className="space-y-2">
+            <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.consultFee}</label>
+            <input type="text" value={formData.stats.consultation_fee} onChange={(e) => handleNestedChange('stats', 'consultation_fee', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl font-bold text-sm" />
           </div>
         </div>
       </section>
 
       {/* Basic Info & Website Config (Combined) */}
-      <div className="grid md:grid-cols-2 gap-8">
-        <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-xl">
-          <div className="flex items-center gap-4 mb-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <section className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
             <div className="p-2 bg-indigo-500/10 rounded-xl"><User className="h-5 w-5 text-indigo-600" /></div>
-            <h2 className="text-xl font-black text-foreground tracking-tight">{t.basicInfo}</h2>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">{t.basicInfo}</h2>
           </div>
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.fullName}</label>
-              <input type="text" value={formData.full_name} onChange={(e) => handleInputChange('full_name', e.target.value)} className="w-full px-6 py-4 bg-muted/40 border border-border rounded-2xl focus:border-indigo-500 outline-none font-bold" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.fullName}</label>
+              <input type="text" value={formData.full_name} onChange={(e) => handleInputChange('full_name', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl focus:border-indigo-500 outline-none font-bold text-sm" />
             </div>
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.profileUrl}</label>
-              <input type="text" value={formData.profile_photo_url} onChange={(e) => handleInputChange('profile_photo_url', e.target.value)} className="w-full px-5 py-3 bg-muted/40 border border-border rounded-xl text-sm" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.profileUrl}</label>
+              <input type="text" value={formData.profile_photo_url} onChange={(e) => handleInputChange('profile_photo_url', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl text-[11px] font-medium" />
             </div>
           </div>
         </section>
 
-        <section className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-xl">
-          <div className="flex items-center gap-4 mb-6">
+        <section className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
             <div className="p-2 bg-pink-500/10 rounded-xl"><Globe className="h-5 w-5 text-pink-600" /></div>
-            <h2 className="text-xl font-black text-foreground tracking-tight">{t.websiteConfig}</h2>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">{t.websiteConfig}</h2>
           </div>
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.pageTitle}</label>
-              <input type="text" value={formData.website.title} onChange={(e) => handleNestedChange('website', 'title', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl outline-none font-medium" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.pageTitle}</label>
+              <input type="text" value={formData.website.title} onChange={(e) => handleNestedChange('website', 'title', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl outline-none font-medium text-sm" />
             </div>
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{t.labels.tagline}</label>
-              <input type="text" value={formData.website.tagline} onChange={(e) => handleNestedChange('website', 'tagline', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-xl outline-none font-medium" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">{t.labels.tagline}</label>
+              <input type="text" value={formData.website.tagline} onChange={(e) => handleNestedChange('website', 'tagline', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-xl outline-none font-medium text-sm" />
             </div>
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">URL Slug (e.g., dr-john-doe)</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold text-muted-foreground ml-0.5">URL slug (e.g., dr-john-doe)</label>
               <div className="flex items-center">
-                <span className="px-4 py-4 bg-muted/60 border border-r-0 border-border rounded-l-xl text-sm font-medium text-muted-foreground">/doctor/</span>
-                <input type="text" value={formData.website.url_slug} onChange={(e) => handleNestedChange('website', 'url_slug', e.target.value)} className="w-full px-5 py-4 bg-muted/40 border border-border rounded-r-xl outline-none font-bold text-indigo-600" />
+                <span className="px-3 py-2 bg-muted/40 border border-r-0 border-border rounded-l-xl text-[11px] font-medium text-muted-foreground">/doctor/</span>
+                <input type="text" value={formData.website.url_slug} onChange={(e) => handleNestedChange('website', 'url_slug', e.target.value)} className="w-full px-4 py-2 bg-muted/20 border border-border rounded-r-xl outline-none font-bold text-indigo-600 text-sm" />
               </div>
             </div>
           </div>
@@ -814,68 +811,68 @@ const PublicWebsiteTab = () => {
           ]
         }
       ].map((section) => (
-        <section key={section.id} className="bg-card/40 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 md:p-12 shadow-xl">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
+        <section key={section.id} className="bg-card/30 backdrop-blur-3xl border border-border/60 rounded-2xl p-6 md:p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
               <div className={`p-2 bg-${section.color}-500/10 rounded-xl`}><section.icon className={`h-5 w-5 text-${section.color}-600`} /></div>
               <div>
-                <h2 className="text-xl font-black text-foreground tracking-tight">{section.title}</h2>
-                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{section.subtitle}</p>
+                <h2 className="text-lg font-bold text-foreground tracking-tight">{section.title}</h2>
+                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{section.subtitle}</p>
               </div>
             </div>
-            <button onClick={() => addArrayItem(section.id)} className={`px-5 py-2.5 bg-${section.color}-500/10 text-${section.color}-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-${section.color}-500/20 transition-all flex items-center gap-2`}>
-              <Plus className="h-4 w-4" /> {t.addNew}
+            <button onClick={() => addArrayItem(section.id)} className={`px-4 py-2 bg-${section.color}-500/10 text-${section.color}-600 rounded-xl font-bold text-[11px] hover:bg-${section.color}-500/20 transition-all flex items-center gap-2`}>
+              <Plus className="h-3.5 w-3.5" /> {t.addNew}
             </button>
           </div>
 
-          <div className="space-y-4">
-            {section.items.length === 0 ? <div className="text-center py-10 opacity-50"><p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t.noEntries}</p></div> :
+          <div className="space-y-3">
+            {section.items.length === 0 ? <div className="text-center py-8 border border-dashed border-border rounded-xl opacity-50"><p className="text-[11px] font-semibold text-muted-foreground">{t.noEntries}</p></div> :
               section.items.map((item, index) => (
-                <div key={index} className="bg-background/50 border border-border rounded-[1.5rem] overflow-hidden transition-all text-foreground">
+                <div key={index} className="bg-background/40 border border-border/60 rounded-xl overflow-hidden transition-all text-foreground">
                   <div
-                    className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted/30"
+                    className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-muted/30"
                     onClick={() => {
                       const key = `${section.id}-${index}`;
                       setExpandedItems(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
                     }}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`h-2 w-2 rounded-full bg-${section.color}-500`}></div>
-                      <span className="font-bold text-sm">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-1.5 w-1.5 rounded-full bg-${section.color}-500`}></div>
+                      <span className="font-bold text-[13px] tracking-tight">
                         {item[section.summaryKey] || `${t.addNew} ${index + 1}`}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); removeArrayItem(section.id, index); }} className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-600 rounded-lg transition-all"><Trash2 className="h-4 w-4" /></button>
-                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedItems.includes(`${section.id}-${index}`) ? 'rotate-180' : ''}`} />
+                      <button onClick={(e) => { e.stopPropagation(); removeArrayItem(section.id, index); }} className="p-1.5 hover:bg-red-500/10 text-muted-foreground hover:text-red-600 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${expandedItems.includes(`${section.id}-${index}`) ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
 
                   {expandedItems.includes(`${section.id}-${index}`) && (
-                    <div className="px-6 pb-6 pt-2 border-t border-border/50 animate-in slide-in-from-top-2">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="px-5 pb-5 pt-1 border-t border-border/40 animate-in slide-in-from-top-1 duration-200">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {section.fields.map((field) => (
-                          <div key={field.name} className={`${field.col} space-y-2 relative`}>
-                            <div className="flex justify-between">
-                              <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">{field.label}</label>
-                              {field.type === 'ai-text' && <button onClick={() => handleAIGenerate('service', item.service_name || 'service', (v) => handleArrayInputChange(section.id, index, field.name, v))} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1 hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>}
+                          <div key={field.name} className={`${field.col} space-y-1.5 relative`}>
+                            <div className="flex justify-between px-0.5">
+                              <label className="text-[10px] font-semibold text-muted-foreground">{field.label}</label>
+                              {field.type === 'ai-text' && <button onClick={() => handleAIGenerate('service', item.service_name || 'service', (v) => handleArrayInputChange(section.id, index, field.name, v))} className="text-[9px] font-bold text-indigo-500 flex items-center gap-1 hover:text-indigo-600"><Sparkles className="h-3 w-3" /> {t.aiAssist}</button>}
                             </div>
 
                             {field.type === 'icon' ? (
                               <div className="relative">
-                                <button onClick={() => setActiveIconPicker(activeIconPicker === `${section.id}-${index}` ? null : `${section.id}-${index}`)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 focus:border-${section.color}-500 outline-none text-sm font-medium transition-all flex items-center gap-2`}>
+                                <button onClick={() => setActiveIconPicker(activeIconPicker === `${section.id}-${index}` ? null : `${section.id}-${index}`)} className={`w-full px-3 py-2 bg-muted/30 border border-border rounded-lg outline-none text-[12px] font-medium transition-all flex items-center gap-2 hover:bg-muted/50`}>
                                   {getDynamicIcon(item[field.name])}
-                                  <span className="opacity-50 text-xs">{(item[field.name] || 'Select').substring(0, 10)}</span>
-                                  <ChevronDown className="h-3 w-3 ml-auto opacity-50" />
+                                  <span className="opacity-70">{(item[field.name] || 'Select').substring(0, 15)}</span>
+                                  <ChevronDown className="h-3 w-3 ml-auto opacity-40" />
                                 </button>
                                 {activeIconPicker === `${section.id}-${index}` && <IconPicker selected={item[field.name]} onSelect={(n) => { handleArrayInputChange(section.id, index, field.name, n); setActiveIconPicker(null); }} onClose={() => setActiveIconPicker(null)} />}
                               </div>
                             ) : field.type === 'select' ? (
-                              <select value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 outline-none text-sm font-medium`}>
+                              <select value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-3 py-2 bg-muted/30 border border-border rounded-lg outline-none text-[12px] font-medium`}>
                                 {field.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                               </select>
                             ) : (
-                              <input type={field.type === 'ai-text' ? 'text' : field.type} value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-${section.color}-500/20 focus:border-${section.color}-500 outline-none text-sm font-medium transition-all`} />
+                              <input type={field.type === 'ai-text' ? 'text' : field.type} value={item[field.name]} onChange={(e) => handleArrayInputChange(section.id, index, field.name, e.target.value)} className={`w-full px-3 py-2 bg-muted/30 border border-border rounded-lg focus:ring-1 focus:ring-${section.color}-500/20 focus:border-${section.color}-500 outline-none text-[12px] font-medium transition-all`} />
                             )}
                           </div>
                         ))}
