@@ -6,19 +6,12 @@ import {
   Plus,
   Clock,
   MapPin,
-  Globe,
   RefreshCw,
-  ShieldCheck,
-  ArrowRight,
   X,
   Lock,
-  Keyboard,
-  Download,
-  HelpCircle,
-  Zap,
   CheckCircle2,
-  ExternalLink,
-  Printer
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import calendarApi from '../../lib/calendarApi';
@@ -49,21 +42,19 @@ const CalendarTab = () => {
     location: '',
   });
 
-  const [viewingReadOnly, setViewingReadOnly] = useState(null);   // appointment detail
-  const [viewingCustomEvent, setViewingCustomEvent] = useState(null); // custom event detail
-  const [cellEventsModal, setCellEventsModal] = useState(null);    // { events, dateStr, time }
+  const [viewingReadOnly, setViewingReadOnly] = useState(null);
+  const [viewingCustomEvent, setViewingCustomEvent] = useState(null);
+  const [cellEventsModal, setCellEventsModal] = useState(null);
 
   useEffect(() => { loadEvents(); }, []);
 
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      // Load custom events + appointment overlay in parallel
       const [customEvents, apptEvents] = await Promise.all([
         calendarApi.getEvents(),
-        calendarApi.getAppointmentEvents().catch(() => []), // non-fatal
+        calendarApi.getAppointmentEvents().catch(() => []),
       ]);
-      // Merge: custom events take precedence, appointments fill in the rest
       setEvents([...customEvents, ...apptEvents]);
     } catch (err) {
       toast.error('Failed to load events');
@@ -89,7 +80,6 @@ const CalendarTab = () => {
   };
 
   const handleEditClick = (event) => {
-    // Read-only appointment → appointment detail view
     if (event.readOnly) {
       setViewingReadOnly(event);
       setViewingCustomEvent(null);
@@ -97,14 +87,12 @@ const CalendarTab = () => {
       setIsEventModalOpen(true);
       return;
     }
-    // Custom event → detail view first
     setViewingCustomEvent(event);
     setViewingReadOnly(null);
     setEditingEventId(null);
     setIsEventModalOpen(true);
   };
 
-  // Switch from detail view → edit form
   const handleEnterEditMode = (event) => {
     setViewingCustomEvent(null);
     setViewingReadOnly(null);
@@ -118,7 +106,6 @@ const CalendarTab = () => {
       description: event.description || '',
       location: event.location || '',
     });
-    // modal stays open
   };
 
   const closeModal = () => {
@@ -130,7 +117,6 @@ const CalendarTab = () => {
     setNewEvent({ title: '', date: new Date().toISOString().split('T')[0], time: '09:00', type: '', color: 'blue', description: '', location: '' });
   };
 
-  // When a time-slot cell is clicked: if it has events, show the list modal; otherwise open new event
   const handleCellClick = (dateStr, time, cellEvents) => {
     if (cellEvents && cellEvents.length > 0) {
       setCellEventsModal({ events: cellEvents, dateStr, time });
@@ -139,7 +125,6 @@ const CalendarTab = () => {
     }
   };
 
-  // Pick an event from the cell list modal → open its detail
   const handlePickEventFromList = (event) => {
     setCellEventsModal(null);
     handleEditClick(event);
@@ -153,18 +138,10 @@ const CalendarTab = () => {
     const start = new Date(year, month - 1, day, hour, minute);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
-    // Convert to ISO string but preserve the intent of the local time selected by the doctor
-    // Since backend uses Supabase/PostgreSQL, sending local time in ISO format is best.
-    const toLocalISO = (date) => {
-      const offset = date.getTimezoneOffset();
-      const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
-      return adjustedDate.toISOString().replace('Z', ''); // Remove Z to let DB/API handle it as local or provide offset
-    };
-
     try {
       const payload = {
         title: newEvent.title,
-        start: start.toISOString(), // .toISOString() is UTC, which is what we want if DB is TIMESTAMPTZ
+        start: start.toISOString(),
         end: end.toISOString(),
         type: newEvent.type,
         color: newEvent.color,
@@ -200,15 +177,11 @@ const CalendarTab = () => {
     }
   };
 
-  // ── Overlap layout: assign col index & total cols to overlapping events ──────
   const computeColumnLayout = (evtList) => {
-    // Sort by start time
     const sorted = [...evtList].sort((a, b) => new Date(a.start) - new Date(b.start));
     const result = sorted.map(ev => ({ ...ev, _col: 0, _numCols: 1 }));
-    // Group events that overlap into clusters
     let i = 0;
     while (i < result.length) {
-      // Find all events overlapping with result[i]
       let clusterEnd = new Date(result[i].end || new Date(result[i].start).getTime() + 3_600_000);
       let j = i + 1;
       while (j < result.length && new Date(result[j].start) < clusterEnd) {
@@ -224,7 +197,6 @@ const CalendarTab = () => {
     return result;
   };
 
-  // ── Date Helpers ────────────────────────────────────────────────────────────
   const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
 
@@ -255,8 +227,7 @@ const CalendarTab = () => {
     });
   }, [currentDate]);
 
-  // 7 AM – 9 PM (15 hours)
-  const SLOT_HEIGHT = 56; // px per hour slot (must match the inline style below)
+  const SLOT_HEIGHT = 56;
   const DAY_START_HOUR = 7;
   const timeSlots = useMemo(() =>
     Array.from({ length: 15 }, (_, i) => {
@@ -264,7 +235,6 @@ const CalendarTab = () => {
       return `${h.toString().padStart(2, '0')}:00`;
     }), []);
 
-  // Current time line
   const [nowMinutes, setNowMinutes] = useState(() => {
     const n = new Date();
     return (n.getHours() - DAY_START_HOUR) * 60 + n.getMinutes();
@@ -302,7 +272,6 @@ const CalendarTab = () => {
         d.getFullYear() === date.getFullYear();
     });
 
-  // Events whose start falls within a specific hourly slot (for fallback grid render)
   const getEventsForDateTime = (date, timeStr) => {
     const [h] = timeStr.split(':').map(Number);
     return events.filter(ev => {
@@ -312,7 +281,6 @@ const CalendarTab = () => {
     });
   };
 
-  // All events that overlap a given day column (for positioned rendering)
   const getEventsForDayColumn = (date) => {
     const dayStart = new Date(date); dayStart.setHours(DAY_START_HOUR, 0, 0, 0);
     const dayEnd = new Date(date); dayEnd.setHours(DAY_START_HOUR + timeSlots.length, 0, 0, 0);
@@ -320,14 +288,12 @@ const CalendarTab = () => {
     return events.filter(ev => {
       if (!ev.start) return false;
       const s = new Date(ev.start);
-      // Use toDateString for more stable day comparison
       if (s.toDateString() !== dateStr) return false;
       const e = new Date(ev.end || s.getTime() + 3600_000);
       return s < dayEnd && e > dayStart;
     });
   };
 
-  // Compute top (px) and height (px) for a positioned event
   const getEventPosition = (event) => {
     const start = new Date(event.start);
     const end = new Date(event.end || new Date(event.start).getTime() + 60 * 60 * 1000);
@@ -356,16 +322,14 @@ const CalendarTab = () => {
     };
   }, [events]);
 
-  // ── Header Title ────────────────────────────────────────────────────────────
   const headerTitle = view === 'day'
     ? currentDate.toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })
     : `${monthName} ${yearName}`;
 
-  // ── Shared color pill for events ────────────────────────────────────────────
   const EventChip = ({ event, onClick }) => (
     <div
       onClick={onClick}
-      className={`px-2 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold truncate border-l-2 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all
+      className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium truncate border-l-2 shadow-sm cursor-pointer hover:shadow-md transition-all
         ${colorMap[event.color]?.bg || 'bg-muted'}
         ${colorMap[event.color]?.text || 'text-foreground'}
         ${colorMap[event.color]?.border || 'border-border'}`}
@@ -374,31 +338,30 @@ const CalendarTab = () => {
     </div>
   );
 
-  // ── Sidebar Panel ────────────────────────────────────────────────────────────
   const SidebarPanel = () => (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4">
       {/* Overview */}
-      <div className="bg-card/60 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 shadow-xl border border-border">
-        <h3 className="text-xs sm:text-sm font-black text-foreground mb-4 sm:mb-6 flex items-center uppercase tracking-widest">
-          <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-indigo-600" />
+      <div className="bg-card rounded-xl p-4 shadow-sm border border-border">
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center">
+          <CalendarIcon className="w-4 h-4 mr-2 text-indigo-500" />
           Overview
         </h3>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
-            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Consults</p>
-            <p className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 flex flex-col items-center justify-center">
+            <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Consults</p>
+            <p className="text-xl font-bold text-indigo-600">
               {counts.consultations}
             </p>
           </div>
-          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
-            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Surgeries</p>
-            <p className="text-xl sm:text-2xl font-black text-red-600 tracking-tighter">
+          <div className="bg-red-50/50 dark:bg-red-900/10 p-2.5 rounded-lg border border-red-100 dark:border-red-900/30 flex flex-col items-center justify-center">
+            <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Surgeries</p>
+            <p className="text-xl font-bold text-red-600">
               {counts.surgeries}
             </p>
           </div>
-          <div className="bg-muted/30 p-3 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center">
-            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Meetings</p>
-            <p className="text-xl sm:text-2xl font-black text-purple-600 tracking-tighter">
+          <div className="bg-purple-50/50 dark:bg-purple-900/10 p-2.5 rounded-lg border border-purple-100 dark:border-purple-900/30 flex flex-col items-center justify-center">
+            <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Meetings</p>
+            <p className="text-xl font-bold text-purple-600">
               {counts.meetings}
             </p>
           </div>
@@ -406,29 +369,29 @@ const CalendarTab = () => {
       </div>
 
       {/* Upcoming */}
-      <div className="bg-card/60 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 shadow-xl border border-border">
-        <h3 className="text-xs sm:text-sm font-black text-foreground mb-4 sm:mb-6 uppercase tracking-widest">Upcoming</h3>
-        <div className="space-y-2 sm:space-y-3">
+      <div className="bg-card rounded-xl p-4 shadow-sm border border-border">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming</h3>
+        <div className="space-y-1.5">
           {upcomingEvents.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-4">No upcoming events</p>
+            <p className="text-xs text-muted-foreground text-center py-3">No upcoming events</p>
           )}
           {upcomingEvents.map(event => (
             <div
               key={event.id}
               onClick={() => handleEditClick(event)}
-              className="group relative flex items-center space-x-3 p-3 sm:p-4 rounded-xl hover:bg-muted/30 transition-all border border-transparent hover:border-border cursor-pointer"
+              className="group relative flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent cursor-pointer"
             >
-              <div className={`w-1.5 h-8 sm:h-10 rounded-full shrink-0 ${colorMap[event.color]?.dot || 'bg-muted'}`} />
+              <div className={`w-1 h-8 rounded-full shrink-0 ${colorMap[event.color]?.dot || 'bg-muted'}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-black text-foreground truncate">{event.title}</p>
-                <div className="flex items-center text-[9px] sm:text-[10px] font-bold text-muted-foreground mt-0.5">
-                  <Clock className="w-3 h-3 mr-1" />
+                <p className="text-[11px] font-semibold text-foreground truncate">{event.title}</p>
+                <div className="flex items-center text-[10px] font-medium text-muted-foreground mt-0.5">
+                  <Clock className="w-3 h-3 mr-1 shrink-0" />
                   {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); handleDeleteEvent(event.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 rounded-lg transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 rounded-md transition-all"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -438,178 +401,117 @@ const CalendarTab = () => {
       </div>
 
       {/* Quick Guide */}
-      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden">
+      <div className="bg-indigo-600 rounded-xl p-4 shadow-sm text-white relative overflow-hidden">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-amber-300" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Quick Guide</h3>
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-emerald-300" />
+            <h3 className="text-sm font-semibold text-white">Quick guide</h3>
           </div>
-          <div className="space-y-2.5">
-            <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+          <div className="space-y-2 mt-3">
+            <div className="flex items-start gap-2 bg-white/10 rounded-lg p-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 mt-0.5 shrink-0" />
-              <p className="text-[10px] sm:text-[11px] text-indigo-100 leading-relaxed">Click any time slot to add events or view existing ones</p>
+              <p className="text-[10px] text-indigo-100 leading-tight">Click any time slot to add events or view existing ones.</p>
             </div>
-            <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+            <div className="flex items-start gap-2 bg-white/10 rounded-lg p-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 mt-0.5 shrink-0" />
-              <p className="text-[10px] sm:text-[11px] text-indigo-100 leading-relaxed">Appointments from your schedule appear as read-only events</p>
-            </div>
-            <div className="flex items-start gap-2.5 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 mt-0.5 shrink-0" />
-              <p className="text-[10px] sm:text-[11px] text-indigo-100 leading-relaxed">Color-code events by type for quick visual scanning</p>
+              <p className="text-[10px] text-indigo-100 leading-tight">Appointments from your schedule appear as read-only events.</p>
             </div>
           </div>
           <button
             onClick={() => loadEvents()}
-            className="mt-4 w-full flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white text-[9px] sm:text-[10px] font-black px-4 py-2.5 rounded-xl transition-all border border-white/20 uppercase tracking-widest active:scale-95 backdrop-blur-sm"
+            className="mt-4 w-full flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors border border-white/20"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Refresh Events
+            Refresh status
           </button>
         </div>
-        <CalendarIcon className="absolute -bottom-6 -right-6 w-24 sm:w-32 h-24 sm:h-32 text-white/[0.06] rotate-12" />
+        <CalendarIcon className="absolute -bottom-4 -right-4 w-24 h-24 text-white/5 rotate-12" />
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-full flex-col bg-muted/30 backdrop-blur-sm -m-3 sm:-m-6 p-3 sm:p-6">
+    <div className="flex h-full flex-col p-2 sm:p-4 bg-background">
       <Toaster position="top-right" />
 
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-8">
-        {/* Left: Title + Nav */}
-        <div className="flex items-center justify-between sm:justify-start sm:space-x-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-4">
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded-xl border border-indigo-100 dark:border-indigo-800">
+            <CalendarIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          </div>
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-r from-foreground to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-tight">
+            <h1 className="text-xl font-bold text-foreground leading-tight">
               {headerTitle}
             </h1>
-            <p className="text-muted-foreground text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] mt-0.5 sm:mt-1">
-              Medical Schedule
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+              Medical schedule overview
             </p>
           </div>
+        </div>
 
-          {/* Nav arrows (mobile: part of left group) */}
-          <div className="flex items-center bg-card/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-border p-1 sm:hidden">
-            <button onClick={() => navigatePeriod(-1)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-all active:scale-95">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+          {/* Default view navigation arrows */}
+          <div className="flex items-center bg-muted/50 rounded-lg border border-border p-1 shrink-0">
+            <button onClick={() => navigatePeriod(-1)} className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-all">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 hover:bg-muted rounded-lg text-[10px] font-black text-foreground transition-all uppercase tracking-wider">
+            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 hover:bg-background rounded-md text-xs font-medium text-foreground transition-all">
               Today
             </button>
-            <button onClick={() => navigatePeriod(1)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-all active:scale-95">
+            <button onClick={() => navigatePeriod(1)} className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-all">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
 
-        {/* Nav arrows (sm+) */}
-        <div className="hidden sm:flex items-center bg-card/60 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-1.5">
-          <button onClick={() => navigatePeriod(-1)} className="p-2.5 sm:p-3 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all active:scale-95">
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <button onClick={() => setCurrentDate(new Date())} className="px-4 sm:px-6 py-2.5 sm:py-3 hover:bg-muted rounded-xl text-[10px] sm:text-xs font-black text-foreground transition-all uppercase tracking-wider">
-            Today
-          </button>
-          <button onClick={() => navigatePeriod(1)} className="p-2.5 sm:p-3 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all active:scale-95">
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-        </div>
-
-        {/* Right: View toggle + New Event + Sidebar toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
           {/* View Toggle */}
-          <div className="flex items-center bg-card/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-border p-1">
+          <div className="flex items-center bg-muted/50 rounded-lg border border-border p-1 shrink-0">
             {['month', 'week', 'day'].map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-2.5 sm:px-4 lg:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all
-                  ${view === v ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-semibold capitalize transition-all
+                  ${view === v ? 'bg-background text-indigo-600 shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                {/* On xs show only first char; sm+ show full */}
-                <span className="sm:hidden">{v.charAt(0).toUpperCase()}</span>
-                <span className="hidden sm:inline">{v}</span>
+                {v}
               </button>
             ))}
           </div>
 
-          {/* New Event */}
           <button
             onClick={() => openNewEventModal()}
-            className="flex items-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 lg:px-8 py-2.5 sm:py-3 lg:py-4 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-500/30 transition-all hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs transition-colors shrink-0"
           >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:w-5 sm:h-5" />
-            <span className="hidden xs:inline sm:inline">New Event</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline sm:inline">New event</span>
           </button>
-
         </div>
       </div>
 
-      {/* ── Mobile Inline Overview (hidden on lg+) ── */}
-      <div className="lg:hidden bg-card/60 backdrop-blur-xl rounded-2xl border border-border shadow-lg p-3 sm:p-4 mb-3">
-        <div className="flex items-center gap-2 mb-3">
-          <CalendarIcon className="w-3.5 h-3.5 text-indigo-600" />
-          <p className="text-[9px] sm:text-[10px] font-black text-foreground uppercase tracking-widest">Overview</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Consultations */}
-          <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-indigo-500/10 rounded-xl px-3 py-2.5 border border-indigo-500/20">
-            <p className="text-lg sm:text-xl font-black text-indigo-600 leading-none">
-              {counts.consultations}
-            </p>
-            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Consults</p>
-          </div>
-          {/* Surgeries */}
-          <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-red-500/10 rounded-xl px-3 py-2.5 border border-red-500/20">
-            <p className="text-lg sm:text-xl font-black text-red-600 leading-none">
-              {counts.surgeries}
-            </p>
-            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Surgeries</p>
-          </div>
-          {/* Meetings */}
-          <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-purple-500/10 rounded-xl px-3 py-2.5 border border-purple-500/20">
-            <p className="text-lg sm:text-xl font-black text-purple-600 leading-none">
-              {counts.meetings}
-            </p>
-            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Meetings</p>
-          </div>
-          {/* Total */}
-          <div className="flex-1 min-w-[70px] flex flex-col items-center justify-center bg-muted/40 rounded-xl px-3 py-2.5 border border-border">
-            <p className="text-lg sm:text-xl font-black text-foreground leading-none">
-              {counts.total}
-            </p>
-            <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Total</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Body ── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 overflow-hidden">
-
-        {/* ── Main Calendar ── */}
-        <div className="flex-1 bg-card/60 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl border border-border flex flex-col overflow-hidden relative min-h-0">
-          {/* Loading overlay */}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden min-h-0">
+        <div className="flex-1 bg-card rounded-xl shadow-sm border border-border flex flex-col overflow-hidden relative min-h-0">
           {isLoading && (
-            <div className="absolute inset-0 bg-card/80 backdrop-blur-sm z-10 flex items-center justify-center">
+            <div className="absolute inset-0 bg-card/60 backdrop-blur-sm z-10 flex items-center justify-center">
               <div className="flex flex-col items-center">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4 shadow-xl shadow-indigo-500/20" />
-                <p className="text-[10px] sm:text-xs font-black text-muted-foreground animate-pulse uppercase tracking-widest">Loading...</p>
+                <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+                <p className="text-xs font-medium text-muted-foreground">Loading calendar...</p>
               </div>
             </div>
           )}
 
-          {/* ── Month View ── */}
+          {/* Month View */}
           {view === 'month' && (
             <>
               <div className="grid grid-cols-7 border-b border-border bg-muted/30 shrink-0">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="py-2 sm:py-4 text-center text-[8px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                  <div key={day} className="py-2.5 text-center text-[10px] font-medium text-muted-foreground">
                     <span className="sm:hidden">{day.charAt(0)}</span>
                     <span className="hidden sm:inline">{day}</span>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-7 flex-1 overflow-y-auto bg-muted/10">
                 {calendarData.map((cell, idx) => {
                   const dateEvents = getEventsForDate(cell.fullDate);
                   const isCurrent = cell.month === 'current';
@@ -617,35 +519,34 @@ const CalendarTab = () => {
                   return (
                     <div
                       key={idx}
-                      className={`min-h-[60px] sm:min-h-[90px] lg:min-h-[110px] p-1 sm:p-2 lg:p-3 border-r border-b border-border/40 transition-all hover:bg-muted/30 group relative
-                        ${!isCurrent ? 'bg-muted/10 text-muted-foreground/40' : 'text-foreground'}`}
+                      className={`min-h-[80px] sm:min-h-[100px] p-1.5 sm:p-2 border-r border-b border-border/50 transition-colors group relative bg-card hover:bg-muted/30
+                        ${!isCurrent ? 'opacity-40 pointer-events-none' : ''}`}
                     >
-                      <div className="flex justify-between items-start mb-1 sm:mb-2">
-                        <span className={`text-[10px] sm:text-xs font-black flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-lg transition-all
-                          ${isCellToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110'
-                            : isCurrent ? 'text-foreground hover:bg-muted' : 'text-muted-foreground/40'}`}
+                      <div className="flex justify-between items-start mb-1.5">
+                        <span className={`text-[11px] sm:text-xs font-medium flex items-center justify-center w-6 h-6 rounded-md
+                          ${isCellToday ? 'bg-indigo-600 text-white shadow-sm' : 'text-foreground'}`}
                         >
                           {cell.date}
                         </span>
                         {isCurrent && (
                           <button
                             onClick={() => openNewEventModal(cell.fullDate.toISOString().split('T')[0])}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded-lg transition-all active:scale-90"
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded-md transition-all"
                           >
-                            <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
+                            <Plus className="w-3 h-3 text-muted-foreground" />
                           </button>
                         )}
                       </div>
-                      <div className="space-y-0.5 sm:space-y-1">
-                        {dateEvents.slice(0, 2).map(event => (
+                      <div className="space-y-0.5">
+                        {dateEvents.slice(0, 3).map(event => (
                           <EventChip key={`evt-${event.id}-${event.start}`} event={event} onClick={(e) => { e.stopPropagation(); handleEditClick(event); }} />
                         ))}
-                        {dateEvents.length > 2 && (
+                        {dateEvents.length > 3 && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCellClick(cell.fullDate.toISOString().split('T')[0], '09:00', dateEvents); }}
-                            className="text-[8px] sm:text-[9px] text-indigo-600 font-bold pl-1 hover:underline cursor-pointer"
+                            className="text-[9px] text-indigo-500 font-medium pl-1 hover:text-indigo-600 mt-1 cursor-pointer block"
                           >
-                            +{dateEvents.length - 2} more
+                            +{dateEvents.length - 3} more
                           </button>
                         )}
                       </div>
@@ -656,55 +557,49 @@ const CalendarTab = () => {
             </>
           )}
 
-          {/* ── Week View ── */}
+          {/* Week View */}
           {view === 'week' && (() => {
             const totalH = timeSlots.length * SLOT_HEIGHT;
             const todayInWeek = weekData.findIndex(d => isToday(d));
             const showNow = todayInWeek >= 0 && nowMinutes >= 0 && nowMinutes <= timeSlots.length * 60;
             return (
               <>
-                {/* Header row */}
                 <div className="flex border-b border-border bg-muted/30 shrink-0">
-                  <div className="w-12 sm:w-16 shrink-0" />
+                  <div className="w-12 sm:w-16 shrink-0 border-r border-border/40" />
                   {weekData.map((date, i) => (
-                    <div key={i} className={`flex-1 min-w-0 py-2 sm:py-3 text-center border-l border-border/40 ${isToday(date) ? 'bg-indigo-500/5' : ''}`}>
-                      <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest truncate">
+                    <div key={i} className={`flex-1 min-w-0 py-2 sm:py-3 text-center border-r border-border/40 ${isToday(date) ? 'bg-indigo-50 dark:bg-indigo-900/10' : ''}`}>
+                      <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground truncate">
                         <span className="sm:hidden">{date.toLocaleDateString('default', { weekday: 'narrow' })}</span>
                         <span className="hidden sm:inline">{date.toLocaleDateString('default', { weekday: 'short' })}</span>
                       </p>
-                      <p className={`text-[11px] sm:text-sm font-black mt-0.5 w-7 h-7 flex items-center justify-center mx-auto rounded-full transition-all
-                        ${isToday(date) ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-foreground'}`}>
+                      <p className={`text-sm sm:text-base font-medium mt-0.5 w-7 h-7 flex items-center justify-center mx-auto rounded-md
+                        ${isToday(date) ? 'bg-indigo-600 text-white shadow-sm' : 'text-foreground'}`}>
                         {date.getDate()}
                       </p>
                     </div>
                   ))}
                 </div>
 
-                {/* Scrollable time grid */}
                 <div className="flex-1 overflow-y-auto relative" style={{ minHeight: 0 }}>
-                  {/* Grid layout */}
                   <div className="flex" style={{ height: totalH }}>
-                    {/* Time gutter */}
-                    <div className="w-12 sm:w-16 shrink-0 relative">
+                    <div className="w-12 sm:w-16 shrink-0 relative bg-muted/10 border-r border-border/40 z-10">
                       {timeSlots.map((time, idx) => (
-                        <div key={idx} className="absolute text-right pr-1.5 sm:pr-2 text-[8px] sm:text-[9px] font-black text-muted-foreground leading-none"
+                        <div key={idx} className="absolute text-right pr-2 text-[9px] font-medium text-muted-foreground w-full"
                           style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}>
                           <span className="mt-1 block">{time}</span>
                         </div>
                       ))}
                     </div>
 
-                    {/* Day columns */}
                     {weekData.map((date, colIdx) => {
                       const colEvents = getEventsForDayColumn(date);
                       const dateStr = date.toISOString().split('T')[0];
                       return (
-                        <div key={colIdx} className={`flex-1 min-w-0 border-l border-border/40 relative ${isToday(date) ? 'bg-indigo-500/[0.03]' : ''}`}
+                        <div key={colIdx} className={`flex-1 min-w-0 border-r border-border/40 relative ${isToday(date) ? 'bg-indigo-50/30 dark:bg-indigo-900/5' : ''}`}
                           style={{ height: totalH }}>
-                          {/* Hour lines */}
                           {timeSlots.map((_, idx) => (
                             <div key={idx}
-                              className="absolute w-full border-b border-border/20 hover:bg-muted/20 transition-all cursor-pointer group"
+                              className="absolute w-full border-b border-border/20 hover:bg-muted/30 transition-colors cursor-pointer group"
                               style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}
                               onClick={() => {
                                 const h = (DAY_START_HOUR + idx).toString().padStart(2, '0');
@@ -713,13 +608,11 @@ const CalendarTab = () => {
                                 handleCellClick(dateStr, time, slotEvents);
                               }}
                             >
-                              {/* Half-hour marker */}
                               <div className="absolute w-full border-b border-border/10" style={{ top: SLOT_HEIGHT / 2 }} />
-                              <Plus className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-60 transition-all" />
+                              <Plus className="absolute right-1 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                           ))}
 
-                          {/* Events — overlap-aware column layout */}
                           {computeColumnLayout(colEvents).map(event => {
                             const { top, height } = getEventPosition(event);
                             const colW = 100 / event._numCols;
@@ -727,29 +620,23 @@ const CalendarTab = () => {
                             return (
                               <div key={event.id}
                                 onClick={e => { e.stopPropagation(); handleEditClick(event); }}
-                                className={`absolute rounded-lg px-1 py-0.5 cursor-pointer shadow-md hover:shadow-xl hover:z-10 transition-all border-l-2 z-[1] overflow-hidden
+                                className={`absolute rounded-md px-1.5 py-1 cursor-pointer shadow-sm hover:shadow-md hover:z-10 transition-shadow border-l-[3px] z-[1] overflow-hidden
                                   ${colorMap[event.color]?.bg || 'bg-muted'}
                                   ${colorMap[event.color]?.text || 'text-foreground'}
                                   ${colorMap[event.color]?.border || 'border-border'}
-                                  ${event.readOnly ? 'opacity-80' : ''}`}
+                                  ${event.readOnly ? 'opacity-85' : ''}`}
                                 style={{ top, height: height - 2, left: `${colLeft}%`, width: `${colW - 1}%` }}
                               >
-                                <p className="text-[8px] sm:text-[9px] font-bold truncate leading-tight">{event.title}</p>
-                                {height > 36 && (
-                                  <p className="text-[7px] sm:text-[8px] opacity-70 truncate">
-                                    {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                )}
+                                <p className="text-[10px] font-medium leading-tight line-clamp-2">{event.title}</p>
                               </div>
                             );
                           })}
 
-                          {/* "Now" line on today column */}
                           {showNow && colIdx === todayInWeek && (
                             <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMinutes / 60) * SLOT_HEIGHT }}>
                               <div className="flex items-center">
-                                <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shrink-0" />
-                                <div className="flex-1 h-[1.5px] bg-red-500" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 -ml-1 shrink-0" />
+                                <div className="flex-1 h-px bg-red-500" />
                               </div>
                             </div>
                           )}
@@ -762,7 +649,7 @@ const CalendarTab = () => {
             );
           })()}
 
-          {/* ── Day View ── */}
+          {/* Day View */}
           {view === 'day' && (() => {
             const totalH = timeSlots.length * SLOT_HEIGHT;
             const dateStr = currentDate.toISOString().split('T')[0];
@@ -770,94 +657,82 @@ const CalendarTab = () => {
             const isCurrentDay = isToday(currentDate);
             const showNow = isCurrentDay && nowMinutes >= 0 && nowMinutes <= timeSlots.length * 60;
             return (
-              <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-                {/* Day header */}
-                <div className="flex border-b border-border bg-muted/30 shrink-0 px-3 sm:px-4 py-2.5 items-center gap-3">
-                  <span className={`text-sm sm:text-base font-black ${isCurrentDay ? 'text-indigo-600' : 'text-foreground'}`}>
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex border-b border-border bg-muted/30 shrink-0 px-4 py-3 items-center gap-3">
+                  <span className={`text-base font-semibold ${isCurrentDay ? 'text-indigo-600' : 'text-foreground'}`}>
                     {currentDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
                   </span>
-                  {isCurrentDay && <span className="text-[9px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Today</span>}
+                  {isCurrentDay && <span className="text-[10px] font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md hidden sm:inline-block">Today</span>}
                 </div>
 
-                {/* Scrollable grid */}
-                <div className="flex" style={{ height: totalH }}>
-                  {/* Time gutter */}
-                  <div className="w-12 sm:w-16 shrink-0 relative">
-                    {timeSlots.map((time, idx) => (
-                      <div key={idx} className="absolute text-right pr-1.5 sm:pr-2 text-[8px] sm:text-[9px] font-black text-muted-foreground leading-none"
-                        style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}>
-                        <span className="mt-1 block">{time}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Single day column */}
-                  <div className="flex-1 border-l border-border/40 relative" style={{ height: totalH }}>
-                    {/* Hour slot click targets */}
-                    {timeSlots.map((_, idx) => (
-                      <div key={idx}
-                        className="absolute w-full border-b border-border/20 hover:bg-muted/20 transition-all cursor-pointer group"
-                        style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}
-                        onClick={() => {
-                          const h = (DAY_START_HOUR + idx).toString().padStart(2, '0');
-                          const time = `${h}:00`;
-                          const slotEvents = getEventsForDateTime(currentDate, time);
-                          handleCellClick(dateStr, time, slotEvents);
-                        }}
-                      >
-                        {/* Half-hour line */}
-                        <div className="absolute w-full border-b border-border/10" style={{ top: SLOT_HEIGHT / 2 }} />
-                        {/* Add hint */}
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 text-indigo-500 transition-all">
-                          <Plus className="w-3.5 h-3.5" />
-                          <span className="text-[9px] font-black uppercase tracking-wider hidden sm:block">Add event</span>
+                <div className="flex-1 overflow-y-auto relative" style={{ minHeight: 0 }}>
+                  <div className="flex" style={{ height: totalH }}>
+                    <div className="w-14 sm:w-16 shrink-0 relative bg-muted/10 border-r border-border/40 z-10">
+                      {timeSlots.map((time, idx) => (
+                        <div key={idx} className="absolute text-right pr-2 text-[9px] font-medium text-muted-foreground w-full"
+                          style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}>
+                          <span className="mt-1 block">{time}</span>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
 
-                    {/* Events — overlap-aware column layout */}
-                    {computeColumnLayout(dayEvents).map(event => {
-                      const { top, height } = getEventPosition(event);
-                      if (isNaN(top) || isNaN(height)) return null;
-                      const colW = 100 / event._numCols;
-                      const colLeft = event._col * colW;
-                      const PAD_RIGHT = 24; // px reserved for the gutter (right area)
-                      return (
-                        <div key={`day-evt-${event.id}`}
-                          onClick={e => { e.stopPropagation(); handleEditClick(event); }}
-                          className={`absolute rounded-xl px-2 sm:px-3 py-1.5 cursor-pointer shadow-lg hover:shadow-2xl hover:z-10 hover:scale-[1.01] transition-all border-l-4 z-[1] overflow-hidden
-                            ${colorMap[event.color]?.bg || 'bg-muted'}
-                            ${colorMap[event.color]?.text || 'text-foreground'}
-                            ${colorMap[event.color]?.border || 'border-border'}
-                            ${event.readOnly ? 'opacity-80' : ''}`}
-                          style={{ top, height: height - 2, left: `calc(${colLeft}% + 4px)`, width: `calc(${colW}% - ${PAD_RIGHT / event._numCols}px)` }}
+                    <div className="flex-1 relative" style={{ height: totalH }}>
+                      {timeSlots.map((_, idx) => (
+                        <div key={idx}
+                          className="absolute w-full border-b border-border/20 hover:bg-muted/30 transition-colors cursor-pointer group"
+                          style={{ top: idx * SLOT_HEIGHT, height: SLOT_HEIGHT }}
+                          onClick={() => {
+                            const h = (DAY_START_HOUR + idx).toString().padStart(2, '0');
+                            const time = `${h}:00`;
+                            const slotEvents = getEventsForDateTime(currentDate, time);
+                            handleCellClick(dateStr, time, slotEvents);
+                          }}
                         >
-                          <p className="text-[10px] sm:text-xs font-black truncate leading-tight">{event.title}</p>
-                          {height > 40 && (
-                            <p className="text-[9px] sm:text-[10px] opacity-70 mt-0.5">
-                              {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              {' – '}
-                              {new Date(event.end || new Date(event.start).getTime() + 3600_000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          )}
-                          {height > 65 && event.location && (
-                            <p className="text-[8px] opacity-60 flex items-center gap-1 mt-1 truncate">
-                              <MapPin className="w-2.5 h-2.5 shrink-0" />{event.location}
-                            </p>
-                          )}
+                          <div className="absolute w-full border-b border-border/10" style={{ top: SLOT_HEIGHT / 2 }} />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center gap-1 text-indigo-500 transition-opacity">
+                            <Plus className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-medium hidden sm:block">Add event</span>
+                          </div>
                         </div>
-                      );
-                    })}
+                      ))}
 
-                    {/* Current time line */}
-                    {showNow && (
-                      <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMinutes / 60) * SLOT_HEIGHT }}>
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 rounded-full bg-red-500 -ml-1.5 shrink-0 shadow-md shadow-red-500/50" />
-                          <div className="flex-1 h-[2px] bg-red-500 shadow-sm shadow-red-500/30" />
+                      {computeColumnLayout(dayEvents).map(event => {
+                        const { top, height } = getEventPosition(event);
+                        if (isNaN(top) || isNaN(height)) return null;
+                        const colW = 100 / event._numCols;
+                        const colLeft = event._col * colW;
+                        const PAD_RIGHT = 12;
+                        return (
+                          <div key={`day-evt-${event.id}`}
+                            onClick={e => { e.stopPropagation(); handleEditClick(event); }}
+                            className={`absolute rounded-lg px-2 sm:px-3 py-1.5 cursor-pointer shadow-sm hover:shadow-md hover:z-10 transition-shadow border-l-4 z-[1] overflow-hidden
+                              ${colorMap[event.color]?.bg || 'bg-muted'}
+                              ${colorMap[event.color]?.text || 'text-foreground'}
+                              ${colorMap[event.color]?.border || 'border-border'}
+                              ${event.readOnly ? 'opacity-85' : ''}`}
+                            style={{ top, height: height - 2, left: `calc(${colLeft}% + 4px)`, width: `calc(${colW}% - ${PAD_RIGHT / event._numCols}px)` }}
+                          >
+                            <p className="text-xs font-semibold truncate leading-tight">{event.title}</p>
+                            {height > 40 && (
+                              <p className="text-[10px] font-medium opacity-75 mt-0.5">
+                                {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {' – '}
+                                {new Date(event.end || new Date(event.start).getTime() + 3600_000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {showNow && (
+                        <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMinutes / 60) * SLOT_HEIGHT }}>
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shrink-0 shadow-sm shadow-red-500/50" />
+                            <div className="flex-1 h-px bg-red-500" />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -865,231 +740,210 @@ const CalendarTab = () => {
           })()}
         </div>
 
-        {/* ── Sidebar (always visible lg+, collapsible below) ── */}
-        <div className="hidden lg:block lg:w-72 xl:w-80 overflow-y-auto shrink-0">
+        <div className="hidden lg:block lg:w-64 xl:w-72 overflow-y-auto shrink-0 hide-scrollbar">
           <SidebarPanel />
         </div>
       </div>
 
-
-
-      {/* ── Event Modal (3 modes: custom detail, read-only appointment, edit/create form) ── */}
+      {/* Modals */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-card/90 backdrop-blur-3xl rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-sm overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in duration-200 border border-border">
-
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-border flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                {viewingReadOnly && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
-                <h2 className="text-base sm:text-xl font-black text-foreground tracking-tighter">
-                  {viewingReadOnly ? 'Appointment Details'
-                    : viewingCustomEvent ? 'Event Details'
-                      : editingEventId ? 'Edit Event' : 'New Event'}
-                </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-border flex flex-col max-h-[90vh]">
+            <div className="py-3 px-4 border-b border-border flex justify-between items-center bg-muted/30 shrink-0">
+              <div className="flex items-center gap-2 text-foreground font-semibold text-base">
+                {viewingReadOnly && <Lock className="w-4 h-4 text-muted-foreground shrink-0" />}
+                {viewingReadOnly ? 'Appointment detail'
+                  : viewingCustomEvent ? 'Event detail'
+                    : editingEventId ? 'Edit event' : 'New event'}
               </div>
-              <button onClick={closeModal} className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-all active:scale-90">
+              <button onClick={closeModal} className="p-1 hover:bg-muted-foreground/10 rounded-md transition-colors">
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
-            {/* ── Mode 1: Custom Event Detail View ── */}
             {viewingCustomEvent && !editingEventId ? (
-              <div className="p-4 sm:p-6 space-y-3">
-                {/* Title card */}
-                <div className={`flex items-center gap-2.5 p-3 rounded-xl border-l-4 ${colorMap[viewingCustomEvent.color]?.bg || 'bg-muted'} ${colorMap[viewingCustomEvent.color]?.border || 'border-border'}`}>
+              <div className="p-4 space-y-4 overflow-y-auto">
+                <div className={`flex items-center gap-3 p-3 rounded-lg border-l-[3px] ${colorMap[viewingCustomEvent.color]?.bg || 'bg-muted'} ${colorMap[viewingCustomEvent.color]?.border || 'border-border'}`}>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-black text-sm ${colorMap[viewingCustomEvent.color]?.text || 'text-foreground'}`}>{viewingCustomEvent.title}</p>
-                    {viewingCustomEvent.type && <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingCustomEvent.type}</p>}
+                    <p className={`font-semibold text-sm ${colorMap[viewingCustomEvent.color]?.text || 'text-foreground'}`}>{viewingCustomEvent.title}</p>
+                    {viewingCustomEvent.type && <p className="text-[10px] text-muted-foreground font-medium mt-0.5 capitalize">{viewingCustomEvent.type}</p>}
                   </div>
-                  <div className={`w-3 h-3 rounded-full shrink-0 ${colorMap[viewingCustomEvent.color]?.dot || 'bg-muted'}`} />
                 </div>
 
-                {/* Details */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-foreground">
-                    <Clock className="w-4 h-4 text-indigo-500 shrink-0" />
-                    <span className="font-medium">
-                      {new Date(viewingCustomEvent.start).toLocaleDateString('default', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
-                      {' · '}
-                      {new Date(viewingCustomEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {' – '}
-                      {new Date(viewingCustomEvent.end || new Date(viewingCustomEvent.start).getTime() + 3600_000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                  <div className="flex gap-3 text-xs text-foreground items-start">
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">{new Date(viewingCustomEvent.start).toLocaleDateString('default', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-muted-foreground mt-0.5">
+                        {new Date(viewingCustomEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {' – '}
+                        {new Date(viewingCustomEvent.end || new Date(viewingCustomEvent.start).getTime() + 3600_000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
                   {viewingCustomEvent.location && (
-                    <div className="flex items-center gap-3 text-sm text-foreground">
-                      <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span className="font-medium">{viewingCustomEvent.location}</span>
+                    <div className="flex items-center gap-3 text-xs text-foreground">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span>{viewingCustomEvent.location}</span>
                     </div>
                   )}
                   {viewingCustomEvent.description && (
-                    <div className="bg-muted/30 rounded-xl p-3 text-xs text-muted-foreground leading-relaxed border border-border">
+                    <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground border border-border/50">
                       {viewingCustomEvent.description}
                     </div>
                   )}
                 </div>
 
-                {/* Action buttons */}
-                <div className="pt-1 flex space-x-2">
+                <div className="pt-2 flex gap-2">
                   <button
                     onClick={() => handleDeleteEvent(viewingCustomEvent.id)}
-                    className="flex-1 px-3 py-2.5 border border-red-200 dark:border-red-800 text-red-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
+                    className="flex-1 px-3 py-2 border border-red-200 dark:border-red-900/40 text-red-600 rounded-lg font-medium text-xs hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                   >
                     Delete
                   </button>
                   <button
                     onClick={() => handleEnterEditMode(viewingCustomEvent)}
-                    className="flex-1 px-3 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
+                    className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg font-medium text-xs hover:bg-indigo-700 transition-colors"
                   >
                     Edit
                   </button>
                 </div>
               </div>
-
-              /* ── Mode 2: Read-only Appointment Detail View ── */
             ) : viewingReadOnly ? (
-              <div className="p-4 sm:p-6 space-y-3">
-                <div className={`flex items-center gap-2.5 p-3 rounded-xl border-l-4 ${colorMap[viewingReadOnly.color]?.bg || 'bg-muted'} ${colorMap[viewingReadOnly.color]?.border || 'border-border'}`}>
-                  <div>
-                    <p className={`font-black text-sm ${colorMap[viewingReadOnly.color]?.text || 'text-foreground'}`}>{viewingReadOnly.title}</p>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5">{viewingReadOnly.type || 'Appointment'}</p>
-                  </div>
+              <div className="p-4 space-y-4 overflow-y-auto">
+                <div className={`p-3 rounded-lg border-l-[3px] ${colorMap[viewingReadOnly.color]?.bg || 'bg-muted'} ${colorMap[viewingReadOnly.color]?.border || 'border-border'}`}>
+                  <p className={`font-semibold text-sm ${colorMap[viewingReadOnly.color]?.text || 'text-foreground'}`}>{viewingReadOnly.title}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5 capitalize">{viewingReadOnly.type || 'Appointment'}</p>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-foreground">
-                    <Clock className="w-4 h-4 text-indigo-500 shrink-0" />
-                    <span className="font-medium">
-                      {new Date(viewingReadOnly.start).toLocaleDateString('default', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
-                      {' · '}
-                      {new Date(viewingReadOnly.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {' – '}
-                      {new Date(viewingReadOnly.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                  <div className="flex gap-3 text-xs text-foreground items-start">
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">{new Date(viewingReadOnly.start).toLocaleDateString('default', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-muted-foreground mt-0.5">
+                        {new Date(viewingReadOnly.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {' – '}
+                        {new Date(viewingReadOnly.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
                   {viewingReadOnly.location && (
-                    <div className="flex items-center gap-3 text-sm text-foreground">
-                      <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span className="font-medium">{viewingReadOnly.location}</span>
+                    <div className="flex items-center gap-3 text-xs text-foreground">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span>{viewingReadOnly.location}</span>
                     </div>
                   )}
                   {viewingReadOnly.description && (
-                    <div className="bg-muted/30 rounded-xl p-3 text-xs text-muted-foreground leading-relaxed border border-border">
+                    <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground border border-border/50">
                       {viewingReadOnly.description}
                     </div>
                   )}
                 </div>
-                <div className="pt-1 flex items-center gap-2 text-[9px] text-muted-foreground bg-muted/20 rounded-lg px-2.5 py-1.5 border border-border">
-                  <Lock className="w-3 h-3 shrink-0" />
-                  <span>Managed from Appointments tab</span>
+                <div className="pt-2">
+                  <button
+                    onClick={closeModal}
+                    className="w-full px-3 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg font-medium text-xs transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
-                <button
-                  onClick={closeModal}
-                  className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
-                >
-                  Close
-                </button>
               </div>
-
-              /* ── Mode 3: Edit / Create Form ── */
             ) : (
-              <form onSubmit={handleAddEvent} className="p-4 sm:p-6 space-y-3.5 max-h-[75vh] overflow-y-auto">
+              <form onSubmit={handleAddEvent} className="p-4 space-y-3.5 overflow-y-auto">
                 <div>
-                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Event Title</label>
+                  <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Title</label>
                   <input
                     autoFocus
                     type="text"
                     placeholder="e.g. Consultation"
                     value={newEvent.title}
                     onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/50 text-foreground text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Date</label>
+                    <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Date</label>
                     <input
                       type="date"
                       value={newEvent.date}
                       onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Time</label>
+                    <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Time</label>
                     <input
                       type="time"
                       value={newEvent.time}
                       onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-sm"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Type</label>
-                    <div className="relative">
-                      <select
-                        value={newEvent.type}
-                        onChange={e => setNewEvent({ ...newEvent, type: e.target.value })}
-                        className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-xs font-medium cursor-pointer appearance-none shadow-inner"
-                      >
-                        <option value="" disabled>Select</option>
-                        <option value="consultation">Consultation</option>
-                        <option value="surgery">Surgery</option>
-                        <option value="meeting">Meeting</option>
-                        <option value="other">Other</option>
-                      </select>
-                      <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rotate-90 text-muted-foreground pointer-events-none" />
-                    </div>
+                    <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Type</label>
+                    <select
+                      value={newEvent.type}
+                      onChange={e => setNewEvent({ ...newEvent, type: e.target.value })}
+                      className="w-full px-2 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground text-sm"
+                    >
+                      <option value="" disabled>Select</option>
+                      <option value="consultation">Consultation</option>
+                      <option value="surgery">Surgery</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="other">Other</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Location</label>
+                    <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Location</label>
                     <input
                       type="text"
                       placeholder="e.g. Room 4B"
                       value={newEvent.location}
                       onChange={e => setNewEvent({ ...newEvent, location: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/50 text-foreground text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-1 ml-0.5 tracking-widest">Description</label>
+                  <label className="block text-xs font-medium text-foreground mb-1.5 ml-0.5">Notes</label>
                   <textarea
                     rows={2}
-                    placeholder="Notes..."
+                    placeholder="Optional details..."
                     value={newEvent.description}
                     onChange={e => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-muted/30 border border-border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground text-xs font-medium resize-none leading-relaxed"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-muted-foreground/50 text-foreground text-sm resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase mb-2 ml-0.5 tracking-widest">Color</label>
-                  <div className="flex space-x-2">
+                  <label className="block text-xs font-medium text-foreground mb-2 ml-0.5">Color</label>
+                  <div className="flex gap-2.5">
                     {Object.keys(colorMap).map(color => (
                       <button
                         key={color}
                         type="button"
                         onClick={() => setNewEvent({ ...newEvent, color })}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95
+                        className={`w-6 h-6 rounded-full border-[1.5px] transition-all hover:scale-110
                           ${colorMap[color].dot}
-                          ${newEvent.color === color ? 'border-foreground ring-2 ring-border scale-110' : 'border-transparent'}`}
+                          ${newEvent.color === color ? 'border-foreground ring-2 ring-border/50 scale-110' : 'border-transparent'}`}
                       />
                     ))}
                   </div>
                 </div>
-                <div className="pt-2 flex space-x-3">
+                <div className="pt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-2.5 border border-border rounded-xl text-foreground font-black text-[10px] uppercase tracking-widest hover:bg-muted transition-all active:scale-95"
+                    className="flex-1 px-3 py-2 border border-border rounded-lg text-foreground font-medium text-xs hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
+                    className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg font-medium text-xs hover:bg-indigo-700 transition-colors shadow-sm"
                   >
                     {editingEventId ? 'Update' : 'Create'}
                   </button>
@@ -1100,36 +954,32 @@ const CalendarTab = () => {
         </div>
       )}
 
-      {/* ── Cell Events List Modal ── */}
       {cellEventsModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-card/90 backdrop-blur-3xl rounded-t-3xl sm:rounded-[2.5rem] shadow-2xl w-full sm:max-w-md overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in duration-200 border border-border">
-
-            {/* Header */}
-            <div className="p-5 sm:p-8 border-b border-border flex justify-between items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-border flex flex-col max-h-[85vh]">
+            <div className="py-3 px-4 border-b border-border flex justify-between items-center bg-muted/30 shrink-0">
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tighter">Events</h2>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                <h2 className="text-base font-semibold text-foreground">Events</h2>
+                <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
                   {cellEventsModal.dateStr} {cellEventsModal.time && `· ${cellEventsModal.time}`}
                 </p>
               </div>
-              <button onClick={() => setCellEventsModal(null)} className="p-2 sm:p-2.5 hover:bg-muted rounded-xl transition-all active:scale-90">
-                <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              <button onClick={() => setCellEventsModal(null)} className="p-1 hover:bg-muted-foreground/10 rounded-md transition-colors">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
-            {/* Events List */}
-            <div className="p-4 sm:p-6 space-y-2 max-h-[60vh] overflow-y-auto">
+            <div className="p-3 space-y-2 overflow-y-auto">
               {cellEventsModal.events.map(event => (
                 <div
                   key={event.id}
                   onClick={() => handlePickEventFromList(event)}
-                  className={`flex items-start gap-3 p-3 sm:p-4 rounded-2xl border-l-4 cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all
+                  className={`flex items-start gap-3 p-3 rounded-lg border-l-[3px] cursor-pointer hover:bg-muted/50 transition-colors
                     ${colorMap[event.color]?.bg || 'bg-muted'}
                     ${colorMap[event.color]?.border || 'border-border'}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs sm:text-sm font-black truncate ${colorMap[event.color]?.text || 'text-foreground'}`}>{event.title}</p>
+                    <p className={`text-xs font-semibold truncate ${colorMap[event.color]?.text || 'text-foreground'}`}>{event.title}</p>
                     <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
                       <Clock className="w-3 h-3 shrink-0" />
                       <span className="font-medium">
@@ -1138,30 +988,13 @@ const CalendarTab = () => {
                         {new Date(event.end || new Date(event.start).getTime() + 3600_000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    {event.location && (
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
-                        <MapPin className="w-3 h-3 shrink-0" />
-                        <span className="truncate">{event.location}</span>
-                      </div>
-                    )}
-                    {event.type && (
-                      <span className="inline-block mt-1.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest bg-muted/50 text-muted-foreground px-2 py-0.5 rounded-md border border-border">
-                        {event.type}
-                      </span>
-                    )}
-                    {event.readOnly && (
-                      <span className="inline-flex items-center gap-1 mt-1.5 text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
-                        <Lock className="w-2.5 h-2.5" /> Appointment
-                      </span>
-                    )}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1 opacity-40" />
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-50" />
                 </div>
               ))}
             </div>
 
-            {/* Add New Event button */}
-            <div className="p-4 sm:p-6 pt-0">
+            <div className="p-3 pt-1 shrink-0 border-t border-border">
               <button
                 onClick={() => {
                   const ds = cellEventsModal.dateStr;
@@ -1169,17 +1002,15 @@ const CalendarTab = () => {
                   setCellEventsModal(null);
                   openNewEventModal(ds, tm);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg font-medium text-xs hover:bg-indigo-700 transition-colors shadow-sm"
               >
-                <Plus className="w-4 h-4" />
-                Add New Event
+                <Plus className="w-3.5 h-3.5" />
+                Add event
               </button>
             </div>
           </div>
         </div>
       )}
-
-
     </div>
   );
 };
