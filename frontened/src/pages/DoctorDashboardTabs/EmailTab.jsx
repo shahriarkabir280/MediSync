@@ -516,7 +516,7 @@ const EmailTab = () => {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-lg font-black tracking-tight capitalize">{selectedFolder}</h2>
+            <h2 className="text-lg font-semibold tracking-tight capitalize">{selectedFolder}</h2>
             <div className="w-10" /> {/* Spacer */}
           </div>
 
@@ -546,26 +546,19 @@ const EmailTab = () => {
           />
 
           {loading ? (
-            <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 rounded-[1.5rem] border-4 border-indigo-600/10"></div>
-                <div className="absolute inset-0 rounded-[1.5rem] border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+            <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+              <div className="relative">
+                <div className="w-10 h-10 border-2 border-indigo-600/10 rounded-full"></div>
+                <div className="absolute inset-0 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
-              <div className="flex flex-col items-center space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/40 animate-pulse">Syncing Encrypted Inbox</p>
-                <div className="flex space-x-1">
-                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce"></div>
-                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-1 h-1 bg-indigo-600/20 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                </div>
-              </div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground animate-pulse">Syncing Inbox...</p>
             </div>
           ) : filteredEmails.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 text-center animate-in fade-in zoom-in-95 duration-500">
-              <div className="w-20 h-20 md:w-28 md:h-28 bg-muted/20 rounded-[2.5rem] md:rounded-[3rem] flex items-center justify-center mb-6 md:mb-8 transform rotate-6 shadow-inner border border-border/50">
+              <div className="w-20 h-20 md:w-28 md:h-28 bg-muted/20 rounded-xl md:rounded-xl flex items-center justify-center mb-6 md:mb-8 transform rotate-6 border border-border/50">
                 <Inbox className="w-8 h-8 md:w-12 md:h-12 text-muted-foreground/20" />
               </div>
-              <h3 className="text-lg md:text-xl font-black text-foreground tracking-tight mb-2 md:mb-3">No messages yet</h3>
+              <h3 className="text-lg md: font-semibold text-foreground tracking-tight mb-2 md:mb-3">No messages yet</h3>
               <p className="text-xs md:text-sm font-medium text-muted-foreground/40 max-w-[200px] leading-relaxed mx-auto italic">
                 "{searchQuery ? 'No matches found.' : 'Your inbox is clear.'}"
               </p>
