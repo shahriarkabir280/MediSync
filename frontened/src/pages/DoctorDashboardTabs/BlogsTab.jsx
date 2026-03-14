@@ -244,8 +244,10 @@ const BlogsTab = memo(() => {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-foreground mb-2 tracking-tighter">Manage Blogs</h1>
-          <p className="text-muted-foreground text-[11px] font-black uppercase tracking-[0.3em]">Create, edit, and manage your blog posts to share medical insights</p>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Manage blogs</h1>
+          <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">
+            Create, edit, and manage your blog posts to share medical insights
+          </p>
         </div>
         <button
           onClick={() => {
@@ -261,44 +263,44 @@ const BlogsTab = memo(() => {
               image: ''
             });
           }}
-          className="bg-indigo-600 text-white px-8 py-4 rounded-[1.5rem] hover:bg-indigo-700 transition-all flex items-center gap-3 font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:-translate-y-1 active:scale-95"
+          className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2 font-bold text-xs shadow-sm active:scale-95"
         >
-          <Plus size={20} />
-          New Blog Post
+          <Plus size={16} />
+          New post
         </button>
       </div>
 
       {/* Blog Form Modal */}
       {showBlogForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-card/80 backdrop-blur-3xl rounded-[3rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-border shadow-2xl">
-            <div className="p-8 border-b border-border">
-              <h2 className="text-2xl font-black text-foreground tracking-tighter">
-                {editingBlog ? 'Edit Blog Post' : 'Create New Blog Post'}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground tracking-tight">
+                {editingBlog ? 'Edit blog post' : 'Create new blog post'}
               </h2>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Blog Title</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Blog title</label>
                   <input
                     type="text"
                     value={blogForm.title}
                     onChange={(e) => handleBlogFormChange('title', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60"
                     placeholder="Enter blog title..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Category</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Category</label>
                   <select
                     value={blogForm.category}
                     onChange={(e) => handleBlogFormChange('category', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-bold text-foreground cursor-pointer appearance-none"
                   >
-                    <option value="">Select Category</option>
+                    <option value="">Select category</option>
                     {blogCategories.map(category => (
                       <option key={category} value={category}>{category}</option>
                     ))}
@@ -306,11 +308,11 @@ const BlogsTab = memo(() => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Status</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Status</label>
                   <select
                     value={blogForm.status}
                     onChange={(e) => handleBlogFormChange('status', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-bold text-foreground cursor-pointer appearance-none"
                   >
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
@@ -318,50 +320,50 @@ const BlogsTab = memo(() => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Tags (comma separated)</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Tags (comma separated)</label>
                   <input
                     type="text"
                     value={blogForm.tags}
                     onChange={(e) => handleBlogFormChange('tags', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60"
                     placeholder="health, medicine, tips..."
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Featured Image URL</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Featured image URL</label>
                   <input
                     type="text"
                     value={blogForm.image}
                     onChange={(e) => handleBlogFormChange('image', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60"
                     placeholder="https://images.unsplash.com/..."
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Excerpt</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Excerpt</label>
                   <textarea
                     value={blogForm.excerpt}
                     onChange={(e) => handleBlogFormChange('excerpt', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium h-24 resize-none"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60 h-20 resize-none"
                     placeholder="Brief description of the blog post..."
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-muted-foreground uppercase mb-2 ml-1 tracking-[0.2em]">Content</label>
+                  <label className="block text-[11px] font-bold text-muted-foreground mb-1.5 ml-1">Content</label>
                   <textarea
                     value={blogForm.content}
                     onChange={(e) => handleBlogFormChange('content', e.target.value)}
-                    className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium h-64 resize-none"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60 h-48 resize-none"
                     placeholder="Write your blog content here..."
                   />
                 </div>
               </div>
             </div>
 
-            <div className="p-8 border-t border-border flex justify-end gap-4">
+            <div className="p-5 border-t border-border flex justify-end gap-3 bg-card/50">
               <button
                 onClick={() => {
                   setShowBlogForm(false);
@@ -376,16 +378,16 @@ const BlogsTab = memo(() => {
                     image: ''
                   });
                 }}
-                className="px-6 py-4 border border-border rounded-2xl text-foreground font-black text-[11px] uppercase tracking-[0.2em] hover:bg-muted transition-all active:scale-95"
+                className="px-5 py-2 border border-border rounded-lg text-foreground font-bold text-xs hover:bg-muted transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!blogForm.title || !blogForm.content}
-                className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold text-xs shadow-sm shadow-indigo-500/10 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingBlog ? 'Update Blog' : 'Create Blog'}
+                {editingBlog ? 'Update post' : 'Create post'}
               </button>
             </div>
           </div>
@@ -393,144 +395,155 @@ const BlogsTab = memo(() => {
       )}
 
       {/* Search and Filters */}
-      <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-8 shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
+      <div className="bg-card border border-border rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-16 -mt-16"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 relative z-10">
+          <div className="relative group">
+            <Search className="h-4 w-4 absolute left-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground group-focus-within:text-indigo-600 transition-colors" />
             <input
               type="text"
-              placeholder="Search blogs..."
+              placeholder="Search all posts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground placeholder:text-muted-foreground/40 font-medium"
+              className="w-full pl-10 pr-3 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-medium text-foreground placeholder:text-muted-foreground/60"
             />
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
-          >
-            <option value="all">All Status</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-          </select>
+          <div className="relative group">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full px-4 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-bold text-foreground appearance-none cursor-pointer"
+            >
+              <option value="all">All statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+            </select>
+            <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3px] border-t-muted-foreground"></div>
+            </div>
+          </div>
 
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full px-4 py-3 bg-muted/30 border border-border rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-foreground font-medium"
-          >
-            <option value="all">All Categories</option>
-            {blogCategories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
+          <div className="relative group">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full px-4 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs font-bold text-foreground appearance-none cursor-pointer"
+            >
+              <option value="all">All categories</option>
+              {blogCategories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+            <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3px] border-t-muted-foreground"></div>
+            </div>
+          </div>
 
-          <div className="flex items-center text-sm text-muted-foreground font-black uppercase tracking-wider">
-            <Filter size={16} className="mr-2" />
-            {filteredBlogs.length} blog(s) found
+          <div className="flex items-center text-xs text-muted-foreground font-bold pl-2">
+            <Filter size={14} className="mr-2 opacity-50" />
+            {filteredBlogs.length} posts found
           </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-indigo-500/10 transition-all">
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Total Blogs</p>
-              <p className="text-3xl font-black text-foreground tracking-tighter">{blogs.length}</p>
+              <p className="text-[10px] font-bold text-muted-foreground mb-1">Total posts</p>
+              <p className="text-xl font-bold text-foreground">{blogs.length}</p>
             </div>
-            <div className="p-4 bg-blue-500/10 rounded-2xl">
-              <BookOpen className="h-8 w-8 text-blue-600" />
+            <div className="p-2.5 bg-blue-500/10 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <BookOpen className="h-5 w-5 text-blue-600 group-hover:text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-green-500/10 transition-all">
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Published</p>
-              <p className="text-3xl font-black text-green-600 tracking-tighter">
+              <p className="text-[10px] font-bold text-muted-foreground mb-1">Published</p>
+              <p className="text-xl font-bold text-emerald-600">
                 {blogs.filter(blog => blog.status === 'published').length}
               </p>
             </div>
-            <div className="p-4 bg-green-500/10 rounded-2xl">
-              <Eye className="h-8 w-8 text-green-600" />
+            <div className="p-2.5 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+              <Eye className="h-5 w-5 text-emerald-600 group-hover:text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-orange-500/10 transition-all">
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Drafts</p>
-              <p className="text-3xl font-black text-orange-600 tracking-tighter">
+              <p className="text-[10px] font-bold text-muted-foreground mb-1">Drafts</p>
+              <p className="text-xl font-bold text-orange-600">
                 {blogs.filter(blog => blog.status === 'draft').length}
               </p>
             </div>
-            <div className="p-4 bg-orange-500/10 rounded-2xl">
-              <Edit3 className="h-8 w-8 text-orange-600" />
+            <div className="p-2.5 bg-orange-500/10 rounded-lg group-hover:bg-orange-500 group-hover:text-white transition-colors">
+              <Edit3 className="h-5 w-5 text-orange-600 group-hover:text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] p-6 shadow-2xl hover:shadow-purple-500/10 transition-all">
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">Total Views</p>
-              <p className="text-3xl font-black text-purple-600 tracking-tighter">
-                {blogs.reduce((total, blog) => total + blog.views, 0)}
+              <p className="text-[10px] font-bold text-muted-foreground mb-1">Total views</p>
+              <p className="text-xl font-bold text-purple-600">
+                {blogs.reduce((total, blog) => total + (blog.views || 0), 0)}
               </p>
             </div>
-            <div className="p-4 bg-purple-500/10 rounded-2xl">
-              <BarChart3 className="h-8 w-8 text-purple-600" />
+            <div className="p-2.5 bg-purple-500/10 rounded-lg group-hover:bg-purple-500 group-hover:text-white transition-colors">
+              <BarChart3 className="h-5 w-5 text-purple-600 group-hover:text-white" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Blog List */}
-      <div className="bg-card/60 backdrop-blur-3xl border border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div className="p-8 border-b border-border">
-          <h3 className="text-xl font-black text-foreground tracking-tighter">Blog Posts</h3>
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-border bg-muted/20">
+          <h3 className="text-sm font-bold text-foreground">Blog posts</h3>
         </div>
 
         <div className="divide-y divide-border/40">
           {loading ? (
-            <div className="p-20 text-center">
-              <BookOpen className="mx-auto h-16 w-16 text-indigo-500/30 mb-6 animate-pulse" />
-              <h3 className="text-xl font-black text-foreground mb-2">Loading medical insights...</h3>
-              <p className="text-muted-foreground text-sm font-medium tracking-wide">Fetching your premium content</p>
+            <div className="p-12 text-center text-muted-foreground">
+              <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+              <p className="text-xs font-bold">Loading medical insights...</p>
             </div>
           ) : filteredBlogs.length === 0 ? (
-            <div className="p-20 text-center">
-              <BookOpen className="mx-auto h-16 w-16 text-muted-foreground/20 mb-6" />
-              <h3 className="text-xl font-black text-foreground mb-2">No blogs found</h3>
-              <p className="text-muted-foreground mb-8 text-sm font-medium max-w-sm mx-auto leading-relaxed">
+            <div className="p-16 text-center">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
+              <h3 className="text-base font-bold text-foreground mb-1">No blogs found</h3>
+              <p className="text-muted-foreground mb-6 text-xs font-medium max-w-sm mx-auto leading-relaxed">
                 {searchTerm || filterStatus !== 'all' || filterCategory !== 'all'
-                  ? 'We couldn\'t find any blogs matching your current filters. Try adjusting your search.'
-                  : 'Your dashboard is empty. Start sharing your medical expertise with your patients today.'
+                  ? "We couldn't find any blogs matching your current filters. Try adjusting your search."
+                  : "Your dashboard is empty. Start sharing your medical expertise with your patients today."
                 }
               </p>
               {!searchTerm && filterStatus === 'all' && filterCategory === 'all' && (
                 <button
                   onClick={() => setShowBlogForm(true)}
-                  className="bg-indigo-600 text-white px-8 py-4 rounded-2xl hover:bg-indigo-700 transition-all font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 active:scale-95"
+                  className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-all font-bold text-xs shadow-sm active:scale-95"
                 >
-                  Create Your First Entry
+                  Create your first entry
                 </button>
               )}
             </div>
           ) : (
             filteredBlogs.map((blog) => (
-              <div key={blog.id} className="p-8 hover:bg-muted/30 transition-all group border-l-4 border-transparent hover:border-indigo-600">
+              <div key={blog.id} className="p-5 hover:bg-muted/30 transition-all group border-l-4 border-transparent hover:border-indigo-600">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-4 mb-3">
-                      <h3 className="text-xl font-black text-foreground tracking-tight truncate group-hover:text-indigo-600 transition-colors">{blog.title}</h3>
-                      <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${blog.status === 'published'
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-[15px] font-bold text-foreground tracking-tight truncate group-hover:text-indigo-600 transition-colors">{blog.title}</h3>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold ${blog.status === 'published'
                         ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                         : 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
                         }`}>
@@ -538,61 +551,61 @@ const BlogsTab = memo(() => {
                       </span>
                     </div>
 
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2 font-medium">{blog.excerpt}</p>
+                    <p className="text-muted-foreground text-[12px] leading-relaxed mb-3 line-clamp-2 font-medium">{blog.excerpt}</p>
 
-                    <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                      <span className="flex items-center gap-2">
-                        <Calendar size={14} className="text-indigo-500" />
+                    <div className="flex flex-wrap items-center gap-4 text-[9px] font-bold text-muted-foreground/70">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar size={12} className="text-indigo-500" />
                         {blog.publishDate}
                       </span>
-                      <span className="flex items-center gap-2">
-                        <Eye size={14} className="text-indigo-500" />
-                        {blog.views} views
+                      <span className="flex items-center gap-1.5">
+                        <Eye size={12} className="text-indigo-500" />
+                        {blog.views || 0} views
                       </span>
-                      <span className="flex items-center gap-2">
-                        <BookOpen size={14} className="text-indigo-500" />
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen size={12} className="text-indigo-500" />
                         {blog.readTime}
                       </span>
-                      <span className="bg-muted px-3 py-1 rounded-lg text-foreground/70">{blog.category}</span>
+                      <span className="bg-muted px-2 py-0.5 rounded-md text-foreground/70 border border-border/50">{blog.category}</span>
                     </div>
 
                     {blog.tags && blog.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
+                      <div className="flex flex-wrap gap-1.5 mt-3">
                         {blog.tags.map((tag, index) => (
-                          <span key={index} className="bg-indigo-500/5 text-indigo-500/80 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-500/10">
-                            #{tag}
+                          <span key={index} className="bg-indigo-500/5 text-indigo-500/80 px-2 py-0.5 rounded-md text-[9px] font-bold border border-indigo-500/10">
+                            #{tag.toLowerCase()}
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 ml-8 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  <div className="flex items-center gap-2 ml-6 opacity-0 group-hover:opacity-100 transition-all">
                     <button
                       onClick={() => handleEditBlog(blog)}
-                      className="p-3 bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500 hover:text-white rounded-2xl transition-all active:scale-95 shadow-lg shadow-indigo-500/5"
-                      title="Edit Post"
+                      className="p-2 hover:bg-muted rounded-lg transition-all text-muted-foreground hover:text-indigo-600 active:scale-95 border border-border/40"
+                      title="Edit post"
                     >
-                      <Edit3 size={18} />
+                      <Edit3 size={15} />
                     </button>
 
                     <button
                       onClick={() => handlePublishBlog(blog.id)}
-                      className={`p-3 rounded-2xl transition-all active:scale-95 shadow-lg ${blog.status === 'published'
-                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white shadow-orange-500/5'
-                        : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white shadow-emerald-500/5'
+                      className={`p-2 rounded-lg transition-all active:scale-95 border border-border/40 ${blog.status === 'published'
+                        ? 'hover:bg-orange-500/10 text-muted-foreground hover:text-orange-600'
+                        : 'hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-600'
                         }`}
-                      title={blog.status === 'published' ? 'Move to Draft' : 'Publish Post'}
+                      title={blog.status === 'published' ? 'Move to draft' : 'Publish post'}
                     >
-                      <Eye size={18} />
+                      <Eye size={15} />
                     </button>
 
                     <button
                       onClick={() => handleDeleteBlog(blog.id)}
-                      className="p-3 bg-red-500/10 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-500/5"
-                      title="Delete Post"
+                      className="p-2 hover:bg-red-500/10 rounded-lg transition-all text-muted-foreground hover:text-red-700 active:scale-95 border border-border/40"
+                      title="Delete post"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
