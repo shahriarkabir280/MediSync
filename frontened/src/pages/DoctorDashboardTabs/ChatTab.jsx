@@ -132,11 +132,11 @@ const LinkPreview = ({ content, isOwn }) => {
       )}
       <div className="p-2.5">
         {preview.siteName && (
-          <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isOwn ? 'text-indigo-200' : 'text-indigo-600'}`}>
+          <p className={`text-[9px] font-semibold   mb-1 ${isOwn ? 'text-indigo-200' : 'text-indigo-600'}`}>
             {preview.siteName}
           </p>
         )}
-        <h4 className={`text-[11px] font-black line-clamp-1 mb-1 ${isOwn ? 'text-white' : 'text-foreground'}`}>
+        <h4 className={`text-[11px] font-semibold line-clamp-1 mb-1 ${isOwn ? 'text-white' : 'text-foreground'}`}>
           {preview.title || 'Visit Website'}
         </h4>
         {preview.description && (
@@ -257,14 +257,14 @@ const VoiceMessage = ({ url, isOwn }) => {
             );
           })}
         </div>
-        <div className="flex justify-between items-center text-[10px] font-black tracking-widest uppercase opacity-80">
+        <div className="flex justify-between items-center text-[10px] font-semibold   opacity-80">
           <span className={isOwn ? 'text-indigo-50' : 'text-muted-foreground'}>
             {isPlaying ? formatTime(currentTime) : (duration ? formatTime(duration) : '0:00')}
           </span>
           <audio ref={audioRef} src={getMediaUrl(url)} preload="metadata" />
           <button
             onClick={handleSpeedToggle}
-            className={`px-1.5 py-0.5 rounded-full text-[9px] font-black transition-all border ${isOwn
+            className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold transition-all border ${isOwn
               ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
               : 'bg-black/5 border-black/10 hover:bg-black/10 text-indigo-600'
               }`}
@@ -332,13 +332,13 @@ const CallSummary = ({ content, isOwn }) => {
   const config = getStatusConfig();
 
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isOwn ? 'border-white/10 bg-white/5' : 'border-border/50 bg-muted/20'} min-w-[200px]`}>
+    <div className={`flex items-center gap-3 p-3 rounded-xl border ${isOwn ? 'border-white/10 bg-white/5' : 'border-border/50 bg-muted/20'} min-w-[200px]`}>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.bg} ${config.color} shadow-sm transition-transform hover:scale-105`}>
         {config.icon}
       </div>
       <div className="flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className={`text-[11px] font-black uppercase tracking-widest ${isOwn ? 'text-white' : 'text-foreground'}`}>
+          <p className={`text-[11px] font-semibold   ${isOwn ? 'text-white' : 'text-foreground'}`}>
             {config.text}
           </p>
         </div>
@@ -388,7 +388,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
   if (message.is_deleted) {
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 px-4`}>
-        <div className="max-w-[85%] px-4 py-2 rounded-2xl bg-muted/30 border border-border/50 text-muted-foreground italic text-[11px]">
+        <div className="max-w-[85%] px-4 py-2 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground italic text-[11px]">
           Message deleted
         </div>
       </div>
@@ -450,7 +450,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
             {message.is_forwarded && (
               <div className={`flex items-center gap-1 mb-1 opacity-60 ${isOwn ? 'text-indigo-50' : 'text-muted-foreground'}`}>
                 <Forward size={10} className="stroke-[3]" />
-                <span className="text-[9px] font-black uppercase tracking-tighter">Forwarded</span>
+                <span className="text-[9px] font-semibold  tracking-tighter">Forwarded</span>
               </div>
             )}
             {/* Media Content */}
@@ -513,7 +513,7 @@ const MessageBubble = ({ message, isOwn, isFirst, isLast, onReply, onDelete, onF
                         <FileText size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-black truncate leading-tight ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
+                        <p className={`text-[11px] font-semibold truncate leading-tight ${isOwn ? 'text-white' : 'text-foreground'}`}>{message.media_name}</p>
                         <p className={`text-[9px] opacity-70 font-bold mt-1 ${isOwn ? 'text-indigo-100' : 'text-muted-foreground'}`}>
                           {(message.media_size / 1024).toFixed(1)} KB
                         </p>
@@ -2143,14 +2143,14 @@ const ChatTab = () => {
   const showNoResults = searchQuery.trim().length >= 1 && searchResults.length === 0 && !isSearching;
 
   return (
-    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full flex bg-card rounded-2xl overflow-x-hidden overflow-y-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
+    <div className="h-[calc(100vh-110px)] lg:h-[calc(100vh-140px)] w-full flex bg-card rounded-xl overflow-x-hidden overflow-y-hidden shadow-2xl border border-border animate-in fade-in zoom-in duration-500">
       {/* Left Sidebar - Chat List */}
       <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} w-full lg:w-[320px] flex-shrink-0 flex-col bg-card/50 backdrop-blur-md border-r border-border`}>
         {/* Modern Glassmorphism Header */}
         <div className="p-2 md:p-4 bg-card/80 backdrop-blur-xl sticky top-0 z-20 border-b border-border">
           <div className="flex items-center justify-between mb-2 md:mb-4">
             <div>
-              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent font-outfit">
+              <h2 className="text-lg md: font-bold bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent font-outfit">
                 Messages
               </h2>
             </div>
@@ -2242,12 +2242,12 @@ const ChatTab = () => {
           {isSearching ? (
             <div className="flex flex-col items-center justify-center h-48 space-y-4">
               <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Searching records...</p>
+              <p className="text-xs font-bold text-slate-400  ">Searching records...</p>
             </div>
           ) : showSearchResults ? (
             <>
               <div className="px-3 py-2 flex items-center justify-between">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <p className="text-[10px] font-bold text-slate-400  ">
                   {!searchQuery.trim() ? 'Suggested People' : 'Search Results'}
                 </p>
                 {isSearching && <div className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>}
@@ -2273,15 +2273,15 @@ const ChatTab = () => {
                       <div className={`w-8 h-8 bg-gradient-to-br ${user.user_type === 'doctor'
                         ? 'from-indigo-100 to-indigo-200 text-indigo-700'
                         : 'from-emerald-100 to-emerald-200 text-emerald-700'
-                        } rounded-xl flex items-center justify-center font-black text-[10px] flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                        } rounded-xl flex items-center justify-center font-semibold text-[10px] flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-300`}>
                         {user.user_name?.charAt(0) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-black text-foreground truncate text-[13px]">{user.user_name}</h4>
+                        <h4 className="font-semibold text-foreground truncate text-[13px]">{user.user_name}</h4>
                         <div className="flex items-center">
                           <span className={`inline-block w-1.5 h-1.5 rounded-full mr-2 ${user.user_type === 'doctor' ? 'bg-indigo-400' : 'bg-emerald-400'
                             }`}></span>
-                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">
+                          <span className="text-[9px] font-bold text-muted-foreground  tracking-tight">
                             {user.user_type === 'doctor' ? 'Provider' : 'Patient'}
                             {user.specialization && ` • ${user.specialization}`}
                           </span>
@@ -2315,7 +2315,7 @@ const ChatTab = () => {
             <div className="space-y-1">
               {searchQuery.trim().length > 0 && (
                 <div className="px-3 py-2">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Conversations</p>
+                  <p className="text-[10px] font-bold text-slate-400  ">Conversations</p>
                 </div>
               )}
               {filteredChats.map((chat) => (
@@ -2352,19 +2352,19 @@ const ChatTab = () => {
                   <Plus size={48} className="text-white relative z-10" />
                 </div>
                 <div className="space-y-2 px-4">
-                  <h2 className="text-2xl md:text-4xl font-black text-white drop-shadow-lg">Drop to Send</h2>
+                  <h2 className=" md: font-semibold text-white drop-shadow-lg">Drop to Send</h2>
                   <p className="text-sm md:text-lg font-bold text-white/80 max-w-md mx-auto">
                     Share images, documents, and media seamlessly. Maximum file size: 25MB
                   </p>
                 </div>
                 <div className="flex gap-4 md:gap-6 pt-4">
-                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm border border-white/20">
                     <Image size={24} className="text-white" />
                   </div>
-                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm border border-white/20">
                     <FileText size={24} className="text-white" />
                   </div>
-                  <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                  <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm border border-white/20">
                     <Zap size={24} className="text-white" />
                   </div>
                 </div>
@@ -2384,7 +2384,7 @@ const ChatTab = () => {
               </button>
 
               <div className="relative group">
-                <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white font-black text-[10px] md:text-xs shadow-lg transform group-hover:scale-105 transition-all duration-300 ${selectedChat.type === 'group'
+                <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-white font-semibold text-[10px] md:text-xs shadow-lg transform group-hover:scale-105 transition-all duration-300 ${selectedChat.type === 'group'
                   ? 'bg-teal-600'
                   : 'bg-indigo-600'
                   }`}>
@@ -2399,12 +2399,12 @@ const ChatTab = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="font-black text-foreground text-sm md:text-base font-outfit leading-tight">
+                <h3 className="font-semibold text-foreground text-sm md:text-base font-outfit leading-tight">
                   {selectedChat.type === 'group' ? selectedChat.name : (selectedChat.other_user?.user_name || 'System User')}
                 </h3>
                 <div className="text-[10px] md:text-xs flex items-center space-x-1.5 truncate">
                   {selectedChat.type === 'group' ? (
-                    <span className="text-muted-foreground font-bold uppercase tracking-wider opacity-80">Group Chat</span>
+                    <span className="text-muted-foreground font-bold   opacity-80">Group Chat</span>
                   ) : (
                     (() => {
                       const activityStatus = socket.getUserActivityStatus(
@@ -2416,21 +2416,21 @@ const ChatTab = () => {
                         return (
                           <>
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                            <span className="text-emerald-600 font-bold uppercase tracking-wider opacity-80">Online</span>
+                            <span className="text-emerald-600 font-bold   opacity-80">Online</span>
                           </>
                         );
                       } else if (activityStatus === 'away') {
                         return (
                           <>
                             <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                            <span className="text-amber-600 font-bold uppercase tracking-wider opacity-80">Away</span>
+                            <span className="text-amber-600 font-bold   opacity-80">Away</span>
                           </>
                         );
                       } else {
                         return (
                           <>
                             <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
-                            <span className="text-slate-500 font-bold uppercase tracking-wider opacity-80">Offline</span>
+                            <span className="text-slate-500 font-bold   opacity-80">Offline</span>
                           </>
                         );
                       }
@@ -2495,8 +2495,8 @@ const ChatTab = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-center space-y-1">
-                      <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-600 animate-pulse">Synchronizing</h3>
-                      <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Preparing your secure workspace</p>
+                      <h3 className="text-sm font-semibold  tracking-[0.2em] text-indigo-600 animate-pulse">Synchronizing</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/60  ">Preparing your secure workspace</p>
                     </div>
                   </div>
                 ) : (
@@ -2506,7 +2506,7 @@ const ChatTab = () => {
                       <div className="relative mb-4 group">
                         <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full opacity-20 group-hover:opacity-30 blur-sm transition-opacity" />
                         {selectedChat.type === 'group' ? (
-                          <div className="w-24 h-24 rounded-full bg-teal-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
+                          <div className="w-24 h-24 rounded-full bg-teal-600 flex items-center justify-center text-white  font-semibold shadow-2xl relative z-10">
                             <Users size={40} strokeWidth={3} />
                           </div>
                         ) : selectedChat.other_user?.user_avatar ? (
@@ -2516,24 +2516,24 @@ const ChatTab = () => {
                             className="w-24 h-24 rounded-full object-cover border-2 border-background shadow-2xl relative z-10"
                           />
                         ) : (
-                          <div className="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl relative z-10">
+                          <div className="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-white  font-semibold shadow-2xl relative z-10">
                             {selectedChat.other_user?.user_name?.charAt(0)}
                           </div>
                         )}
                       </div>
 
-                      <h2 className="text-2xl font-black text-foreground mb-1 font-outfit tracking-tight">
+                      <h2 className=" font-semibold text-foreground mb-1 font-outfit tracking-tight">
                         {selectedChat.type === 'group' ? selectedChat.name : selectedChat.other_user?.user_name}
                       </h2>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/20 shadow-sm">
+                        <span className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold   rounded-full border border-indigo-500/20 shadow-sm">
                           {selectedChat.type === 'group' ? 'Group' : (selectedChat.other_user?.user_type || 'User')}
                         </span>
-                        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">•</span>
-                        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60">Connected</span>
+                        <span className="text-muted-foreground text-[10px] font-bold   opacity-60">•</span>
+                        <span className="text-muted-foreground text-[10px] font-bold   opacity-60">Connected</span>
                       </div>
 
-                      <p className="max-w-xs text-[11px] font-medium text-muted-foreground/70 leading-relaxed uppercase tracking-wider">
+                      <p className="max-w-xs text-[11px] font-medium text-muted-foreground/70 leading-relaxed  ">
                         This is the very beginning of your conversation history {selectedChat.type === 'group' ? 'in ' : 'with '}
                         <span className="text-foreground font-bold">{selectedChat.type === 'group' ? selectedChat.name : selectedChat.other_user?.user_name}</span>.
                       </p>
@@ -2541,10 +2541,10 @@ const ChatTab = () => {
 
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                        <div className="w-16 h-16 bg-muted/30 rounded-3xl flex items-center justify-center mb-4 text-muted-foreground/40 border border-border/50">
+                        <div className="w-16 h-16 bg-muted/30 rounded-xl flex items-center justify-center mb-4 text-muted-foreground/40 border border-border/50">
                           <MessageCircle size={32} />
                         </div>
-                        <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-[0.2em]">No messages yet</p>
+                        <p className="text-xs font-bold text-muted-foreground/50  tracking-[0.2em]">No messages yet</p>
                         <p className="mt-2 text-[11px] font-medium text-muted-foreground/40 max-w-[200px]">Send a message to start the secure conversation.</p>
                       </div>
                     ) : (
@@ -2582,7 +2582,7 @@ const ChatTab = () => {
               {/* Typing indicator */}
               {typingUsers.size > 0 && (
                 <div className="flex items-center space-x-3 px-6 py-4 animate-in fade-in slide-in-from-left-4 duration-500 border-t border-border/50 bg-card/30">
-                  <div className="flex space-x-1 bg-card px-3 py-2 rounded-2xl shadow-sm border border-border">
+                  <div className="flex space-x-1 bg-card px-3 py-2 rounded-xl shadow-sm border border-border">
                     <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                     <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce"></div>
@@ -2597,7 +2597,7 @@ const ChatTab = () => {
               {replyTo && (
                 <div className="px-6 py-4 bg-card/80 backdrop-blur-xl border-t border-border flex items-center justify-between animate-in slide-in-from-bottom-full duration-300">
                   <div className="flex-1 pl-4 border-l-4 border-indigo-500 rounded-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">
+                    <p className="text-[10px] font-semibold   text-indigo-500 mb-0.5">
                       Replying to <span className="font-outfit">{replyTo.sender_name}</span>
                     </p>
                     <p className="text-sm text-foreground/80 font-medium truncate italic px-1">"{replyTo.content}"</p>
@@ -2655,7 +2655,7 @@ const ChatTab = () => {
                       <div className="absolute inset-0 bg-rose-500 rounded-full animate-ping opacity-40"></div>
                       <div className="relative w-full h-full bg-rose-600 rounded-full shadow-[0_0_10px_rgba(225,29,72,0.4)]"></div>
                     </div>
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-rose-600 font-outfit tabular-nums">
+                    <span className="text-[11px] font-semibold  tracking-[0.2em] text-rose-600 font-outfit tabular-nums">
                       {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
@@ -2670,11 +2670,11 @@ const ChatTab = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pr-1.5">
-                  <button onClick={cancelRecording} className="group flex items-center gap-1.5 px-3 py-2 rounded-2xl hover:bg-rose-500/10 text-rose-600/60 hover:text-rose-600 transition-all font-black text-[10px] uppercase tracking-widest">
+                  <button onClick={cancelRecording} className="group flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-600/60 hover:text-rose-600 transition-all font-semibold text-[10px]  ">
                     <X size={14} className="group-hover:rotate-90 transition-transform duration-300" />
                     <span className="hidden sm:inline">Cancel</span>
                   </button>
-                  <button onClick={stopRecording} className="w-10 h-10 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all transform hover:scale-110 active:scale-90 flex items-center justify-center">
+                  <button onClick={stopRecording} className="w-10 h-10 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] transition-all transform hover:scale-110 active:scale-90 flex items-center justify-center">
                     <Send size={18} fill="currentColor" />
                   </button>
                 </div>
@@ -2684,27 +2684,27 @@ const ChatTab = () => {
                 <div className="relative">
                   <button
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className={`p-2.5 rounded-2xl transition-all duration-500 flex items-center justify-center ${showAttachMenu ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-45 scale-110' : 'bg-muted/50 text-slate-500 hover:bg-muted hover:text-indigo-600 hover:rotate-12'}`}
+                    className={`p-2.5 rounded-xl transition-all duration-500 flex items-center justify-center ${showAttachMenu ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-45 scale-110' : 'bg-muted/50 text-slate-500 hover:bg-muted hover:text-indigo-600 hover:rotate-12'}`}
                     disabled={uploadingFile}
                   >
                     <Plus size={22} className="transition-transform duration-500" />
                   </button>
                   {showAttachMenu && (
-                    <div className="absolute bottom-full mb-5 left-0 w-72 max-w-[calc(100vw-40px)] bg-card/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 p-4 space-y-2 animate-in slide-in-from-bottom-6 zoom-in-95 duration-500 z-50 overflow-hidden">
+                    <div className="absolute bottom-full mb-5 left-0 w-72 max-w-[calc(100vw-40px)] bg-card/90 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/20 p-4 space-y-2 animate-in slide-in-from-bottom-6 zoom-in-95 duration-500 z-50 overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
-                      <div className="px-4 py-2 mb-1"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60 font-outfit">Share Attachment</p></div>
+                      <div className="px-4 py-2 mb-1"><p className="text-[10px] font-semibold  tracking-[0.2em] text-indigo-500/60 font-outfit">Share Attachment</p></div>
                       <div className="grid grid-cols-1 gap-1.5">
-                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-indigo-50/50 rounded-3xl text-left transition-all duration-300 group relative">
-                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl text-white shadow-lg"><Image size={20} /></div>
-                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Gallery</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Photos & Videos</p></div>
+                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-indigo-50/50 rounded-xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl text-white shadow-lg"><Image size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-semibold text-slate-800 block">Gallery</span><p className="text-[10px] font-bold text-slate-400  tracking-tight mt-0.5">Photos & Videos</p></div>
                         </button>
-                        <button onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar'; input.onchange = (e) => handleFileSelect(e, 'document'); input.click(); }} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-emerald-50/50 rounded-3xl text-left transition-all duration-300 group relative">
-                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg"><FileText size={20} /></div>
-                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Document</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">PDF, DOC, ZIP</p></div>
+                        <button onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar'; input.onchange = (e) => handleFileSelect(e, 'document'); input.click(); }} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-emerald-50/50 rounded-xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white shadow-lg"><FileText size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-semibold text-slate-800 block">Document</span><p className="text-[10px] font-bold text-slate-400  tracking-tight mt-0.5">PDF, DOC, ZIP</p></div>
                         </button>
-                        <button onClick={handleShareLocation} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-amber-50/50 rounded-3xl text-left transition-all duration-300 group relative">
-                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg"><MapPin size={20} /></div>
-                          <div className="flex-1"><span className="text-sm font-black text-slate-800 block">Location</span><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Live Location</p></div>
+                        <button onClick={handleShareLocation} className="w-full flex items-center space-x-4 px-4 py-3.5 hover:bg-amber-50/50 rounded-xl text-left transition-all duration-300 group relative">
+                          <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl text-white shadow-lg"><MapPin size={20} /></div>
+                          <div className="flex-1"><span className="text-sm font-semibold text-slate-800 block">Location</span><p className="text-[10px] font-bold text-slate-400  tracking-tight mt-0.5">Live Location</p></div>
                         </button>
                       </div>
                     </div>
@@ -2714,11 +2714,11 @@ const ChatTab = () => {
                 <div className="relative">
                   <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2.5 hover:bg-yellow-50 rounded-full transition-all" disabled={uploadingFile}><Smile size={20} className="text-gray-600" /></button>
                   {showEmojiPicker && (
-                    <div className="absolute bottom-full mb-2 left-0 bg-card rounded-2xl shadow-2xl border border-border p-3 w-80 max-h-96 overflow-y-auto z-50">
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b"><h4 className="font-outfit font-black text-foreground text-sm flex-1">Emoji Library</h4><button onClick={() => setShowEmojiPicker(false)} className="p-1 hover:bg-muted rounded-full"><X size={16} /></button></div>
+                    <div className="absolute bottom-full mb-2 left-0 bg-card rounded-xl shadow-2xl border border-border p-3 w-80 max-h-96 overflow-y-auto z-50">
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b"><h4 className="font-outfit font-semibold text-foreground text-sm flex-1">Emoji Library</h4><button onClick={() => setShowEmojiPicker(false)} className="p-1 hover:bg-muted rounded-full"><X size={16} /></button></div>
                       <div className="grid grid-cols-8 gap-1">
                         {['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '🔥', '💯', '💢', '💬', '👁️‍🗨️', '💭', '💤', '👋', '🎉', '🎊', '🎁', '🎈', '🎂', '🎀', '🏆', '🥇'].map((emoji) => (
-                          <button key={emoji} onClick={() => { setMessageInput(prev => prev + emoji); messageInputRef.current?.focus(); }} className="text-2xl hover:bg-muted rounded p-1 transition-all hover:scale-125">{emoji}</button>
+                          <button key={emoji} onClick={() => { setMessageInput(prev => prev + emoji); messageInputRef.current?.focus(); }} className=" hover:bg-muted rounded p-1 transition-all hover:scale-125">{emoji}</button>
                         ))}
                       </div>
                     </div>
@@ -2730,9 +2730,9 @@ const ChatTab = () => {
                     onChange={(e) => { const val = e.target.value.slice(0, 2500); setMessageInput(val); handleTyping(); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !uploadingFile) { e.preventDefault(); handleSendMessage(); e.target.style.height = 'auto'; } }}
                     disabled={uploadingFile}
-                    className="w-full bg-muted/30 hover:bg-muted/40 border border-border/50 focus:border-indigo-500/30 focus:bg-card px-4 py-3 rounded-2xl text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 text-foreground resize-none scrollbar-none min-h-[46px] max-h-[160px] shadow-sm"
+                    className="w-full bg-muted/30 hover:bg-muted/40 border border-border/50 focus:border-indigo-500/30 focus:bg-card px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-muted-foreground/50 text-foreground resize-none scrollbar-none min-h-[46px] max-h-[160px] shadow-sm"
                   />
-                  {messageInput.length >= 2400 && <div className={`absolute -top-6 right-2 text-[9px] font-black uppercase tracking-widest ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'}`}>{messageInput.length}/2500</div>}
+                  {messageInput.length >= 2400 && <div className={`absolute -top-6 right-2 text-[9px] font-semibold   ${messageInput.length >= 2500 ? 'text-rose-500 animate-pulse' : 'text-muted-foreground/50'}`}>{messageInput.length}/2500</div>}
                 </div>
                 {messageInput.trim() || uploadingFile ? (
                   <button
@@ -2760,11 +2760,11 @@ const ChatTab = () => {
       ) : (
         <div className="hidden md:flex flex-1 items-center justify-center bg-background/50 backdrop-blur-sm">
           <div className="text-center max-w-sm px-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/20 mb-8 transform hover:scale-105 hover:rotate-3 transition-all duration-500 group">
+            <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 rounded-xl mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/20 mb-8 transform hover:scale-105 hover:rotate-3 transition-all duration-500 group">
               <MessageCircle size={40} className="text-white group-hover:scale-110 transition-transform" />
             </div>
-            <h2 className="text-xl font-black text-foreground mb-3 font-outfit uppercase tracking-tight">Select a conversation</h2>
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest leading-relaxed opacity-70">
+            <h2 className=" font-semibold text-foreground mb-3 font-outfit  tracking-tight">Select a conversation</h2>
+            <p className="text-xs text-muted-foreground font-bold   leading-relaxed opacity-70">
               Choose one of your patient chats from the list to start messaging and manage their care plan.
             </p>
           </div>
@@ -2775,7 +2775,7 @@ const ChatTab = () => {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200 backdrop-blur-[2px]">
           <div
-            className="bg-card w-full max-w-[320px] rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 border border-border/40"
+            className="bg-card w-full max-w-[320px] rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 border border-border/40"
           >
             <div className="p-4 text-center border-b border-border/40">
               <h3 className="text-[15px] font-semibold text-foreground">Who do you want to remove this message for?</h3>
@@ -2817,12 +2817,12 @@ const ChatTab = () => {
       {/* Clear Chat Confirmation Modal */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300 border border-border">
+          <div className="bg-card rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300 border border-border">
             <div className="p-8">
               <div className="w-20 h-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 transform -rotate-3">
                 <Trash2 size={36} className="text-rose-500" />
               </div>
-              <h3 className="text-2xl font-black text-foreground text-center font-outfit mb-2">Clear all messages?</h3>
+              <h3 className=" font-semibold text-foreground text-center font-outfit mb-2">Clear all messages?</h3>
               <p className="text-muted-foreground font-medium text-center text-sm leading-relaxed px-2">
                 This will permanently delete the entire conversation history. This action <span className="text-rose-500 font-bold underline underline-offset-4 decoration-2">cannot be undone</span>.
               </p>
@@ -2831,13 +2831,13 @@ const ChatTab = () => {
             <div className="px-8 pb-8 flex flex-col space-y-3">
               <button
                 onClick={confirmClearChat}
-                className="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl shadow-xl shadow-rose-500/10 transition-all transform active:scale-95 text-sm"
+                className="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-xl shadow-rose-500/10 transition-all transform active:scale-95 text-sm"
               >
                 Yes, Clear Chat
               </button>
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="w-full py-4 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-2xl transition-all active:scale-95 text-sm"
+                className="w-full py-4 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-xl transition-all active:scale-95 text-sm"
               >
                 No, Keep My Chat
               </button>
@@ -2849,7 +2849,7 @@ const ChatTab = () => {
       {/* Forward Message Modal - Modern Messenger Style */}
       {showForwardModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-[32px] sm:rounded-3xl shadow-2xl w-[88%] sm:w-full sm:max-w-[420px] h-[50vh] sm:h-[600px] mb-8 sm:mb-0 flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 border border-border/50">
+          <div className="bg-card rounded-[32px] sm:rounded-xl shadow-2xl w-[88%] sm:w-full sm:max-w-[420px] h-[50vh] sm:h-[600px] mb-8 sm:mb-0 flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 border border-border/50">
             {/* Mobile Drag Handle */}
             <div className="flex sm:hidden justify-center pt-3 pb-1">
               <div className="w-10 h-1 bg-muted-foreground/20 rounded-full" />
@@ -2887,7 +2887,7 @@ const ChatTab = () => {
                     setForwardSearchQuery(val);
                     debouncedForwardSearchUsers(val);
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-muted/50 hover:bg-muted focus:bg-card border-transparent focus:border-indigo-500/50 rounded-2xl sm:text-sm text-base font-medium transition-all outline-none border focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full pl-10 pr-4 py-2.5 bg-muted/50 hover:bg-muted focus:bg-card border-transparent focus:border-indigo-500/50 rounded-xl sm:text-sm text-base font-medium transition-all outline-none border focus:ring-4 focus:ring-indigo-500/10"
                 />
               </div>
             </div>
@@ -2897,7 +2897,7 @@ const ChatTab = () => {
               {/* Existing Chats Section */}
               <div className="space-y-1">
                 <div className="px-3 py-1 flex items-center justify-between">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Recent Chats</h4>
+                  <h4 className="text-[10px] font-semibold   text-muted-foreground/60">Recent Chats</h4>
                   <span className="text-[10px] font-bold text-indigo-500/60 bg-indigo-500/5 px-2 py-0.5 rounded-full">
                     {chats.filter(c => c.id !== selectedChat?.id).length} Active
                   </span>
@@ -2915,7 +2915,7 @@ const ChatTab = () => {
                       <button
                         key={chat.id}
                         onClick={() => toggleChatForForward(chat.id)}
-                        className={`w-full p-2.5 rounded-2xl transition-all duration-200 flex items-center gap-3 group ${isSelected
+                        className={`w-full p-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group ${isSelected
                           ? 'bg-indigo-500/10'
                           : 'hover:bg-muted/50'
                           }`}
@@ -2947,14 +2947,14 @@ const ChatTab = () => {
                           <p className={`font-bold text-sm truncate ${isSelected ? 'text-indigo-600' : 'text-foreground'}`}>
                             {chat.other_user?.user_name || 'System User'}
                           </p>
-                          <p className="text-[10px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
+                          <p className="text-[10px] text-muted-foreground font-medium truncate  tracking-tighter">
                             {chat.other_user?.user_type || 'User'}
                           </p>
                         </div>
 
                         {/* Selection Badge */}
                         {!isSelected && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 bg-indigo-500 text-white text-[10px] font-black uppercase rounded-full">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 bg-indigo-500 text-white text-[10px] font-semibold  rounded-full">
                             Select
                           </div>
                         )}
@@ -2967,7 +2967,7 @@ const ChatTab = () => {
               {forwardSearchQuery.length >= 2 && (
                 <div className="space-y-1">
                   <div className="px-3 py-1 flex items-center justify-between">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500/60">Other Results</h4>
+                    <h4 className="text-[10px] font-semibold   text-indigo-500/60">Other Results</h4>
                     {isForwardSearching && <div className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>}
                   </div>
                   {forwardSearchResults
@@ -3004,7 +3004,7 @@ const ChatTab = () => {
                               }
                             }
                           }}
-                          className={`w-full p-2.5 rounded-2xl transition-all duration-200 flex items-center gap-3 group ${isSelected
+                          className={`w-full p-2.5 rounded-xl transition-all duration-200 flex items-center gap-3 group ${isSelected
                             ? 'bg-indigo-500/10'
                             : 'hover:bg-muted/50'
                             }`}
@@ -3023,12 +3023,12 @@ const ChatTab = () => {
                             <p className="font-bold text-sm truncate text-foreground">
                               {user.user_name}
                             </p>
-                            <p className="text-[10px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
+                            <p className="text-[10px] text-muted-foreground font-medium truncate  tracking-tighter">
                               {user.user_type === 'doctor' ? 'Provider' : 'Patient'}
                               {user.specialization && ` • ${user.specialization}`}
                             </p>
                           </div>
-                          <div className="px-3 py-1 border border-border rounded-full text-[9px] font-black uppercase text-muted-foreground group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
+                          <div className="px-3 py-1 border border-border rounded-full text-[9px] font-semibold  text-muted-foreground group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
                             New Chat
                           </div>
                         </button>
@@ -3036,7 +3036,7 @@ const ChatTab = () => {
                     })}
 
                   {forwardSearchResults.length === 0 && !isForwardSearching && (
-                    <div className="px-3 py-4 text-center rounded-2xl bg-muted/30 border border-dashed border-border/50">
+                    <div className="px-3 py-4 text-center rounded-xl bg-muted/30 border border-dashed border-border/50">
                       <p className="text-[11px] font-bold text-muted-foreground/50 italic tracking-tight">No additional users found</p>
                     </div>
                   )}
@@ -3066,7 +3066,7 @@ const ChatTab = () => {
               <button
                 onClick={handleForwardConfirm}
                 disabled={loading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -3108,16 +3108,16 @@ const ChatTab = () => {
       {/* Global Chat Settings Modal (Centralized) */}
       {showSettings && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-[2.5rem] shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-border">
+          <div className="bg-card rounded-xl shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-border">
             {/* Header */}
             <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white px-8 py-6 flex items-center justify-between relative">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-md">
+                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-md">
                   <Settings size={24} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black font-outfit uppercase tracking-wider">Preferences</h2>
-                  <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-0.5">Customize your experience</p>
+                  <h2 className=" font-semibold font-outfit  ">Preferences</h2>
+                  <p className="text-indigo-100 text-[10px] font-bold   mt-0.5">Customize your experience</p>
                 </div>
               </div>
               <button
@@ -3136,9 +3136,9 @@ const ChatTab = () => {
                   <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
                     <Bell size={18} className="text-indigo-500" />
                   </div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Notifications</h3>
+                  <h3 className="text-sm font-semibold text-foreground  ">Notifications</h3>
                 </div>
-                <div className="bg-card rounded-3xl p-4 shadow-sm border border-border space-y-1">
+                <div className="bg-card rounded-xl p-4 shadow-sm border border-border space-y-1">
                   {[
                     { key: 'sound', label: 'Sound', desc: 'Play sound for new messages', icon: Volume2 },
                     { key: 'desktop', label: 'Desktop Notifications', desc: 'Show notifications on desktop', icon: Monitor },
@@ -3177,16 +3177,16 @@ const ChatTab = () => {
                   <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                     <Shield size={18} className="text-emerald-500" />
                   </div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Privacy & Security</h3>
+                  <h3 className="text-sm font-semibold text-foreground  ">Privacy & Security</h3>
                 </div>
-                <div className="bg-card rounded-3xl p-4 shadow-sm border border-border space-y-1">
+                <div className="bg-card rounded-xl p-4 shadow-sm border border-border space-y-1">
                   {[
                     { key: 'readReceipts', label: 'Read Receipts', desc: 'Let others know when you\'ve read messages', icon: CheckCheck },
                     { key: 'onlineStatus', label: 'Online Status', desc: 'Show when you\'re online', icon: Circle },
                     { key: 'typingIndicator', label: 'Typing Indicator', desc: 'Show when you\'re typing', icon: Type },
                     { key: 'lastSeen', label: 'Last Seen', desc: 'Show your last activity time', icon: Clock }
                   ].map((item) => (
-                    <label key={item.key} className="flex items-center justify-between p-4 hover:bg-muted rounded-2xl cursor-pointer transition-colors group">
+                    <label key={item.key} className="flex items-center justify-between p-4 hover:bg-muted rounded-xl cursor-pointer transition-colors group">
                       <div className="flex items-center space-x-4">
                         <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
                           <item.icon size={20} className="text-muted-foreground group-hover:text-emerald-500 transition-colors" />
@@ -3219,9 +3219,9 @@ const ChatTab = () => {
                   <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
                     <MessageCircle size={18} className="text-amber-500" />
                   </div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Chat Preferences</h3>
+                  <h3 className="text-sm font-semibold text-foreground  ">Chat Preferences</h3>
                 </div>
-                <div className="bg-card rounded-3xl p-4 shadow-sm border border-border space-y-4">
+                <div className="bg-card rounded-xl p-4 shadow-sm border border-border space-y-4">
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div className="flex items-center space-x-4">
                       <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center group-hover:bg-amber-500/10 transition-colors">
@@ -3272,7 +3272,7 @@ const ChatTab = () => {
 
                     <div className="flex items-center justify-between border-t border-border pt-4">
                       <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
                           <Palette size={20} className="text-muted-foreground" />
                         </div>
                         <p className="text-sm font-bold text-foreground">Theme</p>
@@ -3301,7 +3301,7 @@ const ChatTab = () => {
             <div className="px-8 py-6 bg-card border-t border-border flex justify-end space-x-3">
               <button
                 onClick={() => setShowSettings(false)}
-                className="px-6 py-3 text-sm text-muted-foreground font-bold hover:bg-muted rounded-2xl transition-all"
+                className="px-6 py-3 text-sm text-muted-foreground font-bold hover:bg-muted rounded-xl transition-all"
               >
                 Cancel
               </button>
@@ -3315,7 +3315,7 @@ const ChatTab = () => {
                     alert('Failed to save settings. Please try again.');
                   }
                 }}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all transform active:scale-95 text-sm"
+                className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all transform active:scale-95 text-sm"
               >
                 Save Changes
               </button>
@@ -3332,8 +3332,8 @@ const ChatTab = () => {
         >
           <div className="flex items-center justify-between p-4 md:p-6 text-white border-b border-white/10">
             <div className="min-w-0 flex-1 mr-4">
-              <h3 className="text-sm md:text-lg font-black font-outfit tracking-tight truncate">{previewMedia.name}</h3>
-              <p className="text-[8px] md:text-[10px] font-bold opacity-60 uppercase tracking-widest">Full Quality Preview</p>
+              <h3 className="text-sm md:text-lg font-semibold font-outfit tracking-tight truncate">{previewMedia.name}</h3>
+              <p className="text-[8px] md:text-[10px] font-bold opacity-60  ">Full Quality Preview</p>
             </div>
             <button
               onClick={() => setPreviewMedia(null)}
@@ -3346,7 +3346,7 @@ const ChatTab = () => {
             <img
               src={getMediaUrl(previewMedia.url)}
               alt={previewMedia.name}
-              className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-2xl animate-in zoom-in duration-500"
+              className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-xl animate-in zoom-in duration-500"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -3354,13 +3354,13 @@ const ChatTab = () => {
             <a
               href={getMediaUrl(previewMedia.url)}
               download
-              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all hover:scale-105"
+              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-[10px] md:text-xs   transition-all hover:scale-105"
             >
               <Download size={16} /> Download
             </a>
             <button
               onClick={() => window.open(getMediaUrl(previewMedia.url), '_blank')}
-              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all"
+              className="flex items-center gap-2 md:gap-2.5 px-4 md:px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-[10px] md:text-xs   transition-all"
             >
               <ExternalLink size={16} /> Open Original
             </button>
@@ -3381,8 +3381,8 @@ const ChatTab = () => {
                   <FileText size={20} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black truncate max-w-[200px] md:max-w-md">{previewMedia.name}</h3>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Document Preview</p>
+                  <h3 className="text-sm font-semibold truncate max-w-[200px] md:max-w-md">{previewMedia.name}</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground  ">Document Preview</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -3472,7 +3472,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
   return (
     <div
       onClick={onClick}
-      className={`relative group h-16 p-3 rounded-2xl border transition-all duration-500 cursor-pointer mb-2 overflow-hidden
+      className={`relative group h-16 p-3 rounded-xl border transition-all duration-500 cursor-pointer mb-2 overflow-hidden
         ${isSelected
           ? 'bg-card border-border shadow-2xl shadow-indigo-500/10 scale-[1.01] z-10 translate-x-1'
           : 'bg-transparent border-transparent hover:bg-card hover:border-border hover:shadow-xl hover:shadow-slate-500/5 hover:translate-x-1'
@@ -3481,7 +3481,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
       {isSelected && <div className="absolute left-0 top-3 bottom-3 w-1 bg-indigo-500 rounded-r-xl"></div>}
       <div className="flex items-center space-x-3">
         <div className="relative flex-shrink-0">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm transition-transform group-hover:scale-105 duration-300
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-[10px] shadow-sm transition-transform group-hover:scale-105 duration-300
             ${isSelected ? (isGroup ? 'bg-teal-600 text-white' : 'bg-indigo-600 text-white') : (isGroup ? 'bg-teal-50 text-teal-600' : 'bg-indigo-50 text-indigo-600')}`}>
             {isGroup ? <Users size={14} strokeWidth={3} /> : (chat.other_user?.user_name?.charAt(0) || '?')}
           </div>
@@ -3491,10 +3491,10 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <h4 className={`font-black truncate text-xs tracking-tight ${isSelected ? (isGroup ? 'text-teal-600 dark:text-teal-400' : 'text-indigo-600 dark:text-indigo-400') : 'text-foreground'}`}>
+            <h4 className={`font-semibold truncate text-xs tracking-tight ${isSelected ? (isGroup ? 'text-teal-600 dark:text-teal-400' : 'text-indigo-600 dark:text-indigo-400') : 'text-foreground'}`}>
               {isGroup ? chat.name : (chat.other_user?.user_name || 'System User')}
             </h4>
-            <span className={`text-[8px] font-bold uppercase tracking-wider ${isSelected ? 'text-indigo-400' : 'text-muted-foreground'}`}>
+            <span className={`text-[8px] font-bold   ${isSelected ? 'text-indigo-400' : 'text-muted-foreground'}`}>
               {formatTime(chat.last_message_at || chat.created_at)}
             </span>
           </div>
@@ -3503,7 +3503,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
               {renderLastMessage()}
             </p>
             {chat.unread_count > 0 && (
-              <span className={`min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-black rounded-full shadow-lg ${chat.is_muted ? 'bg-slate-300 text-white' : 'bg-indigo-600 text-white animate-pulse'}`}>
+              <span className={`min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-semibold rounded-full shadow-lg ${chat.is_muted ? 'bg-slate-300 text-white' : 'bg-indigo-600 text-white animate-pulse'}`}>
                 {chat.unread_count}
               </span>
             )}
@@ -3529,7 +3529,7 @@ const GroupCreationModal = ({ isOpen, onClose, groupName, setGroupName, particip
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20} className="text-slate-500" /></button>
           <h2 className="text-base font-bold text-slate-900 dark:text-white">{isAddMode ? 'Add Members' : 'New Group'}</h2>
@@ -3548,7 +3548,7 @@ const GroupCreationModal = ({ isOpen, onClose, groupName, setGroupName, particip
             </div>
           )}
           <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Suggested</p>
+            <p className="text-[11px] font-bold text-slate-500  ">Suggested</p>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             {participants.length === 0 ? (
@@ -3600,20 +3600,20 @@ const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating,
   return (
     <div className="w-[320px] h-full bg-card border-l border-border flex flex-col animate-in slide-in-from-right duration-300 relative z-40">
       <div className="p-4 border-b flex items-center justify-between bg-muted/30">
-        <h2 className="text-[13px] font-black uppercase tracking-widest text-foreground font-outfit">Group Info</h2>
+        <h2 className="text-[13px] font-semibold   text-foreground font-outfit">Group Info</h2>
         <button onClick={onClose} className="p-1.5 hover:bg-muted rounded-xl transition-all"><X size={18} /></button>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
         <div className="flex flex-col items-center text-center space-y-4">
-          <div className="w-24 h-24 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl">
+          <div className="w-24 h-24 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white  font-semibold shadow-2xl">
             <Users size={40} strokeWidth={3} />
           </div>
           <div className="w-full">
             {isEditing ? (
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground text-left px-1">Group Name</p>
+                  <p className="text-[9px] font-semibold   text-muted-foreground text-left px-1">Group Name</p>
                   <input
                     type="text"
                     value={newName}
@@ -3623,7 +3623,7 @@ const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating,
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground text-left px-1">Description</p>
+                  <p className="text-[9px] font-semibold   text-muted-foreground text-left px-1">Description</p>
                   <textarea
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
@@ -3632,13 +3632,13 @@ const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating,
                   />
                 </div>
                 <div className="flex justify-center gap-2">
-                  <button onClick={() => { onUpdateInfo({ name: newName, description: newDesc }); setIsEditing(false); }} className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600">Save Changes</button>
-                  <button onClick={() => { setIsEditing(false); setNewName(chat.name); setNewDesc(chat.description || ''); }} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-500">Cancel</button>
+                  <button onClick={() => { onUpdateInfo({ name: newName, description: newDesc }); setIsEditing(false); }} className="text-[10px] font-semibold   text-indigo-500 hover:text-indigo-600">Save Changes</button>
+                  <button onClick={() => { setIsEditing(false); setNewName(chat.name); setNewDesc(chat.description || ''); }} className="text-[10px] font-semibold   text-slate-400 hover:text-slate-500">Cancel</button>
                 </div>
               </div>
             ) : (
               <div className="group relative space-y-1">
-                <h3 className="text-lg font-black text-foreground font-outfit">{chat.name}</h3>
+                <h3 className="text-lg font-semibold text-foreground font-outfit">{chat.name}</h3>
                 {chat.description && <p className="text-xs text-muted-foreground font-medium px-4">{chat.description}</p>}
                 {isAdmin && (
                   <button onClick={() => setIsEditing(true)} className="absolute -top-1 -right-4 opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-500 transition-all">
@@ -3647,25 +3647,25 @@ const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating,
                 )}
               </div>
             )}
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">{participants.length} Members</p>
+            <p className="text-[10px] font-bold text-muted-foreground  tracking-[0.2em] mt-2">{participants.length} Members</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Members</h4>
+            <h4 className="text-[10px] font-semibold   text-muted-foreground/60">Members</h4>
             {isAdmin && <button onClick={onAddMember} className="p-1 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"><Plus size={16} /></button>}
           </div>
           <div className="space-y-1">
             {participants.map(p => (
-              <div key={`${p.user_id}_${p.user_type}`} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-2xl transition-all group">
+              <div key={`${p.user_id}_${p.user_type}`} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-xl transition-all group">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">
                     {p.user_name?.charAt(0)}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-foreground truncate">{p.user_name}</p>
-                    <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">{p.role}</p>
+                    <p className="text-[9px] font-semibold  tracking-tighter text-muted-foreground/50">{p.role}</p>
                   </div>
                 </div>
                 {isAdmin && p.user_id !== currentUser.userId && (
@@ -3684,7 +3684,7 @@ const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating,
         </div>
 
         <div className="pt-4 border-t border-border space-y-2">
-          <button onClick={onLeave} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-rose-500 hover:bg-rose-50 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all">
+          <button onClick={onLeave} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-rose-500 hover:bg-rose-50 rounded-xl font-semibold text-[11px]   transition-all">
             <LogOut size={16} /> Leave Group
           </button>
         </div>
