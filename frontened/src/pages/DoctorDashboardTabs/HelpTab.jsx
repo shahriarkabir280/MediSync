@@ -117,34 +117,34 @@ const HelpTab = () => {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-indigo-600 dark:bg-indigo-700 text-white p-8 md:p-12 shadow-xl shadow-indigo-100 dark:shadow-none">
+            <div className="relative overflow-hidden rounded-xl bg-indigo-600 dark:bg-indigo-700 text-white p-6 md:p-8 shadow-sm">
                 <div className="relative z-10 max-w-2xl">
-                    <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">How can we help?</h1>
-                    <p className="text-indigo-100 text-lg mb-8 leading-relaxed">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2 tracking-tight">How can we help?</h1>
+                    <p className="text-indigo-100 text-sm mb-6 leading-relaxed">
                         Find answers to common questions, browse through our guides, or get in touch with our expert support team.
                     </p>
 
                     <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-indigo-300 h-5 w-5 transition-colors group-focus-within:text-indigo-600" />
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-indigo-300 h-4 w-4 transition-colors group-focus-within:text-indigo-600" />
                         <input
                             type="text"
                             placeholder="Search for articles, questions, or guides..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder:text-indigo-200 focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white focus:text-gray-900 transition-all shadow-lg"
+                            className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder:text-indigo-200 focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white focus:text-gray-900 transition-all text-sm"
                         />
                     </div>
                 </div>
 
                 {/* Decorative background circle */}
-                <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl"></div>
+                <div className="absolute top-[-20%] right-[-10%] w-72 h-72 bg-indigo-500/30 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-indigo-400/20 rounded-full blur-3xl"></div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="bg-card rounded-3xl p-2 shadow-sm border border-border flex flex-wrap gap-2">
+            <div className="bg-card rounded-xl p-1 shadow-sm border border-border flex flex-wrap gap-1">
                 {sections.map((section) => {
                     const IconComponent = section.icon;
                     const isActive = activeSection === section.id;
@@ -152,13 +152,13 @@ const HelpTab = () => {
                         <button
                             key={section.id}
                             onClick={() => setActiveSection(section.id)}
-                            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all duration-300 ${isActive
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none translate-y-[-2px]'
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${isActive
+                                    ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'text-muted-foreground hover:bg-muted font-medium'
                                 }`}
                         >
-                            <IconComponent className={`h-5 w-5 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
-                            <span className="font-semibold">{section.name}</span>
+                            <IconComponent className={`h-4 w-4 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
+                            <span className="text-xs font-bold">{section.name}</span>
                         </button>
                     );
                 })}
@@ -167,90 +167,90 @@ const HelpTab = () => {
             <div className="min-h-[500px]">
                 {/* FAQ Section */}
                 {activeSection === 'faq' && (
-                    <div className="grid lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid lg:grid-cols-12 gap-6 animate-in slide-in-from-bottom-4 duration-500">
                         <div className="lg:col-span-8 space-y-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <h2 className="text-2xl font-bold text-foreground">Popular Questions</h2>
-                                <span className="text-sm text-muted-foreground">{filteredFAQs.length} results found</span>
+                            <div className="flex items-center justify-between mb-1">
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Popular questions</h2>
+                                <span className="text-[10px] text-muted-foreground font-medium">{filteredFAQs.length} results found</span>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {filteredFAQs.map((faq) => (
                                     <div
                                         key={faq.id}
-                                        className={`group bg-card rounded-2xl border transition-all duration-300 ${expandedFAQ === faq.id
-                                                ? 'border-indigo-200 dark:border-indigo-500/40 ring-2 ring-indigo-50 dark:ring-indigo-900/20 shadow-md'
+                                        className={`group bg-card rounded-xl border transition-all duration-300 ${expandedFAQ === faq.id
+                                                ? 'border-indigo-200 dark:border-indigo-500/40 ring-2 ring-indigo-50/50 dark:ring-indigo-900/10 shadow-sm'
                                                 : 'border-border hover:border-indigo-100 dark:hover:border-indigo-500/20 hover:shadow-sm'
                                             }`}
                                     >
                                         <button
                                             onClick={() => toggleFAQ(faq.id)}
-                                            className="w-full text-left p-6 flex justify-between items-center"
+                                            className="w-full text-left p-4 flex justify-between items-center"
                                         >
                                             <div className="pr-4">
-                                                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+                                                <span className="inline-block px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold rounded-full mb-2 border border-indigo-100 dark:border-indigo-500/20">
                                                     {faq.category}
                                                 </span>
-                                                <h3 className="font-bold text-foreground text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                <h3 className="font-bold text-foreground text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                                     {faq.question}
                                                 </h3>
                                             </div>
-                                            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${expandedFAQ === faq.id ? 'bg-indigo-600 text-white' : 'bg-muted text-muted-foreground group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                                            <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${expandedFAQ === faq.id ? 'bg-indigo-600 text-white' : 'bg-muted text-muted-foreground group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
                                                 }`}>
-                                                {expandedFAQ === faq.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                                {expandedFAQ === faq.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                             </div>
                                         </button>
                                         <div className={`overflow-hidden transition-all duration-300 ${expandedFAQ === faq.id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                            <div className="px-6 pb-6 text-muted-foreground border-t border-border pt-4 leading-relaxed">
+                                            <div className="px-4 pb-4 text-muted-foreground border-t border-border pt-3 leading-relaxed text-xs">
                                                 {faq.answer}
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                                 {filteredFAQs.length === 0 && (
-                                    <div className="text-center py-20 bg-muted/20 dark:bg-muted/10 rounded-3xl border-2 border-dashed border-border">
-                                        <div className="bg-card w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4">
-                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                    <div className="text-center py-12 bg-muted/10 dark:bg-muted/5 rounded-xl border-2 border-dashed border-border">
+                                        <div className="bg-card w-12 h-12 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-3">
+                                            <Search className="h-6 w-6 text-muted-foreground" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-foreground mb-2">No results found</h3>
-                                        <p className="text-muted-foreground">We couldn't find any questions matching "{searchQuery}"</p>
+                                        <h3 className="text-lg font-bold text-foreground mb-1">No results found</h3>
+                                        <p className="text-xs text-muted-foreground">We couldn't find any questions matching "{searchQuery}"</p>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Sidebar */}
-                        <div className="lg:col-span-4 space-y-6">
-                            <div className="bg-indigo-50 dark:bg-indigo-900/10 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-500/20">
-                                <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-4 flex items-center gap-2">
-                                    <Clock className="h-5 w-5" />
+                        <div className="lg:col-span-4 space-y-4">
+                            <div className="bg-indigo-50/50 dark:bg-indigo-900/5 rounded-xl p-5 border border-indigo-100 dark:border-indigo-500/20">
+                                <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                    <Clock className="h-4 w-4" />
                                     Still need help?
                                 </h3>
-                                <p className="text-indigo-800/80 dark:text-indigo-300/60 text-sm mb-6 leading-relaxed font-medium">
+                                <p className="text-indigo-800/80 dark:text-indigo-300/60 text-[10px] mb-4 leading-relaxed font-semibold">
                                     Our support team is available Monday through Friday, 9:00 AM to 5:00 PM EST.
                                 </p>
                                 <button
                                     onClick={() => setActiveSection('contact')}
-                                    className="w-full bg-background dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold py-3 rounded-2xl shadow-sm border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-all duration-300"
+                                    className="w-full bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold py-2 rounded-lg shadow-sm border border-indigo-100 dark:border-indigo-500/20 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-all text-[11px]"
                                 >
-                                    Contact Support
+                                    Contact support
                                 </button>
                             </div>
 
-                            <div className="bg-card rounded-3xl p-6 border border-border shadow-sm">
-                                <h3 className="text-lg font-bold text-foreground mb-4">Popular Guides</h3>
-                                <div className="space-y-4">
+                            <div className="bg-card rounded-xl p-5 border border-border shadow-sm">
+                                <h3 className="text-xs font-bold text-foreground mb-4">Popular guides</h3>
+                                <div className="space-y-3">
                                     {[0, 1, 2].map(i => (
                                         <a key={i} href="#" className="flex items-center group">
-                                            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mr-3 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
-                                                <Book className="h-5 w-5 text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+                                            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
+                                                <Book className="h-4 w-4 text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                                             </div>
                                             <div className="flex-1 border-b border-border pb-2 group-hover:border-indigo-100 dark:group-hover:border-indigo-500/30">
-                                                <p className="text-sm font-semibold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                <p className="text-[11px] font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                                     {documentationLinks[i].title}
                                                 </p>
                                             </div>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
                                         </a>
                                     ))}
                                 </div>
@@ -261,30 +261,30 @@ const HelpTab = () => {
 
                 {/* Documentation Section */}
                 {activeSection === 'docs' && (
-                    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-3xl font-bold text-foreground mb-2">Documentation & Guides</h2>
-                                <p className="text-muted-foreground">Everything you need to know about using CareConnect efficiently.</p>
+                                <h2 className="text-xl font-bold text-foreground tracking-tight">Documentation & guides</h2>
+                                <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">Everything you need to know about using CareConnect efficiently</p>
                             </div>
-                            <button className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-semibold hover:bg-primary/90 transition-colors">
-                                <Book className="h-5 w-5" />
-                                Browse All Docs
+                            <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700 transition-colors shadow-sm">
+                                <Book className="h-4 w-4" />
+                                Browse all docs
                             </button>
                         </div>
 
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {documentationLinks.map((doc, index) => {
                                 const IconComponent = doc.icon;
                                 return (
-                                    <div key={index} className="group bg-card border border-border rounded-3xl p-8 hover:shadow-xl hover:shadow-indigo-50 dark:hover:shadow-indigo-900/10 hover:border-indigo-100 dark:hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full">
-                                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition-colors duration-300">
-                                            <IconComponent className="h-7 w-7 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors duration-300" />
+                                    <div key={index} className="group bg-card border border-border rounded-xl p-6 hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full">
+                                        <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4 group-hover:bg-indigo-600 transition-colors duration-300">
+                                            <IconComponent className="h-5 w-5 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors duration-300" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{doc.title}</h3>
-                                        <p className="text-muted-foreground mb-8 leading-relaxed flex-grow">{doc.description}</p>
-                                        <button className="flex items-center text-indigo-600 dark:text-indigo-400 font-bold hover:gap-2 transition-all">
-                                            Read Guide <ArrowRight className="h-5 w-5 ml-1" />
+                                        <h3 className="text-base font-bold text-foreground mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{doc.title}</h3>
+                                        <p className="text-muted-foreground text-xs mb-6 leading-relaxed flex-grow">{doc.description}</p>
+                                        <button className="flex items-center text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:gap-2 transition-all">
+                                            Read guide <ArrowRight className="h-4 w-4 ml-1" />
                                         </button>
                                     </div>
                                 );
@@ -295,74 +295,74 @@ const HelpTab = () => {
 
                 {/* Contact Support Section */}
                 {activeSection === 'contact' && (
-                    <div className="grid lg:grid-cols-12 gap-12 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="lg:col-span-5 space-y-8">
+                    <div className="grid lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="lg:col-span-5 space-y-6">
                             <div>
-                                <h2 className="text-3xl font-bold text-foreground mb-4">Get in touch</h2>
-                                <p className="text-muted-foreground leading-relaxed">
+                                <h2 className="text-xl font-bold text-foreground mb-2">Get in touch</h2>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
                                     Can’t find what you’re looking for? Reach out to our dedicated support team and we’ll get back to you as soon as possible.
                                 </p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-start p-6 bg-card rounded-3xl border border-border shadow-sm">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-4">
-                                        <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            <div className="space-y-3">
+                                <div className="flex items-start p-4 bg-card rounded-xl border border-border shadow-sm">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-4">
+                                        <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-foreground mb-1">Email us</h3>
-                                        <p className="text-sm text-muted-foreground mb-2">Our team will respond within 24 hours.</p>
-                                        <a href="mailto:support@careconnect.com" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">support@careconnect.com</a>
+                                        <h3 className="text-sm font-bold text-foreground mb-0.5">Email us</h3>
+                                        <p className="text-[10px] text-muted-foreground mb-1">Our team will respond within 24 hours.</p>
+                                        <a href="mailto:support@careconnect.com" className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">support@careconnect.com</a>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start p-6 bg-card rounded-3xl border border-border shadow-sm">
-                                    <div className="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-4">
-                                        <Phone className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                <div className="flex items-start p-4 bg-card rounded-xl border border-border shadow-sm">
+                                    <div className="w-10 h-10 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-4">
+                                        <Phone className="h-5 w-5 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-foreground mb-1">Call us</h3>
-                                        <p className="text-sm text-muted-foreground mb-2">Mon-Fri from 9am to 6pm EST.</p>
-                                        <a href="tel:+15551234567" className="text-green-600 dark:text-green-400 font-semibold hover:underline">+1 (555) 123-4567</a>
+                                        <h3 className="text-sm font-bold text-foreground mb-0.5">Call us</h3>
+                                        <p className="text-[10px] text-muted-foreground mb-1">Mon-Fri from 9am to 6pm EST.</p>
+                                        <a href="tel:+15551234567" className="text-xs text-green-600 dark:text-green-400 font-bold hover:underline">+1 (555) 123-4567</a>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start p-6 bg-card rounded-3xl border border-border shadow-sm">
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mr-4">
-                                        <MessageCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                <div className="flex items-start p-4 bg-card rounded-xl border border-border shadow-sm">
+                                    <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mr-4">
+                                        <MessageCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-foreground mb-1">Live Chat</h3>
-                                        <p className="text-sm text-muted-foreground mb-2">Available for urgent inquiries.</p>
-                                        <button className="text-purple-600 dark:text-purple-400 font-semibold hover:underline">Start a conversation</button>
+                                        <h3 className="text-sm font-bold text-foreground mb-0.5">Live chat</h3>
+                                        <p className="text-[10px] text-muted-foreground mb-1">Available for urgent inquiries.</p>
+                                        <button className="text-xs text-purple-600 dark:text-purple-400 font-bold hover:underline">Start a conversation</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="lg:col-span-7">
-                            <div className="bg-card rounded-3xl p-8 border border-border shadow-xl shadow-indigo-900/5 dark:shadow-none">
+                            <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
                                 {formSubmitted ? (
-                                    <div className="text-center py-12 animate-in zoom-in duration-500">
-                                        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Mail className="h-10 w-10" />
+                                    <div className="text-center py-10 animate-in zoom-in duration-500">
+                                        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Mail className="h-8 w-8" />
                                         </div>
-                                        <h3 className="text-2xl font-bold text-foreground mb-2">Message Sent!</h3>
-                                        <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+                                        <h3 className="text-xl font-bold text-foreground mb-1">Message sent!</h3>
+                                        <p className="text-[11px] text-muted-foreground mb-6 max-w-[240px] mx-auto font-medium">
                                             Thanks for reaching out. We've received your ticket and will get back to you within 24 hours.
                                         </p>
                                         <button
                                             onClick={() => setFormSubmitted(false)}
-                                            className="px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-bold hover:bg-primary/90 transition-colors"
+                                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-[11px] hover:bg-indigo-700 transition-colors shadow-sm"
                                         >
                                             Send another message
                                         </button>
                                     </div>
                                 ) : (
-                                    <form onSubmit={handleFormSubmit} className="space-y-6">
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-bold text-muted-foreground ml-1">
+                                    <form onSubmit={handleFormSubmit} className="space-y-4">
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-muted-foreground ml-1">
                                                     Subject
                                                 </label>
                                                 <input
@@ -370,18 +370,18 @@ const HelpTab = () => {
                                                     required
                                                     value={supportForm.subject}
                                                     onChange={(e) => setSupportForm(prev => ({ ...prev, subject: e.target.value }))}
-                                                    className="w-full px-4 py-3 bg-muted border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-muted-foreground text-foreground"
+                                                    className="w-full px-3 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs text-foreground font-medium"
                                                     placeholder="What can we help with?"
                                                 />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-bold text-muted-foreground ml-1">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-muted-foreground ml-1">
                                                     Category
                                                 </label>
                                                 <select
                                                     value={supportForm.category}
                                                     onChange={(e) => setSupportForm(prev => ({ ...prev, category: e.target.value }))}
-                                                    className="w-full px-4 py-3 bg-muted border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 transition-all appearance-none cursor-pointer text-foreground"
+                                                    className="w-full px-3 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs text-foreground font-medium appearance-none cursor-pointer"
                                                 >
                                                     <option value="">Select a category</option>
                                                     {supportCategories.map((cat) => (
@@ -391,19 +391,19 @@ const HelpTab = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-bold text-muted-foreground ml-1">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-muted-foreground ml-1">
                                                 Urgency level
                                             </label>
-                                            <div className="flex flex-wrap gap-3">
+                                            <div className="flex flex-wrap gap-2">
                                                 {priorityLevels.map((level) => (
                                                     <button
                                                         key={level.value}
                                                         type="button"
                                                         onClick={() => setSupportForm(prev => ({ ...prev, priority: level.value }))}
-                                                        className={`px-6 py-2 rounded-xl text-sm font-bold border transition-all ${supportForm.priority === level.value
-                                                                ? 'bg-primary text-primary-foreground border-primary'
-                                                                : 'bg-card text-muted-foreground border-border hover:border-indigo-400'
+                                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${supportForm.priority === level.value
+                                                                ? 'bg-indigo-600 text-white border-indigo-600'
+                                                                : 'bg-muted/10 text-muted-foreground border-border hover:border-indigo-400'
                                                             }`}
                                                     >
                                                         {level.label}
@@ -412,26 +412,26 @@ const HelpTab = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-muted-foreground ml-1">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-muted-foreground ml-1">
                                                 Description
                                             </label>
                                             <textarea
                                                 required
-                                                rows={5}
+                                                rows={4}
                                                 value={supportForm.description}
                                                 onChange={(e) => setSupportForm(prev => ({ ...prev, description: e.target.value }))}
-                                                className="w-full px-4 py-3 bg-muted border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-muted-foreground resize-none text-foreground"
+                                                className="w-full px-3 py-2 bg-muted/40 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs text-foreground font-medium resize-none"
                                                 placeholder="Please provide as much detail as possible..."
                                             />
                                         </div>
 
                                         <button
                                             type="submit"
-                                            className="w-full bg-indigo-600 text-white py-4 rounded-2xl hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2"
+                                            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition-all font-bold text-xs shadow-sm flex items-center justify-center gap-2 mt-2"
                                         >
-                                            Submit Request
-                                            <ArrowRight className="h-5 w-5" />
+                                            Submit request
+                                            <ArrowRight className="h-4 w-4" />
                                         </button>
                                     </form>
                                 )}
@@ -442,88 +442,88 @@ const HelpTab = () => {
 
                 {/* Troubleshooting Section */}
                 {activeSection === 'troubleshoot' && (
-                    <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-foreground mb-4">Troubleshooting</h2>
-                            <p className="text-muted-foreground max-w-2xl mx-auto">
+                    <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="text-center mb-8">
+                            <h2 className="text-2xl font-bold text-foreground mb-2 tracking-tight">Troubleshooting</h2>
+                            <p className="text-muted-foreground text-xs max-w-xl mx-auto font-medium">
                                 Having technical difficulties? Here are some quick solutions to the most common issues reported by our users.
                             </p>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="bg-card rounded-3xl p-8 border border-border shadow-sm relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <AlertCircle className="h-24 w-24 text-foreground" />
+                        <div className="space-y-4">
+                            <div className="bg-card rounded-xl p-6 border border-border shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-5">
+                                    <AlertCircle className="h-20 w-20 text-foreground" />
                                 </div>
-                                <h3 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3">
-                                    <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm">1</span>
-                                    Common Issues & Solutions
+                                <h3 className="text-sm font-bold text-foreground mb-5 flex items-center gap-3">
+                                    <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                                    Common issues & solutions
                                 </h3>
-                                <div className="grid md:grid-cols-2 gap-8 text-muted-foreground">
+                                <div className="grid md:grid-cols-2 gap-6 text-muted-foreground">
                                     <div className="space-y-4">
-                                        <div>
-                                            <h4 className="font-bold text-foreground mb-2">Dashboard loading slowly</h4>
-                                            <p className="text-sm leading-relaxed">Try clearing your browser cache and cookies, or check your internet connection speed. Using Chrome is recommended.</p>
+                                        <div className="border-l-2 border-indigo-500/20 pl-3">
+                                            <h4 className="text-xs font-bold text-foreground mb-1">Dashboard loading slowly</h4>
+                                            <p className="text-[10px] leading-relaxed">Try clearing your browser cache and cookies, or check your internet connection speed. Using Chrome is recommended.</p>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-foreground mb-2">Unable to upload files</h4>
-                                            <p className="text-sm leading-relaxed">Check if file size exceeds 10MB. Ensure format is PDF, DOC, JPG or PNG. Try a private/incognito window.</p>
+                                        <div className="border-l-2 border-indigo-500/20 pl-3">
+                                            <h4 className="text-xs font-bold text-foreground mb-1">Unable to upload files</h4>
+                                            <p className="text-[10px] leading-relaxed">Check if file size exceeds 10MB. Ensure format is PDF, DOC, JPG or PNG. Try a private/incognito window.</p>
                                         </div>
                                     </div>
                                     <div className="space-y-4">
-                                        <div>
-                                            <h4 className="font-bold text-foreground mb-2">Login issues</h4>
-                                            <p className="text-sm leading-relaxed">Verify your credentials. If you have 2FA enabled, ensure your device time is synchronized.</p>
+                                        <div className="border-l-2 border-indigo-500/20 pl-3">
+                                            <h4 className="text-xs font-bold text-foreground mb-1">Login issues</h4>
+                                            <p className="text-[10px] leading-relaxed">Verify your credentials. If you have 2FA enabled, ensure your device time is synchronized.</p>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-foreground mb-2">Missing patient data</h4>
-                                            <p className="text-sm leading-relaxed">Refresh the page. If data still doesn't appear, check if filters are active in your patient dashboard.</p>
+                                        <div className="border-l-2 border-indigo-500/20 pl-3">
+                                            <h4 className="text-xs font-bold text-foreground mb-1">Missing patient data</h4>
+                                            <p className="text-[10px] leading-relaxed">Refresh the page. If data still doesn't appear, check if filters are active in your patient dashboard.</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-gray-900 dark:bg-muted/10 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden border border-border">
-                                <div className="absolute top-0 right-0 p-8 opacity-20">
+                            <div className="bg-gray-950 dark:bg-muted/10 text-white rounded-xl p-6 shadow-sm relative overflow-hidden border border-border">
+                                <div className="absolute top-[-20px] right-[-20px] p-8 opacity-10">
                                     <Shield className="h-32 w-32" />
                                 </div>
-                                <h3 className="text-xl font-bold mb-6 flex items-center gap-3 relative z-10">
-                                    <span className="w-8 h-8 rounded-lg bg-white text-gray-900 flex items-center justify-center text-sm">2</span>
-                                    System Requirements
+                                <h3 className="text-sm font-bold mb-5 flex items-center gap-3 relative z-10">
+                                    <span className="w-6 h-6 rounded-lg bg-white text-gray-900 flex items-center justify-center text-[10px] font-bold">2</span>
+                                    System requirements
                                 </h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-                                    <div>
-                                        <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Browsers</p>
-                                        <p className="text-sm font-semibold">Chrome, Safari</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+                                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-1">Browsers</p>
+                                        <p className="text-[11px] font-bold">Chrome, Safari</p>
                                     </div>
-                                    <div>
-                                        <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Internet</p>
-                                        <p className="text-sm font-semibold">5 Mbps +</p>
+                                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-1">Internet</p>
+                                        <p className="text-[11px] font-bold">5 Mbps +</p>
                                     </div>
-                                    <div>
-                                        <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Resolution</p>
-                                        <p className="text-sm font-semibold">1280 x 800</p>
+                                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-1">Resolution</p>
+                                        <p className="text-[11px] font-bold">1280 x 800</p>
                                     </div>
-                                    <div>
-                                        <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Status</p>
-                                        <p className="text-sm font-semibold flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-1">Status</p>
+                                        <p className="text-[11px] font-bold flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                             Operational
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="bg-indigo-50/50 dark:bg-indigo-900/5 border border-indigo-100 dark:border-indigo-500/20 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-indigo-900 dark:text-indigo-300 mb-2">Still experiencing problems?</h3>
-                                    <p className="text-indigo-800/70 dark:text-indigo-300/60 font-medium">Our technical team can help you diagnose and fix any platform issues.</p>
+                                    <h3 className="text-base font-bold text-indigo-900 dark:text-indigo-300 mb-1">Still experiencing problems?</h3>
+                                    <p className="text-indigo-800/70 dark:text-indigo-300/60 text-[10px] font-semibold">Our technical team can help you diagnose and fix any platform issues.</p>
                                 </div>
                                 <button
                                     onClick={() => setActiveSection('contact')}
-                                    className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none shrink-0"
+                                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700 transition-all shadow-sm shrink-0"
                                 >
-                                    Open Support Ticket
+                                    Open support ticket
                                 </button>
                             </div>
                         </div>
