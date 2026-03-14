@@ -471,38 +471,38 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
         if (appointment.status === 'completed' || appointment.status === 'cancelled') return null;
 
         return (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
                 {appointment.status === 'pending' && (
                     <button
                         onClick={() => handleStatusChange(appointment.id, 'confirmed')}
-                        className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all shadow-sm border border-emerald-100 group"
-                        title="Confirm Appointment"
+                        className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-all border border-emerald-100"
+                        title="Confirm appointment"
                     >
-                        <Check size={16} className="group-hover:scale-110 transition-transform" />
+                        <Check size={13} />
                     </button>
                 )}
                 {appointment.status === 'confirmed' && (
                     <button
                         onClick={() => handleStatusChange(appointment.id, 'completed')}
-                        className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-all shadow-sm border border-indigo-100 group"
-                        title="Mark as Completed"
+                        className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-all border border-indigo-100"
+                        title="Mark as completed"
                     >
-                        <CheckCircle2 size={16} className="group-hover:scale-110 transition-transform" />
+                        <CheckCircle2 size={13} />
                     </button>
                 )}
                 <button
                     onClick={() => openEditModal(appointment)}
-                    className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl transition-all shadow-sm border border-slate-200 group"
-                    title="Edit Details"
+                    className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg transition-all border border-slate-200"
+                    title="Edit details"
                 >
-                    <Edit3 size={16} className="group-hover:scale-110 transition-transform" />
+                    <Edit3 size={13} />
                 </button>
                 <button
                     onClick={() => handleCancelAppointment(appointment.id)}
-                    className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all shadow-sm border border-rose-100 group"
-                    title="Cancel Appointment"
+                    className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all border border-rose-100"
+                    title="Cancel appointment"
                 >
-                    <XCircle size={16} className="group-hover:scale-110 transition-transform" />
+                    <XCircle size={13} />
                 </button>
             </div>
         );
@@ -623,17 +623,19 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
     }
 
     return (
-        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="px-1">
-                    <h1 className="text-3xl sm:text-4xl font-black text-foreground font-outfit tracking-tight">
-                        Appointments
-                    </h1>
-                    <p className="text-muted-foreground text-[11px] sm:text-sm font-medium mt-1 flex items-center space-x-2">
-                        <Activity size={14} className="text-indigo-500" />
-                        <span>Manage your clinical schedule</span>
-                    </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-indigo-100 rounded-xl">
+                        <Activity className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-foreground">
+                            Appointments
+                        </h1>
+                        <p className="text-muted-foreground text-xs mt-0.5">Manage your clinical schedule</p>
+                    </div>
                 </div>
                 <button
                     onClick={() => {
@@ -641,46 +643,40 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                         setShowNewAppointmentModal(true);
                         fetchPatients();
                     }}
-                    className="group flex items-center space-x-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-[1.5rem] font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 transition-all hover:-translate-y-1 active:scale-95"
+                    className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
                 >
-                    <div className="p-1 bg-white/20 rounded-lg group-hover:rotate-90 transition-transform duration-300">
-                        <Plus size={20} />
-                    </div>
-                    <span>New Appointment</span>
+                    <Plus size={16} />
+                    <span>New appointment</span>
                 </button>
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                    { label: "Today", value: stats?.todayAppointments || 0, icon: Clock, color: "indigo", bg: "bg-indigo-50", text: "text-indigo-600" },
-                    { label: "This Week", value: stats?.weekAppointments || 0, icon: CalendarDays, color: "emerald", bg: "bg-emerald-50", text: "text-emerald-600" },
-                    { label: "This Month", value: stats?.monthAppointments || 0, icon: TrendingUp, color: "amber", bg: "bg-amber-50", text: "text-amber-600" },
-                    { label: "Pending", value: allAppointments.filter(apt => apt.status === 'pending').length, icon: AlertCircle, color: "rose", bg: "bg-rose-50", text: "text-rose-600" }
+                    { label: "Today", value: stats?.todayAppointments || 0, icon: Clock, bg: "bg-indigo-50", text: "text-indigo-600" },
+                    { label: "This week", value: stats?.weekAppointments || 0, icon: CalendarDays, bg: "bg-emerald-50", text: "text-emerald-600" },
+                    { label: "This month", value: stats?.monthAppointments || 0, icon: TrendingUp, bg: "bg-amber-50", text: "text-amber-600" },
+                    { label: "Pending", value: allAppointments.filter(apt => apt.status === 'pending').length, icon: AlertCircle, bg: "bg-rose-50", text: "text-rose-600" }
                 ].map((stat, i) => (
-                    <div key={i} className="group bg-card p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-border shadow-sm hover:shadow-xl hover:border-indigo-500/30 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative">
-                        <div className={`absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 ${stat.bg} rounded-bl-[4rem] opacity-20 transform translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform`}></div>
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                <div className={`p-2 sm:p-3 ${stat.bg} ${stat.text} rounded-xl sm:rounded-2xl group-hover:rotate-6 transition-transform`}>
-                                    <stat.icon size={20} className="sm:w-6 sm:h-6" />
-                                </div>
-                                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground tracking-tight leading-none">{stat.label}</span>
-                            </div>
-                            <h3 className="text-2xl sm:text-3xl font-black text-foreground mb-1">{stat.value}</h3>
-                            <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Appointments</p>
+                    <div key={i} className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-3">
+                        <div className={`p-2 ${stat.bg} ${stat.text} rounded-lg shrink-0`}>
+                            <stat.icon size={16} />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-lg font-bold text-foreground leading-none">{stat.value}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Search and Filters Bar */}
-            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-[1.5rem] sm:rounded-[2rem] p-3 sm:p-4 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
-                    <div className="lg:col-span-3 space-y-1 sm:space-y-1.5 px-1">
-                        <label className="text-[10px] sm:text-[11px] font-bold text-slate-500 ml-1">Appointment Date</label>
-                        <div className="relative group">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
+            <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
+                    <div className="lg:col-span-3 space-y-1">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Date</label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" size={14} />
                             <input
                                 type="date"
                                 value={selectedDate}
@@ -688,35 +684,35 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                     setSelectedDate(e.target.value);
                                     setViewMode('daily');
                                 }}
-                                className="w-full pl-12 pr-4 py-3 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                className="w-full pl-9 pr-3 py-2 bg-muted/50 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                             />
                         </div>
                     </div>
 
-                    <div className="lg:col-span-5 space-y-1 sm:space-y-1.5 px-0.5 sm:px-1">
-                        <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Search Patients</label>
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <div className="lg:col-span-5 space-y-1">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Search patients</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" size={14} />
                             <input
                                 type="text"
-                                placeholder="Name, ID, or appointment notes..."
+                                placeholder="Name, ID, or notes..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
+                                className="w-full pl-9 pr-3 py-2 bg-muted/50 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground"
                             />
                         </div>
                     </div>
 
-                    <div className="lg:col-span-3 space-y-1 sm:space-y-1.5 px-1">
-                        <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Filter by Status</label>
-                        <div className="relative group">
-                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <div className="lg:col-span-3 space-y-1">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Status</label>
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" size={14} />
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-muted/50 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
+                                className="w-full pl-9 pr-3 py-2 bg-muted/50 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer text-foreground"
                             >
-                                <option value="all">All Statuses</option>
+                                <option value="all">All statuses</option>
                                 <option value="pending">Pending</option>
                                 <option value="confirmed">Confirmed</option>
                                 <option value="cancelled">Cancelled</option>
@@ -725,7 +721,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 flex items-center justify-center pb-0.5">
+                    <div className="lg:col-span-1 flex items-center justify-center">
                         <button
                             onClick={() => {
                                 setSelectedDate(getLocalFormattedDate());
@@ -733,99 +729,82 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                 setStatusFilter('all');
                                 setViewMode('daily');
                             }}
-                            className="p-3.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all group"
-                            title="Reset Filters"
+                            className="p-2 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Reset filters"
                         >
-                            <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
+                            <RefreshCw size={14} />
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Appointment List Section */}
-                <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-slate-100 rounded-xl">
-                                <CalendarDays size={18} className="text-slate-600" />
-                            </div>
+                <div className="lg:col-span-2 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <CalendarDays size={16} className="text-muted-foreground" />
                             <div>
-                                <h3 className="text-lg font-black text-foreground tracking-tight">
+                                <h3 className="text-sm font-semibold text-foreground">
                                     {viewMode === 'week'
-                                        ? "Next 7 Days View"
+                                        ? "Next 7 days"
                                         : selectedDate === getLocalFormattedDate()
-                                            ? "Today's Schedule"
+                                            ? "Today's schedule"
                                             : `Schedule for ${new Date(selectedDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
                                     }
                                 </h3>
-                                <p className="text-xs font-bold text-muted-foreground mt-1">
-                                    {viewMode === 'week' ? "Upcoming appointments across the next week" : "Priority: Pending → Confirmed → Cancelled → Completed"}
+                                <p className="text-[10px] text-muted-foreground">
+                                    {viewMode === 'week' ? "Upcoming appointments this week" : "Sorted by priority"}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex bg-muted p-1 rounded-xl">
-                            <span className="px-3 py-1 text-[10px] font-bold text-muted-foreground tracking-tight">
-                                {filteredAppointments.length} Records
-                            </span>
-                        </div>
+                        <span className="px-2 py-1 bg-muted rounded-lg text-[10px] font-semibold text-muted-foreground">
+                            {filteredAppointments.length} records
+                        </span>
                     </div>
 
-                    <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
                         {loading ? (
                             Array(3).fill(0).map((_, i) => <AppointmentSkeleton key={i} />)
                         ) : filteredAppointments.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 bg-muted/50 rounded-[3rem] border border-dashed border-border">
-                                <div className="w-20 h-20 bg-card rounded-full flex items-center justify-center shadow-sm mb-4 border border-border">
-                                    <Calendar size={32} className="text-muted-foreground/20" />
-                                </div>
-                                <p className="text-muted-foreground font-medium text-xs mt-2">No appointments found</p>
+                            <div className="flex flex-col items-center justify-center py-12 bg-muted/30 rounded-xl border border-dashed border-border">
+                                <Calendar size={28} className="text-muted-foreground/30 mb-2" />
+                                <p className="text-muted-foreground text-xs">No appointments found</p>
                             </div>
                         ) : (
                             filteredAppointments.map((appointment) => (
                                 <div
                                     key={appointment.id}
-                                    className={`group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-5 bg-card border border-border rounded-[1.5rem] sm:rounded-[2rem] hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-500/30 transition-all duration-300 gap-3 sm:gap-0 ${appointment.status === 'completed' ? 'opacity-80' : ''
-                                        }`}
+                                    className={`flex items-center justify-between p-3 bg-card border border-border rounded-xl hover:border-indigo-500/30 hover:shadow-sm transition-all gap-3 ${appointment.status === 'completed' ? 'opacity-70' : ''}`}
                                 >
-                                    <div className="flex items-center space-x-3 sm:space-x-5 flex-1 min-w-0">
-                                        <div className="relative shrink-0">
-                                            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border font-outfit shadow-sm ${appointment.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                appointment.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                    appointment.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                        'bg-slate-50 text-slate-500 border-slate-200'
-                                                }`}>
-                                                <Clock size={16} className="mb-0.5" />
-                                                <span className="text-xs font-black tracking-tighter">
-                                                    {formatTime(appointment.appointment_time).split(' ')[0]}
-                                                </span>
-                                            </div>
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 border-2 border-white rounded-full shadow-sm" style={{
-                                                backgroundColor:
-                                                    appointment.status === 'pending' ? '#f59e0b' :
-                                                        appointment.status === 'confirmed' ? '#10b981' :
-                                                            appointment.status === 'cancelled' ? '#ef4444' : '#9ca3af'
-                                            }}></div>
+                                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                        <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center border shrink-0 ${appointment.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                            appointment.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                appointment.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                    'bg-slate-50 text-slate-500 border-slate-200'
+                                            }`}>
+                                            <Clock size={12} />
+                                            <span className="text-[9px] font-bold">{formatTime(appointment.appointment_time).split(' ')[0]}</span>
                                         </div>
 
-                                        <div className="flex-1 min-w-0 pr-1 sm:pr-2">
-                                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-0.5 sm:mb-1 overflow-hidden">
-                                                <h4 className={`text-xs sm:text-base font-black text-foreground tracking-tight truncate ${appointment.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center space-x-1.5 mb-0.5">
+                                                <h4 className={`text-sm font-semibold text-foreground truncate ${appointment.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
                                                     {appointment.patient_first_name} {appointment.patient_last_name}
                                                 </h4>
-                                                <span className="px-1.5 sm:px-2 py-0.5 bg-muted rounded text-[9px] sm:text-[10px] font-bold text-muted-foreground truncate w-fit">
+                                                <span className="px-1.5 py-0.5 bg-muted rounded text-[9px] font-medium text-muted-foreground shrink-0">
                                                     #{appointment.patient_unique_id}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center space-x-3">
-                                                <span className="flex items-center text-[11px] font-medium text-muted-foreground">
-                                                    <Info size={12} className="mr-1 text-indigo-400" />
+                                            <div className="flex items-center space-x-2">
+                                                <span className="flex items-center text-[10px] text-muted-foreground">
+                                                    <Info size={10} className="mr-1 text-indigo-400" />
                                                     {appointment.appointment_type}
                                                 </span>
                                                 {appointment.notes && (
-                                                    <span className="flex items-center text-[11px] font-bold text-muted-foreground truncate max-w-[200px]">
-                                                        <FileText size={12} className="mr-1 text-muted-foreground/30" />
+                                                    <span className="flex items-center text-[10px] text-muted-foreground truncate max-w-[150px]">
+                                                        <FileText size={10} className="mr-1 opacity-40" />
                                                         {appointment.notes}
                                                     </span>
                                                 )}
@@ -833,16 +812,11 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-6 w-full sm:w-auto">
-                                        <div className={`px-3 py-1.5 rounded-xl border text-[9px] sm:text-[10px] font-bold tracking-tight capitalize sm:hidden block ${getStatusStyle(appointment.status)}`}>
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                        <div className={`px-2 py-1 rounded-lg border text-[9px] font-semibold capitalize ${getStatusStyle(appointment.status)}`}>
                                             {appointment.status}
                                         </div>
-                                        <div className={`hidden sm:block px-3 sm:px-4 py-1.5 rounded-xl border text-[9px] sm:text-[10px] font-bold tracking-tight capitalize ${getStatusStyle(appointment.status)}`}>
-                                            {appointment.status}
-                                        </div>
-                                        <div className="flex items-center transition-all">
-                                            {getQuickActions(appointment)}
-                                        </div>
+                                        {getQuickActions(appointment)}
                                     </div>
                                 </div>
                             ))
@@ -851,18 +825,17 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 </div>
 
                 {/* Right Column - Secondary Actions & Insights */}
-                <div className="space-y-6 sm:space-y-8">
+                <div className="space-y-4">
                     {/* Fast Navigation Panel */}
-                    <div className="bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 text-white relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[5rem]"></div>
-                        <h3 className="text-xl font-black font-outfit tracking-tight mb-6 relative z-10 flex items-center space-x-2">
-                            <Zap size={20} className="text-amber-400" />
-                            <span>Quick Access</span>
+                    <div className="bg-slate-900 rounded-xl p-4 text-white relative overflow-hidden shadow-lg">
+                        <h3 className="text-sm font-semibold mb-3 flex items-center space-x-2">
+                            <Zap size={14} className="text-amber-400" />
+                            <span>Quick access</span>
                         </h3>
-                        <div className="space-y-4 relative z-10">
+                        <div className="space-y-2">
                             {[
                                 {
-                                    label: "View Pending Only",
+                                    label: "View pending only",
                                     sub: "Action required",
                                     action: () => {
                                         setSelectedDate(getLocalFormattedDate());
@@ -875,7 +848,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                     bg: "bg-amber-400/10"
                                 },
                                 {
-                                    label: "Tomorrow's List",
+                                    label: "Tomorrow's list",
                                     sub: "Plan ahead",
                                     action: () => {
                                         const tom = new Date();
@@ -890,7 +863,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                     bg: "bg-indigo-400/10"
                                 },
                                 {
-                                    label: "Week View",
+                                    label: "Week view",
                                     sub: "Upcoming 7 days",
                                     action: () => {
                                         setViewMode('week');
@@ -905,235 +878,206 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                                 <button
                                     key={i}
                                     onClick={btn.action}
-                                    className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group"
+                                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group"
                                 >
-                                    <div className="flex items-center space-x-4">
-                                        <div className={`p-2.5 ${btn.bg} ${btn.color} rounded-2xl transition-transform group-hover:rotate-6`}>
-                                            <btn.icon size={20} />
+                                    <div className="flex items-center space-x-3">
+                                        <div className={`p-1.5 ${btn.bg} ${btn.color} rounded-lg`}>
+                                            <btn.icon size={14} />
                                         </div>
                                         <div className="text-left">
-                                            <p className="text-sm font-bold tracking-tight">{btn.label}</p>
-                                            <p className="text-[10px] font-medium text-white/40 leading-none mt-1">{btn.sub}</p>
+                                            <p className="text-xs font-semibold">{btn.label}</p>
+                                            <p className="text-[10px] text-white/40 leading-none mt-0.5">{btn.sub}</p>
                                         </div>
                                     </div>
-                                    <ArrowRight size={16} className="text-white/20 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                    <ArrowRight size={12} className="text-white/20 group-hover:text-white transition-colors" />
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Insights/Notice Card */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 border border-indigo-100 shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full -translate-y-16 translate-x-16 group-hover:scale-110 transition-transform duration-700"></div>
-
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <div className="flex items-center space-x-3">
-                                <div className="p-2.5 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
-                                    <TrendingUp size={20} />
+                    <div className="bg-card rounded-xl p-4 border border-border shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                                <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">
+                                    <TrendingUp size={14} />
                                 </div>
-                                <h3 className="font-black text-slate-800 tracking-tight">Today's Insights</h3>
+                                <h3 className="text-sm font-semibold text-foreground">Today's insights</h3>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded-lg border border-slate-100">Real-time</span>
+                            <span className="text-[9px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">Live</span>
                         </div>
 
-                        <div className="space-y-6 relative z-10">
-                            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-1.5 h-6 sm:h-8 bg-emerald-500 rounded-full"></div>
-                                    <div>
-                                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight">Confirmed</p>
-                                        <p className="text-base sm:text-lg font-black text-slate-800">
-                                            {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'confirmed').length}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-1.5 h-6 sm:h-8 bg-amber-500 rounded-full"></div>
-                                    <div>
-                                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pending</p>
-                                        <p className="text-base sm:text-lg font-black text-slate-800">
-                                            {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'pending').length}
-                                        </p>
-                                    </div>
+                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border mb-3">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                                <div>
+                                    <p className="text-[10px] text-muted-foreground">Confirmed</p>
+                                    <p className="text-sm font-bold text-foreground">
+                                        {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'confirmed').length}
+                                    </p>
                                 </div>
                             </div>
-
-                            <p className="text-slate-600 text-sm font-medium leading-relaxed bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50">
-                                {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'pending').length > 0
-                                    ? "Action suggested: Review and confirm your pending arrivals to optimize today's clinical flow."
-                                    : "Excellent! Your schedule for today is fully confirmed. Focus on delivering great patient care."
-                                }
-                            </p>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between relative z-10">
-                            <div className="flex items-center space-x-1 sm:space-x-2">
-                                <div className="flex -space-x-2">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                                            <User size={14} />
-                                        </div>
-                                    ))}
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
+                                <div>
+                                    <p className="text-[10px] text-muted-foreground">Pending</p>
+                                    <p className="text-sm font-bold text-foreground">
+                                        {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'pending').length}
+                                    </p>
                                 </div>
-                                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-tight truncate max-w-[80px] sm:max-w-none">Clinical Team active</span>
                             </div>
-                            <button
-                                onClick={() => toast('Insights report generation coming soon!')}
-                                className="p-2 text-indigo-600 hover:bg-white rounded-xl transition-all"
-                            >
-                                <ExternalLink size={16} />
-                            </button>
                         </div>
+
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            {allAppointments.filter(a => getLocalFormattedDate(new Date(a.appointment_date)) === getLocalFormattedDate() && a.status === 'pending').length > 0
+                                ? "Review and confirm pending arrivals to optimize your schedule."
+                                : "Schedule fully confirmed. Focus on delivering great patient care."
+                            }
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* Appointment Settings Section */}
-            <div className="bg-card border border-border rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4 group-hover:bg-indigo-500/10 transition-colors duration-700"></div>
-
-                <div className="relative z-10">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-border">
-                        <div className="flex items-center space-x-3 sm:space-x-4">
-                            <div className="p-2 sm:p-3 bg-indigo-500/10 text-indigo-500 rounded-xl sm:rounded-2xl">
-                                <SettingsIcon size={20} className="sm:w-6 sm:h-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Practice Settings</h3>
-                                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mt-1">Configure your scheduling preferences</p>
-                            </div>
+            <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-border">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                            <SettingsIcon size={16} />
                         </div>
-
-                        <div className="flex items-center space-x-3">
-                            {!settingsEditing ? (
-                                <button
-                                    onClick={() => setSettingsEditing(true)}
-                                    className="flex items-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all hover:bg-indigo-700 hover:shadow-xl active:scale-95"
-                                >
-                                    <Edit3 size={16} className="sm:w-4 sm:h-4" />
-                                    <span>Customize Preference</span>
-                                </button>
-                            ) : (
-                                <div className="flex items-center space-x-2 sm:space-x-3 animate-in fade-in slide-in-from-right-4">
-                                    <button
-                                        onClick={handleCancelSettings}
-                                        className="px-4 sm:px-6 py-2.5 sm:py-3 border border-border text-muted-foreground rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold hover:bg-muted transition-all font-outfit"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSaveSettings}
-                                        className="flex items-center space-x-1 sm:space-x-2 px-4 sm:px-8 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all hover:bg-indigo-700 hover:shadow-xl shadow-indigo-500/20 active:scale-95"
-                                    >
-                                        <Check size={16} className="sm:w-4 sm:h-4" />
-                                        <span>Apply Changes</span>
-                                    </button>
-                                </div>
-                            )}
+                        <div>
+                            <h3 className="text-sm font-semibold text-foreground">Practice settings</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">Configure your scheduling preferences</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-muted-foreground ml-1">Session Duration</label>
-                            <select
-                                className="w-full px-5 py-4 bg-muted/30 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer disabled:opacity-60 text-foreground"
-                                value={tempSettings?.default_appointment_duration || 30}
-                                onChange={(e) => setTempSettings({ ...tempSettings, default_appointment_duration: parseInt(e.target.value) })}
-                                disabled={!settingsEditing}
-                            >
-                                <option value={15}>15 Minutes</option>
-                                <option value={30}>30 Minutes</option>
-                                <option value={45}>45 Minutes</option>
-                                <option value={60}>1.0 Hour</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-muted-foreground ml-1">Start Time</label>
-                            <div className="relative">
-                                <Clock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                                <input
-                                    type="time"
-                                    className="w-full pl-12 pr-5 py-4 bg-muted/30 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
-                                    value={tempSettings?.working_hours_start || '09:00'}
-                                    onChange={(e) => setTempSettings({ ...tempSettings, working_hours_start: e.target.value })}
-                                    disabled={!settingsEditing}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-muted-foreground ml-1">End Time</label>
-                            <div className="relative">
-                                <Clock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                                <input
-                                    type="time"
-                                    className="w-full pl-12 pr-5 py-4 bg-muted/30 border border-border rounded-2xl text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
-                                    value={tempSettings?.working_hours_end || '17:00'}
-                                    onChange={(e) => setTempSettings({ ...tempSettings, working_hours_end: e.target.value })}
-                                    disabled={!settingsEditing}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2 sm:space-y-2.5">
-                            <label className="text-[10px] sm:text-[11px] font-bold text-muted-foreground ml-1">Consultation Fee</label>
-                            <div className="relative">
-                                <span className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-bold text-base sm:text-lg select-none">৳</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className="w-full pl-10 sm:pl-12 pr-4 sm:pr-5 py-3 sm:py-4 bg-muted/30 border border-border rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
-                                    value={tempSettings?.consultation_fee || 0}
-                                    onChange={(e) => setTempSettings({ ...tempSettings, consultation_fee: parseFloat(e.target.value) })}
-                                    disabled={!settingsEditing}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="lg:col-span-4 flex items-center bg-muted/20 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border mt-2">
-                            <div className="flex-1 pr-4">
-                                <h4 className="text-sm sm:text-base font-black text-foreground tracking-tight">Accept New Patients</h4>
-                                <p className="text-[9px] sm:text-[11px] font-bold text-muted-foreground max-w-xs leading-relaxed">Enable this to allow patients to find and book appointments with you through the public directory.</p>
-                            </div>
+                    <div className="flex items-center space-x-2">
+                        {!settingsEditing ? (
                             <button
-                                onClick={() => settingsEditing && setTempSettings({ ...tempSettings, accept_new_patients: !tempSettings?.accept_new_patients })}
-                                disabled={!settingsEditing}
-                                className={`relative inline-flex h-6 sm:h-8 w-11 sm:w-14 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${tempSettings?.accept_new_patients ? 'bg-indigo-600' : 'bg-muted'
-                                    }`}
+                                onClick={() => setSettingsEditing(true)}
+                                className="flex items-center space-x-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold transition-all hover:bg-indigo-700 active:scale-95"
                             >
-                                <span className={`pointer-events-none inline-block h-4 sm:h-6 w-4 sm:w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${tempSettings?.accept_new_patients ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'
-                                    }`} />
+                                <Edit3 size={13} />
+                                <span>Edit settings</span>
                             </button>
+                        ) : (
+                            <div className="flex items-center space-x-2 animate-in fade-in">
+                                <button
+                                    onClick={handleCancelSettings}
+                                    className="px-3 py-2 border border-border text-muted-foreground rounded-lg text-xs font-medium hover:bg-muted transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveSettings}
+                                    className="flex items-center space-x-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold transition-all hover:bg-indigo-700 active:scale-95"
+                                >
+                                    <Check size={13} />
+                                    <span>Save changes</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Session duration</label>
+                        <select
+                            className="w-full px-3 py-2 bg-muted/30 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer disabled:opacity-60 text-foreground"
+                            value={tempSettings?.default_appointment_duration || 30}
+                            onChange={(e) => setTempSettings({ ...tempSettings, default_appointment_duration: parseInt(e.target.value) })}
+                            disabled={!settingsEditing}
+                        >
+                            <option value={15}>15 minutes</option>
+                            <option value={30}>30 minutes</option>
+                            <option value={45}>45 minutes</option>
+                            <option value={60}>1 hour</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Start time</label>
+                        <div className="relative">
+                            <Clock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                            <input
+                                type="time"
+                                className="w-full pl-8 pr-3 py-2 bg-muted/30 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
+                                value={tempSettings?.working_hours_start || '09:00'}
+                                onChange={(e) => setTempSettings({ ...tempSettings, working_hours_start: e.target.value })}
+                                disabled={!settingsEditing}
+                            />
                         </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">End time</label>
+                        <div className="relative">
+                            <Clock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                            <input
+                                type="time"
+                                className="w-full pl-8 pr-3 py-2 bg-muted/30 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
+                                value={tempSettings?.working_hours_end || '17:00'}
+                                onChange={(e) => setTempSettings({ ...tempSettings, working_hours_end: e.target.value })}
+                                disabled={!settingsEditing}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Consultation fee</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 font-medium text-sm select-none">৳</span>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className="w-full pl-7 pr-3 py-2 bg-muted/30 border border-border rounded-lg text-xs font-medium focus:bg-card focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 text-foreground"
+                                value={tempSettings?.consultation_fee || 0}
+                                onChange={(e) => setTempSettings({ ...tempSettings, consultation_fee: parseFloat(e.target.value) })}
+                                disabled={!settingsEditing}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-4 flex items-center bg-muted/20 p-3 rounded-lg border border-border">
+                        <div className="flex-1 pr-4">
+                            <h4 className="text-xs font-semibold text-foreground">Accept new patients</h4>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 max-w-xs">Allow patients to find and book appointments through the directory.</p>
+                        </div>
+                        <button
+                            onClick={() => settingsEditing && setTempSettings({ ...tempSettings, accept_new_patients: !tempSettings?.accept_new_patients })}
+                            disabled={!settingsEditing}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${tempSettings?.accept_new_patients ? 'bg-indigo-600' : 'bg-muted'}`}
+                        >
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${tempSettings?.accept_new_patients ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Modals Strategy - Using a wrapper for professional feel */}
+            {/* Modals */}
             {(showNewAppointmentModal || (showEditAppointmentModal && editingAppointment)) && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
                         onClick={() => { setShowNewAppointmentModal(false); setShowEditAppointmentModal(false); setEditingAppointment(null); resetAppointmentForm(); }}></div>
 
-                    <div className="bg-card/95 backdrop-blur-xl w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border/50 mx-2 sm:mx-0 p-0">
+                    <div className="bg-card/95 backdrop-blur-xl w-full max-w-md rounded-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border border-border/50 mx-3 p-0">
                         {/* Modal Header */}
-                        <div className="p-3 sm:p-4 pb-2 flex items-center justify-between border-b border-border/50">
+                        <div className="p-3 pb-2 flex items-center justify-between border-b border-border/50">
                             <div>
-                                <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">
-                                    {showNewAppointmentModal ? "New Appointment" : "Update Appointment"}
+                                <h2 className="text-sm font-semibold text-foreground">
+                                    {showNewAppointmentModal ? "New appointment" : "Update appointment"}
                                 </h2>
-                                <p className="text-[8px] sm:text-[9px] font-medium text-muted-foreground mt-0.5">
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
                                     {showNewAppointmentModal ? "Schedule a new clinical session" : "Modify existing schedule details"}
                                 </p>
                             </div>
                             <button
                                 onClick={() => { setShowNewAppointmentModal(false); setShowEditAppointmentModal(false); setEditingAppointment(null); resetAppointmentForm(); }}
-                                className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground"
+                                className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                             >
-                                <X size={20} />
+                                <X size={16} />
                             </button>
                         </div>
 
