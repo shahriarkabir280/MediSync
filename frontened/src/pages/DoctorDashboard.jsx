@@ -65,13 +65,13 @@ const DoctorDashboard = () => {
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'blogs', label: 'Manage Blogs', icon: BookOpen },
+    { id: 'blogs', label: 'Manage blogs', icon: BookOpen },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'website', label: 'Public Website', icon: Globe },
+    { id: 'website', label: 'Public website', icon: Globe },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'help', label: 'Help & Support', icon: HelpCircle },
+    { id: 'help', label: 'Help & support', icon: HelpCircle },
     { id: 'logout', label: 'Logout', icon: LogOut },
   ];
 
@@ -115,32 +115,32 @@ const DoctorDashboard = () => {
         className={`${isCollapsed ? 'w-14 lg:w-16' : 'w-48 lg:w-56'} bg-[#0F172A] flex flex-col transition-all duration-500 ease-[transition-timing-function:cubic-bezier(0.23,1,0.32,1)] relative z-50`}
       >
         {/* Sidebar Header */}
-        <div className={`${isCollapsed ? 'h-20 px-0 justify-center' : 'h-20 lg:h-24 px-4 lg:px-8'} flex items-center justify-between border-b border-gray-800/50`}>
+        <div className={`${isCollapsed ? 'h-16 px-0 justify-center' : 'h-16 lg:h-20 px-4 lg:px-6'} flex items-center justify-between border-b border-gray-800/40`}>
           {!isCollapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 lg:w-9 lg:h-9 bg-indigo-500 rounded-lg lg:rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-2 lg:ring-4 ring-indigo-500/10">
-                <ShieldCheck className="text-white w-4 h-4 lg:w-5 lg:h-5" />
+              <div className="w-6 h-6 lg:w-7 l-7 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <ShieldCheck className="text-white w-4 h-4 lg:w-4.5 lg:h-4.5" />
               </div>
               <div className="flex flex-col">
-                <h2 className="text-base lg:text-lg font-black text-white tracking-tight leading-none">CareConnect</h2>
-                <span className="text-[9px] lg:text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">Practitioner</span>
+                <h2 className="text-sm lg:text-base font-bold text-white tracking-tight leading-none">CareConnect</h2>
+                <span className="text-[8px] font-semibold text-indigo-400 mt-1">Practitioner</span>
               </div>
             </div>
           )}
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-all ${isCollapsed ? 'w-10 h-10 flex items-center justify-center' : ''}`}
+            className={`p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-all ${isCollapsed ? 'w-8 h-8 flex items-center justify-center' : ''}`}
           >
-            {isCollapsed ? <ChevronRight size={22} className="text-indigo-400" /> : <ChevronLeft size={20} />}
+            {isCollapsed ? <ChevronRight size={18} className="text-indigo-400" /> : <ChevronLeft size={16} />}
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2 lg:px-4 py-4 lg:py-8 overflow-y-auto no-scrollbar space-y-6 lg:space-y-8">
+        <nav className="flex-1 px-2 lg:px-3 py-4 lg:py-6 overflow-y-auto no-scrollbar space-y-6 lg:space-y-6">
           <div className="space-y-1">
-            {!isCollapsed && <p className="px-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Core Workspace</p>}
-            <ul className="space-y-1.5">
+            {!isCollapsed && <p className="px-4 text-[10px] font-bold text-gray-500/70 mb-3 ml-0.5">Core workspace</p>}
+            <ul className="space-y-1">
               {tabs.slice(0, 7).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -148,20 +148,20 @@ const DoctorDashboard = () => {
                   <li key={tab.id}>
                     <button
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-2.5 lg:py-3' : 'px-3 py-2 lg:px-4 lg:py-2.5'} rounded-xl transition-all duration-300 ${isActive
-                        ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/30'
+                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-2' : 'px-3 py-1.5 lg:px-4 lg:py-2'} rounded-xl transition-all duration-300 ${isActive
+                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                       title={isCollapsed ? tab.label : undefined}
                     >
-                      <Icon size={isActive ? 18 : 16} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                      <Icon size={isActive ? 16 : 14} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                       {!isCollapsed && (
-                        <span className={`ml-2 lg:ml-3 text-xs lg:text-sm font-semibold tracking-wide transition-colors ${isActive ? 'text-white' : 'group-hover:text-white'}`}>
+                        <span className={`ml-2.5 lg:ml-3 text-[13px] font-bold tracking-tight transition-colors ${isActive ? 'text-white' : 'group-hover:text-white'}`}>
                           {tab.label}
                         </span>
                       )}
                       {isActive && !isCollapsed && (
-                        <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_white]" />
+                        <div className="absolute right-2 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_white]" />
                       )}
                     </button>
                   </li>
@@ -171,8 +171,8 @@ const DoctorDashboard = () => {
           </div>
 
           <div className="space-y-1">
-            {!isCollapsed && <p className="px-4 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">System & Config</p>}
-            <ul className="space-y-1.5">
+            {!isCollapsed && <p className="px-4 text-[10px] font-bold text-gray-500/70 mb-3 ml-0.5">System & config</p>}
+            <ul className="space-y-1">
               {tabs.slice(7).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -181,8 +181,8 @@ const DoctorDashboard = () => {
                   <li key={tab.id}>
                     <button
                       onClick={isLogout ? handleLogout : () => setActiveTab(tab.id)}
-                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-2.5 lg:py-3' : 'px-3 py-2 lg:px-4 lg:py-2.5'} rounded-xl transition-all duration-300 ${isActive
-                        ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/20'
+                      className={`w-full group relative flex items-center ${isCollapsed ? 'justify-center py-2' : 'px-3 py-1.5 lg:px-4 lg:py-2'} rounded-xl transition-all duration-300 ${isActive
+                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/10'
                         : isLogout
                           ? 'text-rose-400 hover:text-rose-300 hover:bg-rose-500/10'
                           : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -190,15 +190,15 @@ const DoctorDashboard = () => {
                       title={isCollapsed ? tab.label : undefined}
                     >
                       <div className="relative">
-                        <Icon size={isActive ? 18 : 16} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                        <Icon size={isActive ? 16 : 14} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                         {tab.id === 'notifications' && unreadCount > 0 && (
-                          <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[8px] lg:text-[9px] font-black rounded-full h-4 w-4 lg:h-5 lg:w-5 flex items-center justify-center ring-4 ring-[#0F172A] group-hover:ring-gray-800 transition-all">
+                          <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[8px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center ring-2 ring-[#0F172A] group-hover:ring-gray-800 transition-all">
                             {unreadCount > 99 ? '99+' : unreadCount}
                           </span>
                         )}
                       </div>
                       {!isCollapsed && (
-                        <span className={`ml-2 lg:ml-3 text-xs lg:text-sm font-semibold tracking-wide ${isActive ? 'text-white' : ''}`}>
+                        <span className={`ml-2.5 lg:ml-3 text-[13px] font-bold tracking-tight ${isActive ? 'text-white' : ''}`}>
                           {tab.label}
                         </span>
                       )}
@@ -211,9 +211,9 @@ const DoctorDashboard = () => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-6 border-t border-gray-800/50 bg-[#0F172A]/50 backdrop-blur-sm">
+        <div className="p-4 border-t border-gray-800/40 bg-[#0F172A]/30">
           {!isCollapsed && (
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">
+            <p className="text-[10px] font-bold text-gray-600 text-center tracking-tight">
               CareConnect © 2024
             </p>
           )}
@@ -227,41 +227,41 @@ const DoctorDashboard = () => {
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <h1 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 dark:text-gray-100 tracking-tight truncate max-w-[180px] sm:max-w-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h1 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight truncate max-w-[180px] sm:max-w-none">
                   Welcome, Dr. {user?.name?.split(' ')[0] || 'Doctor'}
                 </h1>
               </div>
-              <p className="text-[9px] lg:text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5 lg:mt-1 ml-4 truncate max-w-[140px] sm:max-w-none">
-                {user?.specialization || 'Clinical Lead'} <span className="hidden md:inline">• {user?.email}</span>
+              <p className="text-[10px] lg:text-[11px] font-semibold text-gray-400 dark:text-gray-500 mt-0.5 ml-3.5 truncate max-w-[140px] sm:max-w-none">
+                {user?.specialization || 'Clinical lead'} <span className="hidden md:inline">• {user?.email}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 lg:gap-8">
-            <div className="hidden lg:flex items-center gap-6 pr-4 lg:pr-8 border-r border-gray-100 dark:border-gray-800">
+            <div className="hidden lg:flex items-center gap-5 pr-6 border-r border-gray-100 dark:border-gray-800">
               <button
                 onClick={toggleTheme}
-                className="p-1.5 lg:p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all border border-gray-100 dark:border-gray-700 active:scale-95"
+                className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all border border-gray-100 dark:border-gray-700 active:scale-95"
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               >
-                {theme === 'light' ? <Moon size={16} lg:size={18} /> : <Sun size={16} lg:size={18} />}
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
               </button>
 
-              <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Active Shift</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <Clock className="w-3 h-3 text-indigo-500" />
+                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Active shift</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-[9px] lg:text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">System Secured</span>
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">System secured</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 lg:gap-4">
-              <div className="hidden sm:flex flex-col items-end mr-1 lg:mr-2">
-                <span className="text-xs font-black text-gray-900 dark:text-gray-100 leading-none">{user?.name}</span>
-                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mt-1">Admin Access</span>
+            <div className="flex items-center gap-2 lg:gap-3">
+              <div className="hidden sm:flex flex-col items-end mr-1">
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">{user?.name}</span>
+                <span className="text-[9px] font-bold text-indigo-500 mt-1">Admin access</span>
               </div>
               <div className="relative group p-0.5 bg-gradient-to-tr from-indigo-500 to-indigo-400 dark:from-indigo-600 dark:to-indigo-500 rounded-lg lg:rounded-xl shadow-lg ring-2 lg:ring-4 ring-indigo-50 dark:ring-indigo-900/20">
                 <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-md lg:rounded-xl overflow-hidden bg-white dark:bg-gray-800 border-[1.5px] border-white dark:border-gray-800">
