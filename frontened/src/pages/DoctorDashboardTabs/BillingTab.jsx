@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { createPortal } from "react-dom";
 import { billingApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
 import { debounce } from "../../utils/performance";
+
+const Portal = ({ children }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    return mounted ? createPortal(children, document.body) : null;
+};
 
 const BillingTab = memo(() => {
     const { doctorId } = useDoctor();
@@ -188,10 +195,10 @@ const BillingTab = memo(() => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Billing</h1>
-                <p className="text-muted-foreground">Manage billing records and payments.</p>
+                <h1 className="text-xl font-bold text-foreground">Billing</h1>
+                <p className="text-xs text-muted-foreground">Manage billing records and payments.</p>
             </div>
 
             {error && (
@@ -209,25 +216,25 @@ const BillingTab = memo(() => {
             {/* Summary Cards */}
             {summary && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Total Records</h4>
-                        <p className="text-3xl font-black text-foreground tracking-tight">{summary.total_records || 0}</p>
+                    <div className="bg-card border border-border rounded-xl p-4 transition-all duration-300">
+                        <h4 className="text-[10px] font-semibold text-muted-foreground/60 mb-1">Total records</h4>
+                        <p className="text-xl font-semibold text-foreground tracking-tight">{summary.total_records || 0}</p>
                     </div>
-                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Total Paid</h4>
-                        <p className="text-3xl font-black text-emerald-500 tracking-tight">
+                    <div className="bg-card border border-border rounded-xl p-4 transition-all duration-300">
+                        <h4 className="text-[10px] font-semibold text-muted-foreground/60 mb-1">Total paid</h4>
+                        <p className="text-xl font-semibold text-emerald-500 tracking-tight">
                             ৳{parseFloat(summary.total_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
-                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Pending</h4>
-                        <p className="text-3xl font-black text-amber-500 tracking-tight">
+                    <div className="bg-card border border-border rounded-xl p-4 transition-all duration-300">
+                        <h4 className="text-[10px] font-semibold text-muted-foreground/60 mb-1">Pending</h4>
+                        <p className="text-xl font-semibold text-amber-500 tracking-tight">
                             ৳{parseFloat(summary.total_pending || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
-                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Overdue</h4>
-                        <p className="text-3xl font-black text-rose-500 tracking-tight">
+                    <div className="bg-card border border-border rounded-xl p-4 transition-all duration-300">
+                        <h4 className="text-[10px] font-semibold text-muted-foreground/60 mb-1">Overdue</h4>
+                        <p className="text-xl font-semibold text-rose-500 tracking-tight">
                             ৳{parseFloat(summary.total_overdue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </div>
@@ -237,15 +244,15 @@ const BillingTab = memo(() => {
             {/* Search and Actions Bar */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                 <div className="flex-1 max-w-md relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-indigo-500 transition-colors">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-indigo-500 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                     <input
                         type="text"
                         placeholder="Search records..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 bg-muted border border-border rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-foreground transition-all placeholder:text-muted-foreground/40"
+                        className="w-full pl-9 pr-4 py-2 bg-muted border border-border rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-xs font-medium text-foreground transition-all placeholder:text-muted-foreground/40"
                     />
                 </div>
                 <button
@@ -254,10 +261,10 @@ const BillingTab = memo(() => {
                         setEditingBill(null);
                         setShowCreateForm(true);
                     }}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center space-x-2"
+                    className="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold text-[11px] hover:bg-indigo-700 transition-all active:scale-95 flex items-center space-x-2"
                 >
                     <span className="text-lg leading-none">+</span>
-                    <span>Create New Bill</span>
+                    <span>Create bill</span>
                 </button>
             </div>
 
@@ -265,17 +272,17 @@ const BillingTab = memo(() => {
             <div className="flex flex-wrap gap-2">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'all'
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter === 'all'
+                        ? 'bg-indigo-600 text-white'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
                 >
-                    All Records
+                    All records
                 </button>
                 <button
                     onClick={() => setFilter('pending')}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'pending'
-                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter === 'pending'
+                        ? 'bg-amber-500 text-white'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
                 >
@@ -283,8 +290,8 @@ const BillingTab = memo(() => {
                 </button>
                 <button
                     onClick={() => setFilter('paid')}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'paid'
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter === 'paid'
+                        ? 'bg-emerald-500 text-white'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
                 >
@@ -292,8 +299,8 @@ const BillingTab = memo(() => {
                 </button>
                 <button
                     onClick={() => setFilter('overdue')}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'overdue'
-                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter === 'overdue'
+                        ? 'bg-rose-500 text-white'
                         : 'bg-muted text-muted-foreground border border-border hover:bg-card'
                         }`}
                 >
@@ -302,10 +309,10 @@ const BillingTab = memo(() => {
             </div>
 
             {/* Billing Records */}
-            <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-foreground tracking-tight">
-                        Billing Records <span className="text-indigo-500 ml-2 opacity-50 text-sm">{getFilteredRecords().length}</span>
+            <div className="bg-card border border-border rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-foreground tracking-tight">
+                        Billing records <span className="text-indigo-500 ml-1.5 opacity-50 text-xs font-medium">{getFilteredRecords().length}</span>
                     </h3>
                 </div>
 
@@ -313,12 +320,12 @@ const BillingTab = memo(() => {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-border">
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50">Patient</th>
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50">Description</th>
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50">Amount</th>
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50">Due Date</th>
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50">Status</th>
-                                <th className="text-left py-4 px-3 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-50 text-right">Actions</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50">Patient</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50">Description</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50">Amount</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50">Due date</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50">Status</th>
+                                <th className="text-left py-3 px-3 text-[10px] font-semibold text-muted-foreground/50 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -326,11 +333,11 @@ const BillingTab = memo(() => {
                                 <tr>
                                     <td colSpan="6" className="text-center py-20 text-muted-foreground">
                                         <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="w-20 h-20 bg-muted/50 rounded-[2rem] flex items-center justify-center mb-4 transform rotate-3 shadow-inner">
-                                                <svg className="w-10 h-10 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            <div className="w-16 h-16 bg-muted/50 rounded-xl flex items-center justify-center mb-4">
+                                                <svg className="w-8 h-8 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                             </div>
                                             <div className="max-w-xs mx-auto">
-                                                <p className="font-black text-xl text-foreground tracking-tight mb-2">
+                                                <p className="font-semibold text-lg text-foreground tracking-tight mb-1.5">
                                                     {searchTerm ? 'No matches found' : 'No records yet'}
                                                 </p>
                                                 <p className="text-sm font-medium leading-relaxed opacity-60">
@@ -363,7 +370,7 @@ const BillingTab = memo(() => {
                                             {formatDate(record.due_date)}
                                         </td>
                                         <td className="py-4 px-3">
-                                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${getStatusStyle(record.status)}`}>
+                                            <span className={`px-3 py-1 text-[10px] font-bold rounded-lg border ${getStatusStyle(record.status)}`}>
                                                 {record.status}
                                             </span>
                                         </td>
@@ -371,16 +378,16 @@ const BillingTab = memo(() => {
                                             <div className="flex gap-2 justify-end">
                                                 <button
                                                     onClick={() => handleEditBill(record)}
-                                                    className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground border border-border rounded-lg hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all"
+                                                    className="px-2.5 py-1 text-[10px] font-bold bg-muted text-muted-foreground border border-border rounded-md hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all font-sans"
                                                 >
                                                     Edit
                                                 </button>
                                                 {record.status === 'pending' && (
                                                     <button
                                                         onClick={() => handleMarkAsPaid(record.id)}
-                                                        className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                                                        className="px-2.5 py-1 text-[10px] font-bold bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-all font-sans"
                                                     >
-                                                        Mark Paid
+                                                        Mark paid
                                                     </button>
                                                 )}
                                             </div>
@@ -400,131 +407,133 @@ const BillingTab = memo(() => {
 
             {/* Create/Edit Bill Form Modal */}
             {showCreateForm && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-card rounded-[2rem] p-8 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto border border-border shadow-2xl animate-in fade-in zoom-in duration-300">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">
-                                    {editingBill ? 'Edit Bill' : 'New Bill'}
-                                </h2>
-                                <p className="text-xs font-medium text-muted-foreground mt-1">Fill in the details below</p>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setShowCreateForm(false);
-                                    setEditingBill(null);
-                                    resetForm();
-                                }}
-                                className="w-10 h-10 flex items-center justify-center bg-muted text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 rounded-full transition-all border border-border"
-                            >
-                                <span className="text-2xl">×</span>
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Patient Name</label>
-                                <input
-                                    type="text"
-                                    value={billForm.patient_name}
-                                    onChange={(e) => handleFormChange('patient_name', e.target.value)}
-                                    placeholder="John Doe"
-                                    required
-                                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Patient Email</label>
-                                <input
-                                    type="email"
-                                    value={billForm.patient_email}
-                                    onChange={(e) => handleFormChange('patient_email', e.target.value)}
-                                    placeholder="john.doe@email.com"
-                                    required
-                                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Description</label>
-                                <textarea
-                                    value={billForm.description}
-                                    onChange={(e) => handleFormChange('description', e.target.value)}
-                                    placeholder="Consultation, treatment, etc..."
-                                    required
-                                    rows={3}
-                                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all resize-none"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Amount (৳)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={billForm.amount}
-                                        onChange={(e) => handleFormChange('amount', e.target.value)}
-                                        placeholder="0.00"
-                                        required
-                                        className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all"
-                                    />
+                <Portal>
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                        <div className="bg-card rounded-xl p-5 w-full max-w-[380px] mx-4 max-h-[90vh] overflow-y-auto border border-border shadow-2xl animate-in zoom-in duration-200">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-foreground tracking-tight">
+                                        {editingBill ? 'Edit bill' : 'New bill'}
+                                    </h2>
+                                    <p className="text-[10px] font-medium text-muted-foreground">Fill in the details below</p>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Due Date</label>
-                                    <input
-                                        type="date"
-                                        value={billForm.due_date}
-                                        onChange={(e) => handleFormChange('due_date', e.target.value)}
-                                        required
-                                        className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-foreground transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Status</label>
-                                <div className="relative">
-                                    <select
-                                        value={billForm.status}
-                                        onChange={(e) => handleFormChange('status', e.target.value)}
-                                        className="w-full px-4 py-3 bg-muted border border-border rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-sm font-bold text-foreground transition-all appearance-none cursor-pointer pr-10"
-                                    >
-                                        <option value="pending">Pending</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="overdue">Overdue</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-muted-foreground">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
                                 <button
-                                    type="button"
                                     onClick={() => {
                                         setShowCreateForm(false);
                                         setEditingBill(null);
                                         resetForm();
                                     }}
-                                    className="flex-1 px-4 py-3 bg-muted text-muted-foreground font-bold rounded-xl border border-border hover:bg-card transition-all active:scale-95"
+                                    className="w-7 h-7 flex items-center justify-center bg-muted text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 rounded-full transition-all border border-border"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95"
-                                >
-                                    {editingBill ? 'Update Bill' : 'Create Bill'}
+                                    <span className="text-lg">×</span>
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleSubmit} className="space-y-3.5">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground ml-1">Patient name</label>
+                                    <input
+                                        type="text"
+                                        value={billForm.patient_name}
+                                        onChange={(e) => handleFormChange('patient_name', e.target.value)}
+                                        placeholder="John Doe"
+                                        required
+                                        className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-foreground transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground ml-1">Patient email</label>
+                                    <input
+                                        type="email"
+                                        value={billForm.patient_email}
+                                        onChange={(e) => handleFormChange('patient_email', e.target.value)}
+                                        placeholder="john.doe@email.com"
+                                        required
+                                        className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-foreground transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground ml-1">Description</label>
+                                    <textarea
+                                        value={billForm.description}
+                                        onChange={(e) => handleFormChange('description', e.target.value)}
+                                        placeholder="Consultation details..."
+                                        required
+                                        rows={2}
+                                        className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-foreground transition-all resize-none"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Amount (৳)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={billForm.amount}
+                                            onChange={(e) => handleFormChange('amount', e.target.value)}
+                                            placeholder="0.00"
+                                            required
+                                            className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-foreground transition-all"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-semibold text-muted-foreground ml-1">Due date</label>
+                                        <input
+                                            type="date"
+                                            value={billForm.due_date}
+                                            onChange={(e) => handleFormChange('due_date', e.target.value)}
+                                            required
+                                            className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-foreground transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground ml-1">Status</label>
+                                    <div className="relative">
+                                        <select
+                                            value={billForm.status}
+                                            onChange={(e) => handleFormChange('status', e.target.value)}
+                                            className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold text-foreground transition-all appearance-none cursor-pointer pr-8"
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="overdue">Overdue</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2.5 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowCreateForm(false);
+                                            setEditingBill(null);
+                                            resetForm();
+                                        }}
+                                        className="flex-1 px-4 py-2 bg-muted text-muted-foreground font-bold text-[11px] rounded-lg border border-border hover:bg-card transition-all active:scale-95"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 px-4 py-2 bg-indigo-600 text-white font-bold text-[11px] rounded-lg hover:bg-indigo-700 transition-all active:scale-95"
+                                    >
+                                        {editingBill ? 'Update bill' : 'Create bill'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                </Portal>
             )}
         </div>
     );
