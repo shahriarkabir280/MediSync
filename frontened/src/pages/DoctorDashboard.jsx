@@ -22,7 +22,7 @@ const ChatTab = lazy(() => import('./DoctorDashboardTabs/ChatTab'));
 const EmailTab = lazy(() => import('./DoctorDashboardTabs/EmailTab'));
 const CalendarTab = lazy(() => import('./DoctorDashboardTabs/CalendarTab'));
 const NotificationTab = lazy(() => import('./DoctorDashboardTabs/NotificationTab'));
-const BillingTab = lazy(() => import('./DoctorDashboardTabs/BillingTab'));
+const WalletTab = lazy(() => import('./DoctorDashboardTabs/WalletTabComponent'));
 const HelpTab = lazy(() => import('./DoctorDashboardTabs/HelpTab'));
 const LogoutTab = lazy(() => import('./DoctorDashboardTabs/LogoutTab'));
 const AnalyticsTab = lazy(() => import('./DoctorDashboardTabs/AnalyticsTab'));
@@ -40,6 +40,12 @@ const TabLoader = () => (
 
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState(() => {
+    // 1. Check URL first
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) return tabParam;
+    
+    // 2. Fallback to localStorage
     return localStorage.getItem('doctorActiveTab') || 'appointments';
   });
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -50,6 +56,15 @@ const DoctorDashboard = () => {
   useEffect(() => {
     localStorage.setItem('doctorActiveTab', activeTab);
   }, [activeTab]);
+
+  // Sync tab from URL changes (if any)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [window.location.search]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -67,7 +82,7 @@ const DoctorDashboard = () => {
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'blogs', label: 'Manage blogs', icon: BookOpen },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'wallet', label: 'Wallet', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'website', label: 'Public website', icon: Globe },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -90,7 +105,7 @@ const DoctorDashboard = () => {
         case 'calendar': return <CalendarTab />;
         case 'analytics': return <AnalyticsTab />;
         case 'notifications': return <NotificationTab onCountChange={refreshCount} />;
-        case 'billing': return <BillingTab />;
+        case 'wallet': return <WalletTab />;
         case 'help': return <HelpTab />;
         case 'logout': return <LogoutTab />;
         default:

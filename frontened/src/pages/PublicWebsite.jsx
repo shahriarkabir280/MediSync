@@ -7,10 +7,12 @@ import {
   ArrowRight, CheckCircle, Facebook, Twitter, Instagram, Youtube,
   Stethoscope, Thermometer, Pill, Syringe, Brain, Eye, Ear, Bone,
   Baby, UserPlus, Microscope, FileText, Cross, Smile, Droplet,
-  UserCheck, Timer, Video, MessageSquare, Clipboard, Globe, Linkedin,
+  UserCheck, Timer, Video, MessageSquare, Clipboard, Globe, Linkedin, UserCircle,
   GraduationCap, Briefcase, Building
 } from 'lucide-react';
 import { API_URLS, getImageUrl } from '../config/api';
+import { appointmentApi } from '../lib/api';
+import toast from 'react-hot-toast';
 
 const SUPPORTED_ICONS = {
   'General': { Stethoscope, Activity, Thermometer, Pill, Syringe, Microscope, FileText, Clipboard },
@@ -81,8 +83,31 @@ const PublicWebsite = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingData, setBookingData] = useState({
+    patient_name: '',
+    patient_email: '',
+    patient_phone: '',
+    appointment_date: '',
+    appointment_time: '',
+    appointment_type: 'In-person',
+    notes: ''
+  });
 
   const t = TRANSLATIONS[lang];
+
+  // Check if patient is logged in
+  useEffect(() => {
+    const sessionEmail = localStorage.getItem('patientSessionEmail');
+    if (sessionEmail && !bookingData.patient_email) {
+      setBookingData(prev => ({
+        ...prev,
+        patient_email: sessionEmail,
+        patient_name: localStorage.getItem('patientName') || ''
+      }));
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -179,6 +204,124 @@ const PublicWebsite = () => {
     </div>
   );
 
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setBookingLoading(true);
+    try {
+      if (!bookingData.appointment_date || !bookingData.appointment_time) {
+        throw new Error("Please select date and time");
+      }
+
+      await appointmentApi.create(data.id, {
+        ...bookingData,
+        status: 'pending'
+      });
+
+      toast.success("Appointment booked successfully!");
+      setIsBookingModalOpen(false);
+
+      // Redirect if patient is logged in
+      if (localStorage.getItem('patientSessionEmail')) {
+        toast("Redirecting to your dashboard...", { icon: '🔄' });
+        setTimeout(() => navigate('/patient-dashboard'), 1500);
+      }
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast.error(error.message || "Failed to book appointment");
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const BookingModal = () => (
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${isBookingModalOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}>
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsBookingModalOpen(false)}></div>
+      <div className={`bg-white w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden transform transition-all duration-500 ${isBookingModalOpen ? 'translate-y-0 scale-100' : 'translate-y-12 scale-95'}`}>
+        <div className={`p-6 text-white bg-gradient-to-r ${data.theme_color === '#2563eb' ? 'from-blue-600 to-indigo-700' : 'from-emerald-600 to-teal-700'}`}>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold">Book Appointment</h3>
+            <button onClick={() => setIsBookingModalOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <p className="text-blue-100/80 text-sm mt-1">Schedule your visit with Dr. {data.last_name}</p>
+        </div>
+
+        <form onSubmit={handleBookingSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase">Your Name</label>
+              <input 
+                type="text" 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                value={bookingData.patient_name}
+                onChange={e => setBookingData({...bookingData, patient_name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase">Email Address</label>
+              <input 
+                type="email" 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                value={bookingData.patient_email}
+                onChange={e => setBookingData({...bookingData, patient_email: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase">Preferred Date</label>
+              <input 
+                type="date" 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                value={bookingData.appointment_date}
+                onChange={e => setBookingData({...bookingData, appointment_date: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase">Preferred Time</label>
+              <input 
+                type="time" 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                value={bookingData.appointment_time}
+                onChange={e => setBookingData({...bookingData, appointment_time: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-500 uppercase">Reason / Notes</label>
+            <textarea 
+              rows="3"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+              placeholder="Tell us briefly about your concern..."
+              value={bookingData.notes}
+              onChange={e => setBookingData({...bookingData, notes: e.target.value})}
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={bookingLoading}
+            className={`w-full py-4 text-white font-bold rounded-2xl shadow-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${
+              data.theme_color === '#2563eb' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'
+            } ${bookingLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {bookingLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            ) : <Calendar size={20} />}
+            {bookingLoading ? 'Processing...' : 'Confirm Appointment'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 relative overflow-hidden font-sans text-slate-800">
 
@@ -230,7 +373,10 @@ const PublicWebsite = () => {
                 >BN</button>
               </div>
 
-              <Button size="sm" onClick={() => { }}>{t.buttons.book}</Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => navigate('/patient-login')}>Login</Button>
+                <Button size="sm" variant="secondary" onClick={() => navigate('/patient-signup')}>Register</Button>
+              </div>
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -254,7 +400,10 @@ const PublicWebsite = () => {
                 <span className="text-slate-200">|</span>
                 <button onClick={() => setLang('bn')} className={`text-sm font-bold ${lang === 'bn' ? 'text-emerald-600' : 'text-slate-400'}`}>BAN</button>
               </div>
-              <Button onClick={() => setIsMenuOpen(false)} className="w-full">{t.buttons.book}</Button>
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => { setIsMenuOpen(false); navigate('/patient-login'); }} className="w-full">Patient Login</Button>
+                <Button variant="secondary" onClick={() => { setIsMenuOpen(false); navigate('/patient-signup'); }} className="w-full">Register</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -280,8 +429,8 @@ const PublicWebsite = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-              <Button size="lg" icon={Calendar}>{t.buttons.book}</Button>
-              <Button size="lg" variant="secondary" icon={Phone}>{t.buttons.emergency}</Button>
+              <Button size="lg" icon={Calendar} onClick={() => setIsBookingModalOpen(true)}>{t.buttons.book}</Button>
+              <Button size="lg" variant="secondary" icon={UserCircle} onClick={() => navigate('/patient-login')}>Patient Portal</Button>
             </div>
 
             {/* Stats Row */}
@@ -783,6 +932,8 @@ const PublicWebsite = () => {
           </div>
         </div>
       </footer>
+
+      <BookingModal />
 
     </div>
   );

@@ -114,6 +114,72 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Patient Login endpoint
+router.post('/patient-login', async (req, res) => {
+  try {
+    console.log('🔐 Patient Login attempt:', req.body);
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    console.log('🔍 Looking for patient with email:', email);
+    // Find patient by email
+    const { data: patients, error } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('email', email);
+
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+
+    if (!patients || patients.length === 0) {
+      console.log('❌ No patient found with email:', email);
+      return res.status(401).json({
+        success: false,
+        message: 'Patient account not found. Please register first.'
+      });
+    }
+
+    const patient = patients[0];
+    console.log('👤 Patient found:', patient.first_name, patient.last_name);
+
+    // Generate JWT token for patient
+    const token = jwt.sign(
+      {
+        patientId: patient.id,
+        email: patient.email,
+        name: `${patient.first_name} ${patient.last_name}`,
+        role: 'patient'
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    console.log('✅ Patient login successful:', patient.email);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      data: patient
+    });
+
+  } catch (error) {
+    console.error('❌ Patient login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Verify token endpoint
 router.get('/verify', async (req, res) => {
   try {

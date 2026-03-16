@@ -43,8 +43,7 @@ export default defineConfig({
           ],
           'dashboard-extended': [
             './src/pages/DoctorDashboardTabs/LabratoryTab.jsx',
-            './src/pages/DoctorDashboardTabs/AnalyticsTab.jsx',
-            './src/pages/DoctorDashboardTabs/BillingTab.jsx'
+            './src/pages/DoctorDashboardTabs/AnalyticsTab.jsx'
           ]
         }
       }

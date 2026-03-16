@@ -1,4 +1,6 @@
 import { supabase } from '../config/db.js';
+import { processRevenueSplit } from './walletController.js';
+
 
 // Get all billing records for a doctor
 export const getBillingRecords = async (req, res) => {
@@ -49,16 +51,58 @@ export const getBillingRecords = async (req, res) => {
 export const createBillingRecord = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const {
+    let {
       patient_id,
+      patient_name,
+      patient_email,
       appointment_id,
       amount,
       description,
       due_date
     } = req.body;
 
-    if (!patient_id || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!amount) {
+      return res.status(400).json({ error: 'Amount is required' });
+    }
+
+    // If patient_id is missing, try to find or create a patient by email
+    if (!patient_id && patient_email) {
+      const { data: existingPatient } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('email', patient_email)
+        .maybeSingle();
+
+      if (existingPatient) {
+        patient_id = existingPatient.id;
+      } else {
+        // Create a new patient
+        const names = (patient_name || 'Generic Patient').split(' ');
+        const first_name = names[0];
+        const last_name = names.slice(1).join(' ') || 'Patient';
+
+        const { data: newPatient, error: pError } = await supabase
+          .from('patients')
+          .insert({
+            first_name,
+            last_name,
+            email: patient_email,
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (pError) {
+          console.error('Error creating patient during billing:', pError);
+          // Fallback: if we can't create a patient, we can't create a bill due to FK
+          return res.status(400).json({ error: 'Failed to find or create patient' });
+        }
+        patient_id = newPatient.id;
+      }
+    }
+
+    if (!patient_id) {
+      return res.status(400).json({ error: 'Patient ID or Patient Email is required' });
     }
 
     const { data, error } = await supabase
@@ -155,6 +199,9 @@ export const markAsPaid = async (req, res) => {
       message: 'Billing marked as paid',
       data
     });
+
+    // Trigger Revenue Split Engine
+    processRevenueSplit(billingId);
   } catch (error) {
     console.error('Error marking billing as paid:', error);
     res.status(500).json({ error: 'Failed to mark billing as paid' });

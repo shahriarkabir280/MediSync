@@ -226,6 +226,12 @@ export const doctorApi = {
     });
     return handleResponse(response);
   },
+
+  getMarketplace: async (search = '') => {
+    const url = `${API_BASE_URL}/doctors/marketplace${search ? `?search=${search}` : ''}`;
+    const response = await fetch(url);
+    return handleResponse(response);
+  },
 };
 
 // Appointment API
@@ -337,6 +343,15 @@ export const patientApi = {
     });
     return handleResponse(response);
   },
+
+  login: async (email) => {
+    const response = await fetch(`${API_BASE_URL}/auth/patient-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse(response);
+  },
 };
 
 // Analytics API
@@ -396,6 +411,55 @@ export const billingApi = {
   markAsPaid: async (billingId) => {
     const response = await fetch(`${API_BASE_URL}/billing/${billingId}/mark-paid`, {
       method: 'PATCH',
+    });
+    return handleResponse(response);
+  },
+};
+
+// Wallet API
+export const walletApi = {
+  getSummary: async (doctorId) => {
+    const response = await fetch(`${API_BASE_URL}/wallet/doctor/${doctorId}/summary`);
+    return handleResponse(response);
+  },
+
+  getTransactions: async (doctorId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const url = `${API_BASE_URL}/wallet/doctor/${doctorId}/transactions${queryString ? `?${queryString}` : ''}`;
+    const response = await fetch(url);
+    return handleResponse(response);
+  },
+
+  withdraw: async (doctorId, withdrawalData) => {
+    const response = await fetch(`${API_BASE_URL}/wallet/doctor/${doctorId}/withdraw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(withdrawalData),
+    });
+    return handleResponse(response);
+  },
+
+  getRules: async () => {
+    const response = await fetch(`${API_BASE_URL}/wallet/rules`);
+    return handleResponse(response);
+  },
+
+  updateRule: async (ruleId, ruleData) => {
+    const response = await fetch(`${API_BASE_URL}/wallet/rules/${ruleId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ruleData),
+    });
+    return handleResponse(response);
+  },
+};
+
+export const paymentApi = {
+  initiate: async (paymentData) => {
+    const response = await fetch(`${API_BASE_URL}/payment/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData),
     });
     return handleResponse(response);
   },
@@ -487,6 +551,7 @@ export default {
   patientApi,
   analyticsApi,
   billingApi,
+  walletApi,
   prescriptionApi,
   labApi,
 };

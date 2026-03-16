@@ -27,6 +27,9 @@ import chatRoutes from './routes/chatRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import prescriptionRoutes from './routes/prescriptionRoutes.js';
+import walletRoutes from './routes/walletRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+
 import { initializeWebSocket } from './lib/websocketServer.js';
 // import { createChatSchema } from './schemas/chatSchema.js'; // REMOVED: Managed via schema.sql
 // import { initWebsiteTables } from './sampleData/websiteTables.js'; // Disabled to prevent auto-adding data
@@ -168,6 +171,9 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/payment', paymentRoutes);
+
 
 // File upload routes
 app.use('/api', fileRoutes);

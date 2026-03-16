@@ -666,3 +666,60 @@ CREATE INDEX IF NOT EXISTS idx_lab_orders_status ON lab_orders(status);
 CREATE INDEX IF NOT EXISTS idx_lab_tests_category_id ON lab_tests(category_id);
 CREATE INDEX IF NOT EXISTS idx_lab_order_items_order_id ON lab_order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_lab_results_order_item_id ON lab_results(order_item_id);
+
+-- Wellness & Finance Tables (Wallet System)
+CREATE TABLE IF NOT EXISTS wallets (
+  id SERIAL PRIMARY KEY,
+  doctor_id INTEGER UNIQUE REFERENCES doctors(id) ON DELETE CASCADE,
+  balance DECIMAL(15, 2) DEFAULT 0.00,
+  total_earned DECIMAL(15, 2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS revenue_split_rules (
+  id SERIAL PRIMARY KEY,
+  service_type VARCHAR(50) UNIQUE NOT NULL, -- 'consultation', 'lab_test'
+  doctor_percentage DECIMAL(5, 2) NOT NULL,
+  clinic_percentage DECIMAL(5, 2) NOT NULL,
+  referral_percentage DECIMAL(5, 2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS withdrawal_requests (
+  id SERIAL PRIMARY KEY,
+  doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+  amount DECIMAL(15, 2) NOT NULL,
+  payment_method VARCHAR(50) NOT NULL, -- 'bkash', 'nagad', 'rocket', 'bank'
+  account_details TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'completed'
+  processed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+  id SERIAL PRIMARY KEY,
+  doctor_id INTEGER REFERENCES doctors(id) ON DELETE CASCADE,
+  amount DECIMAL(15, 2) NOT NULL,
+  type VARCHAR(10) NOT NULL, -- 'credit', 'debit'
+  source VARCHAR(50) NOT NULL, -- 'consultation', 'referral', 'withdrawal', 'refund'
+  source_id INTEGER, -- ID of the billing or withdrawal record
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Wallet Indexes
+CREATE INDEX IF NOT EXISTS idx_wallets_doctor_id ON wallets(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_transactions_doctor_id ON wallet_transactions(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_wallet_transactions_type ON wallet_transactions(type);
+CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_doctor_id ON withdrawal_requests(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_status ON withdrawal_requests(status);
+
+-- Seed Initial Revenue Rules
+INSERT INTO revenue_split_rules (service_type, doctor_percentage, clinic_percentage, referral_percentage)
+VALUES 
+  ('consultation', 80.00, 20.00, 0.00),
+  ('lab_test', 10.00, 70.00, 20.00)
+ON CONFLICT (service_type) DO NOTHING;

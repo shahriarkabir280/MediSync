@@ -10,6 +10,9 @@ const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const DiagnosticDashboard = lazy(() => import("./pages/DiagnosticCenter/DiagnosticDashboard"));
+const PatientDashboard = lazy(() => import("./pages/PatientDashboard/PatientDashboard"));
+const PatientSignup = lazy(() => import("./pages/PatientSignup"));
+const PatientLogin = lazy(() => import("./pages/PatientLogin"));
 
 // Loading component
 const PageLoader = () => (
@@ -55,6 +58,9 @@ function App() {
               <Route path="/doctor/:slug" element={<PublicWebsite />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/diagnostic-center" element={<DiagnosticDashboard />} />
+              <Route path="/patient-dashboard" element={<PatientDashboard />} />
+              <Route path="/patient-signup" element={<PatientSignup />} />
+              <Route path="/patient-login" element={<PatientLogin />} />
               <Route
                 path="/"
                 element={

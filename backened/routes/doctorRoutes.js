@@ -31,6 +31,41 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// Public marketplace route (no auth required for now to allow patients to search)
+router.get('/marketplace', async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = supabase
+      .from('doctors')
+      .select(`
+        id, first_name, last_name, email, specialization, 
+        years_of_experience, profile_image_url, slug
+      `);
+
+    if (search) {
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,specialization.ilike.%${search}%`);
+    }
+
+    const { data: doctors, error } = await query.limit(20);
+
+    if (error) throw error;
+
+    // Enhance with some mock ratings for the demo since the DB might not have them
+    const enhancedDoctors = doctors.map(doc => ({
+      ...doc,
+      rating: (4 + Math.random()).toFixed(1),
+      reviews_count: Math.floor(Math.random() * 200) + 10,
+      city: 'Local Area', // Default or fetch from settings if available
+      consultation_fee: 1000 // Default or fetch from settings
+    }));
+
+    res.json({ success: true, data: enhancedDoctors });
+  } catch (error) {
+    console.error('Error fetching marketplace doctors:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch doctors' });
+  }
+});
+
 // Profile routes
 router.get('/:doctorId/profile', getDoctorProfile);
 router.put('/:doctorId/profile', updateDoctorProfile);
