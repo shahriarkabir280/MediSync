@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doctorApi, getImageUrl } from '../../../lib/api';
+import { doctorApi } from '../../../lib/api';
+import { getImageUrl, API_CONFIG } from '../../../config/api';
 import toast from 'react-hot-toast';
 import {
   MagnifyingGlassIcon,

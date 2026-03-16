@@ -282,7 +282,7 @@ export const getAppointmentsByPatient = async (req, res) => {
       .select(`
         *,
         doctors (
-            unique_id, first_name, last_name
+            unique_id, first_name, last_name, specialization, profile_image_url
         )
       `)
       .eq('patient_id', patientId)
@@ -296,6 +296,8 @@ export const getAppointmentsByPatient = async (req, res) => {
       doctor_first_name: appt.doctors?.first_name,
       doctor_last_name: appt.doctors?.last_name,
       doctor_unique_id: appt.doctors?.unique_id,
+      doctor_specialization: appt.doctors?.specialization,
+      doctor_image: appt.doctors?.profile_image_url,
       doctors: undefined
     }));
 

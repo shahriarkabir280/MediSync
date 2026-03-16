@@ -35,11 +35,14 @@ const authenticateToken = (req, res, next) => {
 router.get('/marketplace', async (req, res) => {
   try {
     const { search } = req.query;
+    
+    // Join with website_settings to get the url_slug
     let query = supabase
       .from('doctors')
       .select(`
         id, first_name, last_name, email, specialization, 
-        years_of_experience, profile_image_url, slug
+        years_of_experience, profile_image_url,
+        website_settings (url_slug)
       `);
 
     if (search) {
@@ -50,14 +53,22 @@ router.get('/marketplace', async (req, res) => {
 
     if (error) throw error;
 
-    // Enhance with some mock ratings for the demo since the DB might not have them
-    const enhancedDoctors = doctors.map(doc => ({
-      ...doc,
-      rating: (4 + Math.random()).toFixed(1),
-      reviews_count: Math.floor(Math.random() * 200) + 10,
-      city: 'Local Area', // Default or fetch from settings if available
-      consultation_fee: 1000 // Default or fetch from settings
-    }));
+    // Enhance and format the results
+    const enhancedDoctors = doctors.map(doc => {
+      // Handle the nested website_settings result from Supabase
+      const ws = doc.website_settings?.[0] || {};
+      
+      return {
+        ...doc,
+        slug: ws.url_slug || 'doctor',
+        rating: (4 + Math.random()).toFixed(1),
+        reviews_count: Math.floor(Math.random() * 200) + 10,
+        city: 'Local Area', 
+        consultation_fee: 1000,
+        // Remove the nested object to keep response clean
+        website_settings: undefined
+      };
+    });
 
     res.json({ success: true, data: enhancedDoctors });
   } catch (error) {
