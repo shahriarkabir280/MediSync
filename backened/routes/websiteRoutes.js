@@ -25,8 +25,12 @@ import {
   updateContact,
   getContact,
   getDashboardStats,
-  getPublicBlogPost
+  getPublicBlogPost,
+  runWebsiteMigration
 } from '../controllers/websiteController.js';
+
+// Auto-run migration to ensure all columns exist
+runWebsiteMigration().catch(e => console.warn('Migration warning:', e.message));
 
 const router = express.Router();
 
@@ -89,5 +93,8 @@ router.put('/doctor/:doctorId/contact', updateContact);
 
 // Dashboard Stats
 router.get('/doctor/:doctorId/stats', getDashboardStats);
+
+// Migration endpoint (dev utility)
+router.post('/migrate', runWebsiteMigration);
 
 export default router;

@@ -1,5 +1,40 @@
-import { supabase } from '../config/db.js';
+import { supabase, sql } from '../config/db.js';
 import { saveBase64Image, deleteOldImage, isBase64Image } from '../utils/imageUtils.js';
+import pkg from 'pg';
+const { Pool } = pkg;
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env') });
+const migrationPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+
+// Auto-migration: ensure all required columns exist
+export const runWebsiteMigration = async (req, res) => {
+  const migrations = [
+    `ALTER TABLE doctor_services ADD COLUMN IF NOT EXISTS features TEXT`,
+    `ALTER TABLE doctor_services ADD COLUMN IF NOT EXISTS color_theme VARCHAR(100) DEFAULT 'from-blue-500 to-cyan-500'`,
+    `ALTER TABLE doctor_chambers ADD COLUMN IF NOT EXISTS day VARCHAR(50)`,
+    `ALTER TABLE doctor_testimonials ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 5`,
+    `ALTER TABLE doctor_testimonials ADD COLUMN IF NOT EXISTS location VARCHAR(255)`,
+    `ALTER TABLE doctor_testimonials ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)`,
+    `ALTER TABLE doctor_education ADD COLUMN IF NOT EXISTS type VARCHAR(50) DEFAULT 'certification'`,
+    `ALTER TABLE doctor_experience ADD COLUMN IF NOT EXISTS type VARCHAR(50) DEFAULT 'current'`,
+  ];
+  const results = [];
+  for (const query of migrations) {
+    try {
+      await migrationPool.query(query);
+      results.push({ query: query.substring(0, 60) + '...', status: 'ok' });
+    } catch (e) {
+      results.push({ query: query.substring(0, 60) + '...', status: 'skipped: ' + e.message.substring(0, 40) });
+    }
+  }
+  const summary = results.filter(r => r.status === 'ok').length + '/' + results.length + ' columns added';
+  console.log('✅ Website column migration:', summary);
+  if (res) res.json({ success: true, summary, results });
+};
 
 // Simple in-memory cache for better performance
 const cache = new Map();
@@ -289,7 +324,28 @@ export const updateDoctorProfile = async (req, res) => {
       };
     });
 
-    // Clear cache for this doctor
+    // Update Contact (upsert)
+    if (profileData.contact) {
+      const contactData = profileData.contact;
+      const dataToUpsert = {
+        doctor_id: doctorId,
+        phone: contactData.phone || '',
+        whatsapp: contactData.whatsapp || '',
+        email: contactData.email || '',
+        address: contactData.address || '',
+        emergency_contact_name: contactData.emergency_contact_name || '',
+        emergency_contact_phone: contactData.emergency_contact_phone || '',
+        office_phone: contactData.office_phone || '',
+        fax: contactData.fax || '',
+        website_url: contactData.website_url || '',
+        updated_at: new Date().toISOString()
+      };
+      await supabase.from('doctor_contact').upsert(dataToUpsert, { onConflict: 'doctor_id' });
+    }
+
+    // Clear cache for this doctor (both ID-based and slug-based)
+    const { data: ws } = await supabase.from('website_settings').select('url_slug').eq('doctor_id', doctorId).maybeSingle();
+    if (ws?.url_slug) clearCachePattern(ws.url_slug);
     clearCachePattern(doctorId);
 
     res.json({ success: true, message: 'Profile updated successfully' });
@@ -458,7 +514,9 @@ export const uploadProfileImage = async (req, res) => {
       .update({ profile_image_url: imageUrl, updated_at: new Date().toISOString() })
       .eq('id', doctorId);
 
-    // Clear cache
+    // Clear cache for this doctor (both ID-based and slug-based)
+    const { data: ws } = await supabase.from('website_settings').select('url_slug').eq('doctor_id', doctorId).maybeSingle();
+    if (ws?.url_slug) clearCachePattern(ws.url_slug);
     clearCachePattern(doctorId);
 
     res.json({ success: true, data: { imageUrl } });
@@ -520,6 +578,8 @@ export const updateWebsiteSettings = async (req, res) => {
       await supabase.from('website_settings').insert(websiteData);
     }
 
+    // Clear cache for this doctor (both ID-based and slug-based)
+    if (websiteData.url_slug) clearCachePattern(websiteData.url_slug);
     clearCachePattern(doctorId);
 
     res.json({ success: true, message: 'Website settings updated successfully' });

@@ -3,6 +3,7 @@ import {
   Save, Edit3, Briefcase, Award, Upload, MapPin, User, Globe, Facebook, Twitter, Instagram, Linkedin, Youtube,
   Plus, Trash2, CheckCircle, AlertCircle, Phone, Mail, Link as LinkIcon, Building, GraduationCap, Stethoscope,
   Clock, Shield, Sparkles, Languages, X, Search, ChevronDown, Star, Layout, Users, TrendingUp, Zap, Heart,
+  ExternalLink,
   // Medical Icons
   Activity, Thermometer, Pill, Syringe, Brain, Eye, Ear, Bone, Baby, UserPlus, Microscope,
   FileText, Calendar, Cross, Smile, Droplet, UserCheck, Timer, Video, MessageSquare, Clipboard
@@ -246,7 +247,7 @@ const IconPicker = ({ selected, onSelect, onClose }) => {
 const PublicWebsiteTab = () => {
   const { doctorId } = useDoctor();
   const { refreshUser } = useAuth();
-  const actualDoctorId = doctorId || 1;
+  const actualDoctorId = doctorId || 5;
 
   // State
   const [lang, setLang] = useState('en');
@@ -255,8 +256,8 @@ const PublicWebsiteTab = () => {
   const [expandedItems, setExpandedItems] = useState([]);
 
   const [formData, setFormData] = useState({
-    full_name: "Dr. Jobayer Hasan",
-    profile_photo_url: "https://media.istockphoto.com/id/906716900/photo/confident-male-surgeon-in-scrubs.jpg?s=612x612&w=0&k=20&c=G03yZ-lkdN0pwMbv4Mv-P_WIPNMWhbL2sn3tlpJleMU=",
+    full_name: "Dr. John Doe",
+    profile_photo_url: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&auto=format&fit=crop&q=80",
     active_status: true,
     years_experience: 15,
     chamber: [],
@@ -266,36 +267,39 @@ const PublicWebsiteTab = () => {
     testimonials: [],
     affiliates: [],
     hero: {
-      title_prefix: "Your Heart,",
-      title_highlight: "Our Expertise",
-      intro_tag: "🏥 Expert Cardiac Care Since 2007",
-      description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge technology.",
-      image_url: "https://media.istockphoto.com/id/2201754823/photo/female-physician-explaining-medical-findings-to-older-woman-with-stomach-discomfort-listening.jpg?s=612x612&w=0&k=20&c=BZxNzQuqWTolKHBoQV0V8oOZpDl5PWKlCVe2DDc-ps0="
+      title_prefix: "Your Health,",
+      title_highlight: "Our Priority",
+      intro_tag: "🏥 Expert Cardiac Care Since 2009",
+      description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge diagnostic technology.",
+      image_url: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=600&auto=format&fit=crop&q=80"
     },
     stats: {
-      patients_count: "5000+",
-      success_rate: "98%",
-      consultation_fee: "৳1500"
+      patients_count: "8,500+",
+      success_rate: "97%",
+      consultation_fee: "৳2,000"
     },
     sponsors_company: {},
     contact: {
-      phone: "+880 1717-123456", whatsapp: "", email: "dr.rahman@careconnect.bd", address: "BTI Landmark, Gulshan-1", office_phone: "",
-      website_url: "", emergency_contact_name: "", emergency_contact_phone: "+880 1717-123456", fax: ""
+      phone: "+880 1711-234567", whatsapp: "+880 1711-234567", email: "dr.johndoe@careconnect.com.bd",
+      address: "CareConnect Medical Center, Bashundhara R/A, Dhaka-1229", office_phone: "+880 2-9876543",
+      website_url: "", emergency_contact_name: "CareConnect Emergency", emergency_contact_phone: "+880 1800-CARDIAC", fax: ""
     },
     social_media: [],
     about: {
-      subtitle: "A distinguished cardiologist with over 15 years of experience",
-      bio: "Leading cardiovascular care excellence with advanced procedures and multidisciplinary team coordination.",
-      image_1: "https://images.unsplash.com/photo-1656428964836-78d54bf76231?w=600&auto=format&fit=crop",
-      image_2: "https://media.istockphoto.com/id/1185231735/photo/asian-scientist-use-microscope.webp?a=1&b=1&s=612x612&w=0&k=20"
+      subtitle: "A distinguished cardiologist with over 15 years of dedicated experience in heart health.",
+      bio: "Dr. John Doe is a leading cardiovascular specialist committed to providing exceptional cardiac care with patient-first approach.",
+      image_1: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=600&auto=format&fit=crop",
+      image_2: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop"
     },
     website: {
-      title: "Dr. Jobayer Hasan - Cardiology", tagline: "Consultant Cardiologist", description: "Expert cardiac care...", theme_color: "#2563eb",
-      layout_style: "modern", show_phone: true, show_email: true,
+      title: "Dr. John Doe - Cardiologist", tagline: "Consultant Cardiologist & Heart Specialist",
+      description: "Expert cardiac care with advanced diagnostics and comprehensive heart health management.",
+      theme_color: "#2563eb", layout_style: "modern", show_phone: true, show_email: true,
       show_address: true, show_appointment: true, show_social: true,
-      meta_keywords: "cardiology, heart, health", url_slug: "dr-jobayer-hasan", visibility: true
+      meta_keywords: "cardiology, heart specialist, cardiac care", url_slug: "dr-john-doe", visibility: true
     }
   });
+
 
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -407,44 +411,39 @@ const PublicWebsiteTab = () => {
     if (!actualDoctorId) return;
     setSaveLoading(true);
     try {
+      // Single unified batch call — backend handles all arrays (delete + re-insert)
       const profileData = {
         full_name: formData.full_name,
         profile_photo_url: formData.profile_photo_url,
         active_status: formData.active_status,
         years_experience: formData.years_experience,
         website: formData.website,
-        hero: formData.hero, // Send new fields
+        hero: formData.hero,
         about: formData.about,
         stats: formData.stats,
-        testimonials: formData.testimonials, // Send arrays
-        affiliates: formData.affiliates
+        // All array sections — backend will delete+reinsert these
+        education: formData.education,
+        experience: formData.experience,
+        services: formData.services,
+        chamber: formData.chamber,
+        social_media: formData.social_media,
+        testimonials: formData.testimonials,
+        affiliates: formData.affiliates,
+        contact: formData.contact
       };
 
-      await authenticatedFetch(API_URLS.WEBSITE.PROFILE(actualDoctorId), {
+      const response = await authenticatedFetch(API_URLS.WEBSITE.PROFILE(actualDoctorId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileData)
       });
 
-      // Save sub-collections
-      await Promise.all([
-        saveSection(formData.education, API_URLS.WEBSITE.EDUCATION),
-        saveSection(formData.experience, API_URLS.WEBSITE.EXPERIENCE),
-        saveSection(formData.services, API_URLS.WEBSITE.SERVICES),
-        saveSection(formData.chamber, API_URLS.WEBSITE.CHAMBERS),
-        authenticatedFetch(API_URLS.WEBSITE.SOCIAL_MEDIA.UPDATE(actualDoctorId), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData.social_media)
-        }),
-        authenticatedFetch(API_URLS.WEBSITE.CONTACT.UPDATE(actualDoctorId), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData.contact)
-        })
-      ]);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error: ${response.status}`);
+      }
 
-      showNotification('Website profile updated successfully!');
+      showNotification('Website profile published successfully! ✓');
       if (refreshUser) await refreshUser();
       // Do not reload to avoid overwriting optimistic updates if backend lags
       // await loadDoctorData(); 
@@ -567,6 +566,16 @@ const PublicWebsiteTab = () => {
             <button onClick={() => setLang('en')} className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${lang === 'en' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>EN</button>
             <button onClick={() => setLang('bn')} className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all ${lang === 'bn' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:bg-white/50'}`}>BN</button>
           </div>
+          {formData.website?.url_slug && (
+            <a
+              href={`/doctor/${formData.website.url_slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="border border-border text-foreground px-4 py-2 rounded-xl font-bold text-[11px] hover:bg-muted/30 transition-all flex items-center gap-2"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> View website
+            </a>
+          )}
           <button onClick={handleSave} disabled={saveLoading} className="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold text-[11px] hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
             {saveLoading ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save className="h-3.5 w-3.5" />} {t.saveChanges}
           </button>
