@@ -132,7 +132,7 @@ const SearchDoctorsTab = () => {
                 onClick={() => navigate(`/doctor/${doctor.slug}`)}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/10 active:scale-95 flex items-center gap-2"
               >
-                View Profile & Book
+                View & Book
               </button>
             </div>
           </div>

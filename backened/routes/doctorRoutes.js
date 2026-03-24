@@ -58,9 +58,15 @@ router.get('/marketplace', async (req, res) => {
       // Handle the nested website_settings result from Supabase
       const ws = doc.website_settings?.[0] || {};
       
+      // Dynamic fallback slug from name
+      const nameSlug = `${doc.first_name || ''}-${doc.last_name || ''}`
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
       return {
         ...doc,
-        slug: ws.url_slug || 'doctor',
+        slug: ws.url_slug || nameSlug || 'doctor',
         rating: (4 + Math.random()).toFixed(1),
         reviews_count: Math.floor(Math.random() * 200) + 10,
         city: 'Local Area', 
