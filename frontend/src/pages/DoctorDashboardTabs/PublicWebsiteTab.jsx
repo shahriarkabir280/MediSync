@@ -280,9 +280,9 @@ const PublicWebsiteTab = () => {
     },
     sponsors_company: {},
     contact: {
-      phone: "+880 1711-234567", whatsapp: "+880 1711-234567", email: "dr.johndoe@careconnect.com.bd",
-      address: "CareConnect Medical Center, Bashundhara R/A, Dhaka-1229", office_phone: "+880 2-9876543",
-      website_url: "", emergency_contact_name: "CareConnect Emergency", emergency_contact_phone: "+880 1800-CARDIAC", fax: ""
+      phone: "+880 1711-234567", whatsapp: "+880 1711-234567", email: "dr.johndoe@medisync.com.bd",
+      address: "MediSync Medical Center, Bashundhara R/A, Dhaka-1229", office_phone: "+880 2-9876543",
+      website_url: "", emergency_contact_name: "MediSync Emergency", emergency_contact_phone: "+880 1800-CARDIAC", fax: ""
     },
     social_media: [],
     about: {

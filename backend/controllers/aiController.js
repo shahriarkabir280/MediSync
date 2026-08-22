@@ -114,7 +114,7 @@ Tests:
     // Use gemini-2.5-flash since it's the latest and extremely capable and fast
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
-        systemInstruction: `You are CareConnect Clinical AI, an advanced, highly intelligent medical assistant designed to help doctors interpret lab results, analyze patient histories, and make clinical decisions.
+        systemInstruction: `You are MediSync Clinical AI, an advanced, highly intelligent medical assistant designed to help doctors interpret lab results, analyze patient histories, and make clinical decisions.
 You are chatting directly with the attending doctor. 
 
 Guidelines:

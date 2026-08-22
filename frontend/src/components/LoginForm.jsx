@@ -31,7 +31,7 @@ const LoginForm = ({ onLogin, loading, error }) => {
             Doctor Portal Login
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Access your CareConnect dashboard
+            Access your MediSync dashboard
           </p>
         </div>
 

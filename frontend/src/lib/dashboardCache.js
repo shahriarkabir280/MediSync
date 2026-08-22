@@ -4,7 +4,7 @@
  * Used for AppointmentTab and PatientTab to provide "super fast" loading.
  */
 
-const DB_NAME = 'CareConnectDashboard';
+const DB_NAME = 'MediSyncDashboard';
 const DB_VERSION = 1;
 const DASHBOARD_STORE = 'dashboard_data';
 

@@ -1,7 +1,7 @@
 # Email System Documentation
 
 ## Overview
-The CareConnect email system provides a complete, modern email solution for healthcare providers to communicate with patients, staff, and other healthcare professionals. The system features a Gmail/Outlook-style interface with full functionality including compose, inbox management, drafts, and more.
+The MediSync email system provides a complete, modern email solution for healthcare providers to communicate with patients, staff, and other healthcare professionals. The system features a Gmail/Outlook-style interface with full functionality including compose, inbox management, drafts, and more.
 
 ## Architecture
 
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS emails (
 ### Frontend Components
 
 #### EmailTab Component
-**Location**: `frontened/src/pages/DoctorDashboardTabs/EmailTab.jsx`
+**Location**: `frontend/src/pages/DoctorDashboardTabs/EmailTab.jsx`
 
 **Key Features:**
 - Three-column layout (folders, email list, content viewer)
@@ -127,7 +127,7 @@ const [stats, setStats] = useState(null);
 ```
 
 #### Email API Client
-**Location**: `frontened/src/lib/emailApi.js`
+**Location**: `frontend/src/lib/emailApi.js`
 
 Provides convenient methods for all email operations:
 ```javascript
@@ -378,6 +378,6 @@ Track these metrics:
 
 ## Conclusion
 
-The CareConnect email system provides a complete, professional email solution for healthcare communications. With modern UI, comprehensive features, and solid backend architecture, it enables efficient communication while maintaining security and privacy standards.
+The MediSync email system provides a complete, professional email solution for healthcare communications. With modern UI, comprehensive features, and solid backend architecture, it enables efficient communication while maintaining security and privacy standards.
 
 For questions or support, refer to the main project documentation or contact the development team.

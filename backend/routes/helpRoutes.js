@@ -362,7 +362,7 @@ router.get('/documentation', async (req, res) => {
         const articles = [
             {
                 id: 1,
-                title: 'Getting Started with CareConnect',
+                title: 'Getting Started with MediSync',
                 category: 'Getting Started',
                 description: 'Complete setup and onboarding guide for new doctors',
                 slug: 'getting-started',

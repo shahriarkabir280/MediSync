@@ -1,9 +1,9 @@
 @echo off
-REM CareConnect Quick Start Script for Windows
+REM MediSync Quick Start Script for Windows
 REM This script helps you start both backend and frontend servers
 
 echo.
-echo 🏥 CareConnect - Quick Start
+echo 🏥 MediSync - Quick Start
 echo ==============================
 echo.
 
@@ -38,9 +38,9 @@ if not exist node_modules (
 )
 
 REM Check if frontend node_modules exists
-if not exist frontened\node_modules (
+if not exist frontend\node_modules (
     echo 📦 Installing frontend dependencies...
-    cd frontened
+    cd frontend
     call npm install
     cd ..
     echo.
@@ -70,15 +70,15 @@ echo.
 
 REM Start backend
 echo Starting backend server...
-start "CareConnect Backend" cmd /k "npm run dev"
+start "MediSync Backend" cmd /k "npm run dev"
 
 REM Wait a bit for backend to start
 timeout /t 3 /nobreak >nul
 
 REM Start frontend
 echo Starting frontend server...
-cd frontened
-start "CareConnect Frontend" cmd /k "npm run dev"
+cd frontend
+start "MediSync Frontend" cmd /k "npm run dev"
 cd ..
 
 echo.

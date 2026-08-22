@@ -767,7 +767,7 @@ const PublicWebsite = () => {
           </div>
           <div style={{ borderTop: '1px solid #1e293b', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, fontSize: 12.5 }}>
             <span>© {new Date().getFullYear()} {data.full_name}. {t.sections.footer}</span>
-            <span>Powered by <a href="#" style={{ color: '#60a5fa', textDecoration: 'none' }}>CareConnect</a></span>
+            <span>Powered by <a href="#" style={{ color: '#60a5fa', textDecoration: 'none' }}>MediSync</a></span>
           </div>
         </div>
       </footer>

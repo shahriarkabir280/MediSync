@@ -6,7 +6,7 @@ echo "🚀 Setting up Modern Chat System..."
 echo ""
 
 # Navigate to backend
-cd "$(dirname "$0")/backened"
+cd "$(dirname "$0")/backend"
 
 echo "📦 Step 1: Installing backend dependencies..."
 npm install socket.io
@@ -19,7 +19,7 @@ echo "✅ Database schema created"
 echo ""
 
 # Navigate to frontend
-cd ../frontened
+cd ../frontend
 
 echo "📦 Step 3: Checking frontend dependencies..."
 npm list socket.io-client > /dev/null 2>&1
@@ -36,10 +36,10 @@ echo "✅ Setup complete!"
 echo ""
 echo "📝 Next steps:"
 echo "1. Start the backend:"
-echo "   cd backened && npm start"
+echo "   cd backend && npm start"
 echo ""
 echo "2. Start the frontend:"
-echo "   cd frontened && npm run dev"
+echo "   cd frontend && npm run dev"
 echo ""
 echo "3. Open http://localhost:5173 in your browser"
 echo ""

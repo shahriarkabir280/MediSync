@@ -1,6 +1,6 @@
-# CareConnect
+# MediSync
 
-CareConnect is a full-stack healthcare platform that connects doctors, patients, and diagnostic centers through dedicated dashboards, appointment scheduling, medical records, billing, real-time chat, and payments — backed by a single Node.js/Express API and a React frontend.
+MediSync is a full-stack healthcare platform that connects doctors, patients, and diagnostic centers through dedicated dashboards, appointment scheduling, medical records, billing, real-time chat, and payments — backed by a single Node.js/Express API and a React frontend.
 
 ## Table of Contents
 
@@ -46,8 +46,8 @@ A public-facing website with an integrated blog runs alongside the dashboards fo
 ## Project Structure
 
 ```
-CareConnect/
-├── backened/                 Express API server
+MediSync/
+├── backend/                 Express API server
 │   ├── controllers/          Request handlers (auth, appointments, billing, chat, lab, wallet, ...)
 │   ├── routes/                One route module per domain
 │   ├── config/                 Environment and service configuration
@@ -57,7 +57,7 @@ CareConnect/
 │   ├── schema.sql              Database schema
 │   └── server.js                Entry point
 │
-└── frontened/                 React (Vite) frontend
+└── frontend/                 React (Vite) frontend
     └── src/
         ├── pages/
         │   ├── DoctorDashboard.jsx, DoctorDashboardTabs/
@@ -84,7 +84,7 @@ CareConnect/
 npm install
 
 # Frontend
-cd frontened && npm install && cd ..
+cd frontend && npm install && cd ..
 ```
 
 ### 2. Configure environment variables
@@ -114,7 +114,7 @@ The API server starts at `http://localhost:3001`.
 ### 6. Start the frontend
 
 ```bash
-cd frontened
+cd frontend
 npm run dev
 ```
 
@@ -150,7 +150,7 @@ Create a `.env` file in the project root with the following keys:
 | `npm run seed` | Populate the database with sample data |
 | `npm run add-unique-ids` | Backfill unique IDs for existing records |
 
-**`frontened/` — frontend**
+**`frontend/` — frontend**
 
 | Command | Description |
 |---|---|
@@ -176,8 +176,8 @@ Create a `.env` file in the project root with the following keys:
 
 | Topic | File |
 |---|---|
-| API reference | `backened/API_DOCUMENTATION.md` |
-| Backend testing | `backened/TESTING_GUIDE.md` |
+| API reference | `backend/API_DOCUMENTATION.md` |
+| Backend testing | `backend/TESTING_GUIDE.md` |
 | Frontend integration | `FRONTEND_INTEGRATION.md` |
 | Setup guide | `SETUP_GUIDE.md` |
 | Integration checklist | `INTEGRATION_CHECKLIST.md` |

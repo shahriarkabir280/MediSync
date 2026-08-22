@@ -44,7 +44,7 @@ const PublicWebsiteTab = () => {
     ],
     testimonials: { patient_name: "Sarah Johnson", patient_feedback: "Dr. John saved my life! His expertise and compassionate care during my heart attack was extraordinary. I'm forever grateful.", feedback_date: "2024-11-15" },
     sponsors_company: { organization_logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=100&fit=crop", organization_name: "American Heart Association", organization_description: "Partnership in cardiac research and community heart health programs", start_date: "2020-01-01", end_date: "" },
-    contact: { phone: "+1-555-0101", whatsapp: "+1-555-0101", email: "john.doe@careconnect.com" },
+    contact: { phone: "+1-555-0101", whatsapp: "+1-555-0101", email: "john.doe@medisync.com" },
     social_media: [
       { platform: "LinkedIn", profile_url: "https://linkedin.com/in/dr-john-doe-cardiology" },
       { platform: "Twitter", profile_url: "https://twitter.com/DrJohnDoeHeart" },
@@ -639,7 +639,7 @@ const PublicWebsiteTab = () => {
                 contact: { ...prev.contact, email: e.target.value }
               }))}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="john.doe@careconnect.com"
+              placeholder="john.doe@medisync.com"
             />
           </div>
         </div>

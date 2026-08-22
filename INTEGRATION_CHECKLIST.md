@@ -120,7 +120,7 @@
 ### 🎯 Ready for Testing
 1. Start backend: `npm run dev`
 2. Seed data: `npm run seed`
-3. Start frontend: `cd frontened && npm run dev`
+3. Start frontend: `cd frontend && npm run dev`
 4. Navigate to dashboard
 5. Click through all tabs
 
@@ -159,7 +159,7 @@
 
 ### Backend Files Created (13)
 ```
-backened/
+backend/
 ├── controllers/
 │   ├── doctorController.js
 │   ├── appointmentController.js
@@ -180,21 +180,21 @@ backened/
 
 ### Backend Files Modified (2)
 ```
-backened/
+backend/
 ├── server.js (updated with routes and DB schema)
 └── package.json (added seed script)
 ```
 
 ### Frontend Files Created (2)
 ```
-frontened/
+frontend/
 ├── src/lib/api.js
 └── test-backend.js
 ```
 
 ### Frontend Files Modified (5)
 ```
-frontened/src/pages/DoctorDashboardTabs/
+frontend/src/pages/DoctorDashboardTabs/
 ├── AppointmentTab.jsx
 ├── PatientTab.jsx
 ├── ProfileTab.jsx
@@ -243,7 +243,7 @@ npm run seed
 curl http://localhost:5000/api/doctors/1/profile
 
 # 4. Start frontend
-cd frontened && npm run dev
+cd frontend && npm run dev
 
 # 5. Open browser to http://localhost:5173
 # 6. Click through all dashboard tabs
@@ -254,7 +254,7 @@ cd frontened && npm run dev
 
 ## 🎉 Project Status: COMPLETE AND FUNCTIONAL
 
-Your CareConnect Doctor Dashboard is now fully integrated with a working backend API!
+Your MediSync Doctor Dashboard is now fully integrated with a working backend API!
 
 **What you can do now:**
 - ✅ View real appointments

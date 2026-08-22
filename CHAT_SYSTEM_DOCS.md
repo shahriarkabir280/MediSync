@@ -205,13 +205,13 @@ DELETE /api/chat/messages/:messageId/reactions   - Remove reaction
 
 1. **Start Backend**:
 ```bash
-cd backened
+cd backend
 npm start
 ```
 
 2. **Start Frontend**:
 ```bash
-cd frontened
+cd frontend
 npm run dev
 ```
 
@@ -338,20 +338,20 @@ const decrypted = decryptMessage(encrypted, privateKey);
 ### Automated Tests
 Run the test script:
 ```bash
-cd frontened
+cd frontend
 node test-chat.js
 ```
 
 ## 🔧 Configuration
 
 ### WebSocket URL
-Edit `/frontened/src/hooks/useChatSocket.js`:
+Edit `/frontend/src/hooks/useChatSocket.js`:
 ```javascript
 const SOCKET_URL = 'http://localhost:3000';  // Change for production
 ```
 
 ### CORS Settings
-Edit `/backened/lib/websocketServer.js`:
+Edit `/backend/lib/websocketServer.js`:
 ```javascript
 cors: {
   origin: ["http://localhost:5173", "https://your-domain.com"],

@@ -33,7 +33,7 @@ async function seedWebsiteSettings() {
     title_prefix: "Your Health,",
     title_highlight: "Our Priority",
     intro_tag: "🏥 Expert Cardiac Care Since 2009",
-    description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge diagnostic technology at CareConnect Medical Center.",
+    description: "Experience world-class cardiovascular care with advanced treatments, compassionate expertise, and cutting-edge diagnostic technology at MediSync Medical Center.",
     image_url: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=600&auto=format&fit=crop&q=80"
   };
   const aboutData = {
@@ -98,7 +98,7 @@ async function seedExperience() {
     { doctor_id: DOCTOR_ID, designation: 'Resident Doctor', organization: 'Dhaka Medical College Hospital', start_date: '2004-07-01', end_date: '2007-06-30', short_description: 'Completed residency in internal medicine and general cardiology ward management.', type: 'previous' },
     { doctor_id: DOCTOR_ID, designation: 'Senior Registrar - Cardiology', organization: 'National Heart Foundation Hospital', start_date: '2009-01-01', end_date: '2013-12-31', short_description: 'Led cardiac catheterization lab procedures and supervised junior residents.', type: 'previous' },
     { doctor_id: DOCTOR_ID, designation: 'Consultant Cardiologist', organization: 'Square Hospital, Dhaka', start_date: '2014-01-01', end_date: '2020-06-30', short_description: 'Managed complex cardiac cases, performed 1,200+ coronary interventions annually.', type: 'previous' },
-    { doctor_id: DOCTOR_ID, designation: 'Chief of Cardiology', organization: 'CareConnect Medical Center', start_date: '2020-07-01', end_date: null, short_description: 'Heading the cardiology department delivering comprehensive heart care to 500+ patients monthly.', type: 'current' },
+    { doctor_id: DOCTOR_ID, designation: 'Chief of Cardiology', organization: 'MediSync Medical Center', start_date: '2020-07-01', end_date: null, short_description: 'Heading the cardiology department delivering comprehensive heart care to 500+ patients monthly.', type: 'current' },
   ]);
   if (error) console.error('Experience error:', error.message);
   else console.log('✅ Experience seeded.');
@@ -123,9 +123,9 @@ async function seedChambers() {
   console.log('📍 Seeding chambers...');
   await supabase.from('doctor_chambers').delete().eq('doctor_id', DOCTOR_ID);
   const { error } = await supabase.from('doctor_chambers').insert([
-    { doctor_id: DOCTOR_ID, chamber_location: 'CareConnect Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Saturday' },
-    { doctor_id: DOCTOR_ID, chamber_location: 'CareConnect Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Monday' },
-    { doctor_id: DOCTOR_ID, chamber_location: 'CareConnect Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Wednesday' },
+    { doctor_id: DOCTOR_ID, chamber_location: 'MediSync Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Saturday' },
+    { doctor_id: DOCTOR_ID, chamber_location: 'MediSync Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Monday' },
+    { doctor_id: DOCTOR_ID, chamber_location: 'MediSync Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229', available_time: '09:00 AM - 02:00 PM', day: 'Wednesday' },
     { doctor_id: DOCTOR_ID, chamber_location: 'Ibn Sina Hospital, House 48, Road 9/A, Dhanmondi, Dhaka-1209', available_time: '05:00 PM - 08:00 PM', day: 'Sunday' },
     { doctor_id: DOCTOR_ID, chamber_location: 'Ibn Sina Hospital, House 48, Road 9/A, Dhanmondi, Dhaka-1209', available_time: '05:00 PM - 08:00 PM', day: 'Tuesday' },
     { doctor_id: DOCTOR_ID, chamber_location: 'Ibn Sina Hospital, House 48, Road 9/A, Dhanmondi, Dhaka-1209', available_time: '05:00 PM - 08:00 PM', day: 'Thursday' },
@@ -139,7 +139,7 @@ async function seedTestimonials() {
   await supabase.from('doctor_testimonials').delete().eq('doctor_id', DOCTOR_ID);
   const { error } = await supabase.from('doctor_testimonials').insert([
     { doctor_id: DOCTOR_ID, patient_name: 'Rahima Begum', patient_feedback: 'Dr. John Doe is exceptional! He detected my heart condition early and his treatment changed my life. Truly a life-saving doctor.', rating: 5, location: 'Mirpur, Dhaka', avatar_url: '', feedback_date: '2025-12-10' },
-    { doctor_id: DOCTOR_ID, patient_name: 'Mohammad Al-Amin', patient_feedback: 'I had severe chest pain and was rushed to CareConnect. Dr. Doe performed emergency angioplasty and I recovered fully. Grateful forever.', rating: 5, location: 'Gulshan, Dhaka', avatar_url: '', feedback_date: '2026-01-05' },
+    { doctor_id: DOCTOR_ID, patient_name: 'Mohammad Al-Amin', patient_feedback: 'I had severe chest pain and was rushed to MediSync. Dr. Doe performed emergency angioplasty and I recovered fully. Grateful forever.', rating: 5, location: 'Gulshan, Dhaka', avatar_url: '', feedback_date: '2026-01-05' },
     { doctor_id: DOCTOR_ID, patient_name: 'Fatema Khatun', patient_feedback: 'Best cardiologist I have ever visited. He explains everything clearly, listens patiently, and his knowledge is outstanding. Highly recommend!', rating: 5, location: 'Uttara, Dhaka', avatar_url: '', feedback_date: '2026-02-14' },
     { doctor_id: DOCTOR_ID, patient_name: 'Karim Hossain', patient_feedback: 'My father had a triple bypass and Dr. Doe guided us through every step. His care and compassion made a difficult time much easier.', rating: 5, location: 'Motijheel, Dhaka', avatar_url: '', feedback_date: '2026-02-28' },
     { doctor_id: DOCTOR_ID, patient_name: 'Nasrin Sultana', patient_feedback: 'Professional, caring, and extremely knowledgeable. My blood pressure and cholesterol are now perfectly managed thanks to Dr. Doe.', rating: 5, location: 'Dhanmondi, Dhaka', avatar_url: '', feedback_date: '2026-03-10' },
@@ -167,13 +167,13 @@ async function seedContact() {
     doctor_id: DOCTOR_ID,
     phone: '+880 1711-234567',
     whatsapp: '+880 1711-234567',
-    email: 'dr.johndoe@careconnect.com.bd',
-    address: 'CareConnect Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229',
-    emergency_contact_name: 'CareConnect Emergency',
+    email: 'dr.johndoe@medisync.com.bd',
+    address: 'MediSync Medical Center, Plot 5, Block C, Bashundhara R/A, Dhaka-1229',
+    emergency_contact_name: 'MediSync Emergency',
     emergency_contact_phone: '+880 1800-CARDIAC',
     office_phone: '+880 2-9876543',
     fax: '+880 2-9876544',
-    website_url: 'https://careconnect.com.bd/doctor/dr-john-doe',
+    website_url: 'https://medisync.com.bd/doctor/dr-john-doe',
     updated_at: new Date().toISOString()
   };
   const { error } = await supabase.from('doctor_contact').upsert(payload, { onConflict: 'doctor_id' });
@@ -188,7 +188,7 @@ async function seedSponsors() {
     { doctor_id: DOCTOR_ID, organization_name: 'National Heart Foundation', organization_logo: 'NHF', organization_description: 'Premier cardiac care institution in Bangladesh' },
     { doctor_id: DOCTOR_ID, organization_name: 'American College of Cardiology', organization_logo: 'ACC', organization_description: 'International fellowship and certification body' },
     { doctor_id: DOCTOR_ID, organization_name: 'Bangladesh Cardiac Society', organization_logo: 'BCS', organization_description: 'National professional society for cardiologists' },
-    { doctor_id: DOCTOR_ID, organization_name: 'CareConnect Medical Center', organization_logo: 'CMC', organization_description: 'Primary practice location and hospital affiliation' },
+    { doctor_id: DOCTOR_ID, organization_name: 'MediSync Medical Center', organization_logo: 'CMC', organization_description: 'Primary practice location and hospital affiliation' },
   ]);
   if (error) console.error('Sponsors error:', error.message);
   else console.log('✅ Affiliates seeded.');

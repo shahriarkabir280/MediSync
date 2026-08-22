@@ -238,7 +238,7 @@ export async function initWebsiteTables() {
       INSERT INTO doctor_contact (
         doctor_id, phone, whatsapp, email, address, office_phone
       ) VALUES 
-        (1, '+1-555-0101', '+1-555-0101', 'john.doe@careconnect.com', 
+        (1, '+1-555-0101', '+1-555-0101', 'john.doe@medisync.com', 
          '123 Medical Avenue, Suite 400, Metropolitan Heart Center, New York, NY 10001',
          '+1-555-0102')
       ON CONFLICT (doctor_id) DO NOTHING

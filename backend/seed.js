@@ -28,7 +28,7 @@ async function seed() {
         unique_id: 'DOC-001',
         first_name: 'John',
         last_name: 'Doe',
-        email: 'john.doe@careconnect.com',
+        email: 'john.doe@medisync.com',
         phone: '+1-555-0101',
         specialization: 'Cardiologist',
         license_number: 'MD12345',
@@ -39,7 +39,7 @@ async function seed() {
         unique_id: 'DOC-002',
         first_name: 'Sarah',
         last_name: 'Smith',
-        email: 'sarah.smith@careconnect.com',
+        email: 'sarah.smith@medisync.com',
         phone: '+1-555-0102',
         specialization: 'Pediatrician',
         license_number: 'MD12346',
@@ -51,8 +51,8 @@ async function seed() {
     if (docError) throw docError;
     console.log('✅ Doctors seeded');
 
-    const doctor1 = seededDoctors.find(d => d.email === 'john.doe@careconnect.com');
-    const doctor2 = seededDoctors.find(d => d.email === 'sarah.smith@careconnect.com');
+    const doctor1 = seededDoctors.find(d => d.email === 'john.doe@medisync.com');
+    const doctor2 = seededDoctors.find(d => d.email === 'sarah.smith@medisync.com');
 
     // 3. Seed Doctor Settings
     if (doctor1) {

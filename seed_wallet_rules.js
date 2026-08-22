@@ -1,4 +1,4 @@
-import { supabase } from './backened/config/db.js';
+import { supabase } from './backend/config/db.js';
 
 const seedRules = async () => {
     console.log('Seeding Revenue Split Rules...');

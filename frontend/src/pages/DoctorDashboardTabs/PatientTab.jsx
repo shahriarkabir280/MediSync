@@ -2450,7 +2450,7 @@ const PatientTab = memo(() => {
 
                                 <EmailShareButton
                                     url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
-                                    subject="Medical Record from CareConnect"
+                                    subject="Medical Record from MediSync"
                                     body={`Please find attached the medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
                                     onClick={() => setShowShareMenu(false)}
                                     className="flex flex-col items-center hover:opacity-80 transition-opacity"

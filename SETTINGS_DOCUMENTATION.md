@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Settings Tab has been completely redesigned to provide comprehensive settings management for doctors in the CareConnect platform. It includes four main sections:
+The Settings Tab has been completely redesigned to provide comprehensive settings management for doctors in the MediSync platform. It includes four main sections:
 
 1. **Notifications** - Manage all notification preferences
 2. **Account Security** - Password management, 2FA, and account deletion
@@ -206,19 +206,19 @@ const enable2FA = async () => {
 
 1. **Database Migration**
    ```bash
-   cd backened
+   cd backend
    node updateSettingsSchema.js
    ```
 
 2. **Start Backend Server**
    ```bash
-   cd backened
+   cd backend
    npm start
    ```
 
 3. **Start Frontend Development Server**
    ```bash
-   cd frontened
+   cd frontend
    npm run dev
    ```
 
@@ -280,7 +280,7 @@ curl -X PUT "http://localhost:3001/api/auth/change-password" \
 ### Debug Mode
 Enable debug mode by setting environment variable:
 ```bash
-DEBUG=careconnect:* npm start
+DEBUG=medisync:* npm start
 ```
 
 ## Future Enhancements

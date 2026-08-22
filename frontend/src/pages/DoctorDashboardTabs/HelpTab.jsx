@@ -265,7 +265,7 @@ const HelpTab = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <h2 className="text-xl font-bold text-foreground tracking-tight">Documentation & guides</h2>
-                                <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">Everything you need to know about using CareConnect efficiently</p>
+                                <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">Everything you need to know about using MediSync efficiently</p>
                             </div>
                             <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700 transition-colors shadow-sm">
                                 <Book className="h-4 w-4" />
@@ -312,7 +312,7 @@ const HelpTab = () => {
                                     <div>
                                         <h3 className="text-sm font-bold text-foreground mb-0.5">Email us</h3>
                                         <p className="text-[10px] text-muted-foreground mb-1">Our team will respond within 24 hours.</p>
-                                        <a href="mailto:support@careconnect.com" className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">support@careconnect.com</a>
+                                        <a href="mailto:support@medisync.com" className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">support@medisync.com</a>
                                     </div>
                                 </div>
 

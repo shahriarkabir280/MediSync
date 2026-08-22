@@ -131,7 +131,7 @@ const PatientDashboard = () => {
       <div className="md:hidden bg-white shadow-sm flex items-center justify-between p-4 sticky top-0 z-20">
         <div className="flex items-center gap-2">
           <BuildingOfficeIcon className="w-8 h-8 text-indigo-600" />
-          <span className="font-bold text-xl text-gray-800 tracking-tight">CareConnect</span>
+          <span className="font-bold text-xl text-gray-800 tracking-tight">MediSync</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -155,7 +155,7 @@ const PatientDashboard = () => {
           <div className="bg-indigo-50 p-2 rounded-xl">
              <BuildingOfficeIcon className="w-8 h-8 text-indigo-600" />
           </div>
-          <span className="font-bold text-2xl text-gray-900 tracking-tight">CareConnect</span>
+          <span className="font-bold text-2xl text-gray-900 tracking-tight">MediSync</span>
         </div>
 
         {/* Patient Info Summary */}

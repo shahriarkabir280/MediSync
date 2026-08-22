@@ -1,4 +1,4 @@
-# CareConnect Backend
+# MediSync Backend
 
 Backend API for the Doctor Dashboard application.
 
@@ -37,7 +37,7 @@ This will create sample doctors, patients, appointments, and billing records.
 ## 📁 Project Structure
 
 ```
-backened/
+backend/
 ├── server.js                 # Main server file
 ├── seed.js                   # Database seeding script
 ├── API_DOCUMENTATION.md      # Complete API documentation
@@ -182,7 +182,7 @@ After running `npm run seed`, you'll have:
 - Medical records
 - Billing records
 
-**Sample Doctor Email:** `john.doe@careconnect.com`
+**Sample Doctor Email:** `john.doe@medisync.com`
 
 ## 🔧 Environment Variables
 
@@ -230,4 +230,4 @@ ISC
 
 ## 👨‍💻 Author
 
-CareConnect Team
+MediSync Team

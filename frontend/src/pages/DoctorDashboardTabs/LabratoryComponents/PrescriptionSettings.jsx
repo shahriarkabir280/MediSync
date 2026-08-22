@@ -23,7 +23,7 @@ const PrescriptionSettings = ({ doctor, onSave, onCancel }) => {
         } else if (doctor) {
             // Pre-fill from doctor profile if no custom settings exist
             setSettings({
-                hospital_name: doctor.hospital_name || doctor.clinic_name || 'CareConnect Hospital',
+                hospital_name: doctor.hospital_name || doctor.clinic_name || 'MediSync Hospital',
                 degrees: doctor.qualifications || doctor.degrees || 'MBBS, FCPS',
                 specialization: doctor.specialization || 'General Physician',
                 bmdc_reg: doctor.license_number || doctor.bmdc_reg || '',
@@ -48,7 +48,7 @@ const PrescriptionSettings = ({ doctor, onSave, onCancel }) => {
     const handleReset = () => {
         if (window.confirm('Reset to original profile information?')) {
             const defaultSettings = {
-                hospital_name: doctor.hospital_name || doctor.clinic_name || 'CareConnect Hospital',
+                hospital_name: doctor.hospital_name || doctor.clinic_name || 'MediSync Hospital',
                 degrees: doctor.qualifications || doctor.degrees || 'MBBS, FCPS',
                 specialization: doctor.specialization || 'General Physician',
                 bmdc_reg: doctor.license_number || doctor.bmdc_reg || '',

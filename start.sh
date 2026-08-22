@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# CareConnect Quick Start Script
+# MediSync Quick Start Script
 # This script helps you start both backend and frontend servers
 
-echo "🏥 CareConnect - Quick Start"
+echo "🏥 MediSync - Quick Start"
 echo "=============================="
 echo ""
 
@@ -39,9 +39,9 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Check if frontend node_modules exists
-if [ ! -d "frontened/node_modules" ]; then
+if [ ! -d "frontend/node_modules" ]; then
     echo "📦 Installing frontend dependencies..."
-    cd frontened && npm install && cd ..
+    cd frontend && npm install && cd ..
     echo ""
 fi
 
@@ -77,7 +77,7 @@ sleep 3
 
 # Start frontend in background
 echo "Starting frontend server..."
-cd frontened && npm run dev &
+cd frontend && npm run dev &
 FRONTEND_PID=$!
 
 # Function to cleanup on exit

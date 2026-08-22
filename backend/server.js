@@ -40,7 +40,7 @@ import { initializeWebSocket } from './lib/websocketServer.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from the backened folder
+// Load environment variables from the backend folder
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
@@ -192,7 +192,7 @@ app.use('/api/help', helpRoutes);
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ CareConnect server running on http://localhost:${PORT}`);
+  console.log(`✅ MediSync server running on http://localhost:${PORT}`);
 });
 
 // Initialize WebSocket for real-time chat

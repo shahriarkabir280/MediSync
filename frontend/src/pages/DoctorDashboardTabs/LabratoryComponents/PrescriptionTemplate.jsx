@@ -43,7 +43,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
     const docSpec = customLetterhead?.specialization || doctor?.specialization || 'General Physician';
     const docReg = customLetterhead?.bmdc_reg || doctor?.license_number || doctor?.bmdc_reg || 'A-XXXXX';
     const docPhone = customLetterhead?.phone || doctor?.phone || doctor?.contact_number || '+880 1XXX-XXXXXX';
-    const docEmail = customLetterhead?.email || doctor?.email || 'doctor@careconnect.health';
+    const docEmail = customLetterhead?.email || doctor?.email || 'doctor@medisync.health';
     const docAddress = customLetterhead?.address || doctor?.chamber_address || doctor?.address || 'Chamber Address, Dhaka';
     const docExtraInfo = customLetterhead?.extra_info || '';
 
@@ -322,7 +322,7 @@ const PrescriptionTemplate = ({ prescription, doctor, patient, customLetterhead 
                         </div>
                     </div>
                     <div>
-                        CareConnect
+                        MediSync
                     </div>
                 </div>
             </footer>

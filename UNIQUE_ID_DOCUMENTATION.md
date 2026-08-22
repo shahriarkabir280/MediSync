@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CareConnect system now includes unique, human-readable IDs for both doctors and patients to improve identification and tracking throughout the system.
+The MediSync system now includes unique, human-readable IDs for both doctors and patients to improve identification and tracking throughout the system.
 
 ## Unique ID Format
 
@@ -40,7 +40,7 @@ CREATE INDEX idx_patients_unique_id ON patients(unique_id);
     "unique_id": "DOC-001",
     "first_name": "John",
     "last_name": "Doe",
-    "email": "john.doe@careconnect.com",
+    "email": "john.doe@medisync.com",
     // ... other fields
   }
 }
@@ -99,7 +99,7 @@ CREATE INDEX idx_patients_unique_id ON patients(unique_id);
 
 ## Utility Functions
 
-### Backend: `/backened/lib/uniqueIdGenerator.js`
+### Backend: `/backend/lib/uniqueIdGenerator.js`
 
 #### Available Functions:
 ```javascript
@@ -125,18 +125,18 @@ const uniqueId = await getNextPatientId(); // Returns "PAT-001", "PAT-002", etc.
 
 ## Migration Scripts
 
-### Initial Migration: `/backened/add-unique-ids.js`
+### Initial Migration: `/backend/add-unique-ids.js`
 - Adds unique_id columns to existing tables
 - Generates unique IDs for all existing doctors and patients
 - Creates database indexes for performance
 - **Run once**: `npm run add-unique-ids`
 
-### Fresh Installation: `/backened/init-db.js`
+### Fresh Installation: `/backend/init-db.js`
 - Updated to include unique_id fields in table creation
 - Includes indexes for unique_id columns
 - Ready for new installations
 
-### Seed Data: `/backened/seed.js`  
+### Seed Data: `/backend/seed.js`  
 - Updated to include unique IDs in sample data
 - Doctors: DOC-001, DOC-002, DOC-003
 - Patients: PAT-001 through PAT-010

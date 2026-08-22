@@ -8,7 +8,7 @@
  * 4. On reconnect: sync missed data silently
  */
 
-const DB_NAME = 'CareConnectChat';
+const DB_NAME = 'MediSyncChat';
 const DB_VERSION = 1;
 const CHATS_STORE = 'chats';
 const MESSAGES_STORE = 'messages';

@@ -13,7 +13,7 @@ The error you're seeing happens because the database credentials are missing.
 In the project root directory, create a file named `.env`:
 
 ```bash
-# In the project root (/Users/macbook/Documents/Projects/CareConnect/)
+# In the project root (/Users/macbook/Documents/Projects/MediSync/)
 touch .env
 ```
 
@@ -142,14 +142,14 @@ Should create sample data successfully.
 Make sure your `.env` file is here:
 
 ```
-CareConnect/
+MediSync/
 ├── .env                  👈 CREATE THIS FILE HERE
 ├── .env.example          (template provided)
 ├── package.json
-├── backened/
+├── backend/
 │   ├── server.js
 │   └── ...
-└── frontened/
+└── frontend/
     └── ...
 ```
 
@@ -176,7 +176,7 @@ npm run dev
 npm run seed
 
 # 3. In another terminal, start frontend
-cd frontened && npm run dev
+cd frontend && npm run dev
 ```
 
 ---

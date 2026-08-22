@@ -1,14 +1,14 @@
 {
-  "name": "careconnect",
+  "name": "medisync",
   "version": "1.0.0",
   "description": "",
-  "main": "backened/server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "dev": "nodemon backened/server.js",
-    "start": "node backened/server.js",
-    "init-db": "node backened/init-db.js",
-    "seed": "node backened/seed.js",
-    "add-unique-ids": "node backened/add-unique-ids.js"
+    "dev": "nodemon backend/server.js",
+    "start": "node backend/server.js",
+    "init-db": "node backend/init-db.js",
+    "seed": "node backend/seed.js",
+    "add-unique-ids": "node backend/add-unique-ids.js"
   },
   "keywords": [],
   "author": "",

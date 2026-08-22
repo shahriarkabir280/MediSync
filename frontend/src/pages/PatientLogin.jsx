@@ -52,7 +52,7 @@ const PatientLogin = () => {
         localStorage.setItem('patientName', `${response.data.first_name} ${response.data.last_name}`);
         localStorage.setItem('patientToken', response.token);
         
-        toast.success("Welcome back to CareConnect!");
+        toast.success("Welcome back to MediSync!");
         navigate('/patient-dashboard');
       } else {
         toast.error(response.message || "Invalid credentials");

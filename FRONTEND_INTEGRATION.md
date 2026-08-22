@@ -23,7 +23,7 @@ This creates sample doctors, patients, appointments, and billing records.
 
 ### 3. Start the Frontend
 ```bash
-cd frontened
+cd frontend
 npm run dev
 ```
 Frontend will run on: `http://localhost:5173` (or similar)
@@ -66,7 +66,7 @@ Frontend will run on: `http://localhost:5173` (or similar)
 ## 🔧 API Configuration
 
 ### API Base URL
-Located in: `frontened/src/lib/api.js`
+Located in: `frontend/src/lib/api.js`
 
 ```javascript
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -274,7 +274,7 @@ Navigate to: `http://localhost:5173`
 ### Issue: CORS Error
 **Solution:** Backend already has CORS enabled. If issues persist:
 ```javascript
-// In backened/server.js
+// In backend/server.js
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
@@ -329,7 +329,7 @@ npm run seed
 ## 📚 File Structure
 
 ```
-frontened/src/
+frontend/src/
 ├── lib/
 │   └── api.js                    # ✅ API utility functions
 ├── pages/

@@ -122,7 +122,7 @@ const PatientSignup = () => {
         localStorage.setItem('patientDisplayId', result.data.unique_id);
         localStorage.setItem('patientName', `${formData.first_name} ${formData.last_name}`);
         
-        toast.success("Registration successful! Welcome to CareConnect.");
+        toast.success("Registration successful! Welcome to MediSync.");
         // Redirecting to patient dashboard directly
         navigate('/patient-dashboard');
       }

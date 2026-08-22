@@ -32,7 +32,7 @@ GET /doctors/:doctorId/profile
     "id": 1,
     "first_name": "John",
     "last_name": "Doe",
-    "email": "john.doe@careconnect.com",
+    "email": "john.doe@medisync.com",
     "phone": "+1-555-0101",
     "specialization": "Cardiologist",
     "license_number": "MD12345",
@@ -475,7 +475,7 @@ PATCH /billing/:billingId/mark-paid
 
 ### 1. Install Dependencies
 ```bash
-cd backened
+cd backend
 npm install
 ```
 

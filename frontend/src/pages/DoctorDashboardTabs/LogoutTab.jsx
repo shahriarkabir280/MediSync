@@ -118,7 +118,7 @@ const LogoutTab = () => {
             {/* Logout Action */}
             <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-6 text-center">
               <h3 className="text-sm font-bold text-foreground mb-2">Ready to end your session?</h3>
-              <p className="text-xs text-muted-foreground mb-6">You will be securely signed out of your CareConnect dashboard.</p>
+              <p className="text-xs text-muted-foreground mb-6">You will be securely signed out of your MediSync dashboard.</p>
               <button
                 onClick={handleLogoutClick}
                 className="w-full max-w-[240px] px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-[11px] hover:bg-rose-700 shadow-lg shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"

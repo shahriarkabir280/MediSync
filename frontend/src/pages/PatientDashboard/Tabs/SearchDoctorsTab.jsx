@@ -109,7 +109,7 @@ const SearchDoctorsTab = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPinIcon className="w-4 h-4 text-gray-400" />
-                      {doctor.city || 'CareConnect'}
+                      {doctor.city || 'MediSync'}
                     </div>
                     <div className="flex items-center gap-2">
                       <CurrencyDollarIcon className="w-4 h-4 text-gray-400" />

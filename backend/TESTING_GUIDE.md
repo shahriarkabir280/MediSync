@@ -209,7 +209,7 @@ kill -9 <PID>
 Once the backend is running, you can test it with the frontend:
 
 1. Start backend: `npm run dev` (port 5000)
-2. Start frontend: `cd frontened && npm run dev` (usually port 5173)
+2. Start frontend: `cd frontend && npm run dev` (usually port 5173)
 3. Update frontend API calls to point to `http://localhost:5000/api`
 
 ### Example Frontend API Call
@@ -254,8 +254,8 @@ After running all tests, you should see:
 
 ## 🔗 Useful Resources
 
-- API Documentation: `backened/API_DOCUMENTATION.md`
-- Backend README: `backened/README.md`
+- API Documentation: `backend/API_DOCUMENTATION.md`
+- Backend README: `backend/README.md`
 - Database Schema: See `server.js` initDB function
 
 ---

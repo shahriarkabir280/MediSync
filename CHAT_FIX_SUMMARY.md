@@ -14,7 +14,7 @@ The `startConversation` function in `chatController.js` was not properly verifyi
 ## Solution Implemented
 
 ### 1. Fixed Backend Query
-Updated the conversation lookup query in `backened/controllers/chatController.js`:
+Updated the conversation lookup query in `backend/controllers/chatController.js`:
 
 **Before**: Could match any conversation where both users existed
 **After**: Ensures the conversation has exactly these 2 users and no one else
@@ -46,8 +46,8 @@ Now the system works correctly:
 - Patient sees two separate conversation threads
 
 ## Files Modified
-1. `/backened/controllers/chatController.js` - Fixed `startConversation` function
-2. `/backened/server.js` - Removed deleted schema file import
+1. `/backend/controllers/chatController.js` - Fixed `startConversation` function
+2. `/backend/server.js` - Removed deleted schema file import
 3. Created `/CHAT_PRIVACY_DOCUMENTATION.md` - Comprehensive documentation
 
 ## Testing

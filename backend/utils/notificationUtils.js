@@ -52,7 +52,7 @@ export const createSampleNotifications = async (doctorId) => {
       {
         type: 'system',
         title: 'System Update',
-        message: 'CareConnect will be undergoing maintenance tonight from 2:00 AM to 4:00 AM',
+        message: 'MediSync will be undergoing maintenance tonight from 2:00 AM to 4:00 AM',
         priority: 'low',
         actionable: false,
         data: { maintenanceTime: '2:00 AM to 4:00 AM' },

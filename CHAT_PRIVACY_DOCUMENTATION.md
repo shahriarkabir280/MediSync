@@ -1,7 +1,7 @@
 # Chat System - One-to-One Privacy Documentation
 
 ## Overview
-The CareConnect chat system implements **strict one-to-one privacy** for direct conversations. Each conversation is isolated to exactly two participants, ensuring messages are never visible to others.
+The MediSync chat system implements **strict one-to-one privacy** for direct conversations. Each conversation is isolated to exactly two participants, ensuring messages are never visible to others.
 
 ## How It Works
 
@@ -294,7 +294,7 @@ socket.on('new_message', (message) => {
 ```
 
 ## Conclusion
-The CareConnect chat system ensures complete privacy for one-to-one conversations through:
+The MediSync chat system ensures complete privacy for one-to-one conversations through:
 - Database-level constraints
 - Backend authorization checks  
 - Targeted WebSocket broadcasts

@@ -9,7 +9,7 @@ export const printElement = (elementId, title = '') => {
     const originalTitle = document.title;
     
     // Set title for default filename during "Save as PDF"
-    document.title = title || 'CareConnect';
+    document.title = title || 'MediSync';
 
     const printClone = printContent.cloneNode(true);
     

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CareConnect notification system has been enhanced to provide comprehensive, category-based notification management for doctors. This system supports multiple delivery methods and granular control over notification preferences.
+The MediSync notification system has been enhanced to provide comprehensive, category-based notification management for doctors. This system supports multiple delivery methods and granular control over notification preferences.
 
 ## Features
 
@@ -235,7 +235,7 @@ The API automatically migrates old notification settings to the new format when 
 Use the provided test script:
 
 ```bash
-cd backened
+cd backend
 node test-notifications.js
 ```
 

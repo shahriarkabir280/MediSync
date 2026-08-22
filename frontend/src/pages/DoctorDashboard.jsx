@@ -137,7 +137,7 @@ const DoctorDashboard = () => {
                 <ShieldCheck className="text-white w-4 h-4 lg:w-4.5 lg:h-4.5" />
               </div>
               <div className="flex flex-col">
-                <h2 className="text-sm lg:text-base font-bold text-white tracking-tight leading-none">CareConnect</h2>
+                <h2 className="text-sm lg:text-base font-bold text-white tracking-tight leading-none">MediSync</h2>
                 <span className="text-[8px] font-semibold text-indigo-400 mt-1">Practitioner</span>
               </div>
             </div>
@@ -229,7 +229,7 @@ const DoctorDashboard = () => {
         <div className="p-4 border-t border-gray-800/40 bg-[#0F172A]/30">
           {!isCollapsed && (
             <p className="text-[10px] font-bold text-gray-600 text-center tracking-tight">
-              CareConnect © 2024
+              MediSync © 2024
             </p>
           )}
         </div>
