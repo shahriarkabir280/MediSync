@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { patientApi } from '../lib/api';
 import toast from 'react-hot-toast';
 import { 
-  User, Mail, Phone, Calendar, Heart, AlertCircle, Shield, 
+  User, Mail, Phone, Calendar, Heart, AlertCircle, Shield, Key,
   MapPin, Activity, CheckCircle2, ArrowRight, Loader2, Info
 } from 'lucide-react';
 
@@ -84,6 +84,8 @@ const PatientSignup = () => {
     last_name: '',
     email: '',
     phone: '',
+    password: '',
+    confirm_password: '',
     date_of_birth: '',
     gender: '',
     blood_group: '',
@@ -102,8 +104,16 @@ const PatientSignup = () => {
   const handleNextStep = (e) => {
     e.preventDefault();
     if (step === 1) {
-      if (!formData.first_name || !formData.last_name || !formData.email || !formData.phone) {
+      if (!formData.first_name || !formData.last_name || !formData.email || !formData.phone || !formData.password || !formData.confirm_password) {
         toast.error("Please fill in all required personal details.");
+        return;
+      }
+      if (formData.password.length < 8) {
+        toast.error("Password must be at least 8 characters long.");
+        return;
+      }
+      if (formData.password !== formData.confirm_password) {
+        toast.error("Passwords do not match.");
         return;
       }
       setStep(2);
@@ -115,7 +125,9 @@ const PatientSignup = () => {
     setLoading(true);
     
     try {
-      const result = await patientApi.create(formData);
+      const patientData = { ...formData };
+      delete patientData.confirm_password;
+      const result = await patientApi.create(patientData);
       if (result.success && result.data) {
         localStorage.setItem('patientSessionEmail', formData.email);
         localStorage.setItem('patientId', result.data.id);
@@ -225,6 +237,26 @@ const PatientSignup = () => {
                       placeholder="+1 (555) 000-0000" 
                       required 
                       value={formData.phone}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Password"
+                      name="password"
+                      icon={Key}
+                      type="password"
+                      placeholder="Minimum 8 characters"
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Confirm Password"
+                      name="confirm_password"
+                      icon={Key}
+                      type="password"
+                      placeholder="Re-enter password"
+                      required
+                      value={formData.confirm_password}
                       onChange={handleChange}
                     />
                     <InputField 

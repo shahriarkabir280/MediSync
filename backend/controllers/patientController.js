@@ -1,5 +1,6 @@
 import { supabase } from '../config/db.js';
 import { getNextPatientId } from '../lib/uniqueIdGenerator.js';
+import bcrypt from 'bcryptjs';
 
 // Get all patients for a doctor
 export const getPatients = async (req, res) => {
@@ -125,12 +126,17 @@ export const createPatient = async (req, res) => {
   try {
     const {
       first_name, last_name, email, phone, date_of_birth, gender, blood_group,
-      address, emergency_contact_name, emergency_contact_phone, medical_history, allergies
+      address, emergency_contact_name, emergency_contact_phone, medical_history, allergies,
+      password
     } = req.body;
 
     // Validate required fields
-    if (!first_name || !last_name || !email || !phone) {
+    if (!first_name || !last_name || !email || !phone || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
     // Check if patient with email already exists
@@ -146,10 +152,12 @@ export const createPatient = async (req, res) => {
 
     // Generate unique ID for new patient
     const uniqueId = await getNextPatientId();
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const newPatient = {
       unique_id: uniqueId,
       first_name, last_name, email, phone,
+      password_hash: passwordHash,
       date_of_birth: date_of_birth || null,
       gender: gender || null,
       blood_group: blood_group || null,
@@ -171,7 +179,10 @@ export const createPatient = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Patient created successfully',
-      data
+      data: {
+        ...data,
+        password_hash: undefined
+      }
     });
   } catch (error) {
     console.error('Error creating patient:', error);
