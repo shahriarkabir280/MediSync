@@ -56,18 +56,14 @@ router.post('/login', async (req, res) => {
     const doctor = doctors[0];
     console.log('👨‍⚕️ Doctor found:', doctor.first_name, doctor.last_name);
 
-    // Check password (for demo, we'll allow plain text password 'password123')
-    let isValidPassword = false;
-
-    if (doctor.password_hash) {
-      // Compare with hashed password
-      isValidPassword = await bcrypt.compare(password, doctor.password_hash);
-      console.log('🔒 Password hash comparison:', isValidPassword);
-    } else {
-      // Demo: Allow 'password123' for any doctor
-      isValidPassword = password === 'password123';
-      console.log('🔓 Plain text password check:', isValidPassword);
+    if (!doctor.password_hash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password login is not enabled for this account. Please reset your password or contact support.'
+      });
     }
+
+    const isValidPassword = await bcrypt.compare(password, doctor.password_hash);
 
     if (!isValidPassword) {
       console.log('❌ Invalid password for:', email);
@@ -117,13 +113,12 @@ router.post('/login', async (req, res) => {
 // Patient Login endpoint
 router.post('/patient-login', async (req, res) => {
   try {
-    console.log('🔐 Patient Login attempt:', req.body);
-    const { email } = req.body;
+    const { email, password } = req.body;
 
-    if (!email) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required'
+        message: 'Email and password are required'
       });
     }
 
@@ -150,6 +145,24 @@ router.post('/patient-login', async (req, res) => {
     const patient = patients[0];
     console.log('👤 Patient found:', patient.first_name, patient.last_name);
 
+    if (!patient.password_hash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password login is not enabled for this account. Please reset your password or contact support.'
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, patient.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const safePatient = { ...patient };
+    delete safePatient.password_hash;
+
     // Generate JWT token for patient
     const token = jwt.sign(
       {
@@ -168,7 +181,7 @@ router.post('/patient-login', async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
-      data: patient
+      data: safePatient
     });
 
   } catch (error) {
@@ -304,14 +317,15 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 
     const doctor = doctors[0];
 
-    // Verify current password
-    let isValidPassword = false;
-    if (doctor.password_hash) {
-      isValidPassword = await bcrypt.compare(currentPassword, doctor.password_hash);
-    } else {
-      // Demo: Allow 'password123' for current password if no hash exists
-      isValidPassword = currentPassword === 'password123';
+    if (!doctor.password_hash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password login is not enabled for this account. Please reset your password or contact support.'
+      });
     }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, doctor.password_hash);
 
     if (!isValidPassword) {
       return res.status(401).json({

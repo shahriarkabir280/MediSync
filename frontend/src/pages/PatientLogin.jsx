@@ -32,18 +32,19 @@ const PatientLogin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) {
-      toast.error("Please enter your email.");
+    if (!email || !password) {
+      toast.error("Please enter your email and password.");
       return;
     }
 
     setLoading(true);
     
     try {
-      const response = await patientApi.login(email);
+      const response = await patientApi.login(email, password);
       
       if (response && response.success) {
         localStorage.setItem('patientSessionEmail', email);
@@ -113,13 +114,12 @@ const PatientLogin = () => {
                   <input
                     type="password"
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-gray-900 placeholder-gray-400"
                     placeholder="••••••••"
                   />
                 </div>
-                <p className="text-xs text-gray-400 pt-1 text-right">
-                    Demo: Any password works
-                </p>
               </div>
 
               <div className="pt-4">
