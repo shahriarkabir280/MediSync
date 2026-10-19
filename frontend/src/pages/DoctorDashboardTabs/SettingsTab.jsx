@@ -234,30 +234,6 @@ const SettingsTab = () => {
     }
   };
 
-  const testNotification = async (type, method) => {
-    try {
-      const token = localStorage.getItem('authToken');
-
-      const response = await fetch(API_URLS.DOCTORS.TEST_NOTIFICATION, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type, method })
-      });
-
-      if (response.ok) {
-        showSuccessMessage(`Test ${method} notification sent successfully`);
-      } else {
-        throw new Error('Failed to send test notification');
-      }
-    } catch (error) {
-      showErrorMessage('Failed to send test notification');
-      console.error('Test notification error:', error);
-    }
-  };
-
   const changePassword = async () => {
     if (accountSettings.newPassword !== accountSettings.confirmPassword) {
       showErrorMessage('New passwords do not match');
@@ -327,7 +303,7 @@ const SettingsTab = () => {
       } else {
         throw new Error('Failed to enable two-factor authentication');
       }
-    } catch (error) {
+    } catch {
       showErrorMessage('Failed to enable two-factor authentication');
     } finally {
       setLoading(false);
@@ -356,7 +332,7 @@ const SettingsTab = () => {
       } else {
         throw new Error('Failed to disable two-factor authentication');
       }
-    } catch (error) {
+    } catch {
       showErrorMessage('Failed to disable two-factor authentication');
     } finally {
       setLoading(false);
@@ -382,7 +358,7 @@ const SettingsTab = () => {
       } else {
         throw new Error('Failed to update billing settings');
       }
-    } catch (error) {
+    } catch {
       showErrorMessage('Failed to update billing settings');
     } finally {
       setLoading(false);
@@ -412,7 +388,7 @@ const SettingsTab = () => {
       } else {
         throw new Error('Failed to delete account');
       }
-    } catch (error) {
+    } catch {
       showErrorMessage('Failed to delete account');
     } finally {
       setLoading(false);

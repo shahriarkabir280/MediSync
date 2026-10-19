@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
         setError(data.message || 'Login failed');
         return { success: false, error: data.message };
       }
-    } catch (error) {
+    } catch {
       const errorMessage = 'Network error. Please check your connection.';
       setError(errorMessage);
       return { success: false, error: errorMessage };

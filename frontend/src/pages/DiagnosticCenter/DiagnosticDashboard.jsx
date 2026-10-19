@@ -31,7 +31,7 @@ import { labApi } from '../../lib/api';
 const DiagnosticDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -41,7 +41,7 @@ const DiagnosticDashboard = () => {
   
   const [uploadingItem, setUploadingItem] = useState(null);
   const [uploadFile, setUploadFile] = useState(null);
-  const [uploadPreview, setUploadPreview] = useState(null);
+  const [, setUploadPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
   
   const navigate = useNavigate();

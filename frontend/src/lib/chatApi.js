@@ -195,18 +195,6 @@ export const chatApi = {
   },
 
   /**
-   * Update chat settings
-   */
-  async updateChatSettings(chatId, userId, userType, settings) {
-    const response = await api.put(`/chat/chats/${chatId}/settings`, {
-      userId,
-      userType,
-      ...settings // isPinned, isMuted, isArchived, isBlocked
-    });
-    return response;
-  },
-
-  /**
    * Add reaction to message
    */
   async addReaction(messageId, userId, userType, reaction) {
@@ -256,14 +244,14 @@ export const chatApi = {
           try {
             const response = JSON.parse(xhr.responseText);
             resolve(response);
-          } catch (e) {
+          } catch {
             reject(new Error('Failed to parse upload response'));
           }
         } else {
           try {
             const errorData = JSON.parse(xhr.responseText);
             reject(new Error(errorData.error || 'Upload failed'));
-          } catch (e) {
+          } catch {
             reject(new Error(`Upload failed with status ${xhr.status}`));
           }
         }

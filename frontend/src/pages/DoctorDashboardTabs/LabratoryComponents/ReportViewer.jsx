@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { PDFDocument, rgb } from 'pdf-lib';
 import {
@@ -29,7 +29,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3.0;
 
-const ReportViewer = ({ pdfUrl, orderId, onSaveSuccess, onClose }) => {
+const ReportViewer = ({ pdfUrl, orderId, onSaveSuccess }) => {
     const [activeTool, setActiveTool] = useState('pencil'); // 'pencil', 'eraser', 'none'
     const [currentColor, setCurrentColor] = useState('#EF4444'); // Default Red for medical
     const [saving, setSaving] = useState(false);

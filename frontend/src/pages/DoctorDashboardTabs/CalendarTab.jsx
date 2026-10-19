@@ -56,7 +56,7 @@ const CalendarTab = () => {
         calendarApi.getAppointmentEvents().catch(() => []),
       ]);
       setEvents([...customEvents, ...apptEvents]);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load events');
     } finally {
       setIsLoading(false);

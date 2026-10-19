@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { API_URLS } from "../../config/api";
-import { debounce } from "../../utils/performance";
 import { toast } from "react-hot-toast";
 import * as dashboardCache from "../../lib/dashboardCache";
 
@@ -60,7 +59,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [actionLoading, setActionLoading] = useState(null);
+    const [actionLoading] = useState(null);
 
     // Modal states
     const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
@@ -356,7 +355,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 throw new Error('Failed to update appointment');
             }
 
-            const result = await response.json();
+            await response.json();
 
             // Update appointment in local state instead of full reload
             setAllAppointments(prev =>

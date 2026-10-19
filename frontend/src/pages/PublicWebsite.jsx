@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Heart, Activity, Shield, Calendar, MapPin, Phone, Mail, Menu, X,
@@ -33,7 +33,6 @@ const getSocialIcon = (platform) => {
 
 // ─── Utility ────────────────────────────────────────────────────────────────
 
-const fmtYear = (d) => d ? new Date(d).getFullYear() : null;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present';
 
 const TRANSLATIONS = {
@@ -85,7 +84,7 @@ const PublicWebsite = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lang, setLang] = useState('en');
+  const [lang] = useState('en');
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [testimonialIdx, setTestimonialIdx] = useState(0);

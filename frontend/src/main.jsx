@@ -29,7 +29,7 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Report web vitals in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   reportWebVitals((metric) => {
     console.log(`[Web Vital] ${metric.name}:`, metric.value);
   });

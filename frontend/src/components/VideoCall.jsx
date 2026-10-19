@@ -12,7 +12,6 @@ const VideoCall = ({
   isIncoming,
   callType, // 'video' or 'audio'
   incomingOffer, // The offer from incoming call
-  chatId, // Chat ID to send call messages
   onClose,
   onCallStatusChange // Callback to send call history message
 }) => {
@@ -24,7 +23,7 @@ const VideoCall = ({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [callStatus, setCallStatus] = useState(isIncoming ? 'incoming' : 'calling'); // incoming, calling, connected, ended
   const [callDuration, setCallDuration] = useState(0);
-  const [callStartTime, setCallStartTime] = useState(null);
+  const [, setCallStartTime] = useState(null);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);

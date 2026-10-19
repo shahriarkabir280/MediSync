@@ -10,7 +10,7 @@ const FileMessage = ({ message, isOwn }) => {
     try {
       setDownloadProgress(true);
       await downloadFile(message.fileUrl, message.fileName || message.content);
-    } catch (error) {
+    } catch {
       alert('Failed to download file');
     } finally {
       setDownloadProgress(false);

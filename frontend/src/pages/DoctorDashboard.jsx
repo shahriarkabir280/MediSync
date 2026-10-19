@@ -50,7 +50,7 @@ const DoctorDashboard = () => {
   });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { unreadCount, refreshCount } = useNotificationCount();
 
   useEffect(() => {
@@ -65,12 +65,6 @@ const DoctorDashboard = () => {
       setActiveTab(tabParam);
     }
   }, [window.location.search]);
-
-  const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      await logout();
-    }
-  };
 
   const tabs = [
     { id: 'appointments', label: 'Appointments', icon: Calendar },

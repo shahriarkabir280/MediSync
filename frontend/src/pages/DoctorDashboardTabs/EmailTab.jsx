@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { emailApi } from '../../lib/emailApi';
 import * as dashboardCache from '../../lib/dashboardCache';
 import toast, { Toaster } from 'react-hot-toast';
@@ -29,9 +29,6 @@ const EmailTab = () => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showSuggestionsCC, setShowSuggestionsCC] = useState(false);
-  const [showSuggestionsBCC, setShowSuggestionsBCC] = useState(false);
   const [isComposeMinimized, setIsComposeMinimized] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
 
@@ -533,7 +530,7 @@ const EmailTab = () => {
                   toast.success('Trash emptied');
                   loadEmails();
                   loadStats();
-                } catch (err) {
+                } catch {
                   toast.error('Failed to empty trash');
                 } finally {
                   setLoading(false);

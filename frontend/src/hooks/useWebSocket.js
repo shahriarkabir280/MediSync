@@ -7,7 +7,6 @@ const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localh
   const [onlineUsers, setOnlineUsers] = useState(new Map());
   const [typingUsers, setTypingUsers] = useState(new Map());
   const messageCallbacks = useRef(new Map());
-  const statusCallbacks = useRef(new Map());
   const typingCallbacks = useRef(new Map());
 
   useEffect(() => {

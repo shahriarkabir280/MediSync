@@ -35,9 +35,21 @@ const formatAppTime = (date) => {
       minute: '2-digit',
       hour12: true
     });
-  } catch (e) {
+  } catch {
     return '';
   }
+};
+
+// Toast notification helper
+const showToast = (message, type = 'success') => {
+  const toast = document.createElement('div');
+  const bgColor = type === 'success'
+    ? 'from-green-500 to-emerald-600'
+    : 'from-red-500 to-rose-600';
+  toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r ${bgColor} text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-pulse`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
 };
 
 // URL regex to find links in text
@@ -677,7 +689,7 @@ const ChatTab = () => {
   const [typingUsers, setTypingUsers] = useState(new Map());
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadingFile] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [userActivity, setUserActivity] = useState('active'); // active, away, offline
@@ -691,19 +703,17 @@ const ChatTab = () => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [selectedNewMembers, setSelectedNewMembers] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
-  const [showChatInfo, setShowChatInfo] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [uploadQueue, setUploadQueue] = useState(new Map()); // Map of temporary message ID to upload progress
+  const [, setUploadQueue] = useState(new Map()); // Map of temporary message ID to upload progress
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
-  const [showFilePreview, setShowFilePreview] = useState(false);
   // Group creation state
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [availableForGroup, setAvailableForGroup] = useState([]); // List of users to add to group
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [, setIsSyncing] = useState(false);
 
   // Body scroll lock for previews
   useEffect(() => {
@@ -742,7 +752,7 @@ const ChatTab = () => {
   });
 
   // Per-Chat Settings State (For current selected chat)
-  const [perChatSettings, setPerChatSettings] = useState({
+  const [, setPerChatSettings] = useState({
     isMuted: false,
     isPinned: false,
     isBlocked: false,
@@ -759,7 +769,6 @@ const ChatTab = () => {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const activityTimeoutRef = useRef(null);
   const chatContainerRef = useRef(null);
 
   // WebSocket
@@ -1719,26 +1728,6 @@ const ChatTab = () => {
   };
 
 
-  // Detect URLs in message content
-  const detectUrls = (text) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.match(urlRegex) || [];
-  };
-
-  // Extract URL metadata for preview
-  const getUrlPreview = (url) => {
-    try {
-      const urlObj = new URL(url);
-      return {
-        url,
-        domain: urlObj.hostname.replace('www.', ''),
-        favicon: `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`
-      };
-    } catch {
-      return null;
-    }
-  };
-
   // Start voice recording
   const startRecording = async () => {
     try {
@@ -1870,40 +1859,6 @@ const ChatTab = () => {
     }
   };
 
-  // Archive chat handler
-  const handleArchiveChat = async () => {
-    if (!selectedChat) return;
-
-    const isArchived = !perChatSettings.isArchived;
-
-    try {
-      setShowChatInfo(false);
-      await chatApi.archiveChat(selectedChat.id, currentUser.userId, currentUser.userType, isArchived);
-
-      // Update local state
-      setPerChatSettings({ ...perChatSettings, isArchived });
-
-      // Reload chats to update list
-      await loadChats();
-
-      showToast(isArchived ? 'Chat archived' : 'Chat unarchived', 'success');
-
-      // If archived, go back to chat list
-      if (isArchived) {
-        setSelectedChat(null);
-      }
-    } catch (error) {
-      console.error('Error archiving chat:', error);
-      showToast('Failed to archive chat', 'error');
-    }
-  };
-
-  // Clear chat handler
-  const handleClearChat = () => {
-    setShowChatInfo(false);
-    setShowClearConfirm(true);
-  };
-
   const confirmClearChat = async () => {
     if (!selectedChat) return;
 
@@ -1921,18 +1876,6 @@ const ChatTab = () => {
       console.error('Error clearing chat:', error);
       showToast('Failed to clear chat', 'error');
     }
-  };
-
-  // Toast notification helper
-  const showToast = (message, type = 'success') => {
-    const toast = document.createElement('div');
-    const bgColor = type === 'success'
-      ? 'from-green-500 to-emerald-600'
-      : 'from-red-500 to-rose-600';
-    toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r ${bgColor} text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-pulse`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
   };
 
   // Add reaction to message
@@ -3437,7 +3380,7 @@ const ChatListItem = ({ chat, isSelected, onClick, isOnline, currentUser }) => {
       if (diff < 86400000) return finalDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
       if (diff < 604800000) return finalDate.toLocaleDateString([], { weekday: 'short' });
       return finalDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    } catch (e) { return ''; }
+    } catch { return ''; }
   };
 
   const renderLastMessage = () => {
@@ -3591,7 +3534,7 @@ const GroupCreationModal = ({ isOpen, onClose, groupName, setGroupName, particip
   );
 };
 
-const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, isUpdating, onUpdateInfo, onUpdateRole, onRemoveMember, onAddMember, onLeave }) => {
+const GroupInfoDrawer = ({ chat, participants, onClose, currentUser, onUpdateInfo, onUpdateRole, onRemoveMember, onAddMember, onLeave }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(chat.name || '');
   const [newDesc, setNewDesc] = useState(chat.description || '');

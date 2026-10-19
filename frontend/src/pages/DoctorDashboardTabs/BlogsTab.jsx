@@ -2,14 +2,13 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { BookOpen, Plus, Search, Filter, Calendar, Eye, Edit3, Trash2, BarChart3 } from 'lucide-react';
 import { api } from '../../lib/api';
-import { debounce } from '../../utils/performance';
 
 const BlogsTab = memo(() => {
   // State for blogs
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [stats, setStats] = useState({
+  const [, setCategories] = useState([]);
+  const [, setStats] = useState({
     totalPosts: 0,
     publishedPosts: 0,
     draftPosts: 0,
@@ -63,7 +62,7 @@ const BlogsTab = memo(() => {
       } else {
         setBlogs([]);
       }
-    } catch (error) {
+    } catch {
       setBlogs([]);
     } finally {
       setLoading(false);
@@ -75,7 +74,7 @@ const BlogsTab = memo(() => {
       const response = await api.get('/blog/categories');
       const categories = response?.data?.categories || response?.categories || [];
       setCategories(categories);
-    } catch (error) {
+    } catch {
       setCategories([
         { id: 1, name: 'Cardiology', color: '#EF4444' },
         { id: 2, name: 'Endocrinology', color: '#10B981' },
@@ -97,7 +96,7 @@ const BlogsTab = memo(() => {
         totalComments: 0
       };
       setStats(stats);
-    } catch (error) {
+    } catch {
       // Use default stats on error
     }
   };
@@ -151,7 +150,7 @@ const BlogsTab = memo(() => {
         image: ''
       });
       setShowBlogForm(false);
-    } catch (error) {
+    } catch {
       alert('Error creating blog post. Please try again.');
     }
   };
@@ -200,7 +199,7 @@ const BlogsTab = memo(() => {
       });
       setEditingBlog(null);
       setShowBlogForm(false);
-    } catch (error) {
+    } catch {
       alert('Error updating blog post. Please try again.');
     }
   };
@@ -211,7 +210,7 @@ const BlogsTab = memo(() => {
         await api.delete(`/blog/posts/${blogId}`);
         await fetchBlogPosts();
         await fetchStats();
-      } catch (error) {
+      } catch {
         alert('Error deleting blog post. Please try again.');
       }
     }
@@ -235,7 +234,7 @@ const BlogsTab = memo(() => {
       // Refresh blog posts after updating
       await fetchBlogPosts();
       await fetchStats();
-    } catch (error) {
+    } catch {
       alert('Error updating blog status. Please try again.');
     }
   };

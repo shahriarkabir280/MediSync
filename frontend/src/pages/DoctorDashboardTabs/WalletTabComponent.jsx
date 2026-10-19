@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { billingApi, walletApi, paymentApi } from "../../lib/api";
 import { useDoctor } from "../../hooks/useDoctor";
@@ -39,7 +39,7 @@ const WalletTab = memo(() => {
     const [transactions, setTransactions] = useState([]);
     const [revenueRules, setRevenueRules] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [, setError] = useState(null);
     
     // Filtering States
     const [invoiceFilter, setInvoiceFilter] = useState('all');

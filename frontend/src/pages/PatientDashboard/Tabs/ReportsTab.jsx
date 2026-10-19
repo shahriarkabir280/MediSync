@@ -4,10 +4,9 @@ import {
 } from "lucide-react";
 import { patientApi } from "../../../lib/api";
 import { API_CONFIG } from "../../../config/api";
-import { useAuth } from "../../../contexts/AuthContext";
 import toast from "react-hot-toast";
 
-const DocumentCard = ({ record, index, patient, formatDate }) => {
+const DocumentCard = ({ record, formatDate }) => {
     return (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group">
             {/* Card Header */}

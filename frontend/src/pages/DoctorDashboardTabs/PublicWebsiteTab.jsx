@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save, Edit3, Briefcase, Award, Upload, MapPin, User, Globe, Facebook, Twitter, Instagram, Linkedin, Youtube,
   Plus, Trash2, CheckCircle, AlertCircle, Phone, Mail, Link as LinkIcon, Building, GraduationCap, Stethoscope,
@@ -451,24 +451,6 @@ const PublicWebsiteTab = () => {
       showNotification('Error saving profile: ' + error.message, 'error');
     } finally {
       setSaveLoading(false);
-    }
-  };
-
-  const saveSection = async (items, endpoints) => {
-    for (const item of items) {
-      if (item.id) {
-        await authenticatedFetch(endpoints.UPDATE(actualDoctorId, item.id), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item)
-        });
-      } else {
-        await authenticatedFetch(endpoints.ADD(actualDoctorId), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item)
-        });
-      }
     }
   };
 

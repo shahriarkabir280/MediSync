@@ -11,7 +11,7 @@ const DASHBOARD_STORE = 'dashboard_data';
 let db = null;
 
 const initDB = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (db) {
             resolve(db);
             return;

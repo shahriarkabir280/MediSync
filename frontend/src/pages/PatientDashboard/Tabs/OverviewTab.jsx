@@ -12,7 +12,7 @@ import {
 const OverviewTab = ({ onTabChange, patient }) => {
   const [appointments, setAppointments] = useState([]);
   const [recentDoctors, setRecentDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRecentData = async () => {

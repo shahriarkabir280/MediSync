@@ -54,7 +54,7 @@ const ProfileTab = () => {
       errors.email = 'Please enter a valid email address';
     }
 
-    if (formData.phone && !/^[\+\-\s\(\)\d]+$/.test(formData.phone)) {
+    if (formData.phone && !/^[+\-\s()\d]+$/.test(formData.phone)) {
       errors.phone = 'Please enter a valid phone number';
     }
 

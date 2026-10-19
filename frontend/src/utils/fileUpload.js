@@ -233,7 +233,7 @@ export class FileUploader {
     });
 
     // Wait for all uploads to complete
-    const settledResults = await Promise.allSettled(uploadPromises);
+    await Promise.allSettled(uploadPromises);
 
     return {
       success: results,

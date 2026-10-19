@@ -24,7 +24,7 @@ let db = null;
  * Initialize the IndexedDB database
  */
 const initDB = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (db) {
             resolve(db);
             return;

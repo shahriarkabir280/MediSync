@@ -1,7 +1,7 @@
 import React from 'react';
 import { Star, Send, Trash2, Archive, Plus, Search, Check, X, FileText, Paperclip, Reply, Forward, AlertCircle, ChevronLeft, Filter, Clock, Mail } from 'lucide-react';
 
-export const FolderSidebar = ({ folders, selectedFolder, setSelectedFolder, onCompose, stats, onClose, isMobile }) => {
+export const FolderSidebar = ({ folders, selectedFolder, setSelectedFolder, onCompose, onClose }) => {
     return (
         <div className="flex flex-col h-full bg-card overflow-hidden">
             {/* Mobile Header in Sidebar */}

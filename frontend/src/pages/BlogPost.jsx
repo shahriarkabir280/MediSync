@@ -30,7 +30,7 @@ const BlogPost = () => {
             } else {
                 setError('Blog post not found');
             }
-        } catch (err) {
+        } catch {
             setError('Failed to load blog post');
         } finally {
             setLoading(false);

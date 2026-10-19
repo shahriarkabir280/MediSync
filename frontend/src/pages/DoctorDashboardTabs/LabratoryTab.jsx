@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
-import { debounce } from "../../utils/performance";
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { API_CONFIG } from "../../config/api";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -31,7 +30,7 @@ const LabratoryTab = memo(() => {
   });
 
   // Orders State
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [, setRecentOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');

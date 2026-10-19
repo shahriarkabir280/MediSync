@@ -17,8 +17,6 @@ const PatientDetails = memo(({
     selectedSubTab,
     setSelectedSubTab,
     handleViewReport,
-    setSelectedReport,
-    setShowReportModal,
     onBack,
 }) => {
     const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
@@ -31,7 +29,7 @@ const PatientDetails = memo(({
     const [loadingLab, setLoadingLab] = useState(false);
 
     // Load custom letterhead settings 
-    const [customLetterhead, setCustomLetterhead] = useState(() => {
+    const [customLetterhead] = useState(() => {
         try {
             const key = `prescription_settings_${doctorId || 'default'}`;
             const saved = localStorage.getItem(key);

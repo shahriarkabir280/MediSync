@@ -24,7 +24,7 @@ import { toast } from "react-hot-toast";
 import { getImageUrl } from "../../../config/api";
 import ReportViewer from './ReportViewer';
 
-const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate, onVerify, onSuccess }) => {
+const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [showTestCatalog, setShowTestCatalog] = useState(false);
@@ -69,12 +69,11 @@ const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate,
         fetchTests();
     }, []);
 
-    if (!selectedReport) return null;
-
-    const { order, items } = selectedReport;
+    const items = selectedReport?.items;
 
     // Derived: Current test objects in the order (based on form data)
     const currentTests = useMemo(() => {
+        if (!items) return [];
         return formData.test_ids.map(id => {
             const existing = items.find(i => i.test_id === id);
             if (existing) return { id: existing.test_id, test_name: existing.test_name, test_code: existing.test_code, category_name: existing.category_name, status: existing.status };
@@ -91,6 +90,10 @@ const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate,
             (t.test_name.toLowerCase().includes(query) || t.test_code.toLowerCase().includes(query))
         ).slice(0, 10);
     }, [allTests, testSearchQuery, formData.test_ids]);
+
+    if (!selectedReport) return null;
+
+    const { order } = selectedReport;
 
     const handleSave = async () => {
         try {
@@ -128,7 +131,7 @@ const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate,
             } else {
                 toast.error(result.error || "Failed to cancel order");
             }
-        } catch (error) {
+        } catch {
             toast.error("An error occurred");
         } finally {
             setLoading(false);
@@ -242,7 +245,7 @@ const LabOrderModal = ({ selectedReport, setShowReportModal, handleStatusUpdate,
                         <ReportViewer 
                             pdfUrl={getImageUrl(selectedReport.file_path)}
                             orderId={order.id}
-                            onSaveSuccess={(newFile) => {
+                            onSaveSuccess={() => {
                                 // Refresh the report data or update local state
                                 if (onSuccess) onSuccess();
                             }}

@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Bell, Calendar, CreditCard, MessageCircle, Mail, Users, Settings, Check, X, Trash2, Filter, Search, Clock, AlertCircle, CheckCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from '../../contexts/AuthContext';
 import { API_URLS } from '../../config/api';
 import { debounce } from "../../utils/performance";
 
 const NotificationTab = memo(({ onCountChange }) => {
-    const { user } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
