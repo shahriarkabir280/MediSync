@@ -8,9 +8,9 @@ echo ==============================
 echo.
 
 REM Check if .env exists
-if not exist .env (
+if not exist backend\.env (
     echo ⚠️  Warning: .env file not found!
-    echo Please create a .env file with your database credentials.
+    echo Copy backend\.env.example to backend\.env and fill in your credentials.
     echo See README.md for details.
     echo.
     pause

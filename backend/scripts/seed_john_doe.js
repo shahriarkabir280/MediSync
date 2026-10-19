@@ -2,7 +2,7 @@
  * Seed script: Populate comprehensive website data for Dr. John Doe (doctor_id = 5)
  * Run: node seed_john_doe.js
  */
-import { supabase } from './config/db.js';
+import { supabase } from '../config/db.js';
 
 const DOCTOR_ID = 5;
 
@@ -225,7 +225,7 @@ async function main() {
 
     for (const m of migrations) {
       try {
-        const pool = (await import('./config/db.js')).sql;
+        const pool = (await import('../config/db.js')).sql;
         // Use raw query via supabase rpc if possible, otherwise skip
       } catch (e) {
         // ignore

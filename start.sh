@@ -8,9 +8,9 @@ echo "=============================="
 echo ""
 
 # Check if .env exists
-if [ ! -f .env ]; then
+if [ ! -f backend/.env ]; then
     echo "⚠️  Warning: .env file not found!"
-    echo "Please create a .env file with your database credentials."
+    echo "Copy backend/.env.example to backend/.env and fill in your credentials."
     echo "See README.md for details."
     echo ""
     exit 1

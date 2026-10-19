@@ -1,50 +1,39 @@
 # Dependencies
 node_modules/
 
-# Environment Variables
+# Environment variables (only the .env.example templates are committed)
 .env
-.env.local
-.env.production
-/backend/.env
-/frontend/.env
+.env.*
+!.env.example
+
+# User-uploaded files (directories are kept via .gitkeep)
+backend/uploads/**
+!backend/uploads/**/
+!backend/uploads/**/.gitkeep
+
+# Local debug output
+users.txt
+div_balance.txt
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+nohup.out
 
-# OS Files
+# Build output
+dist/
+build/
+.cache/
+
+# OS / editor
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# Build
-dist/
-build/
-
-# Misc
-.cache/
-
-# Test and Debug files
-test-*.js
-debug-*.js
-*.log
-nohup.out
 *.tmp
 *.bak
-*~
-*.swp
-*.swo
-
-# Migration and seed scripts (keep only in version control)
-add-*.js
-update-*.js
-populate-*.js
+*.backup

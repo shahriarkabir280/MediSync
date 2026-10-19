@@ -1,4 +1,4 @@
-import { supabase } from './config/db.js';
+import { supabase } from '../config/db.js';
 
 async function seed() {
   console.log('Starting lab test seeding...');
