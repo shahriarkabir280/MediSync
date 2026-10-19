@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 // import { sql } from '../config/db.js'; // Unused
 
 const router = express.Router();
@@ -28,7 +29,7 @@ const authenticateToken = (req, res, next) => {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = 'uploads/support-tickets/';
+        const uploadDir = fileURLToPath(new URL('../uploads/support-tickets', import.meta.url));
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }

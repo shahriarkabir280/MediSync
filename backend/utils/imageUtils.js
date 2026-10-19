@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(process.cwd(), 'uploads', 'profile-images');
+const uploadsDir = fileURLToPath(new URL('../uploads/profile-images', import.meta.url));
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

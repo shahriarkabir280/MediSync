@@ -608,7 +608,7 @@ const uploadFeaturedImage = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const imageUrl = `/uploads/blog-images/${req.file.filename}`;
     res.json({ imageUrl });
   } catch (error) {
     console.error('Error uploading featured image:', error);

@@ -1,6 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { authenticateToken } from './authRoutes.js';
 
 // Add logging middleware
@@ -43,7 +45,9 @@ router.use(blogLogger);
 // Configure multer for featured image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/blog-images/');
+    const uploadDir = fileURLToPath(new URL('../uploads/blog-images', import.meta.url));
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
