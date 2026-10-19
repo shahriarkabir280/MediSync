@@ -51,14 +51,7 @@ const LabratoryTab = memo(() => {
 
   // AI Chat State
   const [showAIChatModal, setShowAIChatModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      sender: 'ai',
-      text: "Hello! I'm your Clinical AI Assistant. I've analyzed the patient's latest lab results. Notable findings include elevated Glucose (185 mg/dL) and HbA1c (6.8%). How can I assist you further?",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
@@ -237,6 +230,19 @@ const LabratoryTab = memo(() => {
     }
   }, [selectedPatient, fetchLabStats, fetchRecentOrders]);
 
+  // Start a fresh conversation for each patient so one patient's context never reaches another's.
+  // The greeting is local UI only and is not sent to the model.
+  useEffect(() => {
+    if (!selectedPatient?.id) return;
+    setChatMessages([{
+      id: `greeting-${selectedPatient.id}`,
+      sender: 'ai',
+      local: true,
+      text: `Hello! I'm your Clinical AI Assistant. Ask me about ${selectedPatient.first_name || 'this patient'}'s lab results: a summary of recent reports, trends over time, or values that need attention.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }]);
+  }, [selectedPatient?.id, selectedPatient?.first_name]);
+
   // AI Chat Handlers
   const processMessage = async (text) => {
     const userMsg = {
@@ -261,7 +267,8 @@ const LabratoryTab = memo(() => {
         body: JSON.stringify({
           patientId: selectedPatient.id,
           message: text,
-          history: chatMessages.slice(-10) // Send last 10 messages for context
+          // Last 10 real exchanges for context; skip the local greeting and error notices
+          history: chatMessages.filter(msg => !msg.local && !msg.error).slice(-10)
         }),
       });
 
@@ -271,6 +278,7 @@ const LabratoryTab = memo(() => {
         id: Date.now() + 1,
         sender: 'ai',
         text: result.success ? result.reply : (result.error || "I encountered an error analyzing the results."),
+        error: !result.success,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     } catch (error) {
@@ -279,6 +287,7 @@ const LabratoryTab = memo(() => {
         id: Date.now() + 1,
         sender: 'ai',
         text: "Sorry, I couldn't connect to the AI service. Please try again later.",
+        error: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
     } finally {

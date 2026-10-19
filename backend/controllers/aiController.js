@@ -4,10 +4,13 @@ import { supabase } from '../config/db.js';
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Used when GEMINI_MODEL is retired (404) or overloaded (429/503)
-const FALLBACK_MODELS = ['gemini-3.5-flash'];
+// Tried in order when GEMINI_MODEL is retired (404), overloaded (429/503), or unreachable
+const FALLBACK_MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+const RETRY_ROUNDS = 2;
+const RETRY_DELAY_MS = 1500;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isRetryableModelError = (error) => [404, 429, 500, 503].includes(error?.status) ||
-  /\[(404|429|500|503) /.test(error?.message || '');
+  /\[(404|429|500|503) |fetch failed|ECONNRESET|ETIMEDOUT/.test(error?.message || '');
 
 export const labAiChat = async (req, res) => {
   try {
@@ -135,33 +138,47 @@ ${patientContext}`;
 
     // 5. Format history for Google Generative AI
     // Gemini history format is { role: 'user' | 'model', parts: [{text: '...'}...]}
-    const formattedHistory = history.map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
+    // Gemini requires the history to start with a user turn, so drop any leading model messages
+    const formattedHistory = history
+      .filter(msg => typeof msg?.text === 'string' && msg.text.trim())
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.text }]
+      }));
+    while (formattedHistory.length && formattedHistory[0].role !== 'user') formattedHistory.shift();
 
-    // 6. Send the message, falling back to the next model if one is unavailable
+    // 6. Send the message, falling back to the next model if one is unavailable,
+    //    and retrying the whole list once if every model is busy
     let text;
     let lastError;
-    for (const modelName of modelNames) {
-      try {
-        const chat = genAI.getGenerativeModel({ model: modelName, systemInstruction }).startChat({
-          history: formattedHistory,
-          generationConfig: {
-            temperature: 0.2, // Keep it grounded and factual
-            maxOutputTokens: 1024,
-          },
-        });
-        const result = await chat.sendMessage(message);
-        text = result.response.text();
-        break;
-      } catch (error) {
-        lastError = error;
-        if (!isRetryableModelError(error)) throw error;
-        console.warn(`Gemini model ${modelName} unavailable (${error.status || error.message}); trying next`);
+    for (let round = 0; round < RETRY_ROUNDS && text === undefined; round++) {
+      if (round > 0) await sleep(RETRY_DELAY_MS);
+
+      for (const modelName of modelNames) {
+        try {
+          const chat = genAI.getGenerativeModel({ model: modelName, systemInstruction }).startChat({
+            history: formattedHistory,
+            generationConfig: {
+              temperature: 0.2, // Keep it grounded and factual
+              maxOutputTokens: 1024,
+            },
+          });
+          const result = await chat.sendMessage(message);
+          text = result.response.text();
+          break;
+        } catch (error) {
+          lastError = error;
+          if (!isRetryableModelError(error)) throw error;
+          console.warn(`Gemini model ${modelName} unavailable (${error.status || error.message}); trying next`);
+        }
       }
     }
-    if (text === undefined) throw lastError;
+    if (text === undefined) {
+      return res.status(503).json({
+        error: 'The AI service is busy right now. Please try again in a moment.',
+        details: lastError?.message
+      });
+    }
 
     res.json({
       success: true,

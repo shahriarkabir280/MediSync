@@ -289,7 +289,9 @@ const PatientDetails = memo(({
                                             <div className="flex items-center gap-3">
                                                  <div className="flex flex-col items-end">
                                                       <span className="text-[8px] font-bold text-emerald-600">Released</span>
-                                                      <span className="text-[7px] text-muted-foreground/40 font-semibold">{new Date(test.result?.result_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                      {test.result?.result_date && !Number.isNaN(new Date(test.result.result_date).getTime()) && (
+                                                        <span className="text-[7px] text-muted-foreground/40 font-semibold">{new Date(test.result.result_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                      )}
                                                  </div>
                                                  <ChevronRight className="w-4 h-4 text-muted-foreground/20 group-hover:text-blue-600 transition-colors" />
                                             </div>
