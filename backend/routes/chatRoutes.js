@@ -132,8 +132,7 @@ router.put('/settings', chatController.updateChatSettings);
 // Get per-chat settings (mute, pin, block for specific chat)
 router.get('/chats/:chatId/settings', chatController.getPerChatSettings);
 
-// Update per-chat settings (mute, pin, block for specific chat)
-router.put('/chats/:chatId/settings', chatController.updatePerChatSettings);
+// PUT /chats/:chatId/settings (per-chat mute, pin, block) is registered above
 
 // Archive/Unarchive a chat
 router.put('/chats/:chatId/archive', chatController.archiveChat);

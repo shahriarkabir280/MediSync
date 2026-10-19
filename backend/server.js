@@ -3,6 +3,7 @@
 //const express = require('express');
 import './config/env.js';
 import { authenticate } from './middleware/auth.js';
+import { requireUploadAccess } from './middleware/fileAccess.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -101,8 +102,8 @@ app.use(helmet({
   },
 }));
 
-// Never write tokens passed as ?token= (file links) to the request log
-morgan.token('url', (req) => req.originalUrl.replace(/([?&]token=)[^&]+/, '$1[redacted]'));
+// Never write tokens passed in file links (?token=, ?share=) to the request log
+morgan.token('url', (req) => req.originalUrl.replace(/([?&](?:token|share)=)[^&]+/g, '$1[redacted]'));
 app.use(morgan('dev'));
 
 // Middleware setup
@@ -115,7 +116,7 @@ const uploadsPath = path.join(__dirname, 'uploads');
 const PUBLIC_UPLOAD_DIRS = ['/profile-images/', '/blog-images/'];
 const requireAuthForPrivateUploads = (req, res, next) => {
   if (PUBLIC_UPLOAD_DIRS.some((dir) => req.path.startsWith(dir))) return next();
-  return authenticate()(req, res, next);
+  return authenticate()(req, res, (error) => (error ? next(error) : requireUploadAccess(req, res, next)));
 };
 app.use('/uploads', requireAuthForPrivateUploads, express.static(uploadsPath));
 

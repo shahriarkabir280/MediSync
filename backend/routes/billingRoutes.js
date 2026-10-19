@@ -201,8 +201,26 @@ router.delete('/payment-methods/:methodId', authenticateToken, async (req, res) 
   }
 });
 
+// A doctor may only change their own billing records
+const requireOwnBilling = async (req, res, next) => {
+  try {
+    const { data: billing } = await supabase
+      .from('billing')
+      .select('doctor_id')
+      .eq('id', req.params.billingId)
+      .maybeSingle();
+    if (!billing) return res.status(404).json({ success: false, message: 'Billing record not found' });
+    if (String(billing.doctor_id) !== String(req.doctorId)) {
+      return res.status(403).json({ success: false, message: 'You can only update your own billing records' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Registered last so '/:billingId' does not shadow '/settings'
-router.put('/:billingId', authenticateToken, updateBillingRecord);
-router.patch('/:billingId/mark-paid', authenticateToken, markAsPaid);
+router.put('/:billingId', authenticateToken, requireOwnBilling, updateBillingRecord);
+router.patch('/:billingId/mark-paid', authenticateToken, requireOwnBilling, markAsPaid);
 
 export default router;
