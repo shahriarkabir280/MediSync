@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Download, File, Image, Video, Music, Eye, X } from 'lucide-react';
 import { downloadFile, getFileIcon, formatFileSize, isImageFile, isVideoFile, isAudioFile } from '../utils/fileUtils';
+import { getImageUrl } from '../config/api';
 
 const FileMessage = ({ message, isOwn }) => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(false);
+  // Private chat uploads need the auth token in the URL for <img>/<video>/<audio>
+  const fileUrl = getImageUrl(message.fileUrl);
 
   const handleDownload = async () => {
     try {
       setDownloadProgress(true);
-      await downloadFile(message.fileUrl, message.fileName || message.content);
+      await downloadFile(fileUrl, message.fileName || message.content);
     } catch {
       alert('Failed to download file');
     } finally {
@@ -27,7 +30,7 @@ const FileMessage = ({ message, isOwn }) => {
             onClick={() => setShowImageModal(true)}
           >
             <img 
-              src={message.fileUrl} 
+              src={fileUrl} 
               alt={message.content}
               className="max-w-full h-auto rounded-lg max-h-60 object-cover"
               onError={(e) => {
@@ -57,7 +60,7 @@ const FileMessage = ({ message, isOwn }) => {
                   <X size={20} />
                 </button>
                 <img 
-                  src={message.fileUrl} 
+                  src={fileUrl} 
                   alt={message.content}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
@@ -81,7 +84,7 @@ const FileMessage = ({ message, isOwn }) => {
             className="max-w-full h-auto rounded-lg max-h-60"
             preload="metadata"
           >
-            <source src={message.fileUrl} />
+            <source src={fileUrl} />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -97,7 +100,7 @@ const FileMessage = ({ message, isOwn }) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{message.fileName || message.content}</p>
               <audio controls className="w-full mt-2" preload="metadata">
-                <source src={message.fileUrl} />
+                <source src={fileUrl} />
                 Your browser does not support the audio tag.
               </audio>
             </div>

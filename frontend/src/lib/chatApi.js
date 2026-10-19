@@ -1,4 +1,6 @@
 import { api } from './api.js';
+import { API_CONFIG } from '../config/api';
+import { getAuthToken, handleUnauthorized } from './authToken';
 
 /**
  * Modern Chat API Client
@@ -221,9 +223,10 @@ export const chatApi = {
       }
 
       const xhr = new XMLHttpRequest();
-      const token = localStorage.getItem('authToken');
+      const token = getAuthToken();
+      const uploadUrl = `${API_CONFIG.BASE_URL}/api/chat/upload`;
 
-      xhr.open('POST', 'http://localhost:3001/api/chat/upload', true);
+      xhr.open('POST', uploadUrl, true);
 
       if (token) {
         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -248,6 +251,7 @@ export const chatApi = {
             reject(new Error('Failed to parse upload response'));
           }
         } else {
+          if (xhr.status === 401) handleUnauthorized(uploadUrl);
           try {
             const errorData = JSON.parse(xhr.responseText);
             reject(new Error(errorData.error || 'Upload failed'));

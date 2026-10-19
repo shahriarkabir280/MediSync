@@ -1,4 +1,6 @@
 // Centralized API configuration
+import { withAuthToken } from '../lib/authToken';
+
 const getBaseUrl = () => {
   const url = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   // Remove trailing slash if present
@@ -21,11 +23,11 @@ export const buildApiUrl = (endpoint, path = '') => {
   return `${API_CONFIG.BASE_URL}${endpoint}${path}`;
 };
 
-// Helper function to get full image URL
+// Helper function to get full image URL (private uploads get the auth token appended)
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath; // External URL
-  if (imagePath.startsWith('/uploads')) return `${API_CONFIG.BASE_URL}${imagePath}`; // Local upload
+  if (imagePath.startsWith('http')) return withAuthToken(imagePath); // External URL or full backend URL
+  if (imagePath.startsWith('/uploads')) return withAuthToken(`${API_CONFIG.BASE_URL}${imagePath}`); // Local upload
   return imagePath; // Return as-is for other cases
 };
 

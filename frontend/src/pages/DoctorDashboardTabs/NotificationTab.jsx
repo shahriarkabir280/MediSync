@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Bell, Calendar, CreditCard, MessageCircle, Mail, Users, Settings, Check, X, Trash2, Filter, Search, Clock, AlertCircle, CheckCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { API_URLS } from '../../config/api';
+import { authFetch } from '../../lib/authToken';
 import { debounce } from "../../utils/performance";
 
 const NotificationTab = memo(({ onCountChange }) => {
@@ -49,7 +50,7 @@ const NotificationTab = memo(({ onCountChange }) => {
                 params.append('search', search);
             }
 
-            const response = await fetch(`${API_URLS.NOTIFICATIONS.LIST}?${params}`, {
+            const response = await authFetch(`${API_URLS.NOTIFICATIONS.LIST}?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -79,7 +80,7 @@ const NotificationTab = memo(({ onCountChange }) => {
 
             if (!token) return;
 
-            const response = await fetch(API_URLS.NOTIFICATIONS.STATS, {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.STATS, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -117,7 +118,7 @@ const NotificationTab = memo(({ onCountChange }) => {
     const markAsRead = async (notificationId) => {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(API_URLS.NOTIFICATIONS.MARK_READ(notificationId), {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.MARK_READ(notificationId), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -151,7 +152,7 @@ const NotificationTab = memo(({ onCountChange }) => {
     const markAsUnread = async (notificationId) => {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(API_URLS.NOTIFICATIONS.MARK_UNREAD(notificationId), {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.MARK_UNREAD(notificationId), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -185,7 +186,7 @@ const NotificationTab = memo(({ onCountChange }) => {
     const markAllAsRead = async () => {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(API_URLS.NOTIFICATIONS.MARK_ALL_READ, {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.MARK_ALL_READ, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -208,7 +209,7 @@ const NotificationTab = memo(({ onCountChange }) => {
     const deleteNotification = async (notificationId) => {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(API_URLS.NOTIFICATIONS.DELETE(notificationId), {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.DELETE(notificationId), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -242,7 +243,7 @@ const NotificationTab = memo(({ onCountChange }) => {
 
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(API_URLS.NOTIFICATIONS.DELETE_MULTIPLE, {
+            const response = await authFetch(API_URLS.NOTIFICATIONS.DELETE_MULTIPLE, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

@@ -15,6 +15,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { labApi } from '../../../lib/api';
 import { getImageUrl } from '../../../config/api';
+import { authFetch } from '../../../lib/authToken';
 
 // Import styles
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -43,7 +44,7 @@ const ReportViewer = ({ pdfUrl, orderId, onSaveSuccess }) => {
     const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
 
     const generateAnnotatedPdf = async () => {
-        const response = await fetch(pdfUrl);
+        const response = await authFetch(pdfUrl);
         const existingPdfBytes = await response.arrayBuffer();
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
@@ -92,7 +93,8 @@ const ReportViewer = ({ pdfUrl, orderId, onSaveSuccess }) => {
                 toast.success('Report saved successfully');
                 // Instant load: Clear current drawings and reload viewer with new URL
                 setPaths({}); // Clear local annotations since they are now in the PDF
-                const newUrl = `${getImageUrl(result.data.file_path)}?t=${new Date().getTime()}`;
+                const fileUrl = getImageUrl(result.data.file_path);
+                const newUrl = `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
                 setCurrentPdfUrl(newUrl);
                 setPageNumber(1);
                 setViewerKey(prev => prev + 1); // Force Viewer to remount and load new file

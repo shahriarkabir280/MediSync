@@ -133,9 +133,17 @@ const PatientSignup = () => {
         localStorage.setItem('patientId', result.data.id);
         localStorage.setItem('patientDisplayId', result.data.unique_id);
         localStorage.setItem('patientName', `${formData.first_name} ${formData.last_name}`);
+
+        // Signup does not return a token; sign in to get one for the dashboard
+        try {
+          const loginResult = await patientApi.login(formData.email, formData.password);
+          if (loginResult?.token) localStorage.setItem('patientToken', loginResult.token);
+        } catch (loginError) {
+          console.error("Auto sign-in after signup failed:", loginError);
+        }
         
         toast.success("Registration successful! Welcome to MediSync.");
-        // Redirecting to patient dashboard directly
+        // Redirecting to patient dashboard directly (it falls back to the login page without a token)
         navigate('/patient-dashboard');
       }
     } catch (error) {

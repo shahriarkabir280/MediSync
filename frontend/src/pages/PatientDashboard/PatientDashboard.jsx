@@ -14,6 +14,7 @@ import {
   HeartIcon
 } from "@heroicons/react/24/outline";
 import { patientApi } from "../../lib/api";
+import { clearPatientSession } from "../../lib/authToken";
 
 // Lazy load tabs
 const OverviewTab = lazy(() => import("./Tabs/OverviewTab"));
@@ -30,7 +31,7 @@ const PatientDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [patient, setPatient] = useState({
     name: "Guest Patient",
-    id: "0",
+    id: null, // set once the profile loads; tabs skip fetching until then
     displayId: "PAT-000",
     email: "",
     avatar: "https://ui-avatars.com/api/?name=Guest+Patient&background=0D8ABC&color=fff",
@@ -40,8 +41,9 @@ const PatientDashboard = () => {
   const fetchPatientDetails = async () => {
     const sessionEmail = localStorage.getItem('patientSessionEmail');
     const patientId = localStorage.getItem('patientId');
+    const patientToken = localStorage.getItem('patientToken');
 
-    if (!sessionEmail || !patientId) return;
+    if (!sessionEmail || !patientId || !patientToken) return;
 
     try {
       const response = await patientApi.getById(patientId);
@@ -79,9 +81,12 @@ const PatientDashboard = () => {
   useEffect(() => {
     const sessionEmail = localStorage.getItem('patientSessionEmail');
     const patientId = localStorage.getItem('patientId');
+    const patientToken = localStorage.getItem('patientToken');
 
-    if (!sessionEmail || !patientId) {
-      navigate('/patient-login');
+    // A 401 from any patient API call also clears the session and redirects (see lib/authToken.js)
+    if (!sessionEmail || !patientId || !patientToken) {
+      clearPatientSession();
+      navigate('/patient-login', { replace: true });
       return;
     }
 
@@ -89,7 +94,7 @@ const PatientDashboard = () => {
   }, [navigate]);
 
   const handleSignOut = () => {
-    localStorage.removeItem('patientSessionEmail');
+    clearPatientSession();
     navigate('/patient-login');
   };
 

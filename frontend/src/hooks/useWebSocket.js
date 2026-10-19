@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { API_CONFIG } from '../config/api';
 
-const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001') => {
+const useWebSocket = (serverUrl = API_CONFIG.BASE_URL) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Map());
@@ -11,6 +12,8 @@ const useWebSocket = (serverUrl = import.meta.env.VITE_API_URL || 'http://localh
 
   useEffect(() => {
     const newSocket = io(serverUrl, {
+      // Server rejects connections without the doctor's JWT; a callback re-reads it on every reconnect
+      auth: (cb) => cb({ token: localStorage.getItem('authToken') }),
       transports: ['websocket', 'polling'],
       autoConnect: false,
       timeout: 20000,

@@ -13,11 +13,15 @@ import { useChatSocket } from '../../hooks/useChatSocket';
 import { useAuth } from '../../contexts/AuthContext';
 import VideoCall from '../../components/VideoCall';
 import { debounce } from '../../utils/performance';
+import { API_CONFIG } from '../../config/api';
+import { withAuthToken } from '../../lib/authToken';
 
+// Chat attachments are private uploads, so they carry the auth token
 const getMediaUrl = (url) => {
   if (!url) return '';
-  if (url.startsWith('blob:') || url.startsWith('http')) return url;
-  return `http://localhost:3001${url}`;
+  if (url.startsWith('blob:')) return url;
+  if (url.startsWith('http')) return withAuthToken(url);
+  return withAuthToken(`${API_CONFIG.BASE_URL}${url}`);
 };
 
 // Helper to format date strings consistently

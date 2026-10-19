@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
+import { authFetch } from '../lib/authToken';
 
 // Custom hook to get the authenticated doctor's information
 export const useDoctor = () => {
@@ -23,18 +24,13 @@ export const useDoctor = () => {
 
 // API helper with authentication
 export const authenticatedFetch = async (url, options = {}) => {
-  const token = localStorage.getItem('authToken');
-  
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
   };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  return fetch(url, {
+
+  // authFetch adds the Bearer token and handles 401s
+  return authFetch(url, {
     ...options,
     headers
   });

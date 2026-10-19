@@ -1,5 +1,7 @@
 import React from 'react';
 import { Star, Send, Trash2, Archive, Plus, Search, Check, X, FileText, Paperclip, Reply, Forward, AlertCircle, ChevronLeft, Filter, Clock, Mail } from 'lucide-react';
+import { API_CONFIG } from '../../config/api';
+import { withAuthToken } from '../../lib/authToken';
 
 export const FolderSidebar = ({ folders, selectedFolder, setSelectedFolder, onCompose, onClose }) => {
     return (
@@ -258,7 +260,7 @@ export const EmailPreview = ({ email, onBack, onToggleStar, onDelete, onMoveToFo
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {email.attachments.map((att, i) => {
                                 const fileName = typeof att === 'object' ? att.name : att;
-                                const fileUrl = typeof att === 'object' ? (att.url ? `http://localhost:3001${att.url}` : '#') : '#';
+                                const fileUrl = typeof att === 'object' ? (att.url ? withAuthToken(`${API_CONFIG.BASE_URL}${att.url}`) : '#') : '#';
 
                                 return (
                                     <a

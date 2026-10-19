@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { API_URLS } from '../config/api';
+import { authFetch } from '../lib/authToken';
 
 export const useNotificationCount = () => {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -17,7 +18,7 @@ export const useNotificationCount = () => {
         return;
       }
 
-      const response = await fetch(API_URLS.NOTIFICATIONS.STATS, {
+      const response = await authFetch(API_URLS.NOTIFICATIONS.STATS, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

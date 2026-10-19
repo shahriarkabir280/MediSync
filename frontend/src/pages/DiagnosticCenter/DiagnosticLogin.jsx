@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { diagnosticApi } from '../../lib/api';
+import {
+  Mail, ArrowRight, Activity, Loader2, Key, AlertCircle
+} from 'lucide-react';
+
+const InputField = ({ label, icon: Icon, type = "text", value, onChange, placeholder, required = false, name }) => (
+  <div className="space-y-1.5">
+    <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
+      {label} {required && <span className="text-rose-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+        <Icon size={18} />
+      </div>
+      <input
+        type={type}
+        name={name}
+        required={required}
+        value={value}
+        onChange={onChange}
+        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-gray-900 placeholder-gray-400"
+        placeholder={placeholder}
+      />
+    </div>
+  </div>
+);
+
+const DiagnosticLogin = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await diagnosticApi.login(email, password);
+
+      if (response && response.success && response.token) {
+        localStorage.setItem('diagnosticToken', response.token);
+        navigate('/diagnostic-center', { replace: true });
+      } else {
+        setError(response?.message || "Invalid credentials");
+      }
+    } catch (err) {
+      console.error("Diagnostic login error:", err);
+      setError(err.message || "Failed to login. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center font-sans">
+      <div className="max-w-md w-full">
+
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="flex justify-center items-center gap-2 mb-4">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20 transform -rotate-6">
+              <Activity size={24} className="text-white" />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-gray-900">
+              Care<span className="text-indigo-600">Connect</span>
+            </h1>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Diagnostic Center Login</h2>
+          <p className="text-gray-500">
+            Manage lab orders and upload test results.
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="p-8 sm:p-10">
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+              {error && (
+                <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-sm text-rose-700">
+                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <InputField
+                label="Email Address"
+                name="email"
+                icon={Mail}
+                type="email"
+                placeholder="lab@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                  Password <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <Key size={18} />
+                  </div>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-gray-900 placeholder-gray-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center items-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20 active:scale-[0.98] disabled:bg-indigo-400"
+                >
+                  {loading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-gray-100 text-center text-sm font-medium text-gray-600 flex flex-col gap-2">
+                <p>
+                  Are you a doctor? <Link to="/" className="text-emerald-600 hover:text-emerald-800 transition-colors">Doctor Portal</Link>
+                </p>
+                <p>
+                  Are you a patient? <Link to="/patient-login" className="text-indigo-600 hover:text-indigo-800 transition-colors">Patient Gateway</Link>
+                </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default DiagnosticLogin;

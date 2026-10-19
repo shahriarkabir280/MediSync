@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
+import { API_CONFIG } from '../config/api';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const SOCKET_URL = API_CONFIG.BASE_URL;
 
 /**
  * Custom hook for WebSocket chat connection
@@ -20,6 +21,8 @@ export function useChatSocket(user) {
 
     // Initialize socket connection
     socketRef.current = io(SOCKET_URL, {
+      // Server rejects connections without the doctor's JWT; a callback re-reads it on every reconnect
+      auth: (cb) => cb({ token: localStorage.getItem('authToken') }),
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,

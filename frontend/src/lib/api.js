@@ -1,5 +1,8 @@
 // API Configuration and Helper Functions
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_CONFIG } from '../config/api';
+import { getAuthToken, authHeaders, handleUnauthorized } from './authToken';
+
+const API_BASE_URL = `${API_CONFIG.BASE_URL}/api`;
 
 // Simple in-memory cache for GET requests
 const cache = new Map();
@@ -44,7 +47,7 @@ export const api = {
       }
     }
 
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -68,7 +71,7 @@ export const api = {
   },
 
   post: async (endpoint, data = null, options = {}) => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -100,7 +103,7 @@ export const api = {
   },
 
   put: async (endpoint, data = null, options = {}) => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -132,17 +135,19 @@ export const api = {
   },
 
   delete: async (endpoint, options = {}) => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers
     };
 
+    const { data, ...fetchOptions } = options;
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers,
-      ...options
+      ...(data !== undefined && { body: JSON.stringify(data) }),
+      ...fetchOptions
     });
 
     const result = await handleResponse(response);
@@ -184,9 +189,13 @@ const handleResponse = async (response) => {
     throw new Error(`Failed to parse server response: ${error.message}`);
   }
 
+  if (response.status === 401) {
+    handleUnauthorized(response.url);
+  }
+
   if (!response.ok) {
     console.error('API Error:', data);
-    throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+    throw new Error(data.error || data.message || `HTTP ${response.status}: ${response.statusText}`);
   }
 
   return data;
@@ -195,33 +204,33 @@ const handleResponse = async (response) => {
 // Doctor API
 export const doctorApi = {
   getProfile: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/profile`);
+    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/profile`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   updateProfile: async (doctorId, profileData) => {
     const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/profile`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(profileData),
     });
     return handleResponse(response);
   },
 
   getStats: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/stats`);
+    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/stats`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getSettings: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/settings`);
+    const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/settings`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   updateSettings: async (doctorId, settings) => {
     const response = await fetch(`${API_BASE_URL}/doctors/${doctorId}/settings`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(settings),
     });
     return handleResponse(response);
@@ -229,7 +238,7 @@ export const doctorApi = {
 
   getMarketplace: async (search = '') => {
     const url = `${API_BASE_URL}/doctors/marketplace${search ? `?search=${search}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 };
@@ -239,29 +248,29 @@ export const appointmentApi = {
   getAll: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/appointments/doctor/${doctorId}${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getToday: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/appointments/doctor/${doctorId}/today`);
+    const response = await fetch(`${API_BASE_URL}/appointments/doctor/${doctorId}/today`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getById: async (appointmentId) => {
-    const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}`);
+    const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getByPatient: async (patientId) => {
-    const response = await fetch(`${API_BASE_URL}/appointments/patient/${patientId}`);
+    const response = await fetch(`${API_BASE_URL}/appointments/patient/${patientId}`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   create: async (doctorId, appointmentData) => {
     const response = await fetch(`${API_BASE_URL}/appointments/doctor/${doctorId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(appointmentData),
     });
     return handleResponse(response);
@@ -270,7 +279,7 @@ export const appointmentApi = {
   update: async (appointmentId, appointmentData) => {
     const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(appointmentData),
     });
     return handleResponse(response);
@@ -279,6 +288,7 @@ export const appointmentApi = {
   cancel: async (appointmentId) => {
     const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/cancel`, {
       method: 'PATCH',
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
@@ -289,19 +299,19 @@ export const patientApi = {
   getAll: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/patients/doctor/${doctorId}${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getById: async (patientId) => {
-    const response = await fetch(`${API_BASE_URL}/patients/${patientId}`);
+    const response = await fetch(`${API_BASE_URL}/patients/${patientId}`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   create: async (patientData) => {
     const response = await fetch(`${API_BASE_URL}/patients`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(patientData),
     });
     return handleResponse(response);
@@ -310,7 +320,7 @@ export const patientApi = {
   update: async (patientId, patientData) => {
     const response = await fetch(`${API_BASE_URL}/patients/${patientId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(patientData),
     });
     return handleResponse(response);
@@ -319,19 +329,20 @@ export const patientApi = {
   delete: async (patientId) => {
     const response = await fetch(`${API_BASE_URL}/patients/${patientId}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
 
   getMedicalHistory: async (patientId) => {
-    const response = await fetch(`${API_BASE_URL}/patients/${patientId}/medical-history`);
+    const response = await fetch(`${API_BASE_URL}/patients/${patientId}/medical-history`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   addMedicalRecord: async (patientId, recordData) => {
     const response = await fetch(`${API_BASE_URL}/patients/${patientId}/medical-records`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(recordData),
     });
     return handleResponse(response);
@@ -340,12 +351,25 @@ export const patientApi = {
   deleteMedicalRecord: async (patientId, recordId) => {
     const response = await fetch(`${API_BASE_URL}/patients/${patientId}/medical-records/${recordId}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
 
   login: async (email, password) => {
     const response = await fetch(`${API_BASE_URL}/auth/patient-login`, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse(response);
+  },
+};
+
+// Diagnostic Center API
+export const diagnosticApi = {
+  login: async (email, password) => {
+    const response = await fetch(`${API_BASE_URL}/auth/diagnostic-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -359,19 +383,19 @@ export const analyticsApi = {
   getAppointmentAnalytics: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/analytics/doctor/${doctorId}/appointments${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getPatientAnalytics: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/analytics/doctor/${doctorId}/patients`);
+    const response = await fetch(`${API_BASE_URL}/analytics/doctor/${doctorId}/patients`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getRevenueAnalytics: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/analytics/doctor/${doctorId}/revenue${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 };
@@ -381,19 +405,19 @@ export const billingApi = {
   getAll: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/billing/doctor/${doctorId}${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getSummary: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/billing/doctor/${doctorId}/summary`);
+    const response = await fetch(`${API_BASE_URL}/billing/doctor/${doctorId}/summary`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   create: async (doctorId, billingData) => {
     const response = await fetch(`${API_BASE_URL}/billing/doctor/${doctorId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(billingData),
     });
     return handleResponse(response);
@@ -402,7 +426,7 @@ export const billingApi = {
   update: async (billingId, billingData) => {
     const response = await fetch(`${API_BASE_URL}/billing/${billingId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(billingData),
     });
     return handleResponse(response);
@@ -411,6 +435,7 @@ export const billingApi = {
   markAsPaid: async (billingId) => {
     const response = await fetch(`${API_BASE_URL}/billing/${billingId}/mark-paid`, {
       method: 'PATCH',
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
@@ -419,35 +444,35 @@ export const billingApi = {
 // Wallet API
 export const walletApi = {
   getSummary: async (doctorId) => {
-    const response = await fetch(`${API_BASE_URL}/wallet/doctor/${doctorId}/summary`);
+    const response = await fetch(`${API_BASE_URL}/wallet/doctor/${doctorId}/summary`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   getTransactions: async (doctorId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}/wallet/doctor/${doctorId}/transactions${queryString ? `?${queryString}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   withdraw: async (doctorId, withdrawalData) => {
     const response = await fetch(`${API_BASE_URL}/wallet/doctor/${doctorId}/withdraw`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(withdrawalData),
     });
     return handleResponse(response);
   },
 
   getRules: async () => {
-    const response = await fetch(`${API_BASE_URL}/wallet/rules`);
+    const response = await fetch(`${API_BASE_URL}/wallet/rules`, { headers: authHeaders() });
     return handleResponse(response);
   },
 
   updateRule: async (ruleId, ruleData) => {
     const response = await fetch(`${API_BASE_URL}/wallet/rules/${ruleId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(ruleData),
     });
     return handleResponse(response);
@@ -458,7 +483,7 @@ export const paymentApi = {
   initiate: async (paymentData) => {
     const response = await fetch(`${API_BASE_URL}/payment/init`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(paymentData),
     });
     return handleResponse(response);
@@ -468,30 +493,24 @@ export const paymentApi = {
 // Prescription API
 export const prescriptionApi = {
   create: async (payload) => {
-    const token = localStorage.getItem('authToken');
     const response = await fetch(`${API_BASE_URL}/prescriptions`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
     });
     return handleResponse(response);
   },
 
   getByPatient: async (patientId) => {
-    const token = localStorage.getItem('authToken');
     const response = await fetch(`${API_BASE_URL}/prescriptions/patient/${patientId}`, {
-      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
 
   getById: async (prescriptionId) => {
-    const token = localStorage.getItem('authToken');
     const response = await fetch(`${API_BASE_URL}/prescriptions/${prescriptionId}`, {
-      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      headers: authHeaders(),
     });
     return handleResponse(response);
   },
@@ -549,6 +568,7 @@ export default {
   doctorApi,
   appointmentApi,
   patientApi,
+  diagnosticApi,
   analyticsApi,
   billingApi,
   walletApi,

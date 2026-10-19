@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { API_CONFIG } from "../../config/api";
+import { authFetch } from "../../lib/authToken";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -80,7 +81,7 @@ const LabratoryTab = memo(() => {
   const fetchLabStats = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/stats`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/stats`);
       const result = await response.json();
       if (result.success) setLabStats(result.data);
     } catch (error) {
@@ -92,7 +93,7 @@ const LabratoryTab = memo(() => {
 
   const fetchRecentOrders = useCallback(async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=10`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=10`);
       const result = await response.json();
       if (result.success) {
         setRecentOrders(result.data);
@@ -108,7 +109,7 @@ const LabratoryTab = memo(() => {
       const url = searchTerm ?
         `/api/lab/patients?search=${encodeURIComponent(searchTerm)}&limit=5` :
         '/api/lab/patients?limit=5';
-      const response = await fetch(`${API_CONFIG.BASE_URL}${url}`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}${url}`);
       const result = await response.json();
       if (result.success) setPatients(result.data);
     } catch (error) {
@@ -126,7 +127,7 @@ const LabratoryTab = memo(() => {
   const handleSearch = useCallback(async (term) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/search?search=${encodeURIComponent(term)}&limit=20`);
       const result = await response.json();
       if (result.success) setFilteredOrders(result.data);
     } catch (error) {
@@ -141,12 +142,12 @@ const LabratoryTab = memo(() => {
       setLoading(true);
       setActiveFilter(filterType);
       if (filterType === 'all') {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=20`);
+        const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/recent?limit=20`);
         const result = await response.json();
         if (result.success) setFilteredOrders(result.data);
         return;
       }
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/filter?filter_type=${filterType}`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/filter?filter_type=${filterType}`);
       const result = await response.json();
       if (result.success) setFilteredOrders(result.data);
     } catch (error) {
@@ -159,7 +160,7 @@ const LabratoryTab = memo(() => {
   const handleViewReport = async (orderId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/report/${orderId}`);
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/report/${orderId}`);
       const result = await response.json();
       if (result.success) {
         setSelectedReport(result.data);
@@ -175,7 +176,7 @@ const LabratoryTab = memo(() => {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/orders/${orderId}/status`, {
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -254,7 +255,7 @@ const LabratoryTab = memo(() => {
         throw new Error("No patient selected");
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/lab/ai/chat`, {
+      const response = await authFetch(`${API_CONFIG.BASE_URL}/api/lab/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

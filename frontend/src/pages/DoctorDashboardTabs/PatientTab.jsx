@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { patientApi, appointmentApi } from "../../lib/api";
 import * as dashboardCache from "../../lib/dashboardCache";
 import { API_CONFIG } from "../../config/api";
+import { authFetch, withAuthToken } from "../../lib/authToken";
 
 
 import { useDoctor } from "../../hooks/useDoctor";
@@ -66,7 +67,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 
 // Helper functions for generating print HTML
 const generatePrescriptionFileHTML = (record, index, API_BASE_URL, formatDate) => {
-    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const fileUrl = withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`);
     const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
     const isPdf = /\.pdf$/i.test(record.file_name);
 
@@ -130,7 +131,7 @@ const generatePrintAllHTML = (prescriptions, patient, API_BASE_URL, formatDate) 
 };
 
 const generateSinglePrescriptionHTML = (record, index, patient, API_BASE_URL, formatDate) => {
-    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const fileUrl = withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`);
     const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
     const isPdf = /\.pdf$/i.test(record.file_name);
 
@@ -180,7 +181,7 @@ const generateSinglePrescriptionHTML = (record, index, patient, API_BASE_URL, fo
 
 // Helper function to generate print HTML for a single medical document
 const generateMedicalDocumentHTML = (record, index, patient, API_BASE_URL, formatDate) => {
-    const fileUrl = `${API_BASE_URL}/api/files/${record.file_name}`;
+    const fileUrl = withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`);
     const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name);
     const isPdf = /\.pdf$/i.test(record.file_name);
 
@@ -270,7 +271,7 @@ const DocumentCard = memo(({ record, index, patient, API_BASE_URL, formatDate, o
 
                 <div className="flex items-center space-x-1">
                     <button
-                        onClick={() => window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                        onClick={() => window.open(withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`), '_blank')}
                         className="p-2 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
                         title="View Document"
                     >
@@ -278,7 +279,7 @@ const DocumentCard = memo(({ record, index, patient, API_BASE_URL, formatDate, o
                     </button>
                     <button
                         onClick={() => {
-                            window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank');
+                            window.open(withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`), '_blank');
                             toast.success('Downloading document...');
                         }}
                         className="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
@@ -324,10 +325,10 @@ const DocumentCard = memo(({ record, index, patient, API_BASE_URL, formatDate, o
                         {isImage && !previewError ? (
                             <div
                                 className="cursor-pointer h-40 group/img relative"
-                                onClick={() => window.open(`${API_BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                onClick={() => window.open(withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`), '_blank')}
                             >
                                 <img
-                                    src={`${API_BASE_URL}/api/files/${record.file_name}`}
+                                    src={withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}`)}
                                     alt={record.file_name}
                                     className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 transition-transform group-hover/img:scale-105"
                                     onError={() => setPreviewError(true)}
@@ -342,7 +343,7 @@ const DocumentCard = memo(({ record, index, patient, API_BASE_URL, formatDate, o
                             </div>
                         ) : isPdf ? (
                             <iframe
-                                src={`${API_BASE_URL}/api/files/${record.file_name}#toolbar=0`}
+                                src={withAuthToken(`${API_BASE_URL}/api/files/${record.file_name}#toolbar=0`)}
                                 className="w-full h-40 bg-slate-50 dark:bg-slate-900"
                                 title={`Document ${index + 1}`}
                             />
@@ -424,6 +425,7 @@ const PatientTab = memo(() => {
     const [showDocumentDeleteConfirm, setShowDocumentDeleteConfirm] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [activeShareRecord, setActiveShareRecord] = useState(null);
+    const [shareUrl, setShareUrl] = useState('');
 
     // Form state
     const [patientForm, setPatientForm] = useState({
@@ -573,7 +575,7 @@ const PatientTab = memo(() => {
             formData.append('fileName', file.name);
 
             // Upload file (you'll need to implement this API endpoint)
-            const response = await fetch(`${API_CONFIG.BASE_URL}/api/patients/${selectedPatient.id}/files`, {
+            const response = await authFetch(`${API_CONFIG.BASE_URL}/api/patients/${selectedPatient.id}/files`, {
                 method: 'POST',
                 body: formData,
             });
@@ -637,21 +639,35 @@ const PatientTab = memo(() => {
         }
     }, [isRecording]);
 
-    const handleShareFile = useCallback((record) => {
+    // Share links carry a 7-day token for this one file instead of the doctor's login token
+    const handleShareFile = useCallback(async (record) => {
         setActiveShareRecord(record);
+        setShareUrl('');
         setShowShareMenu(true);
+        try {
+            const response = await authFetch(
+                `${API_CONFIG.BASE_URL}/api/files/${encodeURIComponent(record.file_name)}/share-link`,
+                { method: 'POST' }
+            );
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            setShareUrl(`${API_CONFIG.BASE_URL}${result.path}`);
+        } catch {
+            toast.error('Could not create a share link');
+            setShowShareMenu(false);
+        }
     }, []);
 
     const executeShare = async (method) => {
-        if (!activeShareRecord) return;
+        if (!activeShareRecord || !shareUrl) return;
 
-        const fileUrl = `${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`;
+        const fileUrl = shareUrl;
         const text = `Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}: ${activeShareRecord.original_name || 'Document'}`;
 
         switch (method) {
             case 'copy':
                 await navigator.clipboard.writeText(fileUrl);
-                toast.success('Link copied to clipboard');
+                toast.success('Link copied (valid for 7 days)');
                 break;
             case 'native':
                 if (navigator.share) {
@@ -2012,7 +2028,7 @@ const PatientTab = memo(() => {
                                                                         // Create a temporary link to trigger download
                                                                         setTimeout(() => {
                                                                             const link = document.createElement('a');
-                                                                            link.href = `${API_CONFIG.BASE_URL}/api/files/${record.file_name}`;
+                                                                            link.href = withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`);
                                                                             link.download = record.file_name;
                                                                             link.target = '_blank';
                                                                             document.body.appendChild(link);
@@ -2096,7 +2112,7 @@ const PatientTab = memo(() => {
                                                                             <div className="flex items-center gap-1">
                                                                                 {record.file_path && (
                                                                                     <button
-                                                                                        onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                        onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}
                                                                                         className="p-1.5 text-muted-foreground hover:text-indigo-600 hover:bg-muted rounded-md transition-colors"
                                                                                         title="View Prescription"
                                                                                     >
@@ -2106,7 +2122,7 @@ const PatientTab = memo(() => {
                                                                                 {record.file_path && (
                                                                                     <button
                                                                                         onClick={() => {
-                                                                                            window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                                                                                            window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank');
                                                                                             toast.success('Downloading prescription...');
                                                                                         }}
                                                                                         className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-muted rounded-md transition-colors"
@@ -2148,10 +2164,10 @@ const PatientTab = memo(() => {
                                                                                 {/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name) ? (
                                                                                     <div
                                                                                         className="cursor-pointer group/img relative"
-                                                                                        onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                                                        onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}
                                                                                     >
                                                                                         <img
-                                                                                            src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`}
+                                                                                            src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`)}
                                                                                             alt={`Prescription ${index + 1}`}
                                                                                             className="w-full h-32 object-contain transition-transform group-hover/img:scale-105"
                                                                                             onError={(e) => {
@@ -2164,7 +2180,7 @@ const PatientTab = memo(() => {
                                                                                     </div>
                                                                                 ) : /\.pdf$/i.test(record.file_name) ? (
                                                                                     <iframe
-                                                                                        src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0`}
+                                                                                        src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0`)}
                                                                                         className="w-full h-32 bg-slate-50 dark:bg-slate-900 border-0"
                                                                                         title={`Prescription ${index + 1}`}
                                                                                     />
@@ -2415,7 +2431,7 @@ const PatientTab = memo(() => {
 
             {/* Share Menu Modal */}
             {
-                showShareMenu && activeShareRecord && (
+                showShareMenu && activeShareRecord && shareUrl && (
                     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200">
                         <div className="bg-card border border-border rounded-xl w-full max-w-sm shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
                             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
@@ -2429,7 +2445,7 @@ const PatientTab = memo(() => {
                             </div>
                             <div className="p-5 grid grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                                 <WhatsappShareButton
-                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    url={shareUrl}
                                     title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
                                     onClick={() => setShowShareMenu(false)}
                                     className="flex flex-col items-center hover:opacity-80 transition-opacity"
@@ -2439,7 +2455,7 @@ const PatientTab = memo(() => {
                                 </WhatsappShareButton>
 
                                 <TelegramShareButton
-                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    url={shareUrl}
                                     title={`Medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
                                     onClick={() => setShowShareMenu(false)}
                                     className="flex flex-col items-center hover:opacity-80 transition-opacity"
@@ -2449,7 +2465,7 @@ const PatientTab = memo(() => {
                                 </TelegramShareButton>
 
                                 <EmailShareButton
-                                    url={`${API_CONFIG.BASE_URL}/api/files/${activeShareRecord.file_name}`}
+                                    url={shareUrl}
                                     subject="Medical Record from MediSync"
                                     body={`Please find attached the medical record for ${selectedPatient?.first_name} ${selectedPatient?.last_name}`}
                                     onClick={() => setShowShareMenu(false)}

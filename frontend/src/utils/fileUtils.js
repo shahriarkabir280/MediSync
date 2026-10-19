@@ -1,8 +1,9 @@
 // File download and utility functions for chat
+import { authFetch } from '../lib/authToken';
 
 export const downloadFile = async (fileUrl, fileName) => {
   try {
-    const response = await fetch(fileUrl);
+    const response = await authFetch(fileUrl);
     if (!response.ok) throw new Error('Download failed');
     
     const blob = await response.blob();

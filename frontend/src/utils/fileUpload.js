@@ -1,5 +1,6 @@
 // Optimized file upload utilities for chat functionality
 import { chatApi } from '../lib/chatApi.js';
+import { API_CONFIG } from '../config/api';
 
 export class FileUploader {
   constructor(options = {}) {
@@ -299,7 +300,7 @@ export class FileUploader {
 
 // Export singleton instance
 export const fileUploader = new FileUploader({
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001/api/chat',
+  baseUrl: `${API_CONFIG.BASE_URL}/api/chat`,
   chunkSize: 2 * 1024 * 1024, // 2MB chunks
   maxFileSize: 50 * 1024 * 1024, // 50MB max
   maxConcurrentUploads: 3

@@ -118,7 +118,7 @@ const WalletTab = memo(() => {
     };
 
     const fetchWalletData = async () => {
-        const response = await walletApi.getWalletSummary(doctorId);
+        const response = await walletApi.getSummary(doctorId);
         setWalletSummary(response.data);
     };
 

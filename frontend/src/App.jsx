@@ -1,5 +1,5 @@
 
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -10,6 +10,7 @@ const DoctorDashboard = lazy(() => import("./pages/DoctorDashboard"));
 const PublicWebsite = lazy(() => import("./pages/PublicWebsite"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const DiagnosticDashboard = lazy(() => import("./pages/DiagnosticCenter/DiagnosticDashboard"));
+const DiagnosticLogin = lazy(() => import("./pages/DiagnosticCenter/DiagnosticLogin"));
 const PatientDashboard = lazy(() => import("./pages/PatientDashboard/PatientDashboard"));
 const PatientSignup = lazy(() => import("./pages/PatientSignup"));
 const PatientLogin = lazy(() => import("./pages/PatientLogin"));
@@ -36,6 +37,11 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <DoctorLogin />;
 };
 
+// Diagnostic center routes need their own token
+const DiagnosticRoute = ({ children }) => {
+  return localStorage.getItem('diagnosticToken') ? children : <Navigate to="/diagnostic-login" replace />;
+};
+
 // Doctor Login Component
 const DoctorLogin = () => {
   const { login, loading, error } = useAuth();
@@ -57,7 +63,15 @@ function App() {
             <Routes>
               <Route path="/doctor/:slug" element={<PublicWebsite />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/diagnostic-center" element={<DiagnosticDashboard />} />
+              <Route
+                path="/diagnostic-center"
+                element={
+                  <DiagnosticRoute>
+                    <DiagnosticDashboard />
+                  </DiagnosticRoute>
+                }
+              />
+              <Route path="/diagnostic-login" element={<DiagnosticLogin />} />
               <Route path="/patient-dashboard" element={<PatientDashboard />} />
               <Route path="/patient-signup" element={<PatientSignup />} />
               <Route path="/patient-login" element={<PatientLogin />} />

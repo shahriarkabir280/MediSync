@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { patientApi } from "../../../lib/api";
 import { API_CONFIG } from "../../../config/api";
+import { withAuthToken } from "../../../lib/authToken";
 import toast from "react-hot-toast";
 
 const DocumentCard = ({ record, formatDate }) => {
@@ -39,10 +40,10 @@ const DocumentCard = ({ record, formatDate }) => {
                         {/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name) ? (
                             <div 
                                 className="cursor-pointer group/img relative"
-                                onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}
                             >
                                 <img 
-                                    src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`} 
+                                    src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`)} 
                                     alt="Document Preview"
                                     className="w-full h-32 object-contain transition-transform group-hover/img:scale-105"
                                     onError={(e) => {
@@ -58,9 +59,9 @@ const DocumentCard = ({ record, formatDate }) => {
                             </div>
                         ) : /\.pdf$/i.test(record.file_name) ? (
                             <div className="relative group/pdf cursor-pointer hover:bg-gray-100 transition-colors">
-                                <div className="absolute inset-0 z-10" onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}></div>
+                                <div className="absolute inset-0 z-10" onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}></div>
                                 <iframe 
-                                    src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0&navpanes=0&scrollbar=0`}
+                                    src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0&navpanes=0&scrollbar=0`)}
                                     className="w-full h-32 border-0 pointer-events-none opacity-80 group-hover/pdf:opacity-100 transition-opacity bg-white"
                                     title="PDF Preview"
                                 />
@@ -101,7 +102,7 @@ const DocumentCard = ({ record, formatDate }) => {
             <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex items-center justify-end gap-1.5">
                 <button 
                     onClick={() => {
-                        window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                        window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank');
                         toast.success('Downloading document...');
                     }}
                     className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white border border-transparent hover:border-indigo-100 rounded-md transition-colors"
@@ -415,7 +416,7 @@ const ReportsTab = ({ patient }) => {
                                   if (record.file_name) {
                                       setTimeout(() => {
                                           const link = document.createElement('a');
-                                          link.href = `${API_CONFIG.BASE_URL}/api/files/${record.file_name}`;
+                                          link.href = withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`);
                                           link.download = record.file_name;
                                           link.target = '_blank';
                                           document.body.appendChild(link);
@@ -474,7 +475,7 @@ const ReportsTab = ({ patient }) => {
                                               <div className="flex items-center gap-2">
                                                  <button
                                                       onClick={() => {
-                                                          window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank');
+                                                          window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank');
                                                           toast.success('Downloading prescription...');
                                                       }}
                                                       className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100"
@@ -494,19 +495,19 @@ const ReportsTab = ({ patient }) => {
                                                   {/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(record.file_name) ? (
                                                       <div
                                                           className="cursor-pointer group/img relative"
-                                                          onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}
+                                                          onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}
                                                       >
                                                           <img
-                                                              src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`}
+                                                              src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`)}
                                                               alt={`Prescription ${index + 1}`}
                                                               className="w-full h-40 object-contain transition-transform group-hover/img:scale-105"
                                                           />
                                                       </div>
                                                   ) : /\.pdf$/i.test(record.file_name) ? (
                                                       <div className="relative group/pdf cursor-pointer hover:bg-gray-100 transition-colors">
-                                                          <div className="absolute inset-0 z-10" onClick={() => window.open(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`, '_blank')}></div>
+                                                          <div className="absolute inset-0 z-10" onClick={() => window.open(withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}`), '_blank')}></div>
                                                           <iframe
-                                                              src={`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                              src={withAuthToken(`${API_CONFIG.BASE_URL}/api/files/${record.file_name}#toolbar=0&navpanes=0&scrollbar=0`)}
                                                               className="w-full h-40 border-0 pointer-events-none opacity-80 group-hover/pdf:opacity-100 transition-opacity bg-white"
                                                               title={`Prescription ${index + 1}`}
                                                           />

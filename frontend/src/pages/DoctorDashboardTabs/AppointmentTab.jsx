@@ -8,7 +8,8 @@ import {
     MapPin, DollarSign, Clock4, FileText, Zap, X
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { API_URLS } from "../../config/api";
+import { API_URLS, API_CONFIG } from "../../config/api";
+import { authFetch } from "../../lib/authToken";
 import { toast } from "react-hot-toast";
 import * as dashboardCache from "../../lib/dashboardCache";
 
@@ -200,9 +201,9 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
             };
 
             const [appointmentsResponse, statsResponse, settingsResponse] = await Promise.all([
-                fetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), { headers }),
-                fetch(API_URLS.DOCTORS.STATS(doctorId), { headers }),
-                fetch(API_URLS.DOCTORS.SETTINGS(doctorId), { headers })
+                authFetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), { headers }),
+                authFetch(API_URLS.DOCTORS.STATS(doctorId), { headers }),
+                authFetch(API_URLS.DOCTORS.SETTINGS(doctorId), { headers })
             ]);
 
             const appointmentsData = appointmentsResponse.ok ? await appointmentsResponse.json() : { data: [] };
@@ -257,7 +258,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
             const token = localStorage.getItem('authToken');
             if (!token) return;
 
-            const response = await fetch(API_URLS.PATIENTS.BY_DOCTOR(doctorId), {
+            const response = await authFetch(API_URLS.PATIENTS.BY_DOCTOR(doctorId), {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -297,7 +298,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 throw new Error('Authentication required');
             }
 
-            const response = await fetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), {
+            const response = await authFetch(API_URLS.APPOINTMENTS.BY_DOCTOR(doctorId), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -342,7 +343,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 throw new Error('Authentication required');
             }
 
-            const response = await fetch(`http://localhost:3001/api/appointments/${editingAppointment.id}`, {
+            const response = await authFetch(`${API_CONFIG.BASE_URL}/api/appointments/${editingAppointment.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -391,7 +392,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                     throw new Error('Authentication required');
                 }
 
-                const response = await fetch(`http://localhost:3001/api/appointments/${appointmentId}`, {
+                const response = await authFetch(`${API_CONFIG.BASE_URL}/api/appointments/${appointmentId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -426,7 +427,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 throw new Error('Authentication required');
             }
 
-            const response = await fetch(`http://localhost:3001/api/appointments/${appointmentId}`, {
+            const response = await authFetch(`${API_CONFIG.BASE_URL}/api/appointments/${appointmentId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -514,7 +515,7 @@ const AppointmentTab = memo(({ onSwitchTab }) => {
                 throw new Error('Authentication required');
             }
 
-            const response = await fetch(API_URLS.DOCTORS.SETTINGS(doctorId), {
+            const response = await authFetch(API_URLS.DOCTORS.SETTINGS(doctorId), {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

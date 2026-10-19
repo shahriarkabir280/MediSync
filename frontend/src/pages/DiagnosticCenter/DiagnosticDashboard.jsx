@@ -27,6 +27,8 @@ import {
   X
 } from 'lucide-react';
 import { labApi } from '../../lib/api';
+import { getImageUrl } from '../../config/api';
+import { clearDiagnosticSession } from '../../lib/authToken';
 
 const DiagnosticDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -236,7 +238,11 @@ const DiagnosticDashboard = () => {
         </nav>
 
         <button 
-          onClick={() => navigate('/')} 
+          onClick={() => {
+            clearDiagnosticSession();
+            navigate('/diagnostic-login', { replace: true });
+          }} 
+          title="Sign out"
           className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-500/10 hover:text-red-500 transition-all mt-auto"
         >
           <LogOut className="w-4.5 h-4.5" />
@@ -475,7 +481,10 @@ const DiagnosticDashboard = () => {
                                        <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
                                        <span className="text-[9px] font-bold text-emerald-700 truncate">{item.result_file_name}</span>
                                     </div>
-                                    <button className="text-[9px] font-black text-emerald-600 uppercase hover:underline shrink-0 ml-2">View</button>
+                                    <button
+                                      onClick={() => window.open(getImageUrl(item.result_file_path), '_blank')}
+                                      className="text-[9px] font-black text-emerald-600 uppercase hover:underline shrink-0 ml-2"
+                                    >View</button>
                                  </div>
                                )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URLS } from '../../config/api';
+import { authFetch } from '../../lib/authToken';
 import { Bell, Shield, CreditCard, Settings, Calendar, MessageCircle, Mail, Users, AlertCircle, Trash2, FileText, MapPin, Plus, Globe } from 'lucide-react';
 
 const SettingsTab = () => {
@@ -104,7 +105,7 @@ const SettingsTab = () => {
 
       // Load notification settings
       try {
-        const notifyResponse = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
+        const notifyResponse = await authFetch(API_URLS.DOCTORS.NOTIFICATIONS, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -118,7 +119,7 @@ const SettingsTab = () => {
 
       // Load billing settings
       try {
-        const billingResponse = await fetch(API_URLS.BILLING.SETTINGS, {
+        const billingResponse = await authFetch(API_URLS.BILLING.SETTINGS, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -154,7 +155,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.DOCTORS.NOTIFICATIONS, {
+      const response = await authFetch(API_URLS.DOCTORS.NOTIFICATIONS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +250,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.AUTH.CHANGE_PASSWORD, {
+      const response = await authFetch(API_URLS.AUTH.CHANGE_PASSWORD, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -285,7 +286,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.AUTH.ENABLE_2FA, {
+      const response = await authFetch(API_URLS.AUTH.ENABLE_2FA, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -315,7 +316,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.AUTH.DISABLE_2FA, {
+      const response = await authFetch(API_URLS.AUTH.DISABLE_2FA, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -344,7 +345,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.BILLING.SETTINGS, {
+      const response = await authFetch(API_URLS.BILLING.SETTINGS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -375,7 +376,7 @@ const SettingsTab = () => {
       setLoading(true);
       const token = localStorage.getItem('authToken');
 
-      const response = await fetch(API_URLS.DOCTORS.DELETE_ACCOUNT, {
+      const response = await authFetch(API_URLS.DOCTORS.DELETE_ACCOUNT, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
