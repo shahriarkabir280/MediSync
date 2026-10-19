@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import ReactMarkdown from 'react-markdown';
 import { Bot, X, Sparkles, Paperclip, Send } from "lucide-react";
 
 const AIChatAssistant = ({
@@ -70,14 +71,9 @@ const AIChatAssistant = ({
                                         }`}>
                                         <div className="leading-relaxed">
                                             {msg.sender === 'ai' ? (
-                                                <div className="space-y-2 markdown-ai whitespace-pre-wrap">
-                                                    {msg.text.split('\n').map((line, i) => {
-                                                        // Super basic markdown parsing for bold and bullets
-                                                        let parsedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                                           .replace(/\*(.*?)\*/g, '<em>$1</em>');
-                                                        if (parsedLine.trim() === '') return <div key={i} className="h-2"></div>;
-                                                        return <p key={i} dangerouslySetInnerHTML={{ __html: parsedLine }}></p>;
-                                                    })}
+                                                // react-markdown never renders raw HTML, so model output cannot inject markup
+                                                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-headings:mt-3 prose-headings:mb-1.5 prose-headings:text-sm prose-hr:my-3 prose-code:before:content-none prose-code:after:content-none prose-code:font-medium">
+                                                    <ReactMarkdown>{msg.text}</ReactMarkdown>
                                                 </div>
                                             ) : msg.text}
                                         </div>

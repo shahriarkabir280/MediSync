@@ -53,7 +53,7 @@ export const labAiChat = async (req, res) => {
         lab_order_items (
             status,
             lab_tests (test_name, test_code, normal_range_min, normal_range_max, unit, description),
-            lab_results (result_value, result_text, reference_range, unit, status, abnormal_flag, critical_flag, notes, verified_by, result_date)
+            lab_results (result_value, result_text, reference_range, unit, status, abnormal_flag, critical_flag, notes, verified_by, result_date, file_name)
         )
       `)
       .eq('patient_id', patientId)
@@ -98,11 +98,16 @@ Tests:
                   const resObj = resultsArray[0];
                   const isAbnormal = resObj.abnormal_flag || resObj.critical_flag || resObj.status !== 'normal';
                   const flagStr = resObj.critical_flag ? '[CRITICAL] ' : (resObj.abnormal_flag ? '[ABNORMAL] ' : '');
-                  const valStr = resObj.result_value !== null ? resObj.result_value : resObj.result_text;
                   const unit = resObj.unit || item.lab_tests?.unit || '';
                   const refSpan = resObj.reference_range || (item.lab_tests?.normal_range_min != null ? `${item.lab_tests.normal_range_min} - ${item.lab_tests.normal_range_max}` : 'N/A');
-                  
-                  patientContext += `\n    Result: ${flagStr}${valStr} ${unit} (Ref: ${refSpan})`;
+                  // Many reports arrive only as an uploaded PDF; say so instead of passing "null" to the model
+                  const hasValue = resObj.result_value !== null && resObj.result_value !== undefined && resObj.result_value !== '';
+                  const valStr = hasValue ? `${resObj.result_value} ${unit}`.trim()
+                    : resObj.result_text ? resObj.result_text
+                    : resObj.file_name ? 'Values not entered in the system; the full report is attached as a PDF'
+                    : 'No value recorded';
+
+                  patientContext += `\n    Result: ${flagStr}${valStr} (Ref: ${refSpan})`;
                   if (resObj.notes) patientContext += `\n    Notes: ${resObj.notes}`;
               } else {
                   patientContext += ` No results published yet.`;
@@ -160,7 +165,9 @@ ${patientContext}`;
             history: formattedHistory,
             generationConfig: {
               temperature: 0.2, // Keep it grounded and factual
-              maxOutputTokens: 1024,
+              // Newer Gemini models spend output tokens on internal reasoning first;
+              // a 1024 limit left ~40 tokens for the answer and cut replies off mid-sentence
+              maxOutputTokens: 8192,
             },
           });
           const result = await chat.sendMessage(message);
