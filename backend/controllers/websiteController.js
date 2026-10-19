@@ -826,18 +826,11 @@ export const getPublicBlogPost = async (req, res) => {
       .from('blog_posts')
       .select(`
             *,
-            doctor:doctors (first_name, last_name, specialization, profile_image_url),
-            website_settings!inner (visibility)
+            doctor:doctors (first_name, last_name, specialization, profile_image_url)
         `)
       .eq('slug', slug)
       .eq('status', 'published')
-      .eq('website_settings.visibility', true) // Filter through joined table? No, need !inner usually. Or handle logic.
-      // Supabase filtering on related table is tricky without !inner.
-      // And website_settings is related to doctors, not blog_posts directly.
-      // Relation: blog_posts -> doctors -> website_settings.
-      // It's easier to fetch blog + doctor, then check website_settings visibility.
-      // OR: fetch blog, then fetch doctor settings separately.
-      // Let's optimize: fetch blog, check visibility in next step or parallel.
+      // website_settings relates to doctors, not blog_posts, so visibility is checked below
       .single();
 
     if (error || !blog) {
@@ -858,11 +851,12 @@ export const getPublicBlogPost = async (req, res) => {
       doctor_image: blog.doctor?.profile_image_url
     };
 
-    // View count increment (fire and forget)
-    supabase.rpc('increment_blog_views', { blog_id: blog.id }).catch(() => {
-      // Fallback if RPC not exists: get, increment, update (race condition possible but acceptable for views)
-      supabase.from('blog_posts').update({ views: (blog.views || 0) + 1 }).eq('id', blog.id);
-    });
+    // View count increment (read-then-write; a lost update under concurrency is acceptable for views)
+    const { error: viewError } = await supabase
+      .from('blog_posts')
+      .update({ views: (blog.views || 0) + 1 })
+      .eq('id', blog.id);
+    if (viewError) console.error('Error incrementing blog views:', viewError);
 
     res.json({ success: true, data: formatBlog });
   } catch (error) {
