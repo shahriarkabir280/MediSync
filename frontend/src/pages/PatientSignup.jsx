@@ -165,7 +165,7 @@ const PatientSignup = () => {
               <Activity size={24} className="text-white" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-gray-900">
-              Care<span className="text-indigo-600">Connect</span>
+              Medi<span className="text-indigo-600">Sync</span>
             </h1>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Patient Registration</h2>
