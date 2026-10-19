@@ -4,6 +4,11 @@ import { supabase } from '../config/db.js';
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Used when GEMINI_MODEL is retired (404) or overloaded (429/503)
+const FALLBACK_MODELS = ['gemini-3.5-flash'];
+const isRetryableModelError = (error) => [404, 429, 500, 503].includes(error?.status) ||
+  /\[(404|429|500|503) /.test(error?.message || '');
+
 export const labAiChat = async (req, res) => {
   try {
     const { patientId, message, history = [] } = req.body;
@@ -110,11 +115,9 @@ Tests:
       });
     }
 
-    // 4. Set up Gemini model and system prompt
-    // Use gemini-2.5-flash since it's the latest and extremely capable and fast
-    const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        systemInstruction: `You are MediSync Clinical AI, an advanced, highly intelligent medical assistant designed to help doctors interpret lab results, analyze patient histories, and make clinical decisions.
+    // 4. System prompt. Models are tried in order: Google retires older models for new API keys
+    // and the newest ones are sometimes overloaded (503), so fall back instead of failing.
+    const systemInstruction = `You are MediSync Clinical AI, an advanced, highly intelligent medical assistant designed to help doctors interpret lab results, analyze patient histories, and make clinical decisions.
 You are chatting directly with the attending doctor. 
 
 Guidelines:
@@ -127,8 +130,8 @@ Guidelines:
 7. Base your answers strictly on the patient context provided below. Do not hallucinate data.
 
 CURRENT CONTEXT:
-${patientContext}`
-    });
+${patientContext}`;
+    const modelNames = [...new Set([process.env.GEMINI_MODEL || 'gemini-3.8-flash', ...FALLBACK_MODELS])];
 
     // 5. Format history for Google Generative AI
     // Gemini history format is { role: 'user' | 'model', parts: [{text: '...'}...]}
@@ -137,19 +140,28 @@ ${patientContext}`
       parts: [{ text: msg.text }]
     }));
 
-    // Start chat
-    const chat = model.startChat({
-      history: formattedHistory,
-      generationConfig: {
-        temperature: 0.2, // Keep it grounded and factual
-        maxOutputTokens: 1024,
-      },
-    });
-
-    // 6. Send the message and get the response
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
+    // 6. Send the message, falling back to the next model if one is unavailable
+    let text;
+    let lastError;
+    for (const modelName of modelNames) {
+      try {
+        const chat = genAI.getGenerativeModel({ model: modelName, systemInstruction }).startChat({
+          history: formattedHistory,
+          generationConfig: {
+            temperature: 0.2, // Keep it grounded and factual
+            maxOutputTokens: 1024,
+          },
+        });
+        const result = await chat.sendMessage(message);
+        text = result.response.text();
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableModelError(error)) throw error;
+        console.warn(`Gemini model ${modelName} unavailable (${error.status || error.message}); trying next`);
+      }
+    }
+    if (text === undefined) throw lastError;
 
     res.json({
       success: true,

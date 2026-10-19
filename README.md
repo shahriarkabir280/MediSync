@@ -85,7 +85,7 @@ flowchart LR
 | Backend | Node.js, Express 5, Socket.IO, Multer, Nodemailer |
 | Database | PostgreSQL on Supabase (`@supabase/supabase-js`, `pg`) |
 | Auth and security | JWT with role-based access control, bcrypt password hashing, Helmet, CORS allow-list |
-| Integrations | Google Gemini (`gemini-2.5-flash`), SSLCommerz, SMTP |
+| Integrations | Google Gemini (`gemini-3.8-flash`), SSLCommerz, SMTP |
 | Documents | `react-pdf`, `pdf-lib`, `jspdf`, `html2canvas` |
 | Tooling | ESLint, GitHub Actions CI, Railway (Nixpacks) deployment |
 
