@@ -1,195 +1,191 @@
+<div align="center">
+
 # MediSync
 
-MediSync is a full-stack healthcare platform that connects doctors, patients, and diagnostic centers through dedicated dashboards, appointment scheduling, medical records, billing, real-time chat, and payments — backed by a single Node.js/Express API and a React frontend.
+**A full-stack healthcare management platform connecting doctors, patients, and diagnostic centers.**
 
-## Table of Contents
+Appointments · Medical records · Lab reports · Real-time chat & video calls · AI clinical assistant · Billing & payments
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Available Scripts](#available-scripts)
-- [Core Features](#core-features)
-- [Documentation](#documentation)
-- [Security Notes](#security-notes)
+[![CI](https://github.com/shahriarkabir280/MediSync/actions/workflows/ci.yml/badge.svg)](https://github.com/shahriarkabir280/MediSync/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-Express_5-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-realtime-010101?logo=socket.io)
+
+</div>
+
+---
+
+<!--
+  Add screenshots to docs/screenshots/ and uncomment:
+  <p align="center">
+    <img src="docs/screenshots/doctor-dashboard.png" width="49%" alt="Doctor dashboard" />
+    <img src="docs/screenshots/lab-report-viewer.png" width="49%" alt="Lab report viewer with annotation" />
+  </p>
+-->
 
 ## Overview
 
-The application is organized around three user-facing portals sharing one backend and database:
+MediSync is a multi-portal clinic platform built on a single Node.js/Express API and a React frontend. Doctors run their practice from one dashboard, patients book and track care from theirs, and diagnostic centers handle lab orders and reports. All three share one PostgreSQL database and a real-time messaging layer.
 
-| Portal | Purpose |
+| Portal | What it does |
 |---|---|
-| **Doctor Dashboard** | Profile and availability management, appointments, patient records, prescriptions, billing, analytics, and a lab/report workflow with PDF annotation. |
-| **Patient Dashboard** | Appointment booking, medical history, billing, chat with providers, and wallet-based payments. |
-| **Diagnostic Center Dashboard** | Lab order intake and report management for diagnostic partners. |
+| **Doctor dashboard** | Appointments and calendar, patient records, prescriptions, lab orders with PDF report annotation, billing, wallet and payouts, analytics, internal email, chat and video calls, and a personal public website and blog. |
+| **Patient portal** | Doctor search and appointment booking, medical history and reports, bills paid online, and chat with their doctors. |
+| **Diagnostic center** | Lab order intake and per-test report uploads delivered back to the ordering doctor. |
+| **Public website** | Each doctor's public profile (education, experience, services, chambers, testimonials) and blog. |
 
-A public-facing website with an integrated blog runs alongside the dashboards for patient acquisition and general information.
+## Highlights
 
-## Tech Stack
+- **Real-time communication:** a Socket.IO server handles one-to-one and group chat with typing indicators, read receipts, reactions, presence, file and voice-note attachments, plus WebRTC signalling for in-browser video calls.
+- **AI clinical assistant:** a Google Gemini assistant answers the doctor's questions using the patient's actual lab history, flagging abnormal and critical values and comparing trends across reports.
+- **Lab workflow end to end:** doctor orders, diagnostic-center report uploads, a PDF report viewer with pencil/eraser annotation saved back to the record, and generated prescription PDFs.
+- **Payments and revenue sharing:** SSLCommerz checkout (with a built-in mock gateway for development), per-service revenue-split rules between doctor, clinic and referrer, wallet balances, and withdrawal requests.
+- **Scale of the build:** about 200 REST endpoints across 19 route modules, a 46-table PostgreSQL schema, and roughly 40k lines of application code.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client["React 19 + Vite"]
+        D[Doctor dashboard]
+        P[Patient portal]
+        L[Diagnostic center]
+        W[Public website]
+    end
+
+    subgraph API["Node.js / Express 5"]
+        R[REST API<br/>19 route modules]
+        S[Socket.IO server<br/>chat · presence · WebRTC signalling]
+    end
+
+    DB[(PostgreSQL<br/>Supabase)]
+    FS[(File storage<br/>reports · attachments)]
+    G[Google Gemini]
+    PAY[SSLCommerz]
+    SMTP[SMTP]
+
+    Client -- HTTPS / JWT --> R
+    Client <-- WebSocket --> S
+    R --> DB
+    S --> DB
+    R --> FS
+    R --> G
+    R --> PAY
+    R --> SMTP
+```
+
+## Tech stack
 
 | Layer | Technologies |
 |---|---|
-| Backend runtime | Node.js, Express 5 |
-| Database | PostgreSQL via [Supabase](https://supabase.com/) (`pg`, `@supabase/supabase-js`) |
-| Auth & security | JWT, `bcryptjs`, Helmet, Arcjet (rate limiting / bot protection) |
-| Real-time | Socket.IO (server and client) |
-| Email | Nodemailer |
-| AI | Google Gemini API |
-| Payments | SSLCommerz |
-| Frontend framework | React 19, Vite 6, React Router 7 |
-| Styling | Tailwind CSS |
-| State management | Zustand |
-| PDF handling | `react-pdf`, `pdf-lib`, `jspdf` |
+| Frontend | React 19, Vite 6, React Router 7, Tailwind CSS, Radix UI, Zustand |
+| Backend | Node.js, Express 5, Socket.IO, Multer, Nodemailer |
+| Database | PostgreSQL on Supabase (`@supabase/supabase-js`, `pg`) |
+| Auth and security | JWT, bcrypt password hashing, Helmet, CORS allow-list |
+| Integrations | Google Gemini (`gemini-2.5-flash`), SSLCommerz, SMTP |
+| Documents | `react-pdf`, `pdf-lib`, `jspdf`, `html2canvas` |
+| Tooling | ESLint, GitHub Actions CI, Railway (Nixpacks) deployment |
 
-## Project Structure
+## Getting started
+
+### Prerequisites
+
+- Node.js 20 or later
+- A PostgreSQL database; a free [Supabase](https://supabase.com/) project works
+- Optional: Gemini API key, SMTP credentials, SSLCommerz sandbox store
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/shahriarkabir280/MediSync.git
+cd MediSync
+npm install                      # backend
+npm --prefix frontend install    # frontend
+```
+
+### 2. Configure environment
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Fill in at least `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_KEY` and `DATABASE_URL`. The server checks these at startup and refuses to run without them. Optional integrations switch off cleanly when their keys are missing, and payments fall back to a mock checkout. See [`backend/.env.example`](backend/.env.example) for every variable.
+
+### 3. Set up the database
+
+```bash
+npm run init-db   # applies backend/schema.sql (idempotent)
+npm run seed      # optional sample data
+```
+
+### 4. Run
+
+```bash
+npm run dev                      # API on http://localhost:3001
+npm --prefix frontend run dev    # app on http://localhost:5173
+```
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` / `npm start` | Start the API server (with or without auto-reload) |
+| `npm run init-db` | Apply the database schema |
+| `npm run seed` | Load sample data |
+| `npm run check` | Syntax-check all backend modules |
+| `npm --prefix frontend run lint` | Lint the frontend |
+| `npm --prefix frontend run build` | Production build of the frontend |
+
+## Project structure
 
 ```
 MediSync/
-├── backend/                 Express API server
-│   ├── controllers/          Request handlers (auth, appointments, billing, chat, lab, wallet, ...)
-│   ├── routes/                One route module per domain
-│   ├── config/                 Environment and service configuration
-│   ├── lib/                    Database client, Supabase client, third-party integrations
-│   ├── utils/                  Shared helpers
-│   ├── uploads/                Uploaded files (reports, attachments)
-│   ├── schema.sql              Database schema
-│   └── server.js                Entry point
-│
-└── frontend/                 React (Vite) frontend
-    └── src/
-        ├── pages/
-        │   ├── DoctorDashboard.jsx, DoctorDashboardTabs/
-        │   ├── PatientDashboard/
-        │   ├── DiagnosticCenter/
-        │   ├── PatientLogin.jsx, PatientSignup.jsx
-        │   └── PublicWebsite.jsx, BlogPost.jsx
-        ├── components/, contexts/, hooks/, lib/, config/
-        └── main.jsx, App.jsx
+├── backend/
+│   ├── server.js          Express app, middleware, route mounting
+│   ├── config/            Environment validation, database clients
+│   ├── routes/            REST routers, one per domain
+│   ├── controllers/       Business logic
+│   ├── lib/               Socket.IO server, ID generator, rate limiting
+│   ├── schema.sql         PostgreSQL schema
+│   └── scripts/           DB init, migrations, maintenance
+├── frontend/
+│   └── src/
+│       ├── pages/         Doctor, patient, diagnostic-center and public pages
+│       ├── components/    Shared UI (video call, file messages, forms)
+│       ├── hooks/         WebSocket, chat and data hooks
+│       └── lib/           API clients, caching, PDF and print utilities
+├── docs/                  Design and API documentation
+└── .github/workflows/     CI
 ```
-
-## Prerequisites
-
-- Node.js 18 or later
-- A PostgreSQL database (built and tested against [Supabase](https://supabase.com/))
-- API credentials for: Arcjet, SMTP provider, Google Gemini, SSLCommerz
-
-## Getting Started
-
-### 1. Install dependencies
-
-```bash
-# Backend (project root)
-npm install
-
-# Frontend
-cd frontend && npm install && cd ..
-```
-
-### 2. Configure environment variables
-
-Create a `.env` file in the project root — see [Environment Variables](#environment-variables) below.
-
-### 3. Initialize the database
-
-```bash
-npm run init-db
-```
-
-### 4. Seed sample data (optional, first run only)
-
-```bash
-npm run seed
-```
-
-### 5. Start the backend
-
-```bash
-npm run dev
-```
-
-The API server starts at `http://localhost:3001`.
-
-### 6. Start the frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-The frontend starts at `http://localhost:5173`.
-
-## Environment Variables
-
-Create a `.env` file in the project root with the following keys:
-
-| Variable | Description |
-|---|---|
-| `PORT` | Backend server port (defaults to `3001`) |
-| `FRONTEND_URL` | URL of the running frontend, used for CORS |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_KEY` | Supabase service key |
-| `JWT_SECRET` | Secret used to sign authentication tokens |
-| `SMTP_ENABLED` | `true`/`false` — toggles transactional email |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | SMTP credentials for outgoing email |
-| `GEMINI_API_KEY` | Google Gemini API key for AI-assisted features |
-| `SSL_STORE_ID`, `SSL_STORE_PASSWORD` | SSLCommerz store credentials for payments |
-| `ARCJET_KEY` | Arcjet API key for rate limiting and bot protection |
-
-## Available Scripts
-
-**Root — backend**
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the API server with nodemon (auto-restart on change) |
-| `npm start` | Start the API server |
-| `npm run init-db` | Create or migrate database tables |
-| `npm run seed` | Populate the database with sample data |
-| `npm run add-unique-ids` | Backfill unique IDs for existing records |
-
-**`frontend/` — frontend**
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Create a production build |
-| `npm run preview` | Preview a production build locally |
-| `npm run lint` | Run ESLint |
-| `npm start` | Serve a production build |
-
-## Core Features
-
-- **Appointments** — booking, rescheduling, cancellation, and a calendar view for doctors
-- **Patient records** — demographics, medical history, prescriptions
-- **Lab & diagnostics** — order management and a PDF report viewer with page-level annotation (pencil/eraser tools) plus save and download
-- **Billing & wallet** — billing records, payment tracking, and an in-app wallet backed by SSLCommerz
-- **Real-time chat** — Socket.IO messaging between doctors and patients
-- **Notifications** — in-app and email notifications
-- **Analytics** — appointment trends, patient demographics, revenue, and peak-hour reporting
-- **Public website & blog** — patient-facing marketing site with content management
-- **AI assistance** — Gemini-powered features for doctor and patient workflows
 
 ## Documentation
 
-| Topic | File |
+| Topic | Document |
 |---|---|
-| API reference | `backend/API_DOCUMENTATION.md` |
-| Backend testing | `backend/TESTING_GUIDE.md` |
-| Frontend integration | `FRONTEND_INTEGRATION.md` |
-| Setup guide | `SETUP_GUIDE.md` |
-| Integration checklist | `INTEGRATION_CHECKLIST.md` |
-| Chat system | `CHAT_SYSTEM_DOCS.md`, `CHAT_PRIVACY_DOCUMENTATION.md`, `CHAT_FIX_SUMMARY.md` |
-| Email system | `EMAIL_SYSTEM_DOCUMENTATION.md` |
-| Notifications | `NOTIFICATION_SYSTEM_DOCS.md` |
-| Settings | `SETTINGS_DOCUMENTATION.md` |
-| Unique ID scheme | `UNIQUE_ID_DOCUMENTATION.md` |
-| File upload handling | `FILE_UPLOAD_OPTIMIZATION.md` |
+| REST API reference | [docs/api-reference.md](docs/api-reference.md) |
+| Manual API testing | [docs/testing-guide.md](docs/testing-guide.md) |
+| Chat system and WebSocket events | [docs/chat-system.md](docs/chat-system.md), [docs/chat-privacy.md](docs/chat-privacy.md) |
+| Email system | [docs/email-system.md](docs/email-system.md) |
+| Notifications | [docs/notification-system.md](docs/notification-system.md) |
+| File uploads | [docs/file-uploads.md](docs/file-uploads.md) |
+| Unique ID scheme | [docs/unique-ids.md](docs/unique-ids.md) |
+| Doctor settings | [docs/settings.md](docs/settings.md) |
 
-## Security Notes
+## Roadmap
 
-- Never commit `.env` files or real credentials — use `.env.example` as a template only.
-- Authentication uses JWT; use a unique, high-entropy `JWT_SECRET` per environment.
-- Rate limiting and bot protection are enforced by Arcjet; HTTP security headers are set via Helmet.
+- [ ] Enforce JWT authentication and ownership checks on every patient-data, chat, lab and wallet route (currently applied to auth, doctor, billing, notification, calendar, email, blog and help routes)
+- [ ] Re-enable Arcjet rate limiting in production
+- [ ] Automated API and component tests in CI
+- [ ] Code-split the doctor dashboard bundle
+- [ ] Move file uploads to object storage (Supabase Storage / S3)
+
+## Author
+
+**Md. Shahriar Kabir**: [GitHub](https://github.com/shahriarkabir280)
+<!-- Add: · [LinkedIn](https://www.linkedin.com/in/your-handle) -->
+
+## License
+
+Released under the [MIT License](LICENSE).
