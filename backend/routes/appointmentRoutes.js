@@ -1,4 +1,5 @@
 import express from 'express';
+import { authenticate, doctorOnly, requireOwnDoctor, requireOwnPatient, ROLES } from '../middleware/auth.js';
 import {
   getAppointments,
   getTodayAppointments,
@@ -12,12 +13,13 @@ import {
 const router = express.Router();
 
 // Appointment routes
-router.get('/doctor/:doctorId', getAppointments);
-router.get('/doctor/:doctorId/today', getTodayAppointments);
-router.get('/patient/:patientId', getAppointmentsByPatient);
-router.get('/:appointmentId', getAppointmentById);
+router.get('/doctor/:doctorId', doctorOnly, requireOwnDoctor(), getAppointments);
+router.get('/doctor/:doctorId/today', doctorOnly, requireOwnDoctor(), getTodayAppointments);
+router.get('/patient/:patientId', authenticate(ROLES.DOCTOR, ROLES.PATIENT), requireOwnPatient(), getAppointmentsByPatient);
+router.get('/:appointmentId', doctorOnly, getAppointmentById);
+// Public: visitors book from a doctor's public website without an account
 router.post('/doctor/:doctorId', createAppointment);
-router.put('/:appointmentId', updateAppointment);
-router.patch('/:appointmentId/cancel', cancelAppointment);
+router.put('/:appointmentId', doctorOnly, updateAppointment);
+router.patch('/:appointmentId/cancel', doctorOnly, cancelAppointment);
 
 export default router;

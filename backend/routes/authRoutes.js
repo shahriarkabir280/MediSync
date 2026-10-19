@@ -1,6 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { doctorOnly, ROLES } from '../middleware/auth.js';
 import { supabase } from '../config/db.js';
 
 const router = express.Router();
@@ -78,7 +80,8 @@ router.post('/login', async (req, res) => {
       {
         doctorId: doctor.id,
         email: doctor.email,
-        name: `${doctor.first_name} ${doctor.last_name}`
+        name: `${doctor.first_name} ${doctor.last_name}`,
+        role: 'doctor'
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -193,6 +196,40 @@ router.post('/patient-login', async (req, res) => {
   }
 });
 
+// Diagnostic center login. A single partner account configured through
+// DIAGNOSTIC_EMAIL / DIAGNOSTIC_PASSWORD in backend/.env.
+const safeEqual = (a, b) => {
+  const left = crypto.createHash('sha256').update(String(a)).digest();
+  const right = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(left, right);
+};
+
+router.post('/diagnostic-login', (req, res) => {
+  const { DIAGNOSTIC_EMAIL, DIAGNOSTIC_PASSWORD } = process.env;
+  if (!DIAGNOSTIC_EMAIL || !DIAGNOSTIC_PASSWORD) {
+    return res.status(503).json({
+      success: false,
+      message: 'Diagnostic center login is not configured on this server'
+    });
+  }
+
+  const { email, password } = req.body;
+  const emailMatches = safeEqual((email || '').toLowerCase(), DIAGNOSTIC_EMAIL.toLowerCase());
+  const passwordMatches = safeEqual(password || '', DIAGNOSTIC_PASSWORD);
+
+  if (!emailMatches || !passwordMatches) {
+    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+  }
+
+  const token = jwt.sign(
+    { id: 'diagnostic', email: DIAGNOSTIC_EMAIL, name: 'Diagnostic Center', role: ROLES.DIAGNOSTIC },
+    JWT_SECRET,
+    { expiresIn: '12h' }
+  );
+
+  res.json({ success: true, message: 'Login successful', token });
+});
+
 // Verify token endpoint
 router.get('/verify', async (req, res) => {
   try {
@@ -206,6 +243,10 @@ router.get('/verify', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role && decoded.role !== ROLES.DOCTOR) {
+      return res.status(401).json({ success: false, message: 'Not a doctor session' });
+    }
 
     // Get fresh doctor data
     const { data: doctors, error } = await supabase
@@ -261,24 +302,8 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log(`[DEBUG] Authenticated request for doctorId: ${decoded.doctorId}`);
-    req.user = { id: decoded.doctorId }; // Set user for blog controller
-    req.doctorId = decoded.doctorId; // Keep backward compatibility
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
+// Doctor-only middleware, shared with blog, calendar and email routes
+const authenticateToken = doctorOnly;
 
 // Change password endpoint
 router.put('/change-password', authenticateToken, async (req, res) => {

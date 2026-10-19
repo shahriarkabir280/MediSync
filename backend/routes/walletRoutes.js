@@ -1,4 +1,5 @@
 import express from 'express';
+import { doctorOnly, requireOwnDoctor } from '../middleware/auth.js';
 import { 
   getWalletSummary, 
   getTransactions, 
@@ -8,11 +9,12 @@ import {
 } from '../controllers/walletController.js';
 
 const router = express.Router();
+router.use(doctorOnly);
 
 // Wallet routes
-router.get('/doctor/:doctorId/summary', getWalletSummary);
-router.get('/doctor/:doctorId/transactions', getTransactions);
-router.post('/doctor/:doctorId/withdraw', requestWithdrawal);
+router.get('/doctor/:doctorId/summary', requireOwnDoctor(), getWalletSummary);
+router.get('/doctor/:doctorId/transactions', requireOwnDoctor(), getTransactions);
+router.post('/doctor/:doctorId/withdraw', requireOwnDoctor(), requestWithdrawal);
 
 // Rule management
 router.get('/rules', getRevenueRules);

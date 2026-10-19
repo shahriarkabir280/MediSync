@@ -1,4 +1,5 @@
 import express from 'express';
+import { authenticate, doctorOnly, requireOwnDoctor, ROLES } from '../middleware/auth.js';
 import {
   getLabStats,
   getRecentLabOrders,
@@ -27,45 +28,46 @@ import { labAiChat } from '../controllers/aiController.js';
 import { upload } from '../controllers/fileController.js';
 
 const router = express.Router();
+const doctorOrDiagnostic = authenticate(ROLES.DOCTOR, ROLES.DIAGNOSTIC);
 
 // Lab dashboard and statistics
-router.get('/stats', getLabStats);
-router.get('/recent', getRecentLabOrders);
-router.get('/reviews/pending', getPendingReviews);
+router.get('/stats', doctorOnly, getLabStats);
+router.get('/recent', doctorOnly, getRecentLabOrders);
+router.get('/reviews/pending', doctorOnly, getPendingReviews);
 
 // Lab search and filtering
-router.get('/search', searchLabOrders);
-router.get('/filter', getFilteredLabOrders);
+router.get('/search', doctorOnly, searchLabOrders);
+router.get('/filter', doctorOnly, getFilteredLabOrders);
 
-router.get('/report/:orderId', getLabReport);
-router.put('/report/:orderId/file', upload.single('file'), updateLabReportFile);
+router.get('/report/:orderId', doctorOnly, getLabReport);
+router.put('/report/:orderId/file', doctorOnly, upload.single('file'), updateLabReportFile);
 
 // Lab test categories and tests
-router.get('/categories', getLabCategories);
-router.get('/tests', getLabTests);
+router.get('/categories', doctorOnly, getLabCategories);
+router.get('/tests', doctorOnly, getLabTests);
 
 // Lab orders
-router.post('/orders', createLabOrder);
-router.get('/orders/all', getAllLabOrders); // Must be before /orders/:orderId to avoid matching params
-router.get('/orders/doctor/:doctorId', getLabOrders);
-router.get('/orders/:orderId', getLabOrderDetails);
-router.put('/orders/:orderId', updateLabOrder);
-router.put('/orders/:orderId/status', updateLabOrderStatus);
-router.post('/orders/:orderId/report', upload.single('file'), uploadLabReportFile);
-router.post('/orders/item/:orderItemId/report', upload.single('file'), uploadLabOrderItemReport);
-router.put('/orders/:orderId/verify', verifyLabResultsForOrder);
-router.delete('/orders/:orderId', deleteLabOrder);
+router.post('/orders', doctorOnly, createLabOrder);
+router.get('/orders/all', doctorOrDiagnostic, getAllLabOrders); // Must be before /orders/:orderId to avoid matching params
+router.get('/orders/doctor/:doctorId', doctorOnly, requireOwnDoctor(), getLabOrders);
+router.get('/orders/:orderId', doctorOrDiagnostic, getLabOrderDetails);
+router.put('/orders/:orderId', doctorOnly, updateLabOrder);
+router.put('/orders/:orderId/status', doctorOrDiagnostic, updateLabOrderStatus);
+router.post('/orders/:orderId/report', doctorOnly, upload.single('file'), uploadLabReportFile);
+router.post('/orders/item/:orderItemId/report', doctorOrDiagnostic, upload.single('file'), uploadLabOrderItemReport);
+router.put('/orders/:orderId/verify', doctorOnly, verifyLabResultsForOrder);
+router.delete('/orders/:orderId', doctorOnly, deleteLabOrder);
 
 // Lab results
-router.put('/results/item/:orderItemId', updateLabResult);
+router.put('/results/item/:orderItemId', doctorOnly, updateLabResult);
 
 // Patient lab history
-router.get('/patient/:patientId/history', getPatientLabHistory);
+router.get('/patient/:patientId/history', doctorOnly, getPatientLabHistory);
 
 // Get patients for selection
-router.get('/patients', getLabPatients);
+router.get('/patients', doctorOnly, getLabPatients);
 
 // AI Chat Integration
-router.post('/ai/chat', labAiChat);
+router.post('/ai/chat', doctorOnly, labAiChat);
 
 export default router;

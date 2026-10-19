@@ -1,5 +1,5 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
+import { doctorOnly, requireOwnDoctor } from '../middleware/auth.js';
 import {
   getDoctorProfile,
   updateDoctorProfile,
@@ -11,25 +11,8 @@ import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET;
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.doctorId = decoded.doctorId;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
+// Doctor-only routes
+const authenticateToken = doctorOnly;
 
 // Public marketplace route (no auth required for now to allow patients to search)
 router.get('/marketplace', async (req, res) => {
@@ -84,15 +67,15 @@ router.get('/marketplace', async (req, res) => {
 });
 
 // Profile routes
-router.get('/:doctorId/profile', getDoctorProfile);
-router.put('/:doctorId/profile', updateDoctorProfile);
+router.get('/:doctorId/profile', authenticateToken, requireOwnDoctor(), getDoctorProfile);
+router.put('/:doctorId/profile', authenticateToken, requireOwnDoctor(), updateDoctorProfile);
 
 // Dashboard stats
-router.get('/:doctorId/stats', getDashboardStats);
+router.get('/:doctorId/stats', authenticateToken, requireOwnDoctor(), getDashboardStats);
 
 // Settings routes
-router.get('/:doctorId/settings', getDoctorSettings);
-router.put('/:doctorId/settings', updateDoctorSettings);
+router.get('/:doctorId/settings', authenticateToken, requireOwnDoctor(), getDoctorSettings);
+router.put('/:doctorId/settings', authenticateToken, requireOwnDoctor(), updateDoctorSettings);
 
 // JWT-authenticated settings routes
 router.get('/settings', authenticateToken, async (req, res) => {

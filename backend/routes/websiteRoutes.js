@@ -1,4 +1,5 @@
 import express from 'express';
+import { doctorOnly, requireOwnDoctor } from '../middleware/auth.js';
 import {
   getDoctorProfile,
   updateDoctorProfile,
@@ -35,66 +36,66 @@ runWebsiteMigration().catch(e => console.warn('Migration warning:', e.message));
 const router = express.Router();
 
 // Frontend-compatible routes (for PublicWebsiteTab)
-router.get('/profile/:doctorId', getDoctorProfile);
-router.post('/profile/:doctorId', updateDoctorProfile);
-router.post('/settings/:doctorId', updateWebsiteSettings);
-router.post('/education/:doctorId', addEducation);
-router.post('/experience/:doctorId', addExperience);
-router.post('/services/:doctorId', addService);
-router.post('/chambers/:doctorId', addChamber);
-router.post('/social-media/:doctorId', updateSocialMedia);
-router.post('/contact/:doctorId', updateContact);
-router.get('/contact/:doctorId', getContact);
+router.get('/profile/:doctorId', doctorOnly, requireOwnDoctor(), getDoctorProfile);
+router.post('/profile/:doctorId', doctorOnly, requireOwnDoctor(), updateDoctorProfile);
+router.post('/settings/:doctorId', doctorOnly, requireOwnDoctor(), updateWebsiteSettings);
+router.post('/education/:doctorId', doctorOnly, requireOwnDoctor(), addEducation);
+router.post('/experience/:doctorId', doctorOnly, requireOwnDoctor(), addExperience);
+router.post('/services/:doctorId', doctorOnly, requireOwnDoctor(), addService);
+router.post('/chambers/:doctorId', doctorOnly, requireOwnDoctor(), addChamber);
+router.post('/social-media/:doctorId', doctorOnly, requireOwnDoctor(), updateSocialMedia);
+router.post('/contact/:doctorId', doctorOnly, requireOwnDoctor(), updateContact);
+router.get('/contact/:doctorId', doctorOnly, requireOwnDoctor(), getContact);
 
 // Doctor Profile Routes
-router.get('/doctor/:doctorId/profile', getDoctorProfile);
-router.put('/doctor/:doctorId/profile', updateDoctorProfile);
-router.post('/doctor/:doctorId/upload-image', uploadProfileImage);
+router.get('/doctor/:doctorId/profile', doctorOnly, requireOwnDoctor(), getDoctorProfile);
+router.put('/doctor/:doctorId/profile', doctorOnly, requireOwnDoctor(), updateDoctorProfile);
+router.post('/doctor/:doctorId/upload-image', doctorOnly, requireOwnDoctor(), uploadProfileImage);
 
 // Public Profile Routes
 router.get('/public/:urlSlug', getPublicProfile);
 router.get('/public/blog/:slug', getPublicBlogPost);
 
 // Website Settings
-router.get('/doctor/:doctorId/settings', getDoctorWebsiteSettings);
-router.put('/doctor/:doctorId/settings', updateWebsiteSettings);
+router.get('/doctor/:doctorId/settings', doctorOnly, requireOwnDoctor(), getDoctorWebsiteSettings);
+router.put('/doctor/:doctorId/settings', doctorOnly, requireOwnDoctor(), updateWebsiteSettings);
 
 // Education Routes
-router.post('/doctor/:doctorId/education', addEducation);
-router.put('/doctor/:doctorId/education/:educationId', updateEducation);
-router.delete('/doctor/:doctorId/education/:educationId', deleteEducation);
+router.post('/doctor/:doctorId/education', doctorOnly, requireOwnDoctor(), addEducation);
+router.put('/doctor/:doctorId/education/:educationId', doctorOnly, requireOwnDoctor(), updateEducation);
+router.delete('/doctor/:doctorId/education/:educationId', doctorOnly, requireOwnDoctor(), deleteEducation);
 
 // Experience Routes
-router.post('/doctor/:doctorId/experience', addExperience);
-router.put('/doctor/:doctorId/experience/:experienceId', updateExperience);
-router.delete('/doctor/:doctorId/experience/:experienceId', deleteExperience);
+router.post('/doctor/:doctorId/experience', doctorOnly, requireOwnDoctor(), addExperience);
+router.put('/doctor/:doctorId/experience/:experienceId', doctorOnly, requireOwnDoctor(), updateExperience);
+router.delete('/doctor/:doctorId/experience/:experienceId', doctorOnly, requireOwnDoctor(), deleteExperience);
 
 // Services Routes
-router.post('/doctor/:doctorId/services', addService);
-router.put('/doctor/:doctorId/services/:serviceId', updateService);
-router.delete('/doctor/:doctorId/services/:serviceId', deleteService);
+router.post('/doctor/:doctorId/services', doctorOnly, requireOwnDoctor(), addService);
+router.put('/doctor/:doctorId/services/:serviceId', doctorOnly, requireOwnDoctor(), updateService);
+router.delete('/doctor/:doctorId/services/:serviceId', doctorOnly, requireOwnDoctor(), deleteService);
 
 // Chamber Routes
-router.post('/doctor/:doctorId/chambers', addChamber);
-router.put('/doctor/:doctorId/chambers/:chamberId', updateChamber);
-router.delete('/doctor/:doctorId/chambers/:chamberId', deleteChamber);
+router.post('/doctor/:doctorId/chambers', doctorOnly, requireOwnDoctor(), addChamber);
+router.put('/doctor/:doctorId/chambers/:chamberId', doctorOnly, requireOwnDoctor(), updateChamber);
+router.delete('/doctor/:doctorId/chambers/:chamberId', doctorOnly, requireOwnDoctor(), deleteChamber);
 
 // Testimonials Routes
-router.post('/doctor/:doctorId/testimonials', addTestimonial);
-router.put('/doctor/:doctorId/testimonials/:testimonialId', updateTestimonial);
-router.delete('/doctor/:doctorId/testimonials/:testimonialId', deleteTestimonial);
+router.post('/doctor/:doctorId/testimonials', doctorOnly, requireOwnDoctor(), addTestimonial);
+router.put('/doctor/:doctorId/testimonials/:testimonialId', doctorOnly, requireOwnDoctor(), updateTestimonial);
+router.delete('/doctor/:doctorId/testimonials/:testimonialId', doctorOnly, requireOwnDoctor(), deleteTestimonial);
 
 // Social Media Routes
-router.put('/doctor/:doctorId/social-media', updateSocialMedia);
+router.put('/doctor/:doctorId/social-media', doctorOnly, requireOwnDoctor(), updateSocialMedia);
 
 // Contact Routes
-router.get('/doctor/:doctorId/contact', getContact);
-router.put('/doctor/:doctorId/contact', updateContact);
+router.get('/doctor/:doctorId/contact', doctorOnly, requireOwnDoctor(), getContact);
+router.put('/doctor/:doctorId/contact', doctorOnly, requireOwnDoctor(), updateContact);
 
 // Dashboard Stats
-router.get('/doctor/:doctorId/stats', getDashboardStats);
+router.get('/doctor/:doctorId/stats', doctorOnly, requireOwnDoctor(), getDashboardStats);
 
 // Migration endpoint (dev utility)
-router.post('/migrate', runWebsiteMigration);
+router.post('/migrate', doctorOnly, runWebsiteMigration);
 
 export default router;

@@ -1,5 +1,7 @@
 import { Server } from 'socket.io';
 import { supabase } from '../config/db.js';
+import { verifyToken, ROLES } from '../middleware/auth.js';
+import { getDoctorChatId } from '../middleware/chatIdentity.js';
 
 /**
  * Modern WebSocket Server for Real-time Chat
@@ -22,15 +24,66 @@ export function getIO() {
 }
 
 export function initializeWebSocket(httpServer) {
+  const allowedOrigins = ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"];
+  if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
   io = new Server(httpServer, {
     cors: {
-      origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"],
+      origin: allowedOrigins,
       credentials: true
+    }
+  });
+
+  // Only signed-in doctors may connect; their chat identity comes from the token, not the client
+  io.use(async (socket, next) => {
+    try {
+      const user = verifyToken(socket.handshake.auth?.token || '');
+      if (user.role !== ROLES.DOCTOR) return next(new Error('Unauthorized'));
+
+      const chatUserId = await getDoctorChatId(user.id);
+      if (!chatUserId) return next(new Error('Unauthorized'));
+
+      socket.data.chatUserId = chatUserId;
+      socket.data.memberOf = new Set();
+      next();
+    } catch {
+      next(new Error('Unauthorized'));
     }
   });
 
   io.on('connection', (socket) => {
     console.log(`🔌 Client connected: ${socket.id}`);
+
+    // Per-event guard: overwrite any claimed identity with the authenticated one, and
+    // require chat membership for events that target a chat.
+    socket.use(async ([event, payload], next) => {
+      const self = socket.data.chatUserId;
+
+      if (payload && typeof payload === 'object') {
+        if ('userId' in payload) { payload.userId = self; payload.userType = 'doctor'; }
+        if ('from' in payload) { payload.from = self; payload.fromType = 'doctor'; }
+        if (payload.message && typeof payload.message === 'object') {
+          payload.message.sender_id = self;
+          payload.message.sender_type = 'doctor';
+        }
+      }
+
+      const chatId = event === 'join_chat' ? payload : payload?.chatId;
+      if (chatId == null || event === 'leave_chat') return next();
+
+      if (!socket.data.memberOf.has(String(chatId))) {
+        const { data } = await supabase
+          .from('chat_participants')
+          .select('id')
+          .eq('chat_id', chatId)
+          .eq('user_id', self)
+          .eq('user_type', 'doctor')
+          .maybeSingle();
+        if (!data) return next(new Error('Not a participant of this chat'));
+        socket.data.memberOf.add(String(chatId));
+      }
+      next();
+    });
 
     /**
      * User joins with their identity

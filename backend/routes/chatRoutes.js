@@ -3,11 +3,24 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chatController } from '../controllers/chatController.js';
+import { doctorOnly } from '../middleware/auth.js';
+import { requireOwnChatIdentity } from '../middleware/chatIdentity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
+// Chat is for signed-in doctors, who may only act as themselves
+router.use(doctorOnly, requireOwnChatIdentity);
+
+// Leaving a group names the leaver in the URL, so it must be the caller
+const requireSelfInParams = (req, res, next) => {
+  if (String(req.params.userId) !== String(req.chatUserId) || req.params.userType !== 'doctor') {
+    return res.status(403).json({ success: false, message: 'You can only leave a group as yourself' });
+  }
+  next();
+};
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -56,7 +69,7 @@ router.post('/groups/:chatId/participants', chatController.addParticipants);
 router.get('/groups/:chatId/participants', chatController.getChatParticipants);
 router.delete('/groups/:chatId/participants/:userId/:userType', chatController.removeParticipant);
 router.put('/groups/:chatId/participants/:userId/:userType/role', chatController.updateParticipantRole);
-router.delete('/groups/:chatId/leave/:userId/:userType', chatController.leaveGroup);
+router.delete('/groups/:chatId/leave/:userId/:userType', requireSelfInParams, chatController.leaveGroup);
 router.put('/groups/:chatId/info', chatController.updateGroupInfo);
 
 // Get messages for a specific chat

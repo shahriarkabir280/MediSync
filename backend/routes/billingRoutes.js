@@ -1,5 +1,5 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
+import { doctorOnly, requireOwnDoctor } from '../middleware/auth.js';
 import {
   getBillingRecords,
   createBillingRecord,
@@ -11,32 +11,13 @@ import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET;
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.doctorId = decoded.doctorId;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
+// Doctor-only routes
+const authenticateToken = doctorOnly;
 
 // Billing routes
-router.get('/doctor/:doctorId', getBillingRecords);
-router.get('/doctor/:doctorId/summary', getBillingSummary);
-router.post('/doctor/:doctorId', createBillingRecord);
-router.put('/:billingId', updateBillingRecord);
-router.patch('/:billingId/mark-paid', markAsPaid);
+router.get('/doctor/:doctorId', authenticateToken, requireOwnDoctor(), getBillingRecords);
+router.get('/doctor/:doctorId/summary', authenticateToken, requireOwnDoctor(), getBillingSummary);
+router.post('/doctor/:doctorId', authenticateToken, requireOwnDoctor(), createBillingRecord);
 
 // Billing settings routes
 router.get('/settings', authenticateToken, async (req, res) => {
@@ -219,5 +200,9 @@ router.delete('/payment-methods/:methodId', authenticateToken, async (req, res) 
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+
+// Registered last so '/:billingId' does not shadow '/settings'
+router.put('/:billingId', authenticateToken, updateBillingRecord);
+router.patch('/:billingId/mark-paid', authenticateToken, markAsPaid);
 
 export default router;

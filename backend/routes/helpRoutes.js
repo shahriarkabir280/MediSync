@@ -1,5 +1,5 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
+import { doctorOnly } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -8,23 +8,8 @@ import { fileURLToPath } from 'url';
 
 const router = express.Router();
 
-// JWT Authentication Middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
-        }
-        req.user = decoded;
-        next();
-    });
-};
+// Help center routes are for signed-in doctors
+const authenticateToken = doctorOnly;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -158,7 +143,7 @@ router.get('/faq', async (req, res) => {
 router.post('/support-tickets', authenticateToken, upload.array('attachments', 5), async (req, res) => {
     try {
         const { subject, category, priority, description } = req.body;
-        const doctorId = req.user.doctorId;
+        const doctorId = req.doctorId;
         const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
         // Validate required fields
@@ -207,7 +192,7 @@ router.post('/support-tickets', authenticateToken, upload.array('attachments', 5
 // Get user's support tickets
 router.get('/support-tickets', authenticateToken, async (req, res) => {
     try {
-        const doctorId = req.user.doctorId;
+        const doctorId = req.doctorId;
 
         // Return sample data for now
         const sampleTickets = [
@@ -258,7 +243,7 @@ router.get('/support-tickets', authenticateToken, async (req, res) => {
 router.get('/support-tickets/:ticketId', authenticateToken, async (req, res) => {
     try {
         const { ticketId } = req.params;
-        const doctorId = req.user.doctorId;
+        const doctorId = req.doctorId;
 
         // Return sample ticket data
         const sampleTicket = {
@@ -294,7 +279,7 @@ router.post('/support-tickets/:ticketId/responses', authenticateToken, async (re
     try {
         const { ticketId } = req.params;
         const { message } = req.body;
-        const doctorId = req.user.doctorId;
+        const doctorId = req.doctorId;
 
         if (!message) {
             return res.status(400).json({
@@ -452,7 +437,7 @@ router.get('/documentation/:slug', async (req, res) => {
 router.post('/contact', authenticateToken, async (req, res) => {
     try {
         const { type, subject, message, email } = req.body;
-        const doctorId = req.user.doctorId;
+        const doctorId = req.doctorId;
 
         if (!subject || !message) {
             return res.status(400).json({

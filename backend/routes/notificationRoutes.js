@@ -1,5 +1,5 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
+import { doctorOnly } from '../middleware/auth.js';
 import {
   getNotifications,
   markAsRead,
@@ -13,25 +13,8 @@ import {
 
 const router = express.Router();
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET;
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.doctorId = decoded.doctorId;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
+// Doctor-only routes
+const authenticateToken = doctorOnly;
 
 // Get notifications with filtering and pagination
 router.get('/', authenticateToken, getNotifications);

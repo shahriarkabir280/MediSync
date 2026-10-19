@@ -2,6 +2,7 @@
 
 //const express = require('express');
 import './config/env.js';
+import { authenticate } from './middleware/auth.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -100,15 +101,23 @@ app.use(helmet({
   },
 }));
 
+// Never write tokens passed as ?token= (file links) to the request log
+morgan.token('url', (req) => req.originalUrl.replace(/([?&]token=)[^&]+/, '$1[redacted]'));
 app.use(morgan('dev'));
 
 // Middleware setup
 app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve uploaded files statically with absolute path
+// Serve uploaded files. Profile and blog images appear on public pages; everything else
+// (medical records, chat files, email attachments, support tickets) needs a signed-in user.
 const uploadsPath = path.join(__dirname, 'uploads');
-app.use('/uploads', express.static(uploadsPath));
+const PUBLIC_UPLOAD_DIRS = ['/profile-images/', '/blog-images/'];
+const requireAuthForPrivateUploads = (req, res, next) => {
+  if (PUBLIC_UPLOAD_DIRS.some((dir) => req.path.startsWith(dir))) return next();
+  return authenticate()(req, res, next);
+};
+app.use('/uploads', requireAuthForPrivateUploads, express.static(uploadsPath));
 
 //apply arcjet rate limiting to all routes - DISABLED FOR DEVELOPMENT
 /*

@@ -42,6 +42,7 @@ MediSync is a multi-portal clinic platform built on a single Node.js/Express API
 - **AI clinical assistant:** a Google Gemini assistant answers the doctor's questions using the patient's actual lab history, flagging abnormal and critical values and comparing trends across reports.
 - **Lab workflow end to end:** doctor orders, diagnostic-center report uploads, a PDF report viewer with pencil/eraser annotation saved back to the record, and generated prescription PDFs.
 - **Payments and revenue sharing:** SSLCommerz checkout (with a built-in mock gateway for development), per-service revenue-split rules between doctor, clinic and referrer, wallet balances, and withdrawal requests.
+- **Role-based access control:** one JWT middleware enforces doctor, patient, and diagnostic-center roles with per-record ownership checks across the REST API, the Socket.IO server, and private file downloads.
 - **Scale of the build:** about 200 REST endpoints across 19 route modules, a 46-table PostgreSQL schema, and roughly 40k lines of application code.
 
 ## Architecture
@@ -83,7 +84,7 @@ flowchart LR
 | Frontend | React 19, Vite 6, React Router 7, Tailwind CSS, Radix UI, Zustand |
 | Backend | Node.js, Express 5, Socket.IO, Multer, Nodemailer |
 | Database | PostgreSQL on Supabase (`@supabase/supabase-js`, `pg`) |
-| Auth and security | JWT, bcrypt password hashing, Helmet, CORS allow-list |
+| Auth and security | JWT with role-based access control, bcrypt password hashing, Helmet, CORS allow-list |
 | Integrations | Google Gemini (`gemini-2.5-flash`), SSLCommerz, SMTP |
 | Documents | `react-pdf`, `pdf-lib`, `jspdf`, `html2canvas` |
 | Tooling | ESLint, GitHub Actions CI, Railway (Nixpacks) deployment |
@@ -112,6 +113,8 @@ cp backend/.env.example backend/.env
 ```
 
 Fill in at least `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_KEY` and `DATABASE_URL`. The server checks these at startup and refuses to run without them. Optional integrations switch off cleanly when their keys are missing, and payments fall back to a mock checkout. See [`backend/.env.example`](backend/.env.example) for every variable.
+
+Set `DIAGNOSTIC_EMAIL` and `DIAGNOSTIC_PASSWORD` to enable the diagnostic center login.
 
 ### 3. Set up the database
 
@@ -173,9 +176,23 @@ MediSync/
 | Unique ID scheme | [docs/unique-ids.md](docs/unique-ids.md) |
 | Doctor settings | [docs/settings.md](docs/settings.md) |
 
+## Security model
+
+| Role | Signs in at | Can access |
+|---|---|---|
+| Doctor | `/` | Their own dashboard data. Routes that name a `:doctorId` must match the signed-in doctor. |
+| Patient | `/patient-login` | Only their own profile, medical history, appointments, and report files |
+| Diagnostic center | `/diagnostic-login` | Lab order intake and report upload endpoints only |
+| Anyone | none | Public doctor websites and blogs, appointment booking, patient signup, payment gateway callbacks |
+
+- Every protected route goes through [`backend/middleware/auth.js`](backend/middleware/auth.js). Chat additionally rejects requests that claim another user's identity.
+- Socket.IO connections must present a doctor token. Each event's sender identity is taken from the token, and joining a chat requires being a participant.
+- Medical records, chat files, and email attachments under `/uploads` require a signed-in user. Only profile and blog images are public.
+- The server refuses to start without `JWT_SECRET`, and tokens passed in file URLs are redacted from request logs.
+
 ## Roadmap
 
-- [ ] Enforce JWT authentication and ownership checks on every patient-data, chat, lab and wallet route (currently applied to auth, doctor, billing, notification, calendar, email, blog and help routes)
+- [ ] Per-patient access control between doctors and their own patients (any signed-in doctor can currently view any patient)
 - [ ] Re-enable Arcjet rate limiting in production
 - [ ] Automated API and component tests in CI
 - [ ] Code-split the doctor dashboard bundle

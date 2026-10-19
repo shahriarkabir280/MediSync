@@ -13,7 +13,7 @@ npm run init-db                        # apply backend/schema.sql
 npm run dev                            # http://localhost:3001
 ```
 
-The server refuses to start if `JWT_SECRET`, `SUPABASE_URL` or `SUPABASE_KEY` is missing. Optional integrations (SMTP, Gemini, SSLCommerz) are disabled when their keys are not set. Without an SSLCommerz store ID, payments use a built-in mock checkout.
+The server refuses to start if `JWT_SECRET`, `SUPABASE_URL` or `SUPABASE_KEY` is missing. Set `DIAGNOSTIC_EMAIL` / `DIAGNOSTIC_PASSWORD` to enable the diagnostic center login. Optional integrations (SMTP, Gemini, SSLCommerz) are disabled when their keys are not set. Without an SSLCommerz store ID, payments use a built-in mock checkout.
 
 ## Layout
 
@@ -23,10 +23,13 @@ backend/
 ├── config/
 │   ├── env.js         Loads and validates backend/.env (imported first)
 │   └── db.js          Supabase client and pg pool
+├── middleware/
+│   ├── auth.js        JWT verification, roles (doctor / patient / diagnostic), ownership checks
+│   └── chatIdentity.js  Maps doctors to chat identities; blocks impersonation in chat
 ├── routes/            One Express router per domain (19 modules)
 ├── controllers/       Request handlers and business logic
 ├── lib/
-│   ├── websocketServer.js   Socket.IO: real-time chat, typing, presence, WebRTC signalling
+│   ├── websocketServer.js   Socket.IO (token-authenticated): chat, typing, presence, WebRTC signalling
 │   ├── uniqueIdGenerator.js Human-readable IDs for doctors, patients and records
 │   └── arcjet.js            Rate limiting / bot protection (currently disabled in server.js)
 ├── utils/             Image and notification helpers

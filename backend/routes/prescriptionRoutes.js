@@ -1,6 +1,8 @@
 import express from 'express';
+import { doctorOnly } from '../middleware/auth.js';
 import * as prescriptionController from '../controllers/prescriptionController.js';
 const router = express.Router();
+router.use(doctorOnly);
 
 // Create a new prescription
 router.post('/', prescriptionController.createPrescription);
