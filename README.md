@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/media/banner.webp" alt="MediSync: one platform for doctors, patients and diagnostic centers" width="100%" />
+
 # MediSync
 
 **A full-stack healthcare management platform connecting doctors, patients, and diagnostic centers.**
@@ -17,13 +19,36 @@ Appointments · Medical records · Lab reports · Real-time chat & video calls �
 
 ---
 
-<!--
-  Add screenshots to docs/screenshots/ and uncomment:
-  <p align="center">
-    <img src="docs/screenshots/doctor-dashboard.png" width="49%" alt="Doctor dashboard" />
-    <img src="docs/screenshots/lab-report-viewer.png" width="49%" alt="Lab report viewer with annotation" />
-  </p>
--->
+## Product demo
+
+<p align="center">
+  <img src="docs/media/demo.webp" alt="MediSync product walkthrough: doctor dashboard, lab workflow, AI assistant, report annotation, payments, patient portal, diagnostic center and public website" width="100%" />
+</p>
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/doctor-patients.webp" alt="Doctor dashboard: patient list" /><p align="center"><b>Doctor dashboard</b><br/>Patient records, visits and quick actions</p></td>
+    <td width="50%"><img src="docs/media/lab-results.webp" alt="Laboratory: a patient's released lab reports" /><p align="center"><b>Lab workflow</b><br/>Orders, progress tracking and released reports</p></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/media/ai-assistant.webp" alt="Clinical AI assistant summarizing a patient's lab results" /><p align="center"><b>Clinical AI assistant</b><br/>Gemini summaries grounded in the patient's lab history</p></td>
+    <td width="50%"><img src="docs/media/report-after.webp" alt="PDF lab report with abnormal values circled in red" /><p align="center"><b>Report annotation</b><br/>Mark up PDF reports and save them to the record</p></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/media/doctor-wallet.webp" alt="Wallet with balance, earnings and revenue split" /><p align="center"><b>Payments &amp; wallet</b><br/>SSLCommerz checkout and automatic revenue sharing</p></td>
+    <td width="50%"><img src="docs/media/patient-search.webp" alt="Patient portal: find a specialist" /><p align="center"><b>Patient portal</b><br/>Find specialists, book visits, view own reports</p></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/media/diagnostic-queue.webp" alt="Diagnostic center order queue" /><p align="center"><b>Diagnostic center</b><br/>Process lab orders and upload results</p></td>
+    <td width="50%"><img src="docs/media/public-website.webp" alt="A doctor's public website" /><p align="center"><b>Doctor websites</b><br/>Public profile, blog and online booking</p></td>
+  </tr>
+</table>
+
+<p align="center"><img src="docs/media/doctor-patients-dark.webp" alt="Doctor dashboard in dark mode" width="80%" /><br/><sub>Light and dark themes across every portal</sub></p>
+
+> Screens show demo data. Third-party branding on the sample lab report is blurred.
 
 ## Overview
 
