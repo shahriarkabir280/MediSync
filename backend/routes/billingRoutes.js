@@ -12,7 +12,7 @@ import { supabase } from '../config/db.js';
 const router = express.Router();
 
 // JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET || 'REMOVED_FROM_HISTORY';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {

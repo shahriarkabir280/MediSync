@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const SSL_STORE_ID = process.env.SSL_STORE_ID || 'carec67d325785f81f';
-const SSL_STORE_PASSWORD = process.env.SSL_STORE_PASSWORD || 'REMOVED_FROM_HISTORY';
+const SSL_STORE_ID = process.env.SSL_STORE_ID || '';
+const SSL_STORE_PASSWORD = process.env.SSL_STORE_PASSWORD || '';
 const IS_LIVE = process.env.SSL_IS_LIVE === 'true';
 
 console.log('Payment Config:', {
@@ -43,8 +43,8 @@ export const initiatePayment = async (req, res) => {
     const tran_id = `TXN-${Date.now()}-${billing_id}`;
 
     // --- MOCK MODE CHECK ---
-    // If using the placeholder ID, use a mock flow
-    if (SSL_STORE_ID === 'carec67d325785f81f') {
+    // No store configured, or the SSLCommerz sandbox placeholder ID: use a mock flow
+    if (!SSL_STORE_ID || SSL_STORE_ID === 'carec67d325785f81f') {
       console.log('🚀 MOCK MODE ACTIVE: Redirecting to simulation...');
       const mockUrl = `${BACKEND_URL}/api/payment/mock-checkout?tran_id=${tran_id}&billing_id=${billing_id}&amount=${amount}&name=${encodeURIComponent(patient_name || 'Patient')}`;
       return res.json({ success: true, url: mockUrl });

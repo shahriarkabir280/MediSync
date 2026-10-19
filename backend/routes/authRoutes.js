@@ -6,12 +6,12 @@ import { supabase } from '../config/db.js';
 const router = express.Router();
 
 // JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET || 'REMOVED_FROM_HISTORY';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Login endpoint
 router.post('/login', async (req, res) => {
   try {
-    console.log('🔐 Login attempt:', req.body);
+    console.log('🔐 Login attempt:', req.body?.email);
     const { email, password } = req.body;
 
     if (!email || !password) {
